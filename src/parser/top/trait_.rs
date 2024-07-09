@@ -17,7 +17,7 @@ use crate::{
 
 use super::func::{func_parser, Func};
 
-#[derive(Clone)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Trait {
     pub name: Spanned<String>,
     pub generics: GenericArgs,

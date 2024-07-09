@@ -1,38 +1,40 @@
 use std::{fmt::Display, fs};
 
-use ariadne::Source;
-use chumsky::{error::Rich, input::Input, Parser};
-
 use crate::{lexer::parser::lexer, parser::file_parser, util::Span};
+use ariadne::{Color, Fmt, Source};
+use ariadne::{ColorGenerator, Label, Report, ReportKind};
+use chumsky::{error::Rich, input::Input, Parser};
 
 pub fn build(path: &str) {
     let src = fs::read_to_string(path).unwrap();
     let eoi = Span::splat(src.len());
     let (tokens, errors) = lexer().parse(&src).into_output_errors();
     let source = Source::from(src.clone());
-
+    let mut success = true;
     for error in errors {
         print_error(error, &source, path, "Lexer Error");
+        success = false
     }
 
     if let Some(tokens) = tokens {
         let input = tokens.spanned(eoi);
-        let (ast, errors) = file_parser().parse(input).into_output_errors();
+        let (_, errors) = file_parser().parse(input).into_output_errors();
         for error in errors {
             print_error(error, &source, path, "Parser Error");
+            success = false
         }
 
-        println!("{:#?}", ast);
+        if success {
+            println!("{}", "[Build Success]".fg(Color::Green));
+        } else {
+            println!("{}", "[Build Failed]".fg(Color::Red));
+        }
     }
 }
 
 pub fn print_error<T: Display>(error: Rich<'_, T>, source: &Source, name: &str, code: &str) {
-    use ariadne::{Color, ColorGenerator, Fmt, Label, Report, ReportKind};
-
     let mut colors = ColorGenerator::new();
 
-    // Generate & choose some colours for each of our elements
-    // let a = colors.next();
     let b = colors.next();
     let out = Color::Fixed(81);
 

@@ -17,7 +17,7 @@ use crate::{
 
 use super::func::{func_parser, Func};
 
-#[derive(Clone)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Impl {
     pub generics: GenericArgs,
     pub trait_: Option<Spanned<Type>>,
@@ -52,4 +52,3 @@ pub fn impl_parser<'tokens, 'src: 'tokens>(stmt: AstParser!(Stmt)) -> AstParser!
             body,
         })
 }
-

@@ -1,39 +1,34 @@
-use chumsky::{error::Rich, extra, select, Parser};
+use chumsky::{select, Parser};
 
 use crate::{
     lexer::{literal::Literal, token::Token},
-    util::{ParserInput, Span},
     AstParser,
 };
 
-use self::code_block::{code_block_parser, CodeBlock};
+use self::{
+    code_block::{code_block_parser, CodeBlock},
+    qualified_name::{qualified_name_parser, SpannedQualifiedName},
+};
 
 use super::stmt::Stmt;
 
 pub mod code_block;
+pub mod qualified_name;
 
 #[derive(Clone, PartialEq, Debug)]
 pub enum Expr {
     Literal(Literal),
-    Ident(String),
+    Ident(SpannedQualifiedName),
     CodeBlock(CodeBlock),
 }
 
-pub fn expr_parser<'tokens, 'src: 'tokens>(
-    stmt: impl chumsky::Parser<
-            'tokens,
-            ParserInput<'tokens, 'src>,
-            Stmt,
-            extra::Err<Rich<'tokens, Token, Span>>,
-        > + Clone
-        + 'tokens,
-) -> AstParser!(Expr) {
+pub fn expr_parser<'tokens, 'src: 'tokens>(stmt: AstParser!(Stmt)) -> AstParser!(Expr) {
     let block = code_block_parser(stmt);
 
     let atom = select! {
         Token::Literal(lit) => Expr::Literal(lit),
-        Token::Ident(ident) => Expr::Ident(ident),
-    };
+    }
+    .or(qualified_name_parser().map(Expr::Ident));
 
     block.map(Expr::CodeBlock).or(atom)
 }
@@ -54,7 +49,7 @@ mod tests {
         assert_parse_eq!(
             expr_parser(stmt_parser()),
             "thing",
-            Expr::Ident("thing".to_string())
+            Expr::Ident(vec![("thing".to_string(), (0..5).into())])
         );
     }
 

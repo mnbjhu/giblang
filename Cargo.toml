@@ -9,3 +9,5 @@ edition = "2021"
 ariadne = "0.4.1"
 clap = { version = "4.5.3", features = ["derive"] }
 chumsky = "1.0.0-alpha.7"
+ptree = "0.4.0"
+glob = "0.3.1"

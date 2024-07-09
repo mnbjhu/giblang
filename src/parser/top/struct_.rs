@@ -1,5 +1,5 @@
 use crate::parser::common::optional_newline::optional_newline;
-use crate::AstParser;
+use crate::{kw, AstParser};
 use crate::{
     lexer::token::punct,
     parser::common::{
@@ -25,12 +25,15 @@ pub fn struct_parser<'tokens, 'src: 'tokens>() -> AstParser!(Struct) {
     let fields = struct_field_parser()
         .map_with(|t, s| (t, s.span()))
         .separated_by(just(punct(',')).padded_by(optional_newline()))
+        .allow_trailing()
         .collect::<Vec<_>>()
         .delimited_by(
             just(punct('{')).then(optional_newline()),
             optional_newline().then(just(punct('}'))),
         );
-    name.then(generics)
+    just(kw!(struct))
+        .ignore_then(name)
+        .then(generics)
         .then(fields)
         .map(|((name, generics), fields)| Struct {
             name,

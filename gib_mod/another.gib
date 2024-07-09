@@ -1,3 +1,4 @@
+
 struct Test {
   name: Thing,
   age: Thing

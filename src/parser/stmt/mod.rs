@@ -37,7 +37,7 @@ mod tests {
         assert_parse_eq!(
             expr_parser(stmt_parser()),
             "thing",
-            Expr::Ident("thing".to_string())
+            Expr::Ident(vec![("thing".to_string(), (0..5).into())])
         );
 
         assert_parse_eq!(expr_parser(stmt_parser()), "42", Expr::Literal(42.into()));
