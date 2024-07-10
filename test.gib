@@ -6,3 +6,9 @@ struct Test {
 trait Thing[T, U] {
   fn test()
 }
+
+impl Thing[i32, i32] for Test {
+  fn test() {
+    println
+  }
+}

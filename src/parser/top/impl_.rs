@@ -40,6 +40,7 @@ pub fn impl_parser<'tokens, 'src: 'tokens>(stmt: AstParser!(Stmt)) -> AstParser!
             just(punct('{')).then(optional_newline()),
             optional_newline().then(just(punct('}'))),
         );
+
     just(kw!(impl))
         .ignore_then(generic_args_parser())
         .then(trait_)

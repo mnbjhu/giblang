@@ -1,35 +1,12 @@
-use std::{fmt::Display, fs};
+use std::fmt::Display;
 
-use crate::{lexer::parser::lexer, parser::file_parser, util::Span};
+use crate::fs::project::Project;
 use ariadne::{Color, Fmt, Source};
 use ariadne::{ColorGenerator, Label, Report, ReportKind};
-use chumsky::{error::Rich, input::Input, Parser};
+use chumsky::error::Rich;
 
-pub fn build(path: &str) {
-    let src = fs::read_to_string(path).unwrap();
-    let eoi = Span::splat(src.len());
-    let (tokens, errors) = lexer().parse(&src).into_output_errors();
-    let source = Source::from(src.clone());
-    let mut success = true;
-    for error in errors {
-        print_error(error, &source, path, "Lexer");
-        success = false
-    }
-
-    if let Some(tokens) = tokens {
-        let input = tokens.spanned(eoi);
-        let (_, errors) = file_parser().parse(input).into_output_errors();
-        for error in errors {
-            print_error(error, &source, path, "Parser");
-            success = false
-        }
-
-        if success {
-            println!("{}", "[Build Success]".fg(Color::Green));
-        } else {
-            println!("{}", "[Build Failed]".fg(Color::Red));
-        }
-    }
+pub fn build() {
+    Project::init_pwd();
 }
 
 pub fn print_error<T: Display>(error: Rich<'_, T>, source: &Source, name: &str, code: &str) {
@@ -38,20 +15,27 @@ pub fn print_error<T: Display>(error: Rich<'_, T>, source: &Source, name: &str, 
     let b = colors.next();
     let out = Color::Fixed(81);
 
-    let found = error
-        .found()
-        .map(|e| e.to_string())
-        .unwrap_or("EOF".to_string());
-
-    Report::build(ReportKind::Error, name, error.span().start)
+    let mut builder = Report::build(ReportKind::Error, name, error.span().start)
         .with_code(code)
-        .with_message(error.reason().to_string())
-        .with_label(
+        .with_message(error.reason().to_string());
+
+    if let Some(found) = error.found() {
+        builder = builder.with_label(
             Label::new((name, error.span().into_range()))
                 .with_message(format!("Found {}", found))
                 .with_color(b),
-        )
-        .with_note(
+        );
+    } else {
+        builder = builder.with_label(
+            Label::new((name, error.span().into_range()))
+                .with_color(b)
+                .with_message(error.reason().to_string()),
+        );
+    }
+
+    let expected = error.expected().map(|e| e.to_string()).collect::<Vec<_>>();
+    if !expected.is_empty() {
+        builder = builder.with_note(
             format!(
                 "Expected {}",
                 error
@@ -61,8 +45,7 @@ pub fn print_error<T: Display>(error: Rich<'_, T>, source: &Source, name: &str, 
                     .join(" or ")
             )
             .fg(out),
-        )
-        .finish()
-        .print((name, source.clone()))
-        .unwrap();
+        );
+    }
+    builder.finish().print((name, source.clone())).unwrap();
 }

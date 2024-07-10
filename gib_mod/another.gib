@@ -1,3 +1,4 @@
 fn test(name: String) {
-    println("Hello, {}!", name);
+}
+fn test(name: String) {
 }

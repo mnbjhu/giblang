@@ -1,4 +1,4 @@
-use chumsky::{primitive::just, IterParser, Parser};
+use chumsky::{error::Rich, primitive::just, IterParser, Parser};
 
 use crate::{lexer::token::newline, util::Spanned, AstParser};
 
@@ -20,6 +20,21 @@ pub fn file_parser<'tokens, 'src: 'tokens>() -> AstParser!(File) {
         .separated_by(just(newline()))
         .collect()
         .padded_by(optional_newline())
+        .validate(|v: File, _, emitter| {
+            let mut existing = vec![];
+            for top in v.iter() {
+                let name = top.0.get_name();
+                if existing.contains(&name) {
+                    emitter.emit(Rich::custom(
+                        top.0.name_span(),
+                        format!("Duplicate top-level item '{}'", name.unwrap()),
+                    ))
+                } else {
+                    existing.push(name);
+                }
+            }
+            v
+        })
 }
 
 #[macro_export]

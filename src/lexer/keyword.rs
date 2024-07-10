@@ -58,7 +58,7 @@ macro_rules! kw {
         $crate::lexer::token::Token::Keyword($crate::lexer::keyword::Keyword::Trait)
     };
     (impl) => {
-        $crate::lexer::token::Token::Keyword($crate::lexer::keyword::Keyword::Trait)
+        $crate::lexer::token::Token::Keyword($crate::lexer::keyword::Keyword::Impl)
     };
     (for) => {
         $crate::lexer::token::Token::Keyword($crate::lexer::keyword::Keyword::For)
