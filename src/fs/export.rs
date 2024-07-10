@@ -39,6 +39,12 @@ pub struct Export {
 }
 
 impl Export {
+    pub fn add_impl(&mut self, impl_: Impl) {
+        self.impls.push(impl_)
+    }
+}
+
+impl Export {
     pub fn new(data: ExportData) -> Self {
         Self {
             data,

@@ -76,7 +76,7 @@ impl Project {
             }
 
             if let Some(file) = file {
-                self.insert(file, &qualified_name)
+                self.insert(file, &qualified_name);
             }
         }
     }
@@ -104,4 +104,8 @@ impl Default for Project {
     fn default() -> Self {
         Self::new()
     }
+}
+
+pub enum ProjectInsertError {
+    NotFoundError { name: String, span: Span },
 }
