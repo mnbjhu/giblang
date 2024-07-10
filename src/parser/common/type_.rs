@@ -1,22 +1,20 @@
-use chumsky::{primitive::just, recursive::recursive, select, IterParser, Parser};
+use chumsky::{primitive::just, recursive::recursive, IterParser, Parser};
 
 use crate::{
-    lexer::token::{punct, Token},
+    lexer::token::punct,
+    parser::expr::qualified_name::{qualified_name_parser, SpannedQualifiedName},
     util::Spanned,
     AstParser,
 };
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Type {
-    pub name: Spanned<String>,
+    pub name: SpannedQualifiedName,
     pub args: Vec<Spanned<Type>>,
 }
 
 pub fn type_parser<'tokens, 'src: 'tokens>() -> AstParser!(Type) {
-    let ident = select! {
-        Token::Ident(s) => s,
-    }
-    .map_with(|i, e| (i, e.span()));
+    let ident = qualified_name_parser();
 
     recursive(|ty| {
         let args = ty
@@ -47,7 +45,7 @@ mod tests {
         let end = Span::splat(input.len());
         let input = tokens.spanned(end);
         let ty = type_parser().parse(input).unwrap();
-        assert_eq!(ty.name.0, "Foo");
+        assert_eq!(ty.name[0].0, "Foo");
         assert!(ty.args.is_empty(), "expected no args");
     }
 
@@ -58,10 +56,10 @@ mod tests {
         let end = Span::splat(input.len());
         let input = tokens.spanned(end);
         let ty = type_parser().parse(input).unwrap();
-        assert_eq!(ty.name.0, "Foo");
+        assert_eq!(ty.name[0].0, "Foo");
         assert_eq!(ty.args.len(), 2);
-        assert_eq!(ty.args[0].0.name.0, "Bar");
-        assert_eq!(ty.args[1].0.name.0, "Baz");
+        assert_eq!(ty.args[0].0.name[0].0, "Bar");
+        assert_eq!(ty.args[1].0.name[0].0, "Baz");
     }
 
     #[test]
@@ -71,11 +69,11 @@ mod tests {
         let end = Span::splat(input.len());
         let input = tokens.spanned(end);
         let ty = type_parser().parse(input).unwrap();
-        assert_eq!(ty.name.0, "Foo");
+        assert_eq!(ty.name[0].0, "Foo");
         assert_eq!(ty.args.len(), 1);
         let inner = &ty.args[0].0;
-        assert_eq!(inner.name.0, "Bar");
+        assert_eq!(inner.name[0].0, "Bar");
         assert_eq!(inner.args.len(), 1);
-        assert_eq!(inner.args[0].0.name.0, "Baz");
+        assert_eq!(inner.args[0].0.name[0].0, "Baz");
     }
 }

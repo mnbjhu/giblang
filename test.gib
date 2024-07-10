@@ -1,14 +1,13 @@
 struct Test {
-  name: Thing,
-  age: Thing
+  first: String,
+  first: String,
 }
 
-trait Thing[T, U] {
-  fn test()
-}
-
-impl Thing[i32, i32] for Test {
-  fn test() {
-    println
+enum Thing {
+  First,
+  Second(String),
+  Third {
+    name: String,
+    age: Int,
   }
 }

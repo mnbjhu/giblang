@@ -43,6 +43,17 @@ impl Project {
                     }
                     ExportData::Trait(trait_, funcs)
                 }
+                Top::Enum(mut enum_) => {
+                    let mut members = HashMap::new();
+                    while !enum_.members.is_empty() {
+                        let member = enum_.members.pop().unwrap().0;
+                        members.insert(
+                            member.name.0.clone(),
+                            Export::new(ExportData::Member(member)),
+                        );
+                    }
+                    ExportData::Enum(enum_, members)
+                }
                 _ => unimplemented!(),
             };
             module.insert(name, Export::new(data));

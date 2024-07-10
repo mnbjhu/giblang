@@ -98,7 +98,7 @@ mod tests {
     #[test]
     fn test_super() {
         let super_type = Type {
-            name: ("Foo".to_string(), (3..6).into()),
+            name: vec![("Foo".to_string(), (3..6).into())],
             args: vec![],
         };
 

@@ -1,43 +1,31 @@
-use crate::parser::common::optional_newline::optional_newline;
 use crate::{kw, AstParser};
 use crate::{
-    lexer::token::punct,
     parser::common::{
         generic_args::{generic_args_parser, GenericArgs},
         ident::spanned_ident_parser,
     },
     util::Spanned,
 };
-use chumsky::IterParser;
 use chumsky::{primitive::just, Parser};
 
-use super::struct_field::{struct_field_parser, StructField};
+use super::struct_body::{struct_body_parser, StructBody};
 #[derive(Debug, PartialEq, Clone)]
 pub struct Struct {
     pub name: Spanned<String>,
     pub generics: Spanned<GenericArgs>,
-    pub fields: Vec<Spanned<StructField>>,
+    pub body: StructBody,
 }
 
 pub fn struct_parser<'tokens, 'src: 'tokens>() -> AstParser!(Struct) {
     let name = spanned_ident_parser();
     let generics = generic_args_parser().map_with(|t, s| (t, s.span()));
-    let fields = struct_field_parser()
-        .map_with(|t, s| (t, s.span()))
-        .separated_by(just(punct(',')).padded_by(optional_newline()))
-        .allow_trailing()
-        .collect::<Vec<_>>()
-        .delimited_by(
-            just(punct('{')).then(optional_newline()),
-            optional_newline().then(just(punct('}'))),
-        );
     just(kw!(struct))
         .ignore_then(name)
         .then(generics)
-        .then(fields)
-        .map(|((name, generics), fields)| Struct {
+        .then(struct_body_parser())
+        .map(|((name, generics), body)| Struct {
             name,
             generics,
-            fields,
+            body,
         })
 }

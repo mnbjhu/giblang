@@ -1,4 +1,4 @@
-use chumsky::{primitive::just, IterParser, Parser};
+use chumsky::{error::Rich, primitive::just, IterParser, Parser};
 
 use crate::{lexer::token::punct, util::Spanned, AstParser};
 
@@ -20,6 +20,25 @@ pub fn generic_args_parser<'tokens, 'src: 'tokens>() -> AstParser!(GenericArgs) 
             just(punct('[')).then(optional_newline()),
             optional_newline().then(just(punct(']'))),
         )
+        .validate(|mut v: Vec<Spanned<GenericArg>>, _, emitter| {
+            let mut existing: Vec<String> = vec![];
+            v.retain(|arg| {
+                if existing.iter().any(|e| e == &arg.0.name.0) {
+                    emitter.emit(Rich::custom(
+                        arg.0.name.1,
+                        format!(
+                            "Duplicate definition of generic argument '{}'",
+                            arg.0.name.0
+                        ),
+                    ));
+                    false
+                } else {
+                    existing.push(arg.0.name.0.to_string());
+                    true
+                }
+            });
+            v
+        })
         .or_not()
         .map(|args| GenericArgs(args.unwrap_or_default()))
 }
@@ -50,7 +69,7 @@ mod tests {
         assert_eq!(args[1].0.name.0, "U");
         assert_eq!(args[1].0.variance, Variance::Invariant);
         if let Some(super_) = args[1].0.super_.as_ref() {
-            assert_eq!(super_.0.name.0, "Thing");
+            assert_eq!(super_.0.name[0].0, "Thing");
             assert_eq!(super_.0.args.len(), 0);
         } else {
             panic!("expected super");

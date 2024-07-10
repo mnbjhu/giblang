@@ -1,4 +1,4 @@
-use chumsky::{primitive::just, IterParser, Parser};
+use chumsky::{error::Rich, primitive::just, IterParser, Parser};
 
 use crate::{
     lexer::token::punct,
@@ -32,7 +32,27 @@ pub fn function_args_parser<'tokens, 'src: 'tokens>() -> AstParser!(FunctionArgs
     function_arg_parser()
         .map_with(|a, e| (a, e.span()))
         .separated_by(just(punct(',')).padded_by(optional_newline()))
+        .allow_trailing()
         .collect()
+        .validate(|mut v: Vec<Spanned<FunctionArg>>, _, emitter| {
+            let mut existing: Vec<String> = vec![];
+            v.retain(|arg| {
+                if existing.iter().any(|e| e == &arg.0.name.0) {
+                    emitter.emit(Rich::custom(
+                        arg.0.name.1,
+                        format!(
+                            "Duplicate definition of function argument '{}'",
+                            arg.0.name.0
+                        ),
+                    ));
+                    false
+                } else {
+                    existing.push(arg.0.name.0.to_string());
+                    true
+                }
+            });
+            v
+        })
         .delimited_by(
             just(punct('(')).then(optional_newline()),
             optional_newline().then(just(punct(')'))),
@@ -55,7 +75,7 @@ mod tests {
                 name: ("foo".to_string(), (0..3).into()),
                 ty: (
                     Type {
-                        name: ("Bar".to_string(), (5..8).into()),
+                        name: vec![("Bar".to_string(), (5..8).into())],
                         args: vec![],
                     },
                     (5..8).into()
@@ -75,7 +95,7 @@ mod tests {
                         name: ("foo".to_string(), (1..4).into()),
                         ty: (
                             Type {
-                                name: ("Bar".to_string(), (6..9).into()),
+                                name: vec![("Bar".to_string(), (6..9).into())],
                                 args: vec![],
                             },
                             (6..9).into()
@@ -88,7 +108,7 @@ mod tests {
                         name: ("baz".to_string(), (11..14).into()),
                         ty: (
                             Type {
-                                name: ("Baz".to_string(), (16..19).into()),
+                                name: vec![("Baz".to_string(), (16..19).into())],
                                 args: vec![],
                             },
                             (16..19).into()

@@ -2,13 +2,17 @@ use std::collections::HashMap;
 
 use ptree::TreeBuilder;
 
-use crate::parser::top::{func::Func, impl_::Impl, struct_::Struct, trait_::Trait};
+use crate::parser::top::{
+    enum_::Enum, enum_member::EnumMember, func::Func, impl_::Impl, struct_::Struct, trait_::Trait,
+};
 
 use super::diag::Diag;
 
 pub enum ExportData {
     Func(Func),
     Struct(Struct),
+    Member(EnumMember),
+    Enum(Enum, HashMap<String, Export>),
     Trait(Trait, HashMap<String, Export>),
     Module(HashMap<String, Export>),
 }
@@ -20,6 +24,8 @@ impl ExportData {
             ExportData::Struct(_) => "Struct",
             ExportData::Trait(_, _) => "Trait",
             ExportData::Module(_) => "Module",
+            ExportData::Enum(_, _) => "Enum",
+            ExportData::Member(_) => "Member",
         }
     }
 }
@@ -124,6 +130,10 @@ impl Export {
                 f.insert(key.to_string(), export);
                 f.get_mut(&key).unwrap()
             }
+            (ExportData::Enum(_, m), ExportData::Member(_)) => {
+                m.insert(key.to_string(), export);
+                m.get_mut(&key).unwrap()
+            }
             _ => panic!("Cannot have {} as child module", export.data.name()),
         }
     }
@@ -136,10 +146,20 @@ impl Export {
             ExportData::Struct(_) => {
                 tree.add_empty_child(format!("struct {}", name));
             }
+            ExportData::Member(_) => {
+                tree.add_empty_child(format!("member {}", name));
+            }
             ExportData::Trait(_, fs) => {
-                tree.begin_child(name);
+                tree.begin_child(format!("trait {}", name));
                 for name in fs.keys() {
                     tree.add_empty_child(format!("fn {}", name));
+                }
+                tree.end_child();
+            }
+            ExportData::Enum(_, m) => {
+                tree.begin_child(format!("enum {}", name));
+                for name in m.keys() {
+                    tree.add_empty_child(format!("member {}", name));
                 }
                 tree.end_child();
             }
