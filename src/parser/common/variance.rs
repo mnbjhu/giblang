@@ -5,17 +5,12 @@ use crate::{
     AstParser,
 };
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Default)]
 pub enum Variance {
-    Covariant,
+    #[default]
     Invariant,
+    Covariant,
     Contravariant,
-}
-
-impl Default for Variance {
-    fn default() -> Self {
-        Variance::Invariant
-    }
 }
 
 pub fn variance_parser<'tokens, 'src: 'tokens>() -> AstParser!(Variance) {

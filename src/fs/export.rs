@@ -63,7 +63,7 @@ impl Export {
         }
     }
 
-    pub fn get_or_new<'a>(&'a mut self, key: String) -> &'a mut Export {
+    pub fn get_or_new(&mut self, key: String) -> &mut Export {
         if self.contains_key(&key) {
             self.get_mut(&key).unwrap()
         } else {
@@ -71,7 +71,7 @@ impl Export {
         }
     }
 
-    pub fn contains_key<'b>(&self, key: &'b str) -> bool {
+    pub fn contains_key(&self, key: &str) -> bool {
         match &self.data {
             ExportData::Trait(_, v) => v.contains_key(key),
             ExportData::Module(v) => v.contains_key(key),
@@ -114,7 +114,7 @@ impl Export {
         current
     }
 
-    pub fn insert<'a>(&'a mut self, key: String, export: Export) -> &'a mut Export {
+    pub fn insert(&mut self, key: String, export: Export) -> &mut Export {
         match (&mut self.data, &export.data) {
             (ExportData::Module(m), _) => {
                 m.insert(key.to_string(), export);
@@ -138,7 +138,7 @@ impl Export {
             }
             ExportData::Trait(_, fs) => {
                 tree.begin_child(name);
-                for (name, _) in fs {
+                for name in fs.keys() {
                     tree.add_empty_child(format!("fn {}", name));
                 }
                 tree.end_child();

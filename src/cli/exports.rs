@@ -18,7 +18,7 @@ pub fn exports() {
         let qualified_name = path
             .strip_suffix(".gib")
             .unwrap()
-            .split("/")
+            .split('/')
             .map(|x| x.to_string())
             .collect::<Vec<_>>();
 

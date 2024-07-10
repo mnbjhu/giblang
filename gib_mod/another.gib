@@ -1,9 +1,3 @@
-
-struct Test {
-  name: Thing,
-  age: Thing
-}
-
-trait Thing[T, U] {
-  fn test()
+fn test(name: String) {
+    println("Hello, {}!", name);
 }

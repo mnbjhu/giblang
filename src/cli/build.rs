@@ -12,7 +12,7 @@ pub fn build(path: &str) {
     let source = Source::from(src.clone());
     let mut success = true;
     for error in errors {
-        print_error(error, &source, path, "Lexer Error");
+        print_error(error, &source, path, "Lexer");
         success = false
     }
 
@@ -20,7 +20,7 @@ pub fn build(path: &str) {
         let input = tokens.spanned(eoi);
         let (_, errors) = file_parser().parse(input).into_output_errors();
         for error in errors {
-            print_error(error, &source, path, "Parser Error");
+            print_error(error, &source, path, "Parser");
             success = false
         }
 

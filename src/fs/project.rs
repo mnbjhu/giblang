@@ -18,7 +18,7 @@ impl Project {
     }
 
     pub fn insert(&mut self, file: File, path: &[String]) {
-        let module = self.exports.get_or_new_path(path.into_iter());
+        let module = self.exports.get_or_new_path(path.iter());
         for (item, _) in file {
             let name = item.name().to_string();
             let data = match item {
@@ -38,5 +38,11 @@ impl Project {
             };
             module.insert(name, Export::new(data));
         }
+    }
+}
+
+impl Default for Project {
+    fn default() -> Self {
+        Self::new()
     }
 }
