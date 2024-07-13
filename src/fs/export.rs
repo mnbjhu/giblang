@@ -1,6 +1,9 @@
 use core::panic;
 
-use crate::parser::top::{enum_::Enum, func::Func, struct_::Struct, trait_::Trait};
+use crate::{
+    parser::top::{enum_::Enum, func::Func, struct_::Struct, trait_::Trait},
+    util::Spanned,
+};
 
 use super::tree_node::FileTreeNode;
 
@@ -27,6 +30,24 @@ impl<'module> Export<'module> {
             module.get(name)
         } else {
             None
+        }
+    }
+
+    pub fn valid_type(&self) -> bool {
+        matches!(self, Export::Trait(_) | Export::Enum(_) | Export::Struct(_))
+    }
+
+    pub fn get_path_with_error(
+        self,
+        path: &[Spanned<String>],
+    ) -> Result<Export<'module>, Spanned<String>> {
+        if path.len() == 0 {
+            return Ok(self);
+        }
+        if let Export::Module(module) = self {
+            module.get_path_with_error(path)
+        } else {
+            panic!("Cannot get from non-module")
         }
     }
 }

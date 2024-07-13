@@ -25,7 +25,9 @@ pub type File = Vec<Spanned<Top>>;
 pub fn build_tree(FileState { ast, .. }: &FileState, name: &str, builder: &mut TreeBuilder) {
     builder.begin_child(name.to_string());
     for (item, _) in ast {
-        builder.add_empty_child(item.name().to_string());
+        if let Some(name) = item.get_name() {
+            builder.add_empty_child(name.to_string());
+        }
     }
     builder.end_child();
 }

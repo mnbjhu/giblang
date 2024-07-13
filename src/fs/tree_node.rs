@@ -3,7 +3,6 @@ use std::collections::HashMap;
 use ptree::TreeBuilder;
 
 use crate::{
-    check::{check_file, CheckState},
     parser::{build_tree, top::Top, File},
     util::Spanned,
 };
@@ -66,13 +65,11 @@ impl FileTreeNode {
     pub fn get_or_put<'module>(&'module mut self, name: &str) -> MutExport<'module> {
         if self.has_key(name) {
             self.get_mut(name).unwrap()
+        } else if let FileTreeNode::Module(module) = self {
+            module.insert(name.to_string(), FileTreeNode::default());
+            self.get_mut(name).unwrap()
         } else {
-            if let FileTreeNode::Module(module) = self {
-                module.insert(name.to_string(), FileTreeNode::default());
-                self.get_mut(name).unwrap()
-            } else {
-                panic!("Cannot insert into a file!")
-            }
+            panic!("Cannot insert into a file!")
         }
     }
 
@@ -95,7 +92,7 @@ impl FileTreeNode {
 
     pub fn build_tree(&self, name: &str, builder: &mut TreeBuilder) {
         match self {
-            FileTreeNode::File(file) => build_tree(&file, name, builder),
+            FileTreeNode::File(file) => build_tree(file, name, builder),
             FileTreeNode::Module(module) => {
                 builder.begin_child(name.to_string());
                 for (name, item) in module {
@@ -121,7 +118,7 @@ impl FileTreeNode {
         Ok(current)
     }
 
-    pub fn for_each<F: Fn(&FileState) -> ()>(&self, f: &F) {
+    pub fn for_each<F: FnMut(&FileState)>(&self, f: &mut F) {
         match self {
             FileTreeNode::File(file) => f(file),
             FileTreeNode::Module(module) => module.values().for_each(|node| node.for_each(f)),
@@ -134,7 +131,7 @@ pub fn file_name_of(name: &QualifiedName) -> String {
 }
 
 fn get_top<'module>(file: &'module File, name: &str) -> Option<&'module Top> {
-    file.into_iter()
+    file.iter()
         .find(|top| {
             if let Some(top) = top.0.get_name() {
                 top == name

@@ -6,9 +6,12 @@ use glob::glob;
 use ptree::{item::StringItem, TreeBuilder};
 
 use crate::{
-    check::check_file,
+    check::{
+        check_file,
+        impls::{build_impls, Impls},
+    },
     fs::tree_node::FileState,
-    parser::{expr::qualified_name::SpannedQualifiedName, parse_file, top::impl_::Impl},
+    parser::{parse_file, top::impl_::Impl},
     util::Spanned,
 };
 
@@ -18,9 +21,10 @@ use super::{
     tree_node::FileTreeNode,
 };
 
+#[derive(Default)]
 pub struct Project {
     file_tree: FileTreeNode,
-    impls: HashMap<QualifiedName, Impl>,
+    impls: HashMap<QualifiedName, Vec<Impl>>,
 }
 
 impl Project {
@@ -49,18 +53,16 @@ impl Project {
         let key = path.last().unwrap().clone();
         let module = &path[0..path.len() - 1];
         let current = self.file_tree.get_or_put_path(module);
-        if let MutExport::Module(current) = current {
-            if let FileTreeNode::Module(current) = current {
-                current.insert(
-                    key,
-                    FileTreeNode::File(FileState {
-                        text: txt.to_string(),
-                        ast,
-                        filename: filename.to_string(),
-                    }),
-                );
-                return;
-            }
+        if let MutExport::Module(FileTreeNode::Module(current)) = current {
+            current.insert(
+                key,
+                FileTreeNode::File(FileState {
+                    text: txt.to_string(),
+                    ast,
+                    filename: filename.to_string(),
+                }),
+            );
+            return;
         }
         panic!("Can't insert into non-module")
     }
@@ -73,21 +75,19 @@ impl Project {
 
     pub fn get_path_with_error<'module>(
         &'module self,
-        path: &SpannedQualifiedName,
+        path: &[Spanned<String>],
     ) -> Result<Export<'module>, Spanned<String>> {
         self.file_tree.get_path_with_error(path)
     }
 
     pub fn check(&self) {
-        self.file_tree.for_each(&|file| check_file(file, self))
+        self.file_tree.for_each(&mut |file| check_file(file, self))
     }
-}
 
-impl Default for Project {
-    fn default() -> Self {
-        Self {
-            file_tree: Default::default(),
-            impls: Default::default(),
-        }
+    pub fn build_impls(&mut self) {
+        let mut impls = Impls::default();
+        self.file_tree
+            .for_each(&mut |file| build_impls(file, self, &mut impls));
+        self.impls = impls.0
     }
 }

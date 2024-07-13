@@ -1,12 +1,7 @@
+use gib_mod::another
+trait Test {}
 
-use gib_mod::thing
-
-struct Test {
-  first: String,
-  first: String,
-}
-
-enum Thing {
+enum Thing[T: String] {
   First,
   Second(String),
   Third {
@@ -14,3 +9,4 @@ enum Thing {
     age: Int,
   }
 }
+

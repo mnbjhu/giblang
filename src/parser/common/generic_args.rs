@@ -8,7 +8,7 @@ use super::{
 };
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct GenericArgs(Vec<Spanned<GenericArg>>);
+pub struct GenericArgs(pub Vec<Spanned<GenericArg>>);
 
 pub fn generic_args_parser<'tokens, 'src: 'tokens>() -> AstParser!(GenericArgs) {
     generic_arg_parser()

@@ -39,6 +39,7 @@ pub fn generic_arg_parser<'tokens, 'src: 'tokens>() -> AstParser!(GenericArg) {
         Token::Ident(s) => s,
     }
     .map_with(|i, e| (i, e.span()));
+
     variance_parser()
         .then(name)
         .then(super_)
