@@ -1,3 +1,6 @@
+
+use gib_mod::thing
+
 struct Test {
   first: String,
   first: String,

@@ -1,181 +1,50 @@
-use std::collections::HashMap;
+use core::panic;
 
-use ptree::TreeBuilder;
+use crate::parser::top::{enum_::Enum, func::Func, struct_::Struct, trait_::Trait};
 
-use crate::parser::top::{
-    enum_::Enum, enum_member::EnumMember, func::Func, impl_::Impl, struct_::Struct, trait_::Trait,
-};
+use super::tree_node::FileTreeNode;
 
-use super::diag::Diag;
-
-pub enum ExportData {
-    Func(Func),
-    Struct(Struct),
-    Member(EnumMember),
-    Enum(Enum, HashMap<String, Export>),
-    Trait(Trait, HashMap<String, Export>),
-    Module(HashMap<String, Export>),
+#[derive(Clone)]
+pub enum Export<'module> {
+    Func(&'module Func),
+    Struct(&'module Struct),
+    Trait(&'module Trait),
+    Enum(&'module Enum),
+    Module(&'module FileTreeNode),
 }
 
-impl ExportData {
-    pub fn name(&self) -> &'static str {
-        match self {
-            ExportData::Func(_) => "Func",
-            ExportData::Struct(_) => "Struct",
-            ExportData::Trait(_, _) => "Trait",
-            ExportData::Module(_) => "Module",
-            ExportData::Enum(_, _) => "Enum",
-            ExportData::Member(_) => "Member",
-        }
-    }
+pub enum MutExport<'module> {
+    Func(&'module mut Func),
+    Struct(&'module mut Struct),
+    Trait(&'module mut Trait),
+    Enum(&'module mut Enum),
+    Module(&'module mut FileTreeNode),
 }
 
-pub struct Export {
-    pub data: ExportData,
-    pub imports: Vec<QualifiedName>,
-    pub references: Vec<QualifiedName>,
-    pub impls: Vec<Impl>,
-    pub diags: Vec<Diag>,
-}
-
-impl Export {
-    pub fn add_impl(&mut self, impl_: Impl) {
-        self.impls.push(impl_)
-    }
-}
-
-impl Export {
-    pub fn new(data: ExportData) -> Self {
-        Self {
-            data,
-            ..Default::default()
-        }
-    }
-}
-
-impl Default for Export {
-    fn default() -> Self {
-        Self {
-            data: ExportData::Module(HashMap::new()),
-            imports: vec![],
-            references: vec![],
-            impls: vec![],
-            diags: vec![],
-        }
-    }
-}
-
-pub type QualifiedName = Vec<String>;
-
-impl Export {
-    pub fn get(&self, key: &str) -> Option<&Export> {
-        match &self.data {
-            ExportData::Module(module) => module.get(key),
-            _ => None,
-        }
-    }
-
-    pub fn get_or_new(&mut self, key: String) -> &mut Export {
-        if self.contains_key(&key) {
-            self.get_mut(&key).unwrap()
+impl<'module> Export<'module> {
+    pub fn get(self, name: &str) -> Option<Export<'module>> {
+        if let Export::Module(module) = self {
+            module.get(name)
         } else {
-            self.insert(key.to_string(), Export::default())
+            None
+        }
+    }
+}
+
+impl<'module> MutExport<'module> {
+    pub fn get_mut(self, name: &str) -> Option<MutExport<'module>> {
+        if let MutExport::Module(module) = self {
+            module.get_mut(name)
+        } else {
+            None
         }
     }
 
-    pub fn contains_key(&self, key: &str) -> bool {
-        match &self.data {
-            ExportData::Trait(_, v) => v.contains_key(key),
-            ExportData::Module(v) => v.contains_key(key),
-            _ => false,
+    pub fn get_or_put(self, name: &str) -> MutExport<'module> {
+        if let MutExport::Module(module) = self {
+            module.get_or_put(name)
+        } else {
+            panic!("Cannot put in to non-module")
         }
-    }
-
-    pub fn at_path(&self, path: impl Iterator<Item = String>) -> Option<&Export> {
-        let mut current = self;
-        for segment in path {
-            current = if let ExportData::Module(module) = &current.data {
-                module.get(&segment)?
-            } else {
-                return None;
-            };
-        }
-        Some(current)
-    }
-
-    pub fn get_mut<'a>(&'a mut self, key: &str) -> Option<&'a mut Export> {
-        match &mut self.data {
-            ExportData::Module(module) => module.get_mut(key),
-            _ => None,
-        }
-    }
-
-    pub fn get_path_mut(&mut self, path: impl Iterator<Item = String>) -> Option<&mut Export> {
-        let mut current = self;
-        for segment in path {
-            current = current.get_mut(&segment)?;
-        }
-        Some(current)
-    }
-
-    pub fn get_or_new_path<'a>(&mut self, path: impl Iterator<Item = &'a String>) -> &mut Export {
-        let mut current = self;
-        for seg in path {
-            current = current.get_or_new(seg.clone());
-        }
-        current
-    }
-
-    pub fn insert(&mut self, key: String, export: Export) -> &mut Export {
-        match (&mut self.data, &export.data) {
-            (ExportData::Module(m), _) => {
-                m.insert(key.to_string(), export);
-                m.get_mut(&key).unwrap()
-            }
-            (ExportData::Trait(_, f), ExportData::Func(_)) => {
-                f.insert(key.to_string(), export);
-                f.get_mut(&key).unwrap()
-            }
-            (ExportData::Enum(_, m), ExportData::Member(_)) => {
-                m.insert(key.to_string(), export);
-                m.get_mut(&key).unwrap()
-            }
-            _ => panic!("Cannot have {} as child module", export.data.name()),
-        }
-    }
-
-    pub fn build_tree(&self, tree: &mut TreeBuilder, name: String) {
-        match &self.data {
-            ExportData::Func(_) => {
-                tree.add_empty_child(format!("fn {}", name));
-            }
-            ExportData::Struct(_) => {
-                tree.add_empty_child(format!("struct {}", name));
-            }
-            ExportData::Member(_) => {
-                tree.add_empty_child(format!("member {}", name));
-            }
-            ExportData::Trait(_, fs) => {
-                tree.begin_child(format!("trait {}", name));
-                for name in fs.keys() {
-                    tree.add_empty_child(format!("fn {}", name));
-                }
-                tree.end_child();
-            }
-            ExportData::Enum(_, m) => {
-                tree.begin_child(format!("enum {}", name));
-                for name in m.keys() {
-                    tree.add_empty_child(format!("member {}", name));
-                }
-                tree.end_child();
-            }
-            ExportData::Module(m) => {
-                tree.begin_child(name);
-                for (name, module) in m {
-                    module.build_tree(tree, name.to_string())
-                }
-                tree.end_child();
-            }
-        };
     }
 }

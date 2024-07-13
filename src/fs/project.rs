@@ -1,111 +1,93 @@
-use std::{collections::HashMap, fs::read_to_string};
+use core::panic;
+use std::{collections::HashMap, fs};
 
 use ariadne::Source;
-use chumsky::{input::Input, Parser};
+use glob::glob;
+use ptree::{item::StringItem, TreeBuilder};
 
 use crate::{
-    cli::build::print_error,
-    lexer::parser::lexer,
-    parser::{file_parser, top::Top, File},
-    util::Span,
+    check::check_file,
+    fs::tree_node::FileState,
+    parser::{expr::qualified_name::SpannedQualifiedName, parse_file, top::impl_::Impl},
+    util::Spanned,
 };
 
-use super::export::{Export, ExportData};
+use super::{
+    export::{Export, MutExport},
+    name::QualifiedName,
+    tree_node::FileTreeNode,
+};
 
 pub struct Project {
-    pub exports: Export,
-    pub unresolved: HashMap<String, Vec<String>>,
+    file_tree: FileTreeNode,
+    impls: HashMap<QualifiedName, Impl>,
 }
 
 impl Project {
-    pub fn new() -> Self {
-        Self {
-            exports: Export::default(),
-            unresolved: HashMap::new(),
-        }
-    }
-
-    pub fn insert(&mut self, file: File, path: &[String]) {
-        let module = self.exports.get_or_new_path(path.iter());
-        for (item, _) in file {
-            if let Top::Impl(_) | Top::Use(_) = item {
-                continue;
-            }
-            let name = item.name().to_string();
-            let data = match item {
-                Top::Func(func) => ExportData::Func(func),
-                Top::Struct(struct_) => ExportData::Struct(struct_),
-                Top::Trait(mut trait_) => {
-                    let mut funcs = HashMap::new();
-                    while !trait_.body.is_empty() {
-                        let func = trait_.body.pop().unwrap().0;
-                        funcs.insert(func.name.0.clone(), Export::new(ExportData::Func(func)));
-                    }
-                    ExportData::Trait(trait_, funcs)
-                }
-                Top::Enum(mut enum_) => {
-                    let mut members = HashMap::new();
-                    while !enum_.members.is_empty() {
-                        let member = enum_.members.pop().unwrap().0;
-                        members.insert(
-                            member.name.0.clone(),
-                            Export::new(ExportData::Member(member)),
-                        );
-                    }
-                    ExportData::Enum(enum_, members)
-                }
-                _ => unimplemented!(),
-            };
-            module.insert(name, Export::new(data));
-        }
-    }
-
-    pub fn parse_file(&mut self, src: String, path: &str, qualified_name: Vec<String>) {
-        let source = Source::from(src.clone());
-        let eoi = Span::splat(src.len());
-        let (tokens, errors) = lexer().parse(&src).into_output_errors();
-        for error in errors {
-            print_error(error, &source, path, "Lexer Error");
-        }
-
-        if let Some(tokens) = tokens {
-            let input = tokens.spanned(eoi);
-            let (file, errors) = file_parser().parse(input).into_output_errors();
-            for error in errors {
-                print_error(error, &source, path, "Parser Error");
-            }
-
-            if let Some(file) = file {
-                self.insert(file, &qualified_name);
-            }
-        }
-    }
-
     pub fn init_pwd() -> Project {
-        let files = glob::glob("**/*.gib").unwrap();
-        let mut project = Project::new();
+        let mut project = Project::default();
+        let files = glob("**/*.gib").unwrap();
         for file in files {
-            let file = file.unwrap();
-            let path = file.to_str().unwrap();
-            let qualified_name = path
+            let p = file.unwrap();
+            let path_str = p.to_string_lossy();
+            let path = path_str
                 .strip_suffix(".gib")
                 .unwrap()
                 .split('/')
-                .map(|x| x.to_string())
-                .collect::<Vec<_>>();
-            let src = read_to_string(path).unwrap();
-            project.parse_file(src, path, qualified_name);
+                .map(str::to_string)
+                .collect::<QualifiedName>();
+
+            let txt = fs::read_to_string(path_str.as_ref()).unwrap();
+            let src = Source::from(txt.clone());
+            project.insert(&path_str, &txt, &src, &path)
         }
         project
+    }
+
+    pub fn insert(&mut self, filename: &str, txt: &str, src: &Source, path: &[String]) {
+        let ast = parse_file(txt, filename, src);
+        let key = path.last().unwrap().clone();
+        let module = &path[0..path.len() - 1];
+        let current = self.file_tree.get_or_put_path(module);
+        if let MutExport::Module(current) = current {
+            if let FileTreeNode::Module(current) = current {
+                current.insert(
+                    key,
+                    FileTreeNode::File(FileState {
+                        text: txt.to_string(),
+                        ast,
+                        filename: filename.to_string(),
+                    }),
+                );
+                return;
+            }
+        }
+        panic!("Can't insert into non-module")
+    }
+
+    pub fn build_tree(&self) -> StringItem {
+        let mut builder = TreeBuilder::new("/".to_string());
+        self.file_tree.build_tree("/", &mut builder);
+        builder.build()
+    }
+
+    pub fn get_path_with_error<'module>(
+        &'module self,
+        path: &SpannedQualifiedName,
+    ) -> Result<Export<'module>, Spanned<String>> {
+        self.file_tree.get_path_with_error(path)
+    }
+
+    pub fn check(&self) {
+        self.file_tree.for_each(&|file| check_file(file, self))
     }
 }
 
 impl Default for Project {
     fn default() -> Self {
-        Self::new()
+        Self {
+            file_tree: Default::default(),
+            impls: Default::default(),
+        }
     }
-}
-
-pub enum ProjectInsertError {
-    NotFoundError { name: String, span: Span },
 }

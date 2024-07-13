@@ -6,7 +6,8 @@ use ariadne::{ColorGenerator, Label, Report, ReportKind};
 use chumsky::error::Rich;
 
 pub fn build() {
-    Project::init_pwd();
+    let project = Project::init_pwd();
+    project.check();
 }
 
 pub fn print_error<T: Display>(error: Rich<'_, T>, source: &Source, name: &str, code: &str) {
