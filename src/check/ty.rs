@@ -33,9 +33,12 @@ impl Display for Ty<'_> {
                 write!(f, "{}", name)?;
                 if args.len() > 0 {
                     write!(f, "[")?;
-                    for arg in args {
-                        write!(f, "{}", arg)?;
-                    }
+                    let txt = args
+                        .iter()
+                        .map(|ty| ty.to_string())
+                        .collect::<Vec<_>>()
+                        .join(", ");
+                    write!(f, "{}", txt)?;
                     write!(f, "]")?;
                 }
                 Ok(())
@@ -155,6 +158,17 @@ impl Type {
                 if name.valid_type() {
                     let mut args = vec![];
                     let generics = name.generic_args();
+                    if generics.0.len() != self.args.len() {
+                        state.error(
+                            &format!(
+                                "Expected {} type parameters but found {}",
+                                generics.0.len(),
+                                self.args.len()
+                            ),
+                            self.name.last().unwrap().1,
+                        );
+                        return Ty::Unknown;
+                    }
                     let iter = generics.0.iter().zip(&self.args);
                     let file = project.get_file(&path[0..path.len() - 1]);
                     let mut im_state = CheckState::from_file(file, project);
@@ -164,7 +178,7 @@ impl Type {
                             let super_ = super_.0.check(project, &mut im_state, false);
                             if !ty.is_instance_of(&super_, project) && print_errors {
                                 state.error(
-                                    &format!("Expected an instance of {super_} but found {ty}"),
+                                    &format!("Expected type '{super_}' but found '{ty}'"),
                                     *span,
                                 )
                             }

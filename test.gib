@@ -16,4 +16,12 @@ struct Test2 {
   thing: Test[TraitIter[Lab]]
 }
 
+struct Func[in T, out U]
+
+struct FuncTest[A: Func[Dog, Dog]]
+
+struct TestStruct {
+  test: FuncTest[Func[Animal, Dog]],
+}
+
 
