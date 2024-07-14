@@ -13,10 +13,11 @@ pub enum Command {
         /// The path to the source file
         path: String,
     },
-    /// Builds the project
+
+    /// Parses a source file
     Build,
 
-    // Shows a tree of the exports
+    /// Shows a tree of the exports
     Exports,
 }
 
