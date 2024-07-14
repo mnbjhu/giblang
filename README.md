@@ -1,5 +1,9 @@
 # Giblang
 
+## About
+
+WIP transpiler for an awesome language
+
 ## CLI
 
 ```man
@@ -14,7 +18,3 @@ Commands:
 Options:
   -h, --help  Print help
 ```
-
-## Design
-
-Lex -> Parse ->
