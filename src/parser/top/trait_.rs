@@ -1,6 +1,7 @@
 use chumsky::{primitive::just, IterParser, Parser};
 
 use crate::{
+    fs::project::ImplData,
     kw,
     lexer::token::{newline, punct},
     parser::{
@@ -22,6 +23,8 @@ pub struct Trait {
     pub name: Spanned<String>,
     pub generics: GenericArgs,
     pub body: Vec<Spanned<Func>>,
+    pub impls: Vec<ImplData>,
+    pub id: u32,
 }
 
 pub fn trait_parser<'tokens, 'src: 'tokens>(stmt: AstParser!(Stmt)) -> AstParser!(Trait) {
@@ -32,14 +35,22 @@ pub fn trait_parser<'tokens, 'src: 'tokens>(stmt: AstParser!(Stmt)) -> AstParser
         .delimited_by(
             just(punct('{')).then(optional_newline()),
             optional_newline().then(just(punct('}'))),
-        );
+        )
+        .or_not()
+        .map(|body| body.unwrap_or_default());
     just(kw!(trait))
         .ignore_then(spanned_ident_parser())
         .then(generic_args_parser())
         .then(body)
-        .map(|((name, generics), body)| Trait {
-            name,
-            generics,
-            body,
+        .map_with(|((name, generics), body), e| {
+            let state: &mut u32 = e.state();
+            *state += 1;
+            Trait {
+                name,
+                generics,
+                body,
+                impls: vec![],
+                id: *state,
+            }
         })
 }

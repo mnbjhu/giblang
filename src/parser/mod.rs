@@ -1,6 +1,14 @@
-use chumsky::{error::Rich, primitive::just, IterParser, Parser};
+use ariadne::Source;
+use chumsky::{error::Rich, input::Input, primitive::just, IterParser, Parser};
+use ptree::TreeBuilder;
 
-use crate::{lexer::token::newline, util::Spanned, AstParser};
+use crate::{
+    cli::build::print_error,
+    fs::tree_node::FileState,
+    lexer::{parser::lexer, token::newline},
+    util::{Span, Spanned},
+    AstParser,
+};
 
 use self::{
     common::optional_newline::optional_newline,
@@ -13,6 +21,27 @@ pub mod stmt;
 pub mod top;
 
 pub type File = Vec<Spanned<Top>>;
+
+pub fn build_tree(FileState { ast, .. }: &FileState, name: &str, builder: &mut TreeBuilder) {
+    builder.begin_child(name.to_string());
+    for (item, _) in ast {
+        if let Some(name) = item.get_name() {
+            let mut text = name.to_string();
+            if let Some(impls) = item.impls() {
+                let impl_names = impls
+                    .iter()
+                    .map(|impl_| &impl_.impl_.trait_)
+                    .map(|trait_| trait_.0.name.last().unwrap().0.clone())
+                    .collect::<Vec<String>>();
+
+                let impls = impl_names.join(", ");
+                text = format!("{name} ({impls})")
+            }
+            builder.add_empty_child(text);
+        }
+    }
+    builder.end_child();
+}
 
 pub fn file_parser<'tokens, 'src: 'tokens>() -> AstParser!(File) {
     top_parser()
@@ -40,6 +69,28 @@ pub fn file_parser<'tokens, 'src: 'tokens>() -> AstParser!(File) {
             });
             v
         })
+}
+
+pub fn parse_file(txt: &str, filename: &str, src: &Source, counter: &mut u32) -> File {
+    let (tokens, errors) = lexer().parse(txt).into_output_errors();
+    let len = txt.len();
+    for error in errors {
+        print_error(error, src.clone(), filename, "Lex");
+    }
+    if let Some(tokens) = tokens {
+        let eoi = Span::splat(len);
+        let input = tokens.spanned(eoi);
+        let (ast, errors) = file_parser()
+            .parse_with_state(input, counter)
+            .into_output_errors();
+        for error in errors {
+            print_error(error, src.clone(), filename, "Parse");
+        }
+        if let Some(ast) = ast {
+            return ast;
+        }
+    }
+    vec![]
 }
 
 #[macro_export]

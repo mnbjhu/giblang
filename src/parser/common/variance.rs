@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use chumsky::{select, Parser};
 
 use crate::{
@@ -5,12 +7,22 @@ use crate::{
     AstParser,
 };
 
-#[derive(Clone, Debug, PartialEq, Default)]
+#[derive(Clone, Debug, PartialEq, Default, Copy)]
 pub enum Variance {
     #[default]
     Invariant,
     Covariant,
     Contravariant,
+}
+
+impl Display for Variance {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Variance::Invariant => write!(f, ""),
+            Variance::Covariant => write!(f, "out "),
+            Variance::Contravariant => write!(f, "in "),
+        }
+    }
 }
 
 pub fn variance_parser<'tokens, 'src: 'tokens>() -> AstParser!(Variance) {

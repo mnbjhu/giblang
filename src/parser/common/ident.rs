@@ -5,9 +5,12 @@ use crate::{
     util::{ParserInput, Span, Spanned},
 };
 
-pub fn ident_parser<'tokens, 'src: 'tokens>(
-) -> impl Parser<'tokens, ParserInput<'tokens, 'src>, String, extra::Err<Rich<'tokens, Token, Span>>>
-       + Clone
+pub fn ident_parser<'tokens, 'src: 'tokens>() -> impl Parser<
+    'tokens,
+    ParserInput<'tokens, 'src>,
+    String,
+    extra::Full<Rich<'tokens, Token, Span>, u32, ()>,
+> + Clone
        + 'tokens {
     select! {
         Token::Ident(s) => s,
@@ -18,7 +21,7 @@ pub fn spanned_ident_parser<'tokens, 'src: 'tokens>() -> impl Parser<
     'tokens,
     ParserInput<'tokens, 'src>,
     Spanned<String>,
-    extra::Err<Rich<'tokens, Token, Span>>,
+    extra::Full<Rich<'tokens, Token, Span>, u32, ()>,
 > + Clone
        + 'tokens {
     ident_parser().map_with(|i, e| (i, e.span()))

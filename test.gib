@@ -1,13 +1,10 @@
-struct Test {
-  first: String,
-  first: String,
+
+fn main() {
+  let some: String = 123
+  let other: Int = some
 }
 
-enum Thing {
-  First,
-  Second(String),
-  Third {
-    name: String,
-    age: Int,
+trait TestTrait {
+  fn new(): Self {
   }
 }

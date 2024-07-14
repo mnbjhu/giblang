@@ -1,3 +1,4 @@
+use crate::fs::project::ImplData;
 use crate::{kw, AstParser};
 use crate::{
     parser::common::{
@@ -9,11 +10,14 @@ use crate::{
 use chumsky::{primitive::just, Parser};
 
 use super::struct_body::{struct_body_parser, StructBody};
+
 #[derive(Debug, PartialEq, Clone)]
 pub struct Struct {
     pub name: Spanned<String>,
     pub generics: Spanned<GenericArgs>,
     pub body: StructBody,
+    pub impls: Vec<ImplData>,
+    pub id: u32,
 }
 
 pub fn struct_parser<'tokens, 'src: 'tokens>() -> AstParser!(Struct) {
@@ -23,9 +27,15 @@ pub fn struct_parser<'tokens, 'src: 'tokens>() -> AstParser!(Struct) {
         .ignore_then(name)
         .then(generics)
         .then(struct_body_parser())
-        .map(|((name, generics), body)| Struct {
-            name,
-            generics,
-            body,
+        .map_with(|((name, generics), body), e| {
+            let state: &mut u32 = e.state();
+            *state += 1;
+            Struct {
+                name,
+                generics,
+                body,
+                impls: vec![],
+                id: *state,
+            }
         })
 }

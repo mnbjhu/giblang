@@ -8,7 +8,7 @@ use parse::parse;
 
 #[derive(Debug, clap::Parser)]
 pub enum Command {
-    /// Builds the project
+    /// Parses a source file
     Parse {
         /// The path to the source file
         path: String,
@@ -16,7 +16,7 @@ pub enum Command {
     /// Builds the project
     Build,
 
-    // Shows a tree of the exports
+    /// Shows a tree of the exports
     Exports,
 }
 

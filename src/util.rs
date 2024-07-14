@@ -16,7 +16,7 @@ macro_rules! AstParser {
             'tokens,
             $crate::util::ParserInput<'tokens, 'src>,
             $ty,
-            chumsky::extra::Err<chumsky::error::Rich<'tokens, $crate::lexer::token::Token, $crate::util::Span>>,
+            chumsky::extra::Full<chumsky::error::Rich<'tokens, $crate::lexer::token::Token, $crate::util::Span>, u32, ()>,
         > + Clone + 'tokens
     };
 }

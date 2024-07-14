@@ -1,7 +1,9 @@
 use chumsky::{primitive::just, Parser};
 
 use crate::{
-    kw, op,
+    kw,
+    lexer::token::punct,
+    op,
     parser::{
         common::{
             optional_newline::optional_newline,
@@ -24,7 +26,7 @@ pub struct LetStatement {
 }
 
 pub fn let_parser<'tokens, 'src: 'tokens>(stmt: AstParser!(Stmt)) -> AstParser!(LetStatement) {
-    let ty = just(op!(:))
+    let ty = just(punct(':'))
         .padded_by(optional_newline())
         .ignore_then(type_parser().map_with(|t, e| (t, e.span())))
         .or_not();
