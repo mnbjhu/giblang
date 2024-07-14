@@ -29,6 +29,7 @@ pub enum NamedExpr<'module> {
     Imported(Export<'module>, QualifiedName),
     Variable(Ty<'module>),
     GenericArg {
+        name: String,
         super_: Ty<'module>,
         variance: Variance,
     },
@@ -38,6 +39,26 @@ pub enum NamedExpr<'module> {
 }
 
 impl<'module> CheckState<'module> {
+    pub fn from_file(file: &'module FileState, project: &'module Project) -> CheckState<'module> {
+        let source = Source::from(file.text.clone());
+        let mut state = CheckState::new(&file.filename, source);
+        state.insert("String".to_string(), NamedExpr::Prim(PrimTy::String));
+        state.insert("Bool".to_string(), NamedExpr::Prim(PrimTy::Bool));
+        state.insert("Float".to_string(), NamedExpr::Prim(PrimTy::Float));
+        state.insert("Int".to_string(), NamedExpr::Prim(PrimTy::Int));
+        for (top, _) in &file.ast {
+            if let Some(name) = top.get_name() {
+                let mut path = path_from_filename(&file.filename);
+                path.push(name.to_string());
+                state.insert(
+                    name.to_string(),
+                    NamedExpr::Imported(project.from(top), path),
+                )
+            }
+        }
+        state
+    }
+
     pub fn enter_scope(&mut self) {
         self.stack.push(HashMap::new())
     }
@@ -153,20 +174,7 @@ impl<'module> CheckState<'module> {
 }
 
 pub fn check_file(file: &FileState, project: &Project) {
-    let source = Source::from(file.text.clone());
-    let mut state = CheckState::new(&file.filename, source);
-    state.insert("String".to_string(), NamedExpr::Prim(PrimTy::String));
-    state.insert("Bool".to_string(), NamedExpr::Prim(PrimTy::Bool));
-    state.insert("Float".to_string(), NamedExpr::Prim(PrimTy::Float));
-    state.insert("Int".to_string(), NamedExpr::Prim(PrimTy::Int));
-    for (top, _) in &file.ast {
-        if let Some(name) = top.get_name() {
-            state.insert(
-                name.to_string(),
-                NamedExpr::Imported(project.from(top), path_from_filename(&file.filename)),
-            )
-        }
-    }
+    let mut state = CheckState::from_file(file, project);
     for (item, _) in &file.ast {
         item.check(project, &mut state)
     }

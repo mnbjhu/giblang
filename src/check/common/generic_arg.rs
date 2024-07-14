@@ -19,6 +19,7 @@ impl GenericArg {
         state.insert(
             self.name.0.clone(),
             NamedExpr::GenericArg {
+                name: self.name.0.clone(),
                 super_,
                 variance: self.variance,
             },

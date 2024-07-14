@@ -1,16 +1,19 @@
 use gib_mod::another
 
-trait TestTrait {}
+struct Lab
+trait Dog
+struct Animal
 
-enum Thing[T: String] {
-  First,
-  Second(String),
-  Third {
-    name: String,
-    age: Int,
-  }
+impl Animal for Dog
+impl Dog for Lab
+
+trait TraitIter[out T: Animal]
+
+enum Test[T: TraitIter[Dog]] {
 }
 
-impl TestTrait for anoth::Test {
+struct Test2 {
+  thing: Test[TraitIter[Lab]]
 }
+
 

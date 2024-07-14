@@ -1,10 +1,8 @@
 use chumsky::{primitive::choice, Parser};
 
-use crate::{
-    check::impls::Impls, fs::project::ImplData, parser::stmt::stmt_parser, util::Span, AstParser,
-};
+use crate::{fs::project::ImplData, parser::stmt::stmt_parser, util::Span, AstParser};
 
-use self::{enum_::Enum, func::Func, impl_::Impl, struct_::Struct, trait_::Trait};
+use self::{enum_::Enum, func::Func, struct_::Struct, trait_::Trait};
 
 use super::expr::qualified_name::SpannedQualifiedName;
 

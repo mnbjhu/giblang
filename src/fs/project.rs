@@ -1,5 +1,5 @@
 use core::panic;
-use std::fs;
+use std::{collections::HashMap, fs};
 
 use ariadne::Source;
 use chumsky::error::Rich;
@@ -10,6 +10,8 @@ use crate::{
     check::{
         check_file,
         impls::{build_impls, Impls},
+        path_from_filename,
+        ty::Ty,
         CheckState,
     },
     cli::build::print_error,
@@ -41,6 +43,7 @@ impl Project {
     pub fn init_pwd() -> Project {
         let mut project = Project::default();
         let files = glob("**/*.gib").unwrap();
+        let mut counter: u32 = 0;
         for file in files {
             let p = file.unwrap();
             let path_str = p.to_string_lossy();
@@ -53,13 +56,20 @@ impl Project {
 
             let txt = fs::read_to_string(path_str.as_ref()).unwrap();
             let src = Source::from(txt.clone());
-            project.insert(&path_str, &txt, &src, &path)
+            project.insert(&path_str, &txt, &src, &path, &mut counter)
         }
         project
     }
 
-    pub fn insert(&mut self, filename: &str, txt: &str, src: &Source, path: &[String]) {
-        let ast = parse_file(txt, filename, src);
+    pub fn insert(
+        &mut self,
+        filename: &str,
+        txt: &str,
+        src: &Source,
+        path: &[String],
+        counter: &mut u32,
+    ) {
+        let ast = parse_file(txt, filename, src, counter);
         let key = path.last().unwrap().clone();
         let module = &path[0..path.len() - 1];
         let current = self.file_tree.get_or_put_path(module);
@@ -118,6 +128,15 @@ impl Project {
             }
         }
     }
+
+    pub fn get_file<'module>(&'module self, path: &[String]) -> &'module FileState {
+        let found = self.file_tree.get_path(path);
+        if let Some(Export::Module(FileTreeNode::File(data))) = found {
+            data
+        } else {
+            panic!("FileData not found")
+        }
+    }
 }
 
 #[derive(Clone, PartialEq, Debug)]
@@ -125,6 +144,7 @@ pub struct ImplData {
     pub impl_: Impl,
     pub source: Source,
     pub filename: String,
+    pub trait_path: Option<QualifiedName>,
 }
 
 impl ImplData {
@@ -135,5 +155,87 @@ impl ImplData {
             &self.filename,
             "ImplResolve",
         )
+    }
+
+    pub fn map<'module>(
+        &'module self,
+        ty: &Ty<'module>,
+        project: &'module Project,
+    ) -> Option<Ty<'module>> {
+        let path = path_from_filename(&self.filename);
+        let file = project.get_file(&path);
+        let mut state = CheckState::from_file(file, project);
+        let for_ = self.impl_.for_.0.check(project, &mut state, false);
+        let trait_ = self.impl_.trait_.0.check(project, &mut state, false);
+        let generics = for_.imply_generics(ty)?;
+        if generics.len() == self.impl_.generics.0.len()
+            && self
+                .impl_
+                .generics
+                .0
+                .iter()
+                .all(|(arg, _)| generics.contains_key(&arg.name.0))
+        {
+            Some(trait_.parameterize(&generics))
+        } else {
+            None
+        }
+    }
+}
+
+impl<'module> Ty<'module> {
+    pub fn imply_generics(&self, other: &Ty<'module>) -> Option<HashMap<String, Ty<'module>>> {
+        match (self, other) {
+            // TODO: Check use of variance/super
+            (Ty::Generic { name, .. }, _) => {
+                let mut res = HashMap::new();
+                res.insert(name.to_string(), other.clone());
+                return Some(res);
+            }
+            (
+                Ty::Named { name, args },
+                Ty::Named {
+                    name: other_name,
+                    args: other_args,
+                },
+            ) => {
+                if name.id() == other_name.id() && args.len() == other_args.len() {
+                    let mut res = HashMap::new();
+                    for (s, o) in args.iter().zip(other_args) {
+                        res.extend(s.imply_generics(o)?)
+                    }
+                    return Some(res);
+                } else {
+                    return None;
+                }
+            }
+            _ => {}
+        };
+
+        if self.equals(other) {
+            Some(HashMap::new())
+        } else {
+            None
+        }
+    }
+
+    pub fn parameterize(&self, generics: &HashMap<String, Ty<'module>>) -> Ty<'module> {
+        match self {
+            Ty::Any => Ty::Any,
+            Ty::Unknown => Ty::Unknown,
+            Ty::Named { name, args } => Ty::Named {
+                name: name.clone(),
+                args: args.iter().map(|ty| ty.parameterize(generics)).collect(),
+            },
+            // TODO: Check use of variance/super
+            Ty::Generic { name, .. } => {
+                if let Some(ty) = generics.get(name) {
+                    ty.clone()
+                } else {
+                    self.clone()
+                }
+            }
+            Ty::Prim(_) => self.clone(),
+        }
     }
 }

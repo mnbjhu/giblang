@@ -13,10 +13,7 @@ use crate::{
     AstParser,
 };
 
-use super::{
-    enum_member::{enum_member_parser, EnumMember},
-    impl_::Impl,
-};
+use super::enum_member::{enum_member_parser, EnumMember};
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Enum {
@@ -24,6 +21,7 @@ pub struct Enum {
     pub generics: Spanned<GenericArgs>,
     pub members: Vec<Spanned<EnumMember>>,
     pub impls: Vec<ImplData>,
+    pub id: u32,
 }
 
 pub fn enum_parser<'tokens, 'src: 'tokens>() -> AstParser!(Enum) {
@@ -57,10 +55,15 @@ pub fn enum_parser<'tokens, 'src: 'tokens>() -> AstParser!(Enum) {
         .ignore_then(spanned_ident_parser())
         .then(generic_args_parser().map_with(|a, e| (a, e.span())))
         .then(members)
-        .map(|((name, generics), members)| Enum {
-            name,
-            generics,
-            members,
-            impls: vec![],
+        .map_with(|((name, generics), members), e| {
+            let state: &mut u32 = e.state();
+            *state += 1;
+            Enum {
+                name,
+                generics,
+                members,
+                impls: vec![],
+                id: *state,
+            }
         })
 }

@@ -30,13 +30,7 @@ pub fn build_tree(FileState { ast, .. }: &FileState, name: &str, builder: &mut T
             if let Some(impls) = item.impls() {
                 let impl_names = impls
                     .iter()
-                    .filter_map(|impl_| {
-                        if let Some(trait_) = &impl_.impl_.trait_ {
-                            Some(trait_)
-                        } else {
-                            None
-                        }
-                    })
+                    .filter_map(|impl_| Some(&impl_.impl_.trait_))
                     .map(|trait_| trait_.0.name.last().unwrap().0.clone())
                     .collect::<Vec<String>>();
 
@@ -77,7 +71,7 @@ pub fn file_parser<'tokens, 'src: 'tokens>() -> AstParser!(File) {
         })
 }
 
-pub fn parse_file(txt: &str, filename: &str, src: &Source) -> File {
+pub fn parse_file(txt: &str, filename: &str, src: &Source, counter: &mut u32) -> File {
     let (tokens, errors) = lexer().parse(txt).into_output_errors();
     let len = txt.len();
     for error in errors {
@@ -86,7 +80,9 @@ pub fn parse_file(txt: &str, filename: &str, src: &Source) -> File {
     if let Some(tokens) = tokens {
         let eoi = Span::splat(len);
         let input = tokens.spanned(eoi);
-        let (ast, errors) = file_parser().parse(input).into_output_errors();
+        let (ast, errors) = file_parser()
+            .parse_with_state(input, counter)
+            .into_output_errors();
         for error in errors {
             print_error(error, src.clone(), filename, "Parse");
         }

@@ -1,7 +1,10 @@
 use core::panic;
 
 use crate::{
-    parser::top::{enum_::Enum, func::Func, impl_::Impl, struct_::Struct, trait_::Trait},
+    parser::{
+        common::generic_args::GenericArgs,
+        top::{enum_::Enum, func::Func, struct_::Struct, trait_::Trait},
+    },
     util::Spanned,
 };
 
@@ -33,6 +36,15 @@ impl<'module> Export<'module> {
         }
     }
 
+    pub fn impls(&self) -> Option<&'module Vec<ImplData>> {
+        match self {
+            Export::Struct(s) => Some(&s.impls),
+            Export::Enum(e) => Some(&e.impls),
+            Export::Trait(t) => Some(&t.impls),
+            _ => None,
+        }
+    }
+
     pub fn valid_type(&self) -> bool {
         matches!(self, Export::Trait(_) | Export::Enum(_) | Export::Struct(_))
     }
@@ -48,6 +60,34 @@ impl<'module> Export<'module> {
             module.get_path_with_error(path)
         } else {
             panic!("Cannot get from non-module")
+        }
+    }
+
+    pub fn id(&self) -> u32 {
+        match self {
+            Export::Struct(s) => s.id,
+            Export::Trait(t) => t.id,
+            Export::Enum(e) => e.id,
+            _ => todo!(),
+        }
+    }
+
+    pub fn generic_args(&'module self) -> &'module GenericArgs {
+        match self {
+            Export::Func(f) => &f.generics,
+            Export::Struct(f) => &f.generics.0,
+            Export::Enum(f) => &f.generics.0,
+            Export::Trait(f) => &f.generics,
+            Export::Module(_) => panic!("Module doesn't have generic args"),
+        }
+    }
+
+    pub fn name(&self) -> &str {
+        match self {
+            Export::Struct(s) => &s.name.0,
+            Export::Trait(t) => &t.name.0,
+            Export::Enum(e) => &e.name.0,
+            _ => unimplemented!(),
         }
     }
 }
