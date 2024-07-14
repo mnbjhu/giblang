@@ -14,6 +14,7 @@ impl Top {
         project: &'module Project,
         state: &mut CheckState<'module>,
     ) {
+        state.enter_scope();
         match self {
             Top::Use(use_) => {
                 state.import(use_, project, true);
@@ -24,5 +25,6 @@ impl Top {
             Top::Func(f) => f.check(project, state),
             _ => (),
         }
+        state.exit_scope();
     }
 }

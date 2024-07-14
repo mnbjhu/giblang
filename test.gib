@@ -1,27 +1,10 @@
-use gib_mod::another
 
-struct Lab
-trait Dog
-struct Animal
-
-impl Animal for Dog
-impl Dog for Lab
-
-trait TraitIter[out T: Animal]
-
-enum Test[T: TraitIter[Dog]] {
+fn main() {
+  let some: String = 123
+  let other: Int = some
 }
 
-struct Test2 {
-  thing: Test[TraitIter[Lab]]
+trait TestTrait {
+  fn new(): Self {
+  }
 }
-
-struct Func[in T, out U]
-
-struct FuncTest[A: Func[Dog, Dog]]
-
-struct TestStruct {
-  test: FuncTest[Func[Animal, Dog]],
-}
-
-

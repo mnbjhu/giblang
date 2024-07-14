@@ -14,7 +14,9 @@ use crate::{
 use self::ty::{PrimTy, Ty};
 
 pub mod common;
+pub mod expr;
 pub mod impls;
+pub mod stmt;
 pub mod top;
 pub mod ty;
 
@@ -46,6 +48,7 @@ impl<'module> CheckState<'module> {
         state.insert("Bool".to_string(), NamedExpr::Prim(PrimTy::Bool));
         state.insert("Float".to_string(), NamedExpr::Prim(PrimTy::Float));
         state.insert("Int".to_string(), NamedExpr::Prim(PrimTy::Int));
+        state.insert("Char".to_string(), NamedExpr::Prim(PrimTy::Char));
         for (top, _) in &file.ast {
             if let Some(name) = top.get_name() {
                 let mut path = path_from_filename(&file.filename);

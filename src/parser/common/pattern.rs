@@ -1,6 +1,11 @@
 use chumsky::{primitive::just, recursive::recursive, IterParser, Parser};
 
-use crate::{lexer::token::punct, util::Spanned, AstParser};
+use crate::{
+    lexer::token::punct,
+    parser::expr::qualified_name::{qualified_name_parser, SpannedQualifiedName},
+    util::Spanned,
+    AstParser,
+};
 
 use super::{
     ident::{ident_parser, spanned_ident_parser},
@@ -11,11 +16,11 @@ use super::{
 pub enum Pattern {
     Name(String),
     Struct {
-        name: Spanned<String>,
+        name: SpannedQualifiedName,
         fields: Vec<StructFieldPattern>,
     },
     TupleStruct {
-        name: Spanned<String>,
+        name: SpannedQualifiedName,
         fields: Vec<Spanned<Pattern>>,
     },
 }
@@ -55,7 +60,7 @@ pub fn pattern_parser<'tokens, 'src: 'tokens>() -> AstParser!(Pattern) {
                 optional_newline().then(just(punct(')'))),
             );
 
-        let tuple_struct = spanned_ident_parser()
+        let tuple_struct = qualified_name_parser()
             .then(tuple)
             .map(|(name, fields)| Pattern::TupleStruct { name, fields });
 
@@ -67,7 +72,7 @@ pub fn pattern_parser<'tokens, 'src: 'tokens>() -> AstParser!(Pattern) {
                 optional_newline().then(just(punct('}'))),
             );
 
-        let struct_ = spanned_ident_parser()
+        let struct_ = qualified_name_parser()
             .then(struct_)
             .map(|(name, fields)| Pattern::Struct { name, fields });
 

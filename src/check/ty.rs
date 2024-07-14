@@ -55,6 +55,7 @@ impl Display for Ty<'_> {
                 PrimTy::Bool => write!(f, "Bool"),
                 PrimTy::Float => write!(f, "Float"),
                 PrimTy::Int => write!(f, "Int"),
+                PrimTy::Char => write!(f, "Char"),
             },
         }
     }
@@ -99,6 +100,8 @@ impl<'module> Ty<'module> {
                     false
                 }
             }
+            (Ty::Generic { super_, .. }, _) => super_.is_instance_of(other, project),
+            // (_, Ty::Generic { super_, .. }) => super_.is_instance_of(other, project),
             _ => false,
         }
     }
@@ -143,6 +146,7 @@ pub enum PrimTy {
     Bool,
     Float,
     Int,
+    Char,
 }
 
 impl Type {
