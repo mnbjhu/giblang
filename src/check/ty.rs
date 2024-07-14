@@ -37,7 +37,7 @@ impl Type {
     ) -> Ty<'module> {
         let def = state.get_path(&self.name, project, print_errors);
         match def {
-            NamedExpr::Export(name) => {
+            NamedExpr::Imported(name, _) => {
                 if name.valid_type() {
                     let mut args = vec![];
                     for (arg, _) in &self.args {

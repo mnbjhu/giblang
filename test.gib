@@ -1,5 +1,6 @@
 use gib_mod::another
-trait Test {}
+
+trait TestTrait {}
 
 enum Thing[T: String] {
   First,
@@ -8,5 +9,8 @@ enum Thing[T: String] {
     name: String,
     age: Int,
   }
+}
+
+impl TestTrait for anoth::Test {
 }
 

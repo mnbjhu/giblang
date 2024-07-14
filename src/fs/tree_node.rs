@@ -32,14 +32,14 @@ impl Default for FileTreeNode {
 impl FileTreeNode {
     pub fn get<'module>(&'module self, name: &str) -> Option<Export<'module>> {
         match self {
-            FileTreeNode::File(file) => get_top(&file.ast, name).map(Export::from),
+            FileTreeNode::File(file) => get_top(&file.ast, name).map(|top| self.from(top)),
             FileTreeNode::Module(module) => module.get(name).map(Export::Module),
         }
     }
 
     pub fn get_mut<'module>(&'module mut self, name: &str) -> Option<MutExport<'module>> {
         match self {
-            FileTreeNode::File(_) => unimplemented!("Can't see a reason for this yet"),
+            FileTreeNode::File(f) => get_top_mut(&mut f.ast, name).map(|top| from_mut(top)),
             FileTreeNode::Module(module) => module.get_mut(name).map(MutExport::Module),
         }
     }
@@ -118,10 +118,35 @@ impl FileTreeNode {
         Ok(current)
     }
 
+    pub fn get_path_with_error_mut<'module>(
+        &'module mut self,
+        path: &[Spanned<String>],
+    ) -> Result<MutExport<'module>, Spanned<String>> {
+        let mut current = MutExport::Module(self);
+        for name in path {
+            if let Some(new) = current.get_mut(&name.0) {
+                current = new;
+            } else {
+                return Err(name.clone());
+            }
+        }
+        Ok(current)
+    }
+
     pub fn for_each<F: FnMut(&FileState)>(&self, f: &mut F) {
         match self {
             FileTreeNode::File(file) => f(file),
             FileTreeNode::Module(module) => module.values().for_each(|node| node.for_each(f)),
+        }
+    }
+    pub fn from<'module>(&'module self, value: &'module Top) -> Export<'module> {
+        match value {
+            Top::Func(f) => Export::Func(f),
+            Top::Struct(s) => Export::Struct(s),
+            Top::Enum(e) => Export::Enum(e),
+            Top::Trait(t) => Export::Trait(t),
+            Top::Impl(_) => panic!("Cannot convert 'impl' into export"),
+            Top::Use(_) => panic!("Cannot convert 'use' into export"),
         }
     }
 }
@@ -142,15 +167,24 @@ fn get_top<'module>(file: &'module File, name: &str) -> Option<&'module Top> {
         .map(|top| &top.0)
 }
 
-impl<'module> From<&'module Top> for Export<'module> {
-    fn from(value: &'module Top) -> Self {
-        match value {
-            Top::Func(f) => Export::Func(f),
-            Top::Struct(s) => Export::Struct(s),
-            Top::Enum(e) => Export::Enum(e),
-            Top::Trait(t) => Export::Trait(t),
-            Top::Impl(_) => panic!("Cannot convert 'impl' into export"),
-            Top::Use(_) => panic!("Cannot convert 'use' into export"),
-        }
+fn get_top_mut<'module>(file: &'module mut File, name: &str) -> Option<&'module mut Top> {
+    file.iter_mut()
+        .find(|top| {
+            if let Some(top) = top.0.get_name() {
+                top == name
+            } else {
+                false
+            }
+        })
+        .map(|top| &mut top.0)
+}
+pub fn from_mut<'module>(value: &'module mut Top) -> MutExport<'module> {
+    match value {
+        Top::Func(f) => MutExport::Func(f),
+        Top::Struct(s) => MutExport::Struct(s),
+        Top::Enum(e) => MutExport::Enum(e),
+        Top::Trait(t) => MutExport::Trait(t),
+        Top::Impl(_) => panic!("Cannot convert 'impl' into export"),
+        Top::Use(_) => panic!("Cannot convert 'use' into export"),
     }
 }

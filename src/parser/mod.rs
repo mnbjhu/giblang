@@ -26,7 +26,24 @@ pub fn build_tree(FileState { ast, .. }: &FileState, name: &str, builder: &mut T
     builder.begin_child(name.to_string());
     for (item, _) in ast {
         if let Some(name) = item.get_name() {
-            builder.add_empty_child(name.to_string());
+            let mut text = name.to_string();
+            if let Some(impls) = item.impls() {
+                let impl_names = impls
+                    .iter()
+                    .filter_map(|impl_| {
+                        if let Some(trait_) = &impl_.impl_.trait_ {
+                            Some(trait_)
+                        } else {
+                            None
+                        }
+                    })
+                    .map(|trait_| trait_.0.name.last().unwrap().0.clone())
+                    .collect::<Vec<String>>();
+
+                let impls = impl_names.join(", ");
+                text = format!("{name} ({impls})")
+            }
+            builder.add_empty_child(text);
         }
     }
     builder.end_child();
@@ -64,14 +81,14 @@ pub fn parse_file(txt: &str, filename: &str, src: &Source) -> File {
     let (tokens, errors) = lexer().parse(txt).into_output_errors();
     let len = txt.len();
     for error in errors {
-        print_error(error, src, filename, "Lex");
+        print_error(error, src.clone(), filename, "Lex");
     }
     if let Some(tokens) = tokens {
         let eoi = Span::splat(len);
         let input = tokens.spanned(eoi);
         let (ast, errors) = file_parser().parse(input).into_output_errors();
         for error in errors {
-            print_error(error, src, filename, "Parse");
+            print_error(error, src.clone(), filename, "Parse");
         }
         if let Some(ast) = ast {
             return ast;

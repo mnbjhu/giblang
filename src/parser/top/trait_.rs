@@ -1,6 +1,7 @@
 use chumsky::{primitive::just, IterParser, Parser};
 
 use crate::{
+    fs::project::ImplData,
     kw,
     lexer::token::{newline, punct},
     parser::{
@@ -15,13 +16,17 @@ use crate::{
     AstParser,
 };
 
-use super::func::{func_parser, Func};
+use super::{
+    func::{func_parser, Func},
+    impl_::Impl,
+};
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Trait {
     pub name: Spanned<String>,
     pub generics: GenericArgs,
     pub body: Vec<Spanned<Func>>,
+    pub impls: Vec<ImplData>,
 }
 
 pub fn trait_parser<'tokens, 'src: 'tokens>(stmt: AstParser!(Stmt)) -> AstParser!(Trait) {
@@ -41,5 +46,6 @@ pub fn trait_parser<'tokens, 'src: 'tokens>(stmt: AstParser!(Stmt)) -> AstParser
             name,
             generics,
             body,
+            impls: vec![],
         })
 }

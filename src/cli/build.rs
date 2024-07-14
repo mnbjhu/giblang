@@ -6,11 +6,12 @@ use ariadne::{ColorGenerator, Label, Report, ReportKind};
 use chumsky::error::Rich;
 
 pub fn build() {
-    let project = Project::init_pwd();
+    let mut project = Project::init_pwd();
+    project.build_impls();
     project.check();
 }
 
-pub fn print_error<T: Display>(error: Rich<'_, T>, source: &Source, name: &str, code: &str) {
+pub fn print_error<T: Display>(error: Rich<'_, T>, source: Source, name: &str, code: &str) {
     let mut colors = ColorGenerator::new();
 
     let b = colors.next();

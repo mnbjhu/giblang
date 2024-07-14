@@ -1,11 +1,11 @@
 use core::panic;
 
 use crate::{
-    parser::top::{enum_::Enum, func::Func, struct_::Struct, trait_::Trait},
+    parser::top::{enum_::Enum, func::Func, impl_::Impl, struct_::Struct, trait_::Trait},
     util::Spanned,
 };
 
-use super::tree_node::FileTreeNode;
+use super::{project::ImplData, tree_node::FileTreeNode};
 
 #[derive(Clone)]
 pub enum Export<'module> {
@@ -66,6 +66,15 @@ impl<'module> MutExport<'module> {
             module.get_or_put(name)
         } else {
             panic!("Cannot put in to non-module")
+        }
+    }
+
+    pub fn impls_mut(self) -> Option<&'module mut Vec<ImplData>> {
+        match self {
+            MutExport::Struct(s) => Some(&mut s.impls),
+            MutExport::Enum(e) => Some(&mut e.impls),
+            MutExport::Trait(t) => Some(&mut t.impls),
+            _ => None,
         }
     }
 }

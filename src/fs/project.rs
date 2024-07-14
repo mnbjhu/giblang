@@ -1,7 +1,8 @@
 use core::panic;
-use std::{collections::HashMap, fs};
+use std::fs;
 
 use ariadne::Source;
+use chumsky::error::Rich;
 use glob::glob;
 use ptree::{item::StringItem, TreeBuilder};
 
@@ -9,10 +10,16 @@ use crate::{
     check::{
         check_file,
         impls::{build_impls, Impls},
+        CheckState,
     },
+    cli::build::print_error,
     fs::tree_node::FileState,
-    parser::{parse_file, top::impl_::Impl},
-    util::Spanned,
+    lexer::token::Token,
+    parser::{
+        parse_file,
+        top::{impl_::Impl, Top},
+    },
+    util::{Span, Spanned},
 };
 
 use super::{
@@ -24,10 +31,13 @@ use super::{
 #[derive(Default)]
 pub struct Project {
     file_tree: FileTreeNode,
-    impls: HashMap<QualifiedName, Vec<Impl>>,
 }
 
 impl Project {
+    pub fn from<'module>(&'module self, value: &'module Top) -> Export<'module> {
+        self.file_tree.from(value)
+    }
+
     pub fn init_pwd() -> Project {
         let mut project = Project::default();
         let files = glob("**/*.gib").unwrap();
@@ -80,14 +90,50 @@ impl Project {
         self.file_tree.get_path_with_error(path)
     }
 
-    pub fn check(&self) {
-        self.file_tree.for_each(&mut |file| check_file(file, self))
+    pub fn get_path_with_error_mut<'module>(
+        &'module mut self,
+        path: &[Spanned<String>],
+    ) -> Result<MutExport<'module>, Spanned<String>> {
+        self.file_tree.get_path_with_error_mut(path)
     }
 
     pub fn build_impls(&mut self) {
         let mut impls = Impls::default();
         self.file_tree
-            .for_each(&mut |file| build_impls(file, self, &mut impls));
-        self.impls = impls.0
+            .for_each(&mut |file| build_impls(file, &self, &mut impls));
+        for (path, impl_) in impls.0 {
+            self.insert_impl(&path, impl_)
+        }
+    }
+
+    pub fn check(&self) {
+        self.file_tree.for_each(&mut |file| check_file(file, self))
+    }
+
+    pub fn insert_impl(&mut self, path: &[String], impl_: ImplData) {
+        let export = self.file_tree.get_path_mut(path);
+        if let Some(export) = export {
+            if let Some(impls) = export.impls_mut() {
+                impls.push(impl_)
+            }
+        }
+    }
+}
+
+#[derive(Clone, PartialEq, Debug)]
+pub struct ImplData {
+    pub impl_: Impl,
+    pub source: Source,
+    pub filename: String,
+}
+
+impl ImplData {
+    pub fn error(&self, msg: &str, span: Span) {
+        print_error::<Token>(
+            Rich::custom(span, msg),
+            self.source.clone(),
+            &self.filename,
+            "ImplResolve",
+        )
     }
 }
