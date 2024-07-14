@@ -3,7 +3,7 @@ use core::panic;
 use crate::{
     parser::{
         common::generic_args::GenericArgs,
-        top::{enum_::Enum, func::Func, struct_::Struct, trait_::Trait},
+        top::{enum_::Enum, func::Func, struct_::Struct, trait_::Trait, Top},
     },
     util::Spanned,
 };
@@ -17,14 +17,6 @@ pub enum Export<'module> {
     Trait(&'module Trait),
     Enum(&'module Enum),
     Module(&'module FileTreeNode),
-}
-
-pub enum MutExport<'module> {
-    Func(&'module mut Func),
-    Struct(&'module mut Struct),
-    Trait(&'module mut Trait),
-    Enum(&'module mut Enum),
-    Module(&'module mut FileTreeNode),
 }
 
 impl<'module> Export<'module> {
@@ -53,7 +45,7 @@ impl<'module> Export<'module> {
         self,
         path: &[Spanned<String>],
     ) -> Result<Export<'module>, Spanned<String>> {
-        if path.len() == 0 {
+        if path.is_empty() {
             return Ok(self);
         }
         if let Export::Module(module) = self {
@@ -92,29 +84,15 @@ impl<'module> Export<'module> {
     }
 }
 
-impl<'module> MutExport<'module> {
-    pub fn get_mut(self, name: &str) -> Option<MutExport<'module>> {
-        if let MutExport::Module(module) = self {
-            module.get_mut(name)
-        } else {
-            None
-        }
-    }
-
-    pub fn get_or_put(self, name: &str) -> MutExport<'module> {
-        if let MutExport::Module(module) = self {
-            module.get_or_put(name)
-        } else {
-            panic!("Cannot put in to non-module")
-        }
-    }
-
-    pub fn impls_mut(self) -> Option<&'module mut Vec<ImplData>> {
-        match self {
-            MutExport::Struct(s) => Some(&mut s.impls),
-            MutExport::Enum(e) => Some(&mut e.impls),
-            MutExport::Trait(t) => Some(&mut t.impls),
-            _ => None,
+impl<'module> From<&'module Top> for Export<'module> {
+    fn from(value: &'module Top) -> Self {
+        match value {
+            Top::Func(f) => Export::Func(f),
+            Top::Struct(s) => Export::Struct(s),
+            Top::Enum(e) => Export::Enum(e),
+            Top::Trait(t) => Export::Trait(t),
+            Top::Impl(_) => panic!("Cannot convert 'impl' into export"),
+            Top::Use(_) => panic!("Cannot convert 'use' into export"),
         }
     }
 }

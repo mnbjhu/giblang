@@ -30,7 +30,7 @@ pub fn build_tree(FileState { ast, .. }: &FileState, name: &str, builder: &mut T
             if let Some(impls) = item.impls() {
                 let impl_names = impls
                     .iter()
-                    .filter_map(|impl_| Some(&impl_.impl_.trait_))
+                    .map(|impl_| &impl_.impl_.trait_)
                     .map(|trait_| trait_.0.name.last().unwrap().0.clone())
                     .collect::<Vec<String>>();
 

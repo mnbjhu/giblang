@@ -31,7 +31,7 @@ impl Display for Ty<'_> {
             Ty::Named { name, args } => {
                 let name = name.name();
                 write!(f, "{}", name)?;
-                if args.len() > 0 {
+                if !args.is_empty() {
                     write!(f, "[")?;
                     let txt = args
                         .iter()
@@ -175,7 +175,7 @@ impl Type {
                     }
                     let iter = generics.0.iter().zip(&self.args);
                     let file = project.get_file(&path[0..path.len() - 1]);
-                    let mut im_state = CheckState::from_file(file, project);
+                    let mut im_state = CheckState::from_file(file);
                     for (def, (arg, span)) in iter {
                         let ty = arg.check(project, state, print_errors);
                         if let Some(super_) = &def.0.super_ {
@@ -210,7 +210,7 @@ impl Type {
                 variance,
                 name,
             } => Ty::Generic {
-                variance: variance.clone(),
+                variance: *variance,
                 super_: Box::new(super_.clone()),
                 name: name.clone(),
             },

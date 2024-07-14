@@ -13,7 +13,7 @@ use super::{CheckState, NamedExpr};
 
 pub fn build_impls(file: &FileState, project: &Project, impls: &mut Impls) {
     let source = &Source::from(file.text.clone());
-    let mut state = CheckState::from_file(file, project);
+    let mut state = CheckState::from_file(file);
     for (item, _) in &file.ast {
         match item {
             Top::Use(use_) => {

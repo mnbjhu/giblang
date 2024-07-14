@@ -4,6 +4,7 @@ use super::CheckState;
 
 pub mod enum_;
 pub mod func;
+pub mod func_arg;
 pub mod struct_;
 pub mod struct_body;
 pub mod trait_;

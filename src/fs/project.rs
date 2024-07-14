@@ -10,25 +10,17 @@ use crate::{
     check::{
         check_file,
         impls::{build_impls, Impls},
-        path_from_filename,
+        state::CheckState,
         ty::Ty,
-        CheckState,
     },
     cli::build::print_error,
-    fs::tree_node::FileState,
+    fs::{mut_export::MutExport, tree_node::FileState, util::path_from_filename},
     lexer::token::Token,
-    parser::{
-        parse_file,
-        top::{impl_::Impl, Top},
-    },
+    parser::{parse_file, top::impl_::Impl},
     util::{Span, Spanned},
 };
 
-use super::{
-    export::{Export, MutExport},
-    name::QualifiedName,
-    tree_node::FileTreeNode,
-};
+use super::{export::Export, name::QualifiedName, tree_node::FileTreeNode};
 
 #[derive(Default)]
 pub struct Project {
@@ -36,10 +28,6 @@ pub struct Project {
 }
 
 impl Project {
-    pub fn from<'module>(&'module self, value: &'module Top) -> Export<'module> {
-        self.file_tree.from(value)
-    }
-
     pub fn init_pwd() -> Project {
         let mut project = Project::default();
         let files = glob("**/*.gib").unwrap();
@@ -110,7 +98,7 @@ impl Project {
     pub fn build_impls(&mut self) {
         let mut impls = Impls::default();
         self.file_tree
-            .for_each(&mut |file| build_impls(file, &self, &mut impls));
+            .for_each(&mut |file| build_impls(file, self, &mut impls));
         for (path, impl_) in impls.0 {
             self.insert_impl(&path, impl_)
         }
@@ -164,7 +152,7 @@ impl ImplData {
     ) -> Option<Ty<'module>> {
         let path = path_from_filename(&self.filename);
         let file = project.get_file(&path);
-        let mut state = CheckState::from_file(file, project);
+        let mut state = CheckState::from_file(file);
         let for_ = self.impl_.for_.0.check(project, &mut state, false);
         let trait_ = self.impl_.trait_.0.check(project, &mut state, false);
         let generics = for_.imply_generics(ty)?;

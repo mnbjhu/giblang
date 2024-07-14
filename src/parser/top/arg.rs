@@ -1,8 +1,6 @@
 use chumsky::{error::Rich, primitive::just, IterParser, Parser};
 
 use crate::{
-    check::{CheckState, NamedExpr},
-    fs::project::Project,
     lexer::token::punct,
     parser::common::{
         ident::spanned_ident_parser,
@@ -17,17 +15,6 @@ use crate::{
 pub struct FunctionArg {
     pub name: Spanned<String>,
     pub ty: Spanned<Type>,
-}
-
-impl FunctionArg {
-    pub fn check<'module>(
-        &'module self,
-        project: &'module Project,
-        state: &mut CheckState<'module>,
-    ) {
-        let ty = self.ty.0.check(project, state, true);
-        state.insert(self.name.0.clone(), NamedExpr::Variable(ty))
-    }
 }
 
 pub fn function_arg_parser<'tokens, 'src: 'tokens>() -> AstParser!(FunctionArg) {
