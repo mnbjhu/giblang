@@ -1,9 +1,13 @@
 
-fn test_fn(thing: Int, thing2: String): Int {
-}
-fn main() {
-  let test: Int = test_fn(123, "Hello")
+fn test_fn[T](thing: Int, thing2: T): T {
 }
 
-struct List[out T]
+fn main() {
+  let test: Int = test_fn(123, "Hello")
+  let another = match test {
+    name => {
+      name
+    }
+  }
+}
 

@@ -1,10 +1,15 @@
-use chumsky::{primitive::just, recursive::recursive, select, Parser};
+use chumsky::{
+    primitive::{choice, just},
+    recursive::recursive,
+    select, Parser,
+};
 
 use crate::{
     lexer::{
         literal::Literal,
         token::{punct, Token},
     },
+    parser::expr::match_::{match_parser, Match},
     AstParser,
 };
 
@@ -18,6 +23,8 @@ use super::stmt::Stmt;
 
 pub mod call;
 pub mod code_block;
+pub mod match_;
+pub mod match_arm;
 pub mod qualified_name;
 
 #[derive(Clone, PartialEq, Debug)]
@@ -26,10 +33,11 @@ pub enum Expr {
     Ident(SpannedQualifiedName),
     CodeBlock(CodeBlock),
     Call(Call),
+    Match(Match),
 }
 
 pub fn expr_parser<'tokens, 'src: 'tokens>(stmt: AstParser!(Stmt)) -> AstParser!(Expr) {
-    let block = code_block_parser(stmt);
+    let block = code_block_parser(stmt).map(Expr::CodeBlock);
 
     recursive(|expr| {
         let atom = select! {
@@ -40,9 +48,12 @@ pub fn expr_parser<'tokens, 'src: 'tokens>(stmt: AstParser!(Stmt)) -> AstParser!
             .clone()
             .delimited_by(just(punct('(')), just(punct('('))));
 
+        let match_ =
+            match_parser(expr.clone(), match_arm::match_arm_parser(expr.clone())).map(Expr::Match);
+
         let call = call_parser(atom.clone(), expr).map(Expr::Call);
 
-        block.map(Expr::CodeBlock).or(call).or(atom)
+        choice((match_, block, call, atom))
     })
 }
 

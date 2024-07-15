@@ -20,7 +20,7 @@ impl Call {
             let arg_tys = self
                 .args
                 .iter()
-                .map(|arg| arg.0.check(project, state))
+                .map(|arg| (arg.0.check(project, state), arg.1))
                 .collect::<Vec<_>>();
             if expected_args.len() != self.args.len() {
                 state.error(
@@ -36,14 +36,14 @@ impl Call {
             arg_tys
                 .iter()
                 .zip(expected_args)
-                .for_each(|(arg, expected)| {
-                    if !arg.is_instance_of(&expected, project) {
+                .for_each(|((arg, span), expected)| {
+                    if !arg.is_instance_of(expected, project) {
                         state.error(
                             &format!(
                                 "Expected argument to be of type '{}' but found '{}'",
                                 expected, arg
                             ),
-                            self.name.1,
+                            *span,
                         );
                     }
                 });

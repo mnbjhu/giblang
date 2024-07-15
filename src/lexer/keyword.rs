@@ -12,6 +12,7 @@ pub enum Keyword {
     Trait,
     Impl,
     For,
+    Match,
 }
 
 impl Display for Keyword {
@@ -27,6 +28,7 @@ impl Display for Keyword {
             Keyword::Trait => write!(f, "trait"),
             Keyword::Impl => write!(f, "impl"),
             Keyword::For => write!(f, "for"),
+            Keyword::Match => write!(f, "match"),
         }
     }
 }
@@ -62,6 +64,9 @@ macro_rules! kw {
     };
     (for) => {
         $crate::lexer::token::Token::Keyword($crate::lexer::keyword::Keyword::For)
+    };
+    (match) => {
+        $crate::lexer::token::Token::Keyword($crate::lexer::keyword::Keyword::Match)
     };
 }
 

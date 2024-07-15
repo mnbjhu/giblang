@@ -7,6 +7,8 @@ use super::{ty::Ty, CheckState, NamedExpr};
 pub mod call;
 pub mod ident;
 pub mod lit;
+pub mod match_;
+pub mod match_arm;
 
 impl Expr {
     pub fn check<'module>(
@@ -29,6 +31,7 @@ impl Expr {
             }
             // TODO: Actually think about generics
             Expr::Call(call) => call.check(project, state),
+            Expr::Match(match_) => match_.check(project, state),
         }
     }
 }

@@ -22,6 +22,7 @@ pub fn lexer<'src>(
         "trait" => Token::Keyword(Keyword::Trait),
         "impl" => Token::Keyword(Keyword::Impl),
         "for" => Token::Keyword(Keyword::For),
+        "match" => Token::Keyword(Keyword::Match),
         "true" => Token::Literal(Literal::Bool(true)),
         "false" => Token::Literal(Literal::Bool(false)),
         _ => Token::Ident(ident.to_string()),
