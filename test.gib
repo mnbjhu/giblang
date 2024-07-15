@@ -1,10 +1,9 @@
 
+fn test_fn(thing: Int, thing2: String): Int {
+}
 fn main() {
-  let some: String = 123
-  let other: Int = some
+  let test: Int = test_fn(123, "Hello")
 }
 
-trait TestTrait {
-  fn new(): Self {
-  }
-}
+struct List[out T]
+

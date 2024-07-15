@@ -3,19 +3,25 @@ use core::panic;
 use crate::{
     parser::{
         common::generic_args::GenericArgs,
-        top::{enum_::Enum, func::Func, struct_::Struct, trait_::Trait, Top},
+        top::{
+            enum_::Enum, enum_member::EnumMember, func::Func, struct_::Struct, trait_::Trait, Top,
+        },
     },
     util::Spanned,
 };
 
 use super::{project::ImplData, tree_node::FileTreeNode};
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum Export<'module> {
     Func(&'module Func),
     Struct(&'module Struct),
     Trait(&'module Trait),
     Enum(&'module Enum),
+    Member {
+        parent: &'module Enum,
+        member: &'module EnumMember,
+    },
     Module(&'module FileTreeNode),
 }
 
@@ -49,10 +55,21 @@ impl<'module> Export<'module> {
             return Ok(self);
         }
         if let Export::Module(module) = self {
-            module.get_path_with_error(path)
-        } else {
-            panic!("Cannot get from non-module")
+            return module.get_path_with_error(path);
+        } else if let Export::Enum(e) = self {
+            let member = e.members.iter().find(|m| m.0.name.0 == path[0].0);
+            match member {
+                Some(member) => {
+                    return Export::Member {
+                        parent: e,
+                        member: &member.0,
+                    }
+                    .get_path_with_error(&path[1..])
+                }
+                None => return Err(path[0].clone()),
+            };
         }
+        Err(path[0].clone())
     }
 
     pub fn id(&self) -> u32 {
@@ -71,6 +88,7 @@ impl<'module> Export<'module> {
             Export::Enum(f) => &f.generics.0,
             Export::Trait(f) => &f.generics,
             Export::Module(_) => panic!("Module doesn't have generic args"),
+            Export::Member { .. } => panic!("Enum menber doesn't have generic args"),
         }
     }
 
@@ -79,6 +97,8 @@ impl<'module> Export<'module> {
             Export::Struct(s) => &s.name.0,
             Export::Trait(t) => &t.name.0,
             Export::Enum(e) => &e.name.0,
+            Export::Member { member, .. } => &member.name.0,
+            Export::Func(Func { name, .. }) => &name.0,
             _ => unimplemented!(),
         }
     }

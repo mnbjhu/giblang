@@ -223,7 +223,28 @@ impl<'module> Ty<'module> {
                     self.clone()
                 }
             }
+            Ty::Tuple(tys) => Ty::Tuple(tys.iter().map(|ty| ty.parameterize(generics)).collect()),
+            Ty::Function {
+                receiver,
+                args,
+                ret,
+            } => {
+                if let Some(receiver) = receiver {
+                    Ty::Function {
+                        receiver: Some(Box::new(receiver.parameterize(generics))),
+                        args: args.iter().map(|ty| ty.parameterize(generics)).collect(),
+                        ret: Box::new(ret.parameterize(generics)),
+                    }
+                } else {
+                    Ty::Function {
+                        receiver: None,
+                        args: args.iter().map(|ty| ty.parameterize(generics)).collect(),
+                        ret: Box::new(ret.parameterize(generics)),
+                    }
+                }
+            }
             Ty::Prim(_) => self.clone(),
+            Ty::Meta(_) => unimplemented!("Need to thing about this..."),
         }
     }
 }

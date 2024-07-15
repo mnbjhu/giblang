@@ -8,7 +8,7 @@ use crate::{
     cli::build::print_error,
     fs::{project::Project, tree_node::FileState, util::path_from_filename},
     lexer::token::Token,
-    parser::expr::qualified_name::SpannedQualifiedName,
+    parser::{expr::qualified_name::SpannedQualifiedName, top::Top, File},
     util::{Span, Spanned},
 };
 
@@ -35,6 +35,14 @@ impl<'module> CheckState<'module> {
             }
         }
         state
+    }
+
+    pub fn import_all(&mut self, file: &'module File, project: &'module Project) {
+        for top in file {
+            if let Top::Use(path) = &top.0 {
+                self.import(path, project, false);
+            }
+        }
     }
 
     pub fn enter_scope(&mut self) {
