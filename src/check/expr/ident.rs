@@ -14,7 +14,8 @@ pub fn check_ident<'module>(
         let file = project.get_file(&path[..path.len() - 1]);
         let mut imp_state = CheckState::from_file(file);
         imp_state.import_all(&file.ast, project);
-        let generics = f.generics.check(project, &mut imp_state, false);
+        // TODO: Check generics
+        let _ = f.generics.check(project, &mut imp_state, false);
         let receiver = f
             .receiver
             .as_ref()

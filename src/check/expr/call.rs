@@ -11,10 +11,11 @@ impl Call {
         state: &mut CheckState<'module>,
     ) -> Ty<'module> {
         let name_ty = self.name.0.check(project, state);
+        // TODO: Think about receivers
         if let Ty::Function {
-            receiver,
             args: expected_args,
             ret,
+            ..
         } = &name_ty
         {
             let arg_tys = self
