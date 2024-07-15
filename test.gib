@@ -1,10 +1,13 @@
 
-fn main() {
-  let some: String = 123
-  let other: Int = some
+fn test_fn[T](thing: Int, thing2: T): T {
 }
 
-trait TestTrait {
-  fn new(): Self {
+fn main() {
+  let test: Int = test_fn(123, "Hello")
+  let another = match test {
+    name => {
+      name
+    }
   }
 }
+

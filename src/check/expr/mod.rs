@@ -1,9 +1,14 @@
-use crate::{fs::project::Project, lexer::literal::Literal, parser::expr::Expr};
+use crate::{fs::project::Project, parser::expr::Expr};
 
-use super::{
-    ty::{PrimTy, Ty},
-    CheckState, NamedExpr,
-};
+use self::ident::check_ident;
+
+use super::{ty::Ty, CheckState, NamedExpr};
+
+pub mod call;
+pub mod ident;
+pub mod lit;
+pub mod match_;
+pub mod match_arm;
 
 impl Expr {
     pub fn check<'module>(
@@ -13,10 +18,7 @@ impl Expr {
     ) -> Ty<'module> {
         match self {
             Expr::Literal(lit) => lit.into(),
-            Expr::Ident(ident) => {
-                let expr = state.get_path(ident, project, true);
-                expr.into()
-            }
+            Expr::Ident(ident) => check_ident(state, ident, project),
             Expr::CodeBlock(block) => {
                 state.enter_scope();
                 for (stmt, _) in block {
@@ -27,18 +29,9 @@ impl Expr {
                 // TODO: Add block return types
                 Ty::Unknown
             }
-        }
-    }
-}
-
-impl<'module> From<&Literal> for Ty<'module> {
-    fn from(value: &Literal) -> Self {
-        match value {
-            Literal::Int(_) => Ty::Prim(PrimTy::Int),
-            Literal::Float(_) => Ty::Prim(PrimTy::Float),
-            Literal::String(_) => Ty::Prim(PrimTy::String),
-            Literal::Bool(_) => Ty::Prim(PrimTy::Bool),
-            Literal::Char(_) => Ty::Prim(PrimTy::Char),
+            // TODO: Actually think about generics
+            Expr::Call(call) => call.check(project, state),
+            Expr::Match(match_) => match_.check(project, state),
         }
     }
 }
@@ -63,5 +56,15 @@ impl<'module> From<NamedExpr<'module>> for Ty<'module> {
             NamedExpr::Prim(p) => Ty::Prim(p.clone()),
             NamedExpr::Unknown => Ty::Unknown,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::cli::build::build;
+
+    #[test]
+    fn test_crud() {
+        build()
     }
 }

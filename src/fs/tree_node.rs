@@ -10,11 +10,13 @@ use crate::{
 
 use super::{export::Export, name::QualifiedName};
 
+#[derive(Debug)]
 pub enum FileTreeNode {
     File(FileState),
     Module(HashMap<String, FileTreeNode>),
 }
 
+#[derive(Debug)]
 pub struct FileState {
     pub text: String,
     pub ast: File,

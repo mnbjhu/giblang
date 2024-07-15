@@ -7,7 +7,7 @@ use crate::{
 
 use super::{CheckState, NamedExpr};
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum Ty<'module> {
     Any,
     Unknown,
@@ -21,6 +21,13 @@ pub enum Ty<'module> {
         super_: Box<Ty<'module>>,
     },
     Prim(PrimTy),
+    Meta(Box<Ty<'module>>),
+    Function {
+        receiver: Option<Box<Ty<'module>>>,
+        args: Vec<Ty<'module>>,
+        ret: Box<Ty<'module>>,
+    },
+    Tuple(Vec<Ty<'module>>),
 }
 
 impl Display for Ty<'_> {
@@ -57,6 +64,31 @@ impl Display for Ty<'_> {
                 PrimTy::Int => write!(f, "Int"),
                 PrimTy::Char => write!(f, "Char"),
             },
+            Ty::Meta(ty) => write!(f, "Type[{}]", ty),
+            Ty::Function {
+                receiver,
+                args,
+                ret,
+            } => {
+                let args = args
+                    .iter()
+                    .map(|ty| ty.to_string())
+                    .collect::<Vec<_>>()
+                    .join(", ");
+                if let Some(receiver) = receiver {
+                    write!(f, "{}.({}) -> {}", receiver, args, ret)
+                } else {
+                    write!(f, "({}) -> {}", args, ret)
+                }
+            }
+            Ty::Tuple(tys) => {
+                let txt = tys
+                    .iter()
+                    .map(|ty| ty.to_string())
+                    .collect::<Vec<_>>()
+                    .join(", ");
+                write!(f, "({})", txt)
+            }
         }
     }
 }
@@ -102,6 +134,30 @@ impl<'module> Ty<'module> {
             }
             (Ty::Generic { super_, .. }, _) => super_.is_instance_of(other, project),
             // (_, Ty::Generic { super_, .. }) => super_.is_instance_of(other, project),
+            (
+                Ty::Function {
+                    receiver,
+                    args,
+                    ret,
+                },
+                Ty::Function {
+                    receiver: other_receiver,
+                    args: other_args,
+                    ret: other_ret,
+                },
+            ) => {
+                args.len() == other_args.len()
+                    && args
+                        .iter()
+                        .zip(other_args)
+                        .all(|(first, second)| second.is_instance_of(first, project))
+                    && ret.is_instance_of(other_ret, project)
+                    && receiver.as_ref().map_or(true, |r| {
+                        other_receiver
+                            .as_ref()
+                            .map_or(false, |o| o.is_instance_of(r, project))
+                    })
+            }
             _ => false,
         }
     }
@@ -135,12 +191,40 @@ impl<'module> Ty<'module> {
                         .zip(other_args)
                         .all(|(first, second)| first.equals(second))
             }
+            (
+                Ty::Function {
+                    receiver,
+                    args,
+                    ret,
+                },
+                Ty::Function {
+                    receiver: other_receiver,
+                    args: other_args,
+                    ret: other_ret,
+                },
+            ) => {
+                receiver.as_ref().map_or(true, |r| {
+                    other_receiver.as_ref().map_or(false, |o| r.equals(o))
+                }) && args.len() == other_args.len()
+                    && args
+                        .iter()
+                        .zip(other_args)
+                        .all(|(first, second)| first.equals(second))
+                    && ret.equals(other_ret)
+            }
+            (Ty::Tuple(tys), Ty::Tuple(other_tys)) => {
+                tys.len() == other_tys.len()
+                    && tys
+                        .iter()
+                        .zip(other_tys)
+                        .all(|(first, second)| first.equals(second))
+            }
             _ => false,
         }
     }
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Debug)]
 pub enum PrimTy {
     String,
     Bool,
