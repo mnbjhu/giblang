@@ -42,9 +42,10 @@ pub fn check_ident<'module>(
         };
     }
     let ty: Ty = expr.into();
-    if let Ty::Unknown = ty {
-        ty
-    } else {
+    if let Ty::Named { .. } = ty {
+        // TODO: Fix primitive meta types
         Ty::Meta(Box::new(ty))
+    } else {
+        ty
     }
 }

@@ -1,13 +1,12 @@
 
-fn test_fn[T](thing: Int, thing2: T): T {
+struct Test {
+  name: String,
+  age: Int,
 }
 
 fn main() {
-  let test: Int = test_fn(123, "Hello")
-  let another = match test {
-    name => {
-      name
-    }
-  }
+  let test: String = "test"
+  let test2: String = String
+  let test3: Test = Test
 }
 

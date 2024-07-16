@@ -17,12 +17,22 @@ pub enum Pattern {
     Name(String),
     Struct {
         name: SpannedQualifiedName,
-        fields: Vec<StructFieldPattern>,
+        fields: Vec<Spanned<StructFieldPattern>>,
     },
     TupleStruct {
         name: SpannedQualifiedName,
         fields: Vec<Spanned<Pattern>>,
     },
+}
+
+impl Pattern {
+    pub fn name(&self) -> &SpannedQualifiedName {
+        match self {
+            Pattern::Struct { name, .. } => name,
+            Pattern::TupleStruct { name, .. } => name,
+            Pattern::Name(_) => panic!("Name pattern has no name"),
+        }
+    }
 }
 
 #[derive(Clone, PartialEq, Debug)]
@@ -65,6 +75,7 @@ pub fn pattern_parser<'tokens, 'src: 'tokens>() -> AstParser!(Pattern) {
             .map(|(name, fields)| Pattern::TupleStruct { name, fields });
 
         let struct_ = struct_field_pattern_parser(pat)
+            .map_with(|p, e| (p, e.span()))
             .separated_by(just(punct(',')).padded_by(optional_newline()))
             .collect()
             .delimited_by(
