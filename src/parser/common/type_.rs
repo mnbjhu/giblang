@@ -33,31 +33,16 @@ pub struct NamedType {
 }
 
 pub fn type_parser<'tokens, 'src: 'tokens>() -> AstParser!(Type) {
-    let ident = qualified_name_parser();
     let arrow = just(punct('-')).then(just(punct('>'))).ignored();
 
     recursive(|ty| {
-        let args = ty
-            .clone()
-            .map_with(|t, s| (t, s.span()))
-            .separated_by(just(punct(',')).padded_by(optional_newline()))
-            .allow_trailing()
-            .collect::<Vec<_>>()
-            .delimited_by(
-                just(punct('[')).then(optional_newline()),
-                optional_newline().then(just(punct(']'))),
-            )
-            .or_not()
-            .map(|args| args.unwrap_or_default());
-
-        let named = ident
-            .then(args)
-            .map(|(name, args)| Type::Named(NamedType { name, args }));
+        let named = named_parser(ty.clone());
 
         let tuple = ty
             .clone()
             .map_with(|t, s| (t, s.span()))
             .separated_by(just(punct(',')).padded_by(optional_newline()))
+            .allow_trailing()
             .collect::<Vec<_>>()
             .delimited_by(
                 just(punct('(')).then(optional_newline()),
@@ -66,16 +51,21 @@ pub fn type_parser<'tokens, 'src: 'tokens>() -> AstParser!(Type) {
 
         let bracketed = ty.clone().delimited_by(just(punct('(')), just(punct(')')));
 
-        let atom = choice((named, bracketed, tuple.clone().map(Type::Tuple)));
+        let atom = choice((
+            bracketed,
+            tuple.clone().map(Type::Tuple),
+            named.map(Type::Named),
+        ));
 
         let sum = atom
             .clone()
             .map_with(|t, s| (t, s.span()))
             .separated_by(just(op!(+)).padded_by(optional_newline()))
+            .at_least(2)
             .collect::<Vec<_>>()
             .map(Type::Sum);
 
-        let receiver = ty
+        let receiver = atom
             .clone()
             .map_with(|t, s| (t, s.span()))
             .then_ignore(just(punct('.')).padded_by(optional_newline()))
@@ -84,7 +74,7 @@ pub fn type_parser<'tokens, 'src: 'tokens>() -> AstParser!(Type) {
         let function = receiver
             .then(tuple)
             .then_ignore(arrow)
-            .then(ty.map_with(|t, e| (t, e.span())))
+            .then(atom.clone().map_with(|t, e| (t, e.span())))
             .map(|((receiver, args), ret)| Type::Function {
                 receiver: receiver.map(Box::new),
                 args,
@@ -93,6 +83,27 @@ pub fn type_parser<'tokens, 'src: 'tokens>() -> AstParser!(Type) {
 
         choice((function, sum, atom))
     })
+}
+
+pub fn named_parser<'tokens, 'src: 'tokens>(ty: AstParser!(Type)) -> AstParser!(NamedType) {
+    let ident = qualified_name_parser();
+    let args = ty
+        .clone()
+        .map_with(|t, s| (t, s.span()))
+        .separated_by(just(punct(',')).padded_by(optional_newline()))
+        .allow_trailing()
+        .collect::<Vec<_>>()
+        .delimited_by(
+            just(punct('[')).then(optional_newline()),
+            optional_newline().then(just(punct(']'))),
+        )
+        .or_not()
+        .map(|args| args.unwrap_or_default());
+
+    let named = ident
+        .then(args)
+        .map(|(name, args)| NamedType { name, args });
+    named
 }
 
 #[cfg(test)]

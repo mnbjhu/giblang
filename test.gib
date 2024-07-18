@@ -5,6 +5,7 @@ struct Thing {
 }
 
 trait Magic
+trait Epic
 
 
 impl Magic for Thing {
@@ -13,9 +14,19 @@ impl Magic for Thing {
   }
 }
 
+impl Epic for Thing {
+  fn do_epic() {
+    println("Epic!")
+  }
+}
+
 enum Option[T] {
   Some(T),
   None,
+}
+
+fn my_tuple(): (String, String) {
+  
 }
 
 
@@ -23,6 +34,7 @@ fn test(hello: String, world: Int): Thing {
 }
 
 fn main() {
-  let some: Magic = Thing("Hello", 123)
+  let some: (String, Magic + Epic) = ("hello",)
+  let some: Magic + Epic = Thing("Hello", 123)
 }
 

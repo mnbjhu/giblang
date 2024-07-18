@@ -1,7 +1,7 @@
 use chumsky::{
     primitive::{choice, just},
     recursive::recursive,
-    select, Parser,
+    select, IterParser, Parser,
 };
 
 use crate::{
@@ -10,19 +10,22 @@ use crate::{
         token::{punct, Token},
     },
     parser::expr::match_::{match_parser, Match},
+    util::Spanned,
     AstParser,
 };
 
 use self::{
     call::{call_parser, Call},
     code_block::{code_block_parser, CodeBlock},
+    if_else::{if_else_parser, IfElse},
     qualified_name::{qualified_name_parser, SpannedQualifiedName},
 };
 
-use super::stmt::Stmt;
+use super::{common::optional_newline::optional_newline, stmt::Stmt};
 
 pub mod call;
 pub mod code_block;
+pub mod if_else;
 pub mod match_;
 pub mod match_arm;
 pub mod qualified_name;
@@ -34,26 +37,45 @@ pub enum Expr {
     CodeBlock(CodeBlock),
     Call(Call),
     Match(Match),
+    Tuple(Vec<Spanned<Expr>>),
+    IfElse(IfElse),
 }
 
 pub fn expr_parser<'tokens, 'src: 'tokens>(stmt: AstParser!(Stmt)) -> AstParser!(Expr) {
-    let block = code_block_parser(stmt).map(Expr::CodeBlock);
+    let block = code_block_parser(stmt.clone()).map(Expr::CodeBlock);
 
     recursive(|expr| {
+        let tuple = expr
+            .clone()
+            .map_with(|ex, e| (ex, e.span()))
+            .separated_by(just(punct(',')).padded_by(optional_newline()))
+            .allow_trailing()
+            .collect()
+            .delimited_by(
+                just(punct('(')).then(optional_newline()),
+                optional_newline().then(just(punct(')'))),
+            )
+            .map(Expr::Tuple);
+
+        let bracketed = expr
+            .clone()
+            .delimited_by(just(punct('(')), just(punct(')')));
+
         let atom = select! {
             Token::Literal(lit) => Expr::Literal(lit),
         }
         .or(qualified_name_parser().map(Expr::Ident))
-        .or(expr
-            .clone()
-            .delimited_by(just(punct('(')), just(punct('('))));
+        .or(bracketed)
+        .or(tuple);
 
         let match_ =
             match_parser(expr.clone(), match_arm::match_arm_parser(expr.clone())).map(Expr::Match);
 
-        let call = call_parser(atom.clone(), expr).map(Expr::Call);
+        let call = call_parser(atom.clone(), expr.clone()).map(Expr::Call);
 
-        choice((match_, block, call, atom))
+        let if_else = if_else_parser(expr, stmt).map(Expr::IfElse);
+
+        choice((if_else, match_, block, call, atom))
     })
 }
 

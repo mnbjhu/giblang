@@ -197,6 +197,43 @@ impl<'module> Ty<'module> {
                     return None;
                 }
             }
+            (Ty::Tuple(s), Ty::Tuple(other)) => {
+                let mut res = HashMap::new();
+                for (s, o) in s.iter().zip(other) {
+                    res.extend(s.imply_generics(o)?);
+                }
+                return Some(res);
+            }
+            (Ty::Sum(s), Ty::Sum(other)) => {
+                let mut res = HashMap::new();
+                for (s, o) in s.iter().zip(other) {
+                    res.extend(s.imply_generics(o)?);
+                }
+                return Some(res);
+            }
+            (
+                Ty::Function {
+                    receiver,
+                    args,
+                    ret,
+                },
+                Ty::Function {
+                    receiver: other_receiver,
+                    args: other_args,
+                    ret: other_ret,
+                },
+            ) => {
+                let mut res = HashMap::new();
+                match (receiver, other_receiver) {
+                    (None, None) => {}
+                    (Some(s), Some(other)) => res.extend(s.imply_generics(other)?),
+                    _ => return None,
+                }
+                for (s, o) in args.iter().zip(other_args) {
+                    res.extend(s.imply_generics(o)?);
+                }
+                res.extend(ret.imply_generics(other_ret)?);
+            }
             _ => {}
         };
 
@@ -224,6 +261,7 @@ impl<'module> Ty<'module> {
                 }
             }
             Ty::Tuple(tys) => Ty::Tuple(tys.iter().map(|ty| ty.parameterize(generics)).collect()),
+            Ty::Sum(tys) => Ty::Sum(tys.iter().map(|ty| ty.parameterize(generics)).collect()),
             Ty::Function {
                 receiver,
                 args,

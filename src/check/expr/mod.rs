@@ -32,6 +32,14 @@ impl Expr {
             // TODO: Actually think about generics
             Expr::Call(call) => call.check(project, state),
             Expr::Match(match_) => match_.check(project, state),
+            Expr::Tuple(values) => Ty::Tuple(
+                values
+                    .iter()
+                    .map(|value| value.0.check(project, state))
+                    .collect(),
+            ),
+            // TODO: Handle if else expr types
+            Expr::IfElse(_) => todo!(),
         }
     }
 }

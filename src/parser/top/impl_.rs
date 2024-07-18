@@ -7,7 +7,7 @@ use crate::{
         common::{
             generic_args::{generic_args_parser, GenericArgs},
             optional_newline::optional_newline,
-            type_::{type_parser, NamedType, Type},
+            type_::{named_parser, type_parser, NamedType},
         },
         stmt::Stmt,
     },
@@ -26,10 +26,10 @@ pub struct Impl {
 }
 
 pub fn impl_parser<'tokens, 'src: 'tokens>(stmt: AstParser!(Stmt)) -> AstParser!(Impl) {
-    let trait_ = type_parser()
+    let trait_ = named_parser(type_parser())
         .map_with(|t, e| (t, e.span()))
         .then_ignore(just(kw!(for)));
-    let for_ = type_parser().map_with(|t, e| (t, e.span()));
+    let for_ = named_parser(type_parser()).map_with(|t, e| (t, e.span()));
 
     let body = func_parser(stmt)
         .map_with(|s, e| (s, e.span()))

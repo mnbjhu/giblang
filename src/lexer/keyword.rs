@@ -13,6 +13,8 @@ pub enum Keyword {
     Impl,
     For,
     Match,
+    If,
+    Else,
 }
 
 impl Display for Keyword {
@@ -29,6 +31,8 @@ impl Display for Keyword {
             Keyword::Impl => write!(f, "impl"),
             Keyword::For => write!(f, "for"),
             Keyword::Match => write!(f, "match"),
+            Keyword::If => write!(f, "if"),
+            Keyword::Else => write!(f, "else"),
         }
     }
 }
@@ -68,6 +72,12 @@ macro_rules! kw {
     (match) => {
         $crate::lexer::token::Token::Keyword($crate::lexer::keyword::Keyword::Match)
     };
+    (if) => {
+        $crate::lexer::token::Token::Keyword($crate::lexer::keyword::Keyword::If)
+    };
+    (else) => {
+        $crate::lexer::token::Token::Keyword($crate::lexer::keyword::Keyword::Else)
+    };
 }
 
 #[cfg(test)]
@@ -85,5 +95,7 @@ mod tests {
         assert_eq!(kw!(use), Token::Keyword(Keyword::Use));
         assert_eq!(kw!(in), Token::Keyword(Keyword::In));
         assert_eq!(kw!(out), Token::Keyword(Keyword::Out));
+        assert_eq!(kw!(if), Token::Keyword(Keyword::If));
+        assert_eq!(kw!(else), Token::Keyword(Keyword::Else));
     }
 }
