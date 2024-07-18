@@ -133,15 +133,13 @@ impl<'module> Ty<'module> {
                                 Variance::Covariant => first.is_instance_of(second, project),
                                 Variance::Contravariant => second.is_instance_of(first, project),
                             })
+                } else if let Some(impls) = &name.impls() {
+                    impls
+                        .iter()
+                        .filter_map(|impl_| impl_.map(self, project))
+                        .any(|implied| implied.is_instance_of(other, project))
                 } else {
-                    if let Some(impls) = &name.impls() {
-                        impls
-                            .iter()
-                            .filter_map(|impl_| impl_.map(self, project))
-                            .any(|implied| implied.is_instance_of(other, project))
-                    } else {
-                        false
-                    }
+                    false
                 }
             }
             (_, Ty::Sum(tys)) => tys.iter().all(|other| self.is_instance_of(other, project)),
@@ -280,15 +278,11 @@ impl Type {
                 args,
                 ret,
             } => Ty::Function {
-                receiver: if let Some(receiver) = receiver {
-                    Some(Box::new(receiver.as_ref().0.check(
+                receiver: receiver.as_ref().map(|receiver| Box::new(receiver.as_ref().0.check(
                         project,
                         state,
                         print_errors,
-                    )))
-                } else {
-                    None
-                },
+                    ))),
                 args: args
                     .iter()
                     .map(|r| r.0.check(project, state, print_errors))

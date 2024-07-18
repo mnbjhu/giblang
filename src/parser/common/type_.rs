@@ -100,10 +100,10 @@ pub fn named_parser<'tokens, 'src: 'tokens>(ty: AstParser!(Type)) -> AstParser!(
         .or_not()
         .map(|args| args.unwrap_or_default());
 
-    let named = ident
+    
+    ident
         .then(args)
-        .map(|(name, args)| NamedType { name, args });
-    named
+        .map(|(name, args)| NamedType { name, args })
 }
 
 #[cfg(test)]

@@ -92,7 +92,7 @@ fn get_body_ty<'module>(
 
 fn get_function_ty<'module>(
     project: &'module Project,
-    path: &Vec<String>,
+    path: &[String],
     f: &'module crate::parser::top::func::Func,
 ) -> Ty<'module> {
     let file = project.get_file(&path[..path.len() - 1]);
@@ -119,10 +119,9 @@ fn get_function_ty<'module>(
         .map(Box::new)
         .unwrap_or(Box::new(Ty::Tuple(vec![])));
 
-    let ret = Ty::Function {
+    Ty::Function {
         receiver,
         args,
         ret,
-    };
-    ret
+    }
 }
