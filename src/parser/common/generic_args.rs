@@ -51,7 +51,7 @@ mod tests {
     use crate::{
         assert_parse_eq,
         lexer::parser::lexer,
-        parser::common::{generic_args::GenericArgs, variance::Variance},
+        parser::common::{generic_args::GenericArgs, type_::Type, variance::Variance},
         util::Span,
     };
 
@@ -68,11 +68,11 @@ mod tests {
         assert_eq!(args[0].0.variance, Variance::Contravariant);
         assert_eq!(args[1].0.name.0, "U");
         assert_eq!(args[1].0.variance, Variance::Invariant);
-        if let Some(super_) = args[1].0.super_.as_ref() {
-            assert_eq!(super_.0.name[0].0, "Thing");
-            assert_eq!(super_.0.args.len(), 0);
+        if let Some((Type::Named(super_), _)) = args[1].0.super_.as_ref() {
+            assert_eq!(super_.name[0].0, "Thing");
+            assert_eq!(super_.args.len(), 0);
         } else {
-            panic!("expected super");
+            panic!("expected 'Named' super");
         }
     }
 

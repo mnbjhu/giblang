@@ -7,7 +7,7 @@ use crate::{
         common::{
             generic_args::{generic_args_parser, GenericArgs},
             optional_newline::optional_newline,
-            type_::{type_parser, Type},
+            type_::{type_parser, NamedType, Type},
         },
         stmt::Stmt,
     },
@@ -20,8 +20,8 @@ use super::func::{func_parser, Func};
 #[derive(Debug, PartialEq, Clone)]
 pub struct Impl {
     pub generics: GenericArgs,
-    pub trait_: Spanned<Type>,
-    pub for_: Spanned<Type>,
+    pub trait_: Spanned<NamedType>,
+    pub for_: Spanned<NamedType>,
     pub body: Vec<Spanned<Func>>,
 }
 

@@ -56,7 +56,7 @@ mod tests {
         assert_parse_eq,
         parser::common::{
             generic_arg::{generic_arg_parser, GenericArg},
-            type_::Type,
+            type_::{NamedType, Type},
             variance::Variance,
         },
     };
@@ -98,10 +98,10 @@ mod tests {
 
     #[test]
     fn test_super() {
-        let super_type = Type {
+        let super_type = Type::Named(NamedType {
             name: vec![("Foo".to_string(), (3..6).into())],
             args: vec![],
-        };
+        });
 
         assert_parse_eq!(
             generic_arg_parser(),
