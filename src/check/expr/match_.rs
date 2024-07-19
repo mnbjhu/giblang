@@ -11,9 +11,11 @@ impl Match {
         state: &mut CheckState<'module>,
     ) -> Ty<'module> {
         let expr_ty = self.expr.0.check(project, state);
+        let mut ret = Ty::Unknown;
         for arm in &self.arms {
-            arm.check(project, state, expr_ty.clone());
+            let ty = arm.check(project, state, expr_ty.clone());
+            ret = ret.get_shared_subtype(ty, project)
         }
-        Ty::Unknown
+        ret
     }
 }

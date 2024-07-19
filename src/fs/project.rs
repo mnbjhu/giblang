@@ -147,7 +147,7 @@ impl ImplData {
 
     pub fn map<'module>(
         &'module self,
-        ty: &Ty<'module>,
+        ty: Ty<'module>,
         project: &'module Project,
     ) -> Option<Ty<'module>> {
         let path = path_from_filename(&self.filename);
@@ -172,10 +172,10 @@ impl ImplData {
 }
 
 impl<'module> Ty<'module> {
-    pub fn imply_generics(&self, other: &Ty<'module>) -> Option<HashMap<String, Ty<'module>>> {
+    pub fn imply_generics(&self, other: Ty<'module>) -> Option<HashMap<String, Ty<'module>>> {
         match (self, other) {
             // TODO: Check use of variance/super
-            (Ty::Generic { name, .. }, _) => {
+            (Ty::Generic { name, .. }, other) => {
                 let mut res = HashMap::new();
                 res.insert(name.to_string(), other.clone());
                 return Some(res);
@@ -226,22 +226,21 @@ impl<'module> Ty<'module> {
                 let mut res = HashMap::new();
                 match (receiver, other_receiver) {
                     (None, None) => {}
-                    (Some(s), Some(other)) => res.extend(s.imply_generics(other)?),
+                    (Some(s), Some(other)) => res.extend(s.imply_generics(other.as_ref().clone())?),
                     _ => return None,
                 }
                 for (s, o) in args.iter().zip(other_args) {
                     res.extend(s.imply_generics(o)?);
                 }
-                res.extend(ret.imply_generics(other_ret)?);
+                res.extend(ret.imply_generics(other_ret.as_ref().clone())?);
             }
-            _ => {}
+            (s, o) => {
+                if s.equals(&o) {
+                    return Some(HashMap::new());
+                }
+            }
         };
-
-        if self.equals(other) {
-            Some(HashMap::new())
-        } else {
-            None
-        }
+        None
     }
 
     pub fn parameterize(&self, generics: &HashMap<String, Ty<'module>>) -> Ty<'module> {

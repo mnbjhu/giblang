@@ -23,6 +23,7 @@ pub fn match_parser<'tokens, 'src: 'tokens>(
 ) -> AstParser!(Match) {
     let body = match_arm
         .separated_by(just(punct(',')).padded_by(optional_newline()))
+        .allow_trailing()
         .collect()
         .delimited_by(
             just(punct('{')).then(optional_newline()),

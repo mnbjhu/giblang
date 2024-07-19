@@ -21,13 +21,12 @@ impl Expr {
             Expr::Ident(ident) => check_ident(state, ident, project),
             Expr::CodeBlock(block) => {
                 state.enter_scope();
+                let mut ret = Ty::Unknown;
                 for (stmt, _) in block {
-                    stmt.check(project, state);
+                    ret = stmt.check(project, state);
                 }
                 state.exit_scope();
-
-                // TODO: Add block return types
-                Ty::Unknown
+                ret
             }
             // TODO: Actually think about generics
             Expr::Call(call) => call.check(project, state),
@@ -39,7 +38,7 @@ impl Expr {
                     .collect(),
             ),
             // TODO: Handle if else expr types
-            Expr::IfElse(_) => todo!(),
+            Expr::IfElse(stmt) => todo!(),
         }
     }
 }
