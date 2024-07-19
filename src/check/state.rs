@@ -4,11 +4,12 @@ use ariadne::Source;
 use chumsky::error::Rich;
 
 use crate::{
-    check::{ty::PrimTy, NamedExpr},
+    check::NamedExpr,
     cli::build::print_error,
     fs::{project::Project, tree_node::FileState, util::path_from_filename},
     lexer::token::Token,
     parser::{expr::qualified_name::SpannedQualifiedName, top::Top, File},
+    ty::PrimTy,
     util::{Span, Spanned},
 };
 

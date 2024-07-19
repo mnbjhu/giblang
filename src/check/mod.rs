@@ -2,9 +2,8 @@ use crate::{
     check::state::CheckState,
     fs::{export::Export, name::QualifiedName, project::Project, tree_node::FileState},
     parser::common::variance::Variance,
+    ty::{PrimTy, Ty},
 };
-
-use self::ty::{PrimTy, Ty};
 
 pub mod common;
 pub mod expr;

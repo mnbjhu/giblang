@@ -1,7 +1,8 @@
 use crate::{
-    check::{ty::Ty, CheckState, NamedExpr},
+    check::{CheckState, NamedExpr},
     fs::project::Project,
     parser::{common::variance::Variance, top::trait_::Trait},
+    ty::Ty,
 };
 
 impl Trait {

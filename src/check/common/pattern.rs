@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::{
-    check::{ty::Ty, CheckState, NamedExpr},
+    check::{CheckState, NamedExpr},
     fs::{export::Export, project::Project},
     parser::{
         common::pattern::{Pattern, StructFieldPattern},
@@ -10,6 +10,7 @@ use crate::{
             struct_field::StructField,
         },
     },
+    ty::Ty,
     util::Span,
 };
 

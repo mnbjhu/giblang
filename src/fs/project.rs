@@ -11,12 +11,12 @@ use crate::{
         check_file,
         impls::{build_impls, Impls},
         state::CheckState,
-        ty::Ty,
     },
     cli::build::print_error,
     fs::{mut_export::MutExport, tree_node::FileState, util::path_from_filename},
     lexer::token::Token,
     parser::{parse_file, top::impl_::Impl},
+    ty::Ty,
     util::{Span, Spanned},
 };
 

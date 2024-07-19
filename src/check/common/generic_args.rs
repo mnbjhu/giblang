@@ -1,7 +1,5 @@
 use crate::{
-    check::{ty::Ty, CheckState},
-    fs::project::Project,
-    parser::common::generic_args::GenericArgs,
+    check::CheckState, fs::project::Project, parser::common::generic_args::GenericArgs, ty::Ty,
 };
 
 impl GenericArgs {

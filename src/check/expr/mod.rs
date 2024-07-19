@@ -1,8 +1,8 @@
-use crate::{fs::project::Project, parser::expr::Expr};
+use crate::{fs::project::Project, parser::expr::Expr, ty::Ty};
 
 use self::ident::check_ident;
 
-use super::{ty::Ty, CheckState, NamedExpr};
+use super::{CheckState, NamedExpr};
 
 pub mod call;
 pub mod ident;
