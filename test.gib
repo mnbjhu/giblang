@@ -41,7 +41,7 @@ fn test(hello: String, world: Int): Thing {
 fn main() {
   let test = Option::Some("Thing")
   let test2: Test = Test
-  let thing: Int = match test {
+  let thing: Magic + Epic = match test {
     Option::None => {
       test2
     },

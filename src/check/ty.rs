@@ -1,6 +1,4 @@
-use std::{collections::HashSet, fmt::Display};
-
-use chumsky::container::{Container, Seq};
+use std::fmt::Display;
 
 use crate::{
     fs::{export::Export, project::Project},
@@ -145,6 +143,7 @@ impl<'module> Ty<'module> {
                 }
             }
             (_, Ty::Sum(tys)) => tys.iter().all(|other| self.is_instance_of(other, project)),
+            (Ty::Sum(tys), _) => tys.iter().any(|ty| ty.is_instance_of(other, project)),
             (Ty::Tuple(v), Ty::Tuple(other)) => {
                 v.len() == other.len()
                     && v.iter()
@@ -243,14 +242,14 @@ impl<'module> Ty<'module> {
     }
 
     pub fn get_shared_subtype<'ty: 'module>(
-        self,
-        other: Ty<'module>,
+        &self,
+        other: &Ty<'module>,
         project: &'ty Project,
     ) -> Ty<'module> {
-        if self.is_instance_of(&other, project) {
-            return other;
-        } else if other.is_instance_of(&self, project) {
-            return self;
+        if self.is_instance_of(other, project) {
+            return other.clone();
+        } else if other.is_instance_of(self, project) {
+            return self.clone();
         }
         match (self, other) {
             (_, Ty::Any) | (Ty::Any, _) => Ty::Any,
@@ -262,7 +261,7 @@ impl<'module> Ty<'module> {
                         return Ty::Tuple(
                             v.iter()
                                 .zip(other)
-                                .map(|(s, o)| s.clone().get_shared_subtype(o.clone(), project))
+                                .map(|(s, o)| s.clone().get_shared_subtype(o, project))
                                 .collect(),
                         );
                     }
@@ -273,7 +272,7 @@ impl<'module> Ty<'module> {
             (Ty::Meta(_), _) | (_, Ty::Meta(_)) => Ty::Any,
             (Ty::Prim(s), Ty::Prim(o)) => {
                 if s == o {
-                    Ty::Prim(s)
+                    self.clone()
                 } else {
                     Ty::Any
                 }
@@ -285,21 +284,13 @@ impl<'module> Ty<'module> {
                     args: other_args,
                 },
             ) => {
-                let s = Ty::Named {
-                    name: name.clone(),
-                    args: args.clone(),
-                };
-                let o = Ty::Named {
-                    name: other_name.clone(),
-                    args: other_args.clone(),
-                };
                 let mut new = vec![];
                 fn insert_ty<'module>(ty: Ty<'module>, new: &mut Vec<Ty<'module>>) {
                     if !new.iter().any(|t| t.equals(&ty)) {
                         new.push(ty)
                     }
                 }
-                match get_shared_named_subtype(o, name.clone(), args.clone(), project) {
+                match get_shared_named_subtype(other, name, args, project) {
                     Ty::Any => {}
                     Ty::Sum(v) => {
                         for ty in v {
@@ -308,7 +299,7 @@ impl<'module> Ty<'module> {
                     }
                     ty => insert_ty(ty, &mut new),
                 }
-                match get_shared_named_subtype(s, other_name.clone(), other_args.clone(), project) {
+                match get_shared_named_subtype(self, other_name, other_args, project) {
                     Ty::Any => {}
                     Ty::Sum(v) => {
                         for ty in v {
@@ -332,9 +323,9 @@ impl<'module> Ty<'module> {
 }
 
 fn get_shared_named_subtype<'module>(
-    other: Ty<'module>,
-    name: Export<'module>,
-    args: Vec<Ty<'module>>,
+    other: &Ty<'module>,
+    name: &Export<'module>,
+    args: &[Ty<'module>],
     project: &'module Project,
 ) -> Ty<'module> {
     if let Ty::Named {
@@ -351,13 +342,11 @@ fn get_shared_named_subtype<'module>(
             for ((first, second), def) in iter {
                 match def.0.variance {
                     Variance::Invariant => {
-                        if first.equals(&second) {
+                        if first.equals(second) {
                             args.push(first.clone());
                         }
                     }
-                    Variance::Covariant => {
-                        args.push(first.clone().get_shared_subtype(second.clone(), project))
-                    }
+                    Variance::Covariant => args.push(first.get_shared_subtype(second, project)),
                     Variance::Contravariant => todo!(),
                 };
             }
@@ -375,11 +364,11 @@ fn get_shared_named_subtype<'module>(
             if let Some(ty) = impl_.map(
                 Ty::Named {
                     name: name.clone(),
-                    args: args.clone(),
+                    args: args.to_vec(),
                 },
                 project,
             ) {
-                let found = ty.get_shared_subtype(other.clone(), project);
+                let found = ty.get_shared_subtype(other, project);
                 if let Ty::Sum(v) = found {
                     shared.extend(v);
                 } else if let Ty::Any = found {
@@ -388,7 +377,7 @@ fn get_shared_named_subtype<'module>(
                 }
             }
         }
-        if shared.len() == 0 {
+        if shared.is_empty() {
             return Ty::Any;
         } else if shared.len() == 1 {
             return shared[0].clone();
@@ -398,13 +387,13 @@ fn get_shared_named_subtype<'module>(
     Ty::Any
 }
 
-pub fn get_shared_subtype_vec<'module, 'ty>(
+pub fn get_shared_subtype_vec<'module>(
     v: Vec<Ty<'module>>,
     project: &'module Project,
 ) -> Ty<'module> {
     let mut found = Ty::Unknown;
     for ty in v {
-        found = found.get_shared_subtype(ty, project);
+        found = found.get_shared_subtype(&ty, project);
     }
     Ty::Unknown
 }

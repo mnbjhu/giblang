@@ -38,7 +38,7 @@ impl Expr {
                     .collect(),
             ),
             // TODO: Handle if else expr types
-            Expr::IfElse(stmt) => todo!(),
+            Expr::IfElse(_) => todo!(),
         }
     }
 }
