@@ -59,6 +59,7 @@ impl Pattern {
                             field.0.check(project, state, &e, field.1);
                         }
                     }
+                    (Pattern::UnitStruct(_), StructBody::None) => {}
                     _ => {
                         state.error(
                             "Struct fields don't match it's definition",

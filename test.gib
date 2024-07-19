@@ -7,6 +7,11 @@ struct Thing {
 trait Magic
 trait Epic
 
+struct Test
+
+impl Magic for Test
+impl Epic for Test
+
 
 impl Magic for Thing {
   fn do_magic() {
@@ -20,8 +25,8 @@ impl Epic for Thing {
   }
 }
 
-enum Option[T] {
-  Some(T),
+enum Option {
+  Some(String),
   None,
 }
 
@@ -34,7 +39,15 @@ fn test(hello: String, world: Int): Thing {
 }
 
 fn main() {
-  let some: (String, Magic + Epic) = ("hello",)
-  let some: Magic + Epic = Thing("Hello", 123)
+  let test = Option::Some("Thing")
+  let test2: Test = Test
+  let thing: Magic + Epic = match test {
+    Option::None => {
+      test2
+    },
+    Option::Some(thing) => {
+      Thing("hello", 123)
+    },
+  }
 }
 

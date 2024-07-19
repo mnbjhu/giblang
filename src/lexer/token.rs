@@ -102,6 +102,7 @@ mod tests {
         assert_eq!(op!(<), Token::Op("<".to_string()));
         assert_eq!(op!(>), Token::Op(">".to_string()));
         assert_eq!(op!(<=), Token::Op("<=".to_string()));
+        assert_eq!(op!(=>), Token::Op("=>".to_string()));
     }
 
     #[test]

@@ -17,8 +17,7 @@ pub struct MatchArm {
 }
 
 pub fn match_arm_parser<'tokens, 'src: 'tokens>(expr: AstParser!(Expr)) -> AstParser!(MatchArm) {
-    let pattern = pattern_parser();
-    pattern
+    pattern_parser()
         .then_ignore(just(op!(=>)))
         .then(expr.map_with(|e, s| (e, s.span())))
         .map(|(p, e)| MatchArm {
