@@ -53,7 +53,7 @@ impl Call {
             Ty::Unknown
         } else {
             state.error(
-                &format!("Expected a function but found '{name_ty:?}'"),
+                &format!("Expected a function but found '{name_ty}'"),
                 self.name.1,
             );
             Ty::Unknown

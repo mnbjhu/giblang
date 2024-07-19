@@ -16,7 +16,7 @@ pub enum Stmt {
 
 pub fn stmt_parser<'tokens, 'src: 'tokens>() -> AstParser!(Stmt) {
     recursive(|stmt| {
-        let let_ = let_parser(stmt.clone()).map(Stmt::Let);
+        let let_ = let_parser(expr_parser(stmt.clone())).map(Stmt::Let);
         let expr = expr_parser(stmt).map(Stmt::Expr);
         let_.or(expr)
     })

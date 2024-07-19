@@ -63,7 +63,10 @@ pub fn function_args_parser<'tokens, 'src: 'tokens>() -> AstParser!(FunctionArgs
 mod tests {
     use crate::{
         assert_parse_eq,
-        parser::{common::type_::Type, top::arg::FunctionArg},
+        parser::{
+            common::type_::{NamedType, Type},
+            top::arg::FunctionArg,
+        },
     };
 
     #[test]
@@ -74,10 +77,10 @@ mod tests {
             FunctionArg {
                 name: ("foo".to_string(), (0..3).into()),
                 ty: (
-                    Type {
+                    Type::Named(NamedType {
                         name: vec![("Bar".to_string(), (5..8).into())],
                         args: vec![],
-                    },
+                    }),
                     (5..8).into()
                 ),
             }
@@ -94,10 +97,10 @@ mod tests {
                     FunctionArg {
                         name: ("foo".to_string(), (1..4).into()),
                         ty: (
-                            Type {
+                            Type::Named(NamedType {
                                 name: vec![("Bar".to_string(), (6..9).into())],
                                 args: vec![],
-                            },
+                            }),
                             (6..9).into()
                         ),
                     },
@@ -107,10 +110,10 @@ mod tests {
                     FunctionArg {
                         name: ("baz".to_string(), (11..14).into()),
                         ty: (
-                            Type {
+                            Type::Named(NamedType {
                                 name: vec![("Baz".to_string(), (16..19).into())],
                                 args: vec![],
-                            },
+                            }),
                             (16..19).into()
                         ),
                     },

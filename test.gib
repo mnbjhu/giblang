@@ -1,12 +1,40 @@
 
-struct Test {
+struct Thing {
   name: String,
   age: Int,
 }
 
+trait Magic
+trait Epic
+
+
+impl Magic for Thing {
+  fn do_magic() {
+    println("Magic!")
+  }
+}
+
+impl Epic for Thing {
+  fn do_epic() {
+    println("Epic!")
+  }
+}
+
+enum Option[T] {
+  Some(T),
+  None,
+}
+
+fn my_tuple(): (String, String) {
+  
+}
+
+
+fn test(hello: String, world: Int): Thing {
+}
+
 fn main() {
-  let test: String = "test"
-  let test2: String = String
-  let test3: Test = Test
+  let some: (String, Magic + Epic) = ("hello",)
+  let some: Magic + Epic = Thing("Hello", 123)
 }
 

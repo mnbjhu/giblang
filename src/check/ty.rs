@@ -2,7 +2,10 @@ use std::fmt::Display;
 
 use crate::{
     fs::{export::Export, project::Project},
-    parser::common::{type_::Type, variance::Variance},
+    parser::common::{
+        type_::{NamedType, Type},
+        variance::Variance,
+    },
 };
 
 use super::{CheckState, NamedExpr};
@@ -28,6 +31,7 @@ pub enum Ty<'module> {
         ret: Box<Ty<'module>>,
     },
     Tuple(Vec<Ty<'module>>),
+    Sum(Vec<Ty<'module>>),
 }
 
 impl Display for Ty<'_> {
@@ -89,6 +93,14 @@ impl Display for Ty<'_> {
                     .join(", ");
                 write!(f, "({})", txt)
             }
+            Ty::Sum(tys) => {
+                let txt = tys
+                    .iter()
+                    .map(|ty| ty.to_string())
+                    .collect::<Vec<_>>()
+                    .join(" + ");
+                write!(f, "{}", txt)
+            }
         }
     }
 }
@@ -121,16 +133,21 @@ impl<'module> Ty<'module> {
                                 Variance::Covariant => first.is_instance_of(second, project),
                                 Variance::Contravariant => second.is_instance_of(first, project),
                             })
+                } else if let Some(impls) = &name.impls() {
+                    impls
+                        .iter()
+                        .filter_map(|impl_| impl_.map(self, project))
+                        .any(|implied| implied.is_instance_of(other, project))
                 } else {
-                    if let Some(impls) = &name.impls() {
-                        if let Some(ty) = impls.iter().find_map(|impl_| impl_.map(self, project)) {
-                            if ty.is_instance_of(other, project) {
-                                return true;
-                            }
-                        }
-                    }
                     false
                 }
+            }
+            (_, Ty::Sum(tys)) => tys.iter().all(|other| self.is_instance_of(other, project)),
+            (Ty::Tuple(v), Ty::Tuple(other)) => {
+                v.len() == other.len()
+                    && v.iter()
+                        .zip(other)
+                        .all(|(s, o)| s.is_instance_of(o, project))
             }
             (Ty::Generic { super_, .. }, _) => super_.is_instance_of(other, project),
             // (_, Ty::Generic { super_, .. }) => super_.is_instance_of(other, project),
@@ -234,6 +251,49 @@ pub enum PrimTy {
 }
 
 impl Type {
+    pub fn check<'module>(
+        &'module self,
+        project: &'module Project,
+        state: &mut CheckState<'module>,
+        print_errors: bool,
+    ) -> Ty<'module> {
+        match &self {
+            Type::Named(named) => named.check(project, state, print_errors),
+            Type::Tuple(tup) => {
+                let mut tys = vec![];
+                for (ty, _) in tup {
+                    tys.push(ty.check(project, state, print_errors))
+                }
+                Ty::Tuple(tys)
+            }
+            Type::Sum(tup) => {
+                let mut tys = vec![];
+                for (ty, _) in tup {
+                    tys.push(ty.check(project, state, print_errors))
+                }
+                Ty::Sum(tys)
+            }
+            Type::Function {
+                receiver,
+                args,
+                ret,
+            } => Ty::Function {
+                receiver: receiver.as_ref().map(|receiver| Box::new(receiver.as_ref().0.check(
+                        project,
+                        state,
+                        print_errors,
+                    ))),
+                args: args
+                    .iter()
+                    .map(|r| r.0.check(project, state, print_errors))
+                    .collect(),
+                ret: Box::new(ret.0.check(project, state, print_errors)),
+            },
+        }
+    }
+}
+
+impl NamedType {
     pub fn check<'module>(
         &'module self,
         project: &'module Project,
