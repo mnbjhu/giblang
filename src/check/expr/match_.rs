@@ -1,8 +1,4 @@
-use crate::{
-    check::{state::CheckState, ty::Ty},
-    fs::project::Project,
-    parser::expr::match_::Match,
-};
+use crate::{check::state::CheckState, fs::project::Project, parser::expr::match_::Match, ty::Ty};
 
 impl Match {
     pub fn check<'module>(

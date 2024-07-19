@@ -1,7 +1,5 @@
 use crate::{
-    check::{state::CheckState, ty::Ty},
-    fs::project::Project,
-    parser::expr::match_arm::MatchArm,
+    check::state::CheckState, fs::project::Project, parser::expr::match_arm::MatchArm, ty::Ty,
 };
 
 impl MatchArm {

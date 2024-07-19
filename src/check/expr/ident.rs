@@ -1,10 +1,11 @@
 use crate::{
-    check::{state::CheckState, ty::Ty, NamedExpr},
+    check::{state::CheckState, NamedExpr},
     fs::{export::Export, project::Project},
     parser::{
         common::generic_args::GenericArgs, expr::qualified_name::SpannedQualifiedName,
         top::struct_body::StructBody,
     },
+    ty::Ty,
 };
 
 pub fn check_ident<'module>(

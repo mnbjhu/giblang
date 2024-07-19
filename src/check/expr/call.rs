@@ -1,8 +1,4 @@
-use crate::{
-    check::{state::CheckState, ty::Ty},
-    fs::project::Project,
-    parser::expr::call::Call,
-};
+use crate::{check::state::CheckState, fs::project::Project, parser::expr::call::Call, ty::Ty};
 
 impl Call {
     pub fn check<'module>(

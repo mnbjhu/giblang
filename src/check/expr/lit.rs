@@ -1,6 +1,6 @@
 use crate::{
-    check::ty::{PrimTy, Ty},
     lexer::literal::Literal,
+    ty::{PrimTy, Ty},
 };
 
 impl<'module> From<&Literal> for Ty<'module> {

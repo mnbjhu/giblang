@@ -1,6 +1,6 @@
-use crate::{fs::project::Project, parser::stmt::Stmt};
+use crate::{fs::project::Project, parser::stmt::Stmt, ty::Ty};
 
-use super::{ty::Ty, CheckState};
+use super::CheckState;
 
 pub mod let_;
 
