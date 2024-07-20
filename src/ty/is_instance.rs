@@ -1,5 +1,7 @@
 use crate::{fs::project::Project, parser::common::variance::Variance, ty::Ty};
 
+use super::Generic;
+
 impl<'module> Ty<'module> {
     pub fn is_instance_of(&'module self, other: &Ty<'module>, project: &Project) -> bool {
         if self.equals(other) {
@@ -45,8 +47,8 @@ impl<'module> Ty<'module> {
                         .zip(other)
                         .all(|(s, o)| s.is_instance_of(o, project))
             }
-            (Ty::Generic { super_, .. }, _) => super_.is_instance_of(other, project),
-            // (_, Ty::Generic { super_, .. }) => super_.is_instance_of(other, project),
+            (Ty::Generic(Generic { super_, .. }), _) => super_.is_instance_of(other, project),
+            (_, Ty::Generic(Generic { super_, .. })) => self.is_instance_of(super_, project),
             (
                 Ty::Function {
                     receiver,

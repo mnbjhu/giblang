@@ -24,7 +24,7 @@ pub fn check_ident<'module>(
                 return ret;
             }
             Export::Struct(s) => {
-                let ret = get_body_ty(project, path, &s.generics.0, &s.body, expr.clone().into());
+                let ret = get_body_ty(project, path, &s.generics.0, &s.body, ex.clone());
                 return ret;
             }
             Export::Member { parent, member } => {
@@ -33,10 +33,7 @@ pub fn check_ident<'module>(
                     &path[..path.len() - 1],
                     &parent.generics.0,
                     &member.body,
-                    Ty::Named {
-                        name: Export::Enum(parent),
-                        args: vec![],
-                    },
+                    Export::Enum(parent),
                 );
                 return ret;
             }
@@ -51,20 +48,40 @@ pub fn check_ident<'module>(
     }
 }
 
+pub fn check_ident_is<'module>(
+    state: &mut CheckState<'module>,
+    ident: &'module SpannedQualifiedName,
+    expected: &Ty<'module>,
+    project: &'module Project,
+) -> Ty<'module> {
+    let actual = check_ident(state, ident, project);
+    if !actual.is_instance_of(expected, project) {
+        state.error(
+            &format!("Expected value to be of type '{expected}' but found '{actual}'",),
+            ident.last().unwrap().1,
+        )
+    }
+    // TODO: Consider whether to pass through or use Ty::Unknown
+    actual
+}
+
 fn get_body_ty<'module>(
     project: &'module Project,
     path: &[String],
     generics: &'module GenericArgs,
     body: &'module StructBody,
-    return_ty: Ty<'module>,
+    name: Export<'module>,
 ) -> Ty<'module> {
     let file = project.get_file(&path[..path.len() - 1]);
     let mut imp_state = CheckState::from_file(file);
     imp_state.import_all(&file.ast, project);
     // TODO: Check generics
-    let _ = generics.check(project, &mut imp_state, false);
+    let generics = generics.check(project, &mut imp_state, false);
     let ret = match &body {
-        StructBody::None => return_ty,
+        StructBody::None => Ty::Named {
+            name,
+            args: generics.iter().map(|_| Ty::Unknown).collect(),
+        },
         StructBody::Tuple(fields) => {
             let args = fields
                 .iter()
@@ -73,7 +90,10 @@ fn get_body_ty<'module>(
             Ty::Function {
                 receiver: None,
                 args,
-                ret: Box::new(return_ty),
+                ret: Box::new(Ty::Named {
+                    name,
+                    args: generics,
+                }),
             }
         }
         StructBody::Fields(fields) => {
@@ -84,7 +104,10 @@ fn get_body_ty<'module>(
             Ty::Function {
                 receiver: None,
                 args,
-                ret: Box::new(return_ty),
+                ret: Box::new(Ty::Named {
+                    name,
+                    args: generics,
+                }),
             }
         }
     };

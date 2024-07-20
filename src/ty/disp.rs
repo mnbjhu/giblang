@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use super::{PrimTy, Ty};
+use super::{Generic, PrimTy, Ty};
 
 impl Display for Ty<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -22,11 +22,11 @@ impl Display for Ty<'_> {
                 }
                 Ok(())
             }
-            Ty::Generic {
+            Ty::Generic(Generic {
                 name,
                 variance,
                 super_,
-            } => {
+            }) => {
                 write!(f, "{variance}{name}: {super_}")
             }
             Ty::Prim(p) => match p {
