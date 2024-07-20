@@ -22,7 +22,7 @@ pub fn check_code_block_is<'module>(
     block: &'module CodeBlock,
     project: &'module Project,
 ) -> Ty<'module> {
-    if block.len() == 0 {
+    if block.is_empty() {
         return Ty::Tuple(vec![]);
     }
     state.enter_scope();

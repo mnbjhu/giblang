@@ -55,7 +55,7 @@ pub fn check_ident_is<'module>(
     project: &'module Project,
 ) -> Ty<'module> {
     let actual = check_ident(state, ident, project);
-    if !actual.is_instance_of(&expected, project) {
+    if !actual.is_instance_of(expected, project) {
         state.error(
             &format!("Expected value to be of type '{expected}' but found '{actual}'",),
             ident.last().unwrap().1,

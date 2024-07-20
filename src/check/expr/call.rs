@@ -55,7 +55,7 @@ impl Call {
                 implied.insert(g.name.clone(), Ty::Unknown);
             }
 
-            if generics.len() > 0 {
+            if !generics.is_empty() {
                 let not_implied = generics
                     .iter()
                     .cloned()
