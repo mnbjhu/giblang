@@ -1,20 +1,23 @@
 use crate::ty::Ty;
 
+use super::Generic;
+
 impl<'module> Ty<'module> {
     pub fn equals(&'module self, other: &Ty<'module>) -> bool {
         match (&self, other) {
+            (Ty::Unknown, _) => true,
+            (_, Ty::Unknown) => true,
             (Ty::Any, Ty::Any) => true,
-            (Ty::Unknown, Ty::Unknown) => true,
             (Ty::Prim(s), Ty::Prim(o)) => s == o,
             (
-                Ty::Generic {
+                Ty::Generic(Generic {
                     variance, super_, ..
-                },
-                Ty::Generic {
+                }),
+                Ty::Generic(Generic {
                     variance: other_variance,
                     super_: other_super,
                     ..
-                },
+                }),
             ) => super_.equals(other_super) && variance == other_variance,
             (
                 Ty::Named { name, args },

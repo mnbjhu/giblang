@@ -2,7 +2,7 @@ use crate::{
     check::{CheckState, NamedExpr},
     fs::project::Project,
     parser::common::generic_arg::GenericArg,
-    ty::Ty,
+    ty::{Generic, Ty},
 };
 
 impl GenericArg {
@@ -25,10 +25,10 @@ impl GenericArg {
                 variance: self.variance,
             },
         );
-        Ty::Generic {
+        Ty::Generic(Generic {
             name: self.name.0.clone(),
             variance: self.variance,
             super_: Box::new(super_),
-        }
+        })
     }
 }

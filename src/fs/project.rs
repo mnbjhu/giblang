@@ -16,7 +16,7 @@ use crate::{
     fs::{mut_export::MutExport, tree_node::FileState, util::path_from_filename},
     lexer::token::Token,
     parser::{parse_file, top::impl_::Impl},
-    ty::Ty,
+    ty::{Generic, Ty},
     util::{Span, Spanned},
 };
 
@@ -175,7 +175,7 @@ impl<'module> Ty<'module> {
     pub fn imply_generics(&self, other: Ty<'module>) -> Option<HashMap<String, Ty<'module>>> {
         match (self, other) {
             // TODO: Check use of variance/super
-            (Ty::Generic { name, .. }, other) => {
+            (Ty::Generic(Generic { name, .. }), other) => {
                 let mut res = HashMap::new();
                 res.insert(name.to_string(), other.clone());
                 return Some(res);
@@ -252,7 +252,7 @@ impl<'module> Ty<'module> {
                 args: args.iter().map(|ty| ty.parameterize(generics)).collect(),
             },
             // TODO: Check use of variance/super
-            Ty::Generic { name, .. } => {
+            Ty::Generic(Generic { name, .. }) => {
                 if let Some(ty) = generics.get(name) {
                     ty.clone()
                 } else {

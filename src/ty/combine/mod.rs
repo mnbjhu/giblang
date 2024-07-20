@@ -6,10 +6,10 @@ pub mod named;
 pub mod vec;
 
 impl<'module> Ty<'module> {
-    pub fn get_shared_subtype<'ty: 'module>(
+    pub fn get_shared_subtype(
         &self,
         other: &Ty<'module>,
-        project: &'ty Project,
+        project: &'module Project,
     ) -> Ty<'module> {
         if self.is_instance_of(other, project) {
             return other.clone();

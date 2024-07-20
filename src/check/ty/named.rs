@@ -2,7 +2,7 @@ use crate::{
     check::{state::CheckState, NamedExpr},
     fs::project::Project,
     parser::common::type_::NamedType,
-    ty::Ty,
+    ty::{Generic, Ty},
 };
 
 impl NamedType {
@@ -65,11 +65,11 @@ impl NamedType {
                 super_,
                 variance,
                 name,
-            } => Ty::Generic {
+            } => Ty::Generic(Generic {
                 variance: *variance,
                 super_: Box::new(super_.clone()),
                 name: name.clone(),
-            },
+            }),
             NamedExpr::Prim(p) => Ty::Prim(p.clone()),
             NamedExpr::Unknown => Ty::Unknown,
         }

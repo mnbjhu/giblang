@@ -14,4 +14,19 @@ impl Match {
         }
         ret
     }
+
+    pub fn is_instance_of<'module>(
+        &'module self,
+        expected: &Ty<'module>,
+        project: &'module Project,
+        state: &mut CheckState<'module>,
+    ) -> Ty<'module> {
+        let expr_ty = self.expr.0.check(project, state);
+        let mut ret = Ty::Unknown;
+        for arm in &self.arms {
+            let ty = arm.expected_instance_of(expected, project, state, expr_ty.clone());
+            ret = ret.get_shared_subtype(&ty, project)
+        }
+        ret
+    }
 }
