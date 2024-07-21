@@ -1,9 +1,6 @@
-use crate::{fs::project::Project, ty::Ty};
+use crate::{project::Project, ty::Ty};
 
-pub fn get_shared_subtype_vec<'module>(
-    v: Vec<Ty<'module>>,
-    project: &'module Project,
-) -> Ty<'module> {
+pub fn get_shared_subtype_vec<'module>(v: Vec<Ty>, project: &Project) -> Ty {
     let mut found = Ty::Unknown;
     for ty in v {
         found = found.get_shared_subtype(&ty, project);

@@ -1,16 +1,8 @@
-use crate::{
-    check::{state::CheckState, NamedExpr},
-    fs::project::Project,
-    parser::top::arg::FunctionArg,
-};
+use crate::{check::state::CheckState, parser::top::arg::FunctionArg, project::Project};
 
 impl FunctionArg {
-    pub fn check<'module>(
-        &'module self,
-        project: &'module Project,
-        state: &mut CheckState<'module>,
-    ) {
+    pub fn check(&self, project: &Project, state: &mut CheckState) {
         let ty = self.ty.0.check(project, state, true);
-        state.insert(self.name.0.clone(), NamedExpr::Variable(ty))
+        state.insert_variable(self.name.0.clone(), ty)
     }
 }

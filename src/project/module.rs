@@ -1,3 +1,7 @@
+use crate::util::Spanned;
+
+use super::file_data::FileData;
+
 pub struct ModuleNode {
     name: String,
     id: u32,
@@ -51,6 +55,31 @@ impl ModuleNode {
                 }
             }
             None
+        }
+    }
+
+    pub fn get_with_error(&self, path: &[Spanned<String>], file: &FileData) -> Option<u32> {
+        if path.is_empty() {
+            return Some(self.id);
+        } else {
+            if let Some(child) = self.children.iter().find(|c| c.name == path[0].0) {
+                return child.get_with_error(&path[1..], file);
+            } else {
+                file.error(&format!("Module '{}' not found", path[0].0), path[0].1);
+                None
+            }
+        }
+    }
+
+    pub fn get_module(&self, path: &[String], file: &FileData) -> Option<&ModuleNode> {
+        if path.is_empty() {
+            return Some(self);
+        } else {
+            if let Some(child) = self.children.iter().find(|c| c.name == path[0]) {
+                return child.get_module(&path[1..], file);
+            } else {
+                None
+            }
         }
     }
 }

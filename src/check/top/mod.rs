@@ -1,4 +1,4 @@
-use crate::{fs::project::Project, parser::top::Top};
+use crate::{parser::top::Top, project::Project};
 
 use super::CheckState;
 
@@ -10,15 +10,11 @@ pub mod struct_body;
 pub mod trait_;
 
 impl Top {
-    pub fn check<'module>(
-        &'module self,
-        project: &'module Project,
-        state: &mut CheckState<'module>,
-    ) {
+    pub fn check(&self, project: &Project, state: &mut CheckState) {
         state.enter_scope();
         match self {
             Top::Use(use_) => {
-                state.import(use_, project, true);
+                state.import(use_);
             }
             Top::Enum(e) => e.check(project, state),
             Top::Trait(t) => t.check(project, state),

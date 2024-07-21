@@ -1,4 +1,4 @@
-use crate::{check::CheckState, fs::project::Project, parser::stmt::let_::LetStatement};
+use crate::{check::CheckState, parser::stmt::let_::LetStatement, project::Project};
 
 impl LetStatement {
     pub fn check<'module>(

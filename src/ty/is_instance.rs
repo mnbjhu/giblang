@@ -1,9 +1,9 @@
-use crate::{fs::project::Project, parser::common::variance::Variance, ty::Ty};
+use crate::{parser::common::variance::Variance, project::Project, ty::Ty};
 
 use super::Generic;
 
-impl<'module> Ty<'module> {
-    pub fn is_instance_of(&'module self, other: &Ty<'module>, project: &Project) -> bool {
+impl Ty {
+    pub fn is_instance_of(&self, other: &Ty, project: &Project) -> bool {
         if self.equals(other) {
             return true;
         }
@@ -19,7 +19,7 @@ impl<'module> Ty<'module> {
                     args: other_args,
                 },
             ) => {
-                if name.id() == other_name.id() {
+                if name == other_name {
                     args.len() == other_args.len()
                         && args
                             .iter()

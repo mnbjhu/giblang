@@ -1,12 +1,12 @@
 use crate::{
     check::state::CheckState,
-    fs::project::Project,
     lexer::literal::Literal,
+    project::Project,
     ty::{PrimTy, Ty},
     util::Span,
 };
 
-impl<'module> From<&Literal> for Ty<'module> {
+impl<'module> From<&Literal> for Ty {
     fn from(value: &Literal) -> Self {
         match value {
             Literal::Int(_) => Ty::Prim(PrimTy::Int),
@@ -20,12 +20,12 @@ impl<'module> From<&Literal> for Ty<'module> {
 
 impl Literal {
     pub fn expect_instance_of<'module>(
-        &'module self,
-        expected: &Ty<'module>,
-        project: &'module Project,
-        state: &mut CheckState<'module>,
+        &self,
+        expected: &Ty,
+        project: &Project,
+        state: &mut CheckState,
         span: Span,
-    ) -> Ty<'module> {
+    ) -> Ty {
         let actual = Ty::from(self);
         if !actual.is_instance_of(expected, project) {
             state.error(

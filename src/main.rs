@@ -7,6 +7,7 @@ pub mod fs;
 pub mod lexer;
 pub mod parser;
 pub mod project;
+pub mod resolve;
 pub mod ty;
 pub mod util;
 

@@ -1,18 +1,14 @@
 use crate::{
     check::state::CheckState,
-    fs::project::Project,
     parser::expr::Expr,
+    project::Project,
     ty::Ty,
     util::{Span, Spanned},
 };
 
 type Tuple = Vec<Spanned<Expr>>;
 
-pub fn check_tuple<'module>(
-    values: &'module Tuple,
-    project: &'module Project,
-    state: &mut CheckState<'module>,
-) -> Ty<'module> {
+pub fn check_tuple(values: &Tuple, project: &Project, state: &mut CheckState) -> Ty {
     Ty::Tuple(
         values
             .iter()
@@ -20,13 +16,13 @@ pub fn check_tuple<'module>(
             .collect(),
     )
 }
-pub fn check_tuple_is<'module>(
-    state: &mut CheckState<'module>,
-    expected: &Ty<'module>,
-    tuple: &'module Tuple,
-    project: &'module Project,
+pub fn check_tuple_is(
+    state: &mut CheckState,
+    expected: &Ty,
+    tuple: &Tuple,
+    project: &Project,
     span: Span,
-) -> Ty<'module> {
+) -> Ty {
     if let Ty::Tuple(ex) = expected {
         if ex.len() == tuple.len() {
             let v = ex

@@ -1,10 +1,8 @@
 use ariadne::Source;
 use chumsky::{error::Rich, input::Input, primitive::just, IterParser, Parser};
-use ptree::TreeBuilder;
 
 use crate::{
     cli::build::print_error,
-    fs::tree_node::FileState,
     lexer::{parser::lexer, token::newline},
     util::{Span, Spanned},
     AstParser,
@@ -22,27 +20,29 @@ pub mod top;
 
 pub type File = Vec<Spanned<Top>>;
 
-pub fn build_tree(FileState { ast, .. }: &FileState, name: &str, builder: &mut TreeBuilder) {
-    builder.begin_child(name.to_string());
-    for (item, _) in ast {
-        if let Some(name) = item.get_name() {
-            let mut text = name.to_string();
-            if let Some(impls) = item.impls() {
-                let impl_names = impls
-                    .iter()
-                    .map(|impl_| &impl_.impl_.trait_)
-                    .map(|trait_| trait_.0.name.last().unwrap().0.clone())
-                    .collect::<Vec<String>>();
+// TODO: Think after refactor
 
-                let impls = impl_names.join(", ");
-                text = format!("{name} ({impls})")
-            }
-            builder.add_empty_child(text);
-        }
-    }
-    builder.end_child();
-}
-
+// pub fn build_tree(FileState { ast, .. }: &FileState, name: &str, builder: &mut TreeBuilder) {
+//     builder.begin_child(name.to_string());
+//     for (item, _) in ast {
+//         if let Some(name) = item.get_name() {
+//             let mut text = name.to_string();
+//             if let Some(impls) = item.impls() {
+//                 let impl_names = impls
+//                     .iter()
+//                     .map(|impl_| &impl_.impl_.trait_)
+//                     .map(|trait_| trait_.0.name.last().unwrap().0.clone())
+//                     .collect::<Vec<String>>();
+//
+//                 let impls = impl_names.join(", ");
+//                 text = format!("{name} ({impls})")
+//             }
+//             builder.add_empty_child(text);
+//         }
+//     }
+//     builder.end_child();
+// }
+//
 pub fn file_parser<'tokens, 'src: 'tokens>() -> AstParser!(File) {
     top_parser()
         .map_with(|t, e| (t, e.span()))

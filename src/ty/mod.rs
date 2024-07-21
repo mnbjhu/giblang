@@ -1,4 +1,4 @@
-use crate::{fs::export::Export, parser::common::variance::Variance};
+use crate::parser::common::variance::Variance;
 
 pub mod combine;
 pub mod disp;
@@ -7,31 +7,31 @@ pub mod expect;
 pub mod generics;
 pub mod is_instance;
 
-#[derive(Clone, Debug)]
-pub struct Generic<'module> {
+#[derive(Clone, Debug, PartialEq)]
+pub struct Generic {
     pub name: String,
     pub variance: Variance,
-    pub super_: Box<Ty<'module>>,
+    pub super_: Box<Ty>,
 }
 
-#[derive(Clone, Debug)]
-pub enum Ty<'module> {
+#[derive(Clone, Debug, PartialEq)]
+pub enum Ty {
     Any,
     Unknown,
     Named {
-        name: Export<'module>,
-        args: Vec<Ty<'module>>,
+        name: u32,
+        args: Vec<Ty>,
     },
-    Generic(Generic<'module>),
+    Generic(Generic),
     Prim(PrimTy),
-    Meta(Box<Ty<'module>>),
+    Meta(Box<Ty>),
     Function {
-        receiver: Option<Box<Ty<'module>>>,
-        args: Vec<Ty<'module>>,
-        ret: Box<Ty<'module>>,
+        receiver: Option<Box<Ty>>,
+        args: Vec<Ty>,
+        ret: Box<Ty>,
     },
-    Tuple(Vec<Ty<'module>>),
-    Sum(Vec<Ty<'module>>),
+    Tuple(Vec<Ty>),
+    Sum(Vec<Ty>),
 }
 
 #[derive(Clone, PartialEq, Debug)]

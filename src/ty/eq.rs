@@ -2,8 +2,8 @@ use crate::ty::Ty;
 
 use super::Generic;
 
-impl<'module> Ty<'module> {
-    pub fn equals(&'module self, other: &Ty<'module>) -> bool {
+impl<'module> Ty {
+    pub fn equals(&'module self, other: &Ty) -> bool {
         match (&self, other) {
             (Ty::Unknown, _) => true,
             (_, Ty::Unknown) => true,
@@ -26,7 +26,7 @@ impl<'module> Ty<'module> {
                     args: other_args,
                 },
             ) => {
-                name.id() == other_name.id()
+                name == other_name
                     && args.len() == other_args.len()
                     && args
                         .iter()

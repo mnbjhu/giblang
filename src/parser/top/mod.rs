@@ -1,6 +1,6 @@
 use chumsky::{primitive::choice, Parser};
 
-use crate::{fs::project::ImplData, parser::stmt::stmt_parser, util::Span, AstParser};
+use crate::{parser::stmt::stmt_parser, util::Span, AstParser};
 
 use self::{enum_::Enum, func::Func, impl_::Impl, struct_::Struct, trait_::Trait};
 
@@ -69,15 +69,6 @@ impl Top {
             Top::Enum(Enum { name, .. }) => name.1,
             Top::Impl(_) => unimplemented!("Impl statement doesn't have a name"),
             Top::Use(_) => unimplemented!("Use statement doesn't have a name"),
-        }
-    }
-
-    pub fn impls(&self) -> Option<&Vec<ImplData>> {
-        match &self {
-            Top::Struct(s) => Some(&s.impls),
-            Top::Enum(e) => Some(&e.impls),
-            Top::Trait(t) => Some(&t.impls),
-            _ => None,
         }
     }
 

@@ -1,15 +1,11 @@
 use std::collections::HashMap;
 
 use crate::{
-    check::state::CheckState, fs::project::Project, parser::expr::call::Call, ty::Ty, util::Span,
+    check::state::CheckState, parser::expr::call::Call, project::Project, ty::Ty, util::Span,
 };
 
 impl Call {
-    pub fn check<'module>(
-        &'module self,
-        project: &'module Project,
-        state: &mut CheckState<'module>,
-    ) -> Ty<'module> {
+    pub fn check(&self, project: &Project, state: &mut CheckState) -> Ty {
         let name_ty = self.name.0.check(project, state);
         // TODO: Think about receivers
         if let Ty::Function {
@@ -30,7 +26,7 @@ impl Call {
                 );
             }
 
-            let mut implied = HashMap::<String, Ty<'_>>::new();
+            let mut implied = HashMap::<String, Ty>::new();
 
             self.args
                 .iter()
@@ -80,13 +76,13 @@ impl Call {
         }
     }
 
-    pub fn expected_instance_of<'module>(
-        &'module self,
-        expected: &Ty<'module>,
-        project: &'module Project,
-        state: &mut CheckState<'module>,
+    pub fn expected_instance_of(
+        &self,
+        expected: &Ty,
+        project: &Project,
+        state: &mut CheckState,
         span: Span,
-    ) -> Ty<'module> {
+    ) -> Ty {
         let actual = self.check(project, state);
         if !actual.is_instance_of(expected, project) {
             state.error(

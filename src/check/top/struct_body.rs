@@ -1,15 +1,11 @@
 use crate::{
     check::CheckState,
-    fs::project::Project,
     parser::top::{struct_body::StructBody, struct_field::StructField},
+    project::Project,
 };
 
 impl StructBody {
-    pub fn check<'module>(
-        &'module self,
-        project: &'module Project,
-        state: &mut CheckState<'module>,
-    ) {
+    pub fn check<'module>(&self, project: &Project, state: &mut CheckState) {
         match self {
             StructBody::None => {}
             StructBody::Tuple(v) => {

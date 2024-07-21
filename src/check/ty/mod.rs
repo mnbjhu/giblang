@@ -1,13 +1,8 @@
-use crate::{check::state::CheckState, fs::project::Project, parser::common::type_::Type, ty::Ty};
+use crate::{check::state::CheckState, parser::common::type_::Type, project::Project, ty::Ty};
 pub mod named;
 
 impl Type {
-    pub fn check<'module>(
-        &'module self,
-        project: &'module Project,
-        state: &mut CheckState<'module>,
-        print_errors: bool,
-    ) -> Ty<'module> {
+    pub fn check(&self, project: &Project, state: &mut CheckState, print_errors: bool) -> Ty {
         match &self {
             Type::Named(named) => named.check(project, state, print_errors),
             Type::Tuple(tup) => {

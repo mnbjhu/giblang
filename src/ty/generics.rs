@@ -1,7 +1,7 @@
 use super::{Generic, Ty};
 
-impl<'module> Ty<'module> {
-    pub fn get_generic_params(&'module self) -> Vec<Generic<'module>> {
+impl Ty {
+    pub fn get_generic_params(&self) -> Vec<Generic> {
         match self {
             Ty::Named { args, .. } => args.iter().flat_map(Ty::get_generic_params).collect(),
             Ty::Generic(generic) => vec![generic.clone()],

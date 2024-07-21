@@ -1,15 +1,11 @@
-use crate::{fs::project::Project, parser::stmt::Stmt, ty::Ty, util::Span};
+use crate::{parser::stmt::Stmt, project::Project, ty::Ty, util::Span};
 
 use super::CheckState;
 
 pub mod let_;
 
 impl Stmt {
-    pub fn check<'module>(
-        &'module self,
-        project: &'module Project,
-        state: &mut CheckState<'module>,
-    ) -> Ty<'module> {
+    pub fn check(&self, project: &Project, state: &mut CheckState<'_>) -> Ty {
         match self {
             Stmt::Let(l) => {
                 l.check(project, state);
@@ -19,13 +15,13 @@ impl Stmt {
         }
     }
 
-    pub fn expect_is_instance<'module>(
-        &'module self,
-        expected: &Ty<'module>,
-        project: &'module Project,
-        state: &mut CheckState<'module>,
+    pub fn expect_is_instance(
+        &self,
+        expected: &Ty,
+        project: &Project,
+        state: &mut CheckState<'_>,
         span: Span,
-    ) -> Ty<'module> {
+    ) -> Ty {
         match self {
             Stmt::Let(l) => {
                 l.check(project, state);

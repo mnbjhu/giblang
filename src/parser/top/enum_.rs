@@ -1,7 +1,6 @@
 use chumsky::{error::Rich, primitive::just, IterParser, Parser};
 
 use crate::{
-    fs::project::ImplData,
     kw,
     lexer::token::punct,
     parser::common::{
@@ -20,7 +19,6 @@ pub struct Enum {
     pub name: Spanned<String>,
     pub generics: Spanned<GenericArgs>,
     pub members: Vec<Spanned<EnumMember>>,
-    pub impls: Vec<ImplData>,
     pub id: u32,
 }
 
@@ -62,7 +60,6 @@ pub fn enum_parser<'tokens, 'src: 'tokens>() -> AstParser!(Enum) {
                 name,
                 generics,
                 members,
-                impls: vec![],
                 id: *state,
             }
         })
