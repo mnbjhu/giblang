@@ -91,4 +91,15 @@ impl Top {
             Top::Impl(Impl { id, .. }) => Some(*id),
         }
     }
+
+    pub fn is_parent(&self) -> bool {
+        match &self {
+            Top::Func(_) => false,
+            Top::Trait(_) => true,
+            Top::Struct(_) => true,
+            Top::Enum(_) => true,
+            Top::Use(_) => false,
+            Top::Impl(_) => true,
+        }
+    }
 }
