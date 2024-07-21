@@ -4,8 +4,8 @@ use crate::{
     check::state::CheckState, parser::expr::call::Call, project::Project, ty::Ty, util::Span,
 };
 
-impl Call {
-    pub fn check(&self, project: &Project, state: &mut CheckState) -> Ty {
+impl<'proj> Call {
+    pub fn check(&'proj self, project: &'proj Project, state: &mut CheckState<'proj>) -> Ty {
         let name_ty = self.name.0.check(project, state);
         // TODO: Think about receivers
         if let Ty::Function {
@@ -33,7 +33,7 @@ impl Call {
                 .zip(expected_args)
                 .for_each(|((arg, span), expected)| {
                     let actual = arg.expect_instance_of(expected, project, state, *span);
-                    let implied_geneircs = expected.imply_generics(actual);
+                    let implied_geneircs = expected.imply_generics(&actual);
                     if let Some(implied_geneircs) = implied_geneircs {
                         for (name, ty) in implied_geneircs {
                             let new = if let Some(existing) = implied.get(&name) {
@@ -77,10 +77,10 @@ impl Call {
     }
 
     pub fn expected_instance_of(
-        &self,
+        &'proj self,
         expected: &Ty,
-        project: &Project,
-        state: &mut CheckState,
+        project: &'proj Project,
+        state: &mut CheckState<'proj>,
         span: Span,
     ) -> Ty {
         let actual = self.check(project, state);

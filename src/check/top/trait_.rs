@@ -5,8 +5,8 @@ use crate::{
     ty::{Generic, Ty},
 };
 
-impl Trait {
-    pub fn check(&self, project: &Project, state: &mut CheckState) {
+impl<'proj> Trait {
+    pub fn check(&'proj self, project: &'proj Project, state: &mut CheckState<'proj>) {
         let args = self.generics.check(project, state, true);
         state.insert_generic(
             "Self".to_string(),

@@ -4,8 +4,8 @@ use super::CheckState;
 
 pub mod let_;
 
-impl Stmt {
-    pub fn check(&self, project: &Project, state: &mut CheckState<'_>) -> Ty {
+impl<'proj> Stmt {
+    pub fn check(&'proj self, project: &'proj Project, state: &mut CheckState<'proj>) -> Ty {
         match self {
             Stmt::Let(l) => {
                 l.check(project, state);
@@ -16,10 +16,10 @@ impl Stmt {
     }
 
     pub fn expect_is_instance(
-        &self,
+        &'proj self,
         expected: &Ty,
-        project: &Project,
-        state: &mut CheckState<'_>,
+        project: &'proj Project,
+        state: &mut CheckState<'proj>,
         span: Span,
     ) -> Ty {
         match self {

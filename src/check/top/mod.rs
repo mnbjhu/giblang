@@ -9,8 +9,8 @@ pub mod struct_;
 pub mod struct_body;
 pub mod trait_;
 
-impl Top {
-    pub fn check(&self, project: &Project, state: &mut CheckState) {
+impl<'proj> Top {
+    pub fn check(&'proj self, project: &'proj Project, state: &mut CheckState<'proj>) {
         state.enter_scope();
         match self {
             Top::Use(use_) => {

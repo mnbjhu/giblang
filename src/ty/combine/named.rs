@@ -38,7 +38,7 @@ pub fn get_shared_named_subtype<'module>(
     let mut shared = vec![];
     for impl_ in impls.iter() {
         if let Some(ty) = impl_.map(
-            Ty::Named {
+            &Ty::Named {
                 name,
                 args: args.to_vec(),
             },

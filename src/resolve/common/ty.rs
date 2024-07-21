@@ -5,7 +5,7 @@ use crate::{
 };
 
 impl Type {
-    pub fn resolve(&self, state: CheckState<'_>) -> Ty {
+    pub fn resolve(&self, state: &mut CheckState<'_>) -> Ty {
         match self {
             Type::Named(NamedType { name, args }) => {
                 if let Some(decl) = state.get_decl_with_error(name) {
@@ -27,11 +27,11 @@ impl Type {
                 args,
                 ret,
             } => Ty::Function {
-                receiver: receiver.map(|ty| Box::new(ty.as_ref().0.resolve(state))),
+                receiver: receiver
+                    .as_ref()
+                    .map(|ty| Box::new(ty.as_ref().0.resolve(state))),
                 args: args.iter().map(|(ty, _)| ty.resolve(state)).collect(),
-                ret: receiver
-                    .map(|ty| Box::new(ty.as_ref().0.resolve(state)))
-                    .unwrap_or(Box::new(Ty::Tuple(vec![]))),
+                ret: Box::new(ret.0.resolve(state)),
             },
         }
     }

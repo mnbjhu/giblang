@@ -63,7 +63,7 @@ impl<'file> CheckState<'file> {
     }
 
     pub fn get_decl_with_error(&self, path: &SpannedQualifiedName) -> Option<u32> {
-        let name = path[0].0;
+        let name = path[0].0.clone();
         if path.len() == 1 {
             if let Some(decl) = self.decls.get(&name) {
                 return Some(*decl);

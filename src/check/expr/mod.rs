@@ -17,7 +17,7 @@ pub mod match_arm;
 pub mod tuple;
 
 impl Expr {
-    pub fn check(&self, project: &Project, state: &mut CheckState) -> Ty {
+    pub fn check<'proj>(&'proj self, project: &'proj Project, state: &mut CheckState<'proj>) -> Ty {
         match self {
             Expr::Literal(lit) => lit.into(),
             Expr::Ident(ident) => check_ident(state, ident, project),
@@ -31,11 +31,11 @@ impl Expr {
         }
     }
 
-    pub fn expect_instance_of(
-        &self,
+    pub fn expect_instance_of<'proj>(
+        &'proj self,
         expected: &Ty,
-        project: &Project,
-        state: &mut CheckState,
+        project: &'proj Project,
+        state: &mut CheckState<'proj>,
         span: Span,
     ) -> Ty {
         match self {

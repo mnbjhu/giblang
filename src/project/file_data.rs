@@ -12,8 +12,8 @@ pub struct FileData {
 }
 
 impl FileData {
-    pub fn print_report(&self, report: Report<(&String, Range<usize>)>) {
-        let source = Source::from(self.text);
+    pub fn print_report<'proj>(&'proj self, report: Report<(&'proj String, Range<usize>)>) {
+        let source = Source::from(self.text.clone());
         let name = &self.name;
         report.print((name, source)).unwrap();
     }

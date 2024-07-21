@@ -1,7 +1,7 @@
 use crate::{check::state::CheckState, parser::expr::match_::Match, project::Project, ty::Ty};
 
-impl Match {
-    pub fn check(&self, project: &Project, state: &mut CheckState) -> Ty {
+impl<'proj> Match {
+    pub fn check(&'proj self, project: &'proj Project, state: &mut CheckState<'proj>) -> Ty {
         let expr_ty = self.expr.0.check(project, state);
         let mut ret = Ty::Unknown;
         for arm in &self.arms {
@@ -11,7 +11,12 @@ impl Match {
         ret
     }
 
-    pub fn is_instance_of(&self, expected: &Ty, project: &Project, state: &mut CheckState) -> Ty {
+    pub fn is_instance_of(
+        &'proj self,
+        expected: &Ty,
+        project: &'proj Project,
+        state: &mut CheckState<'proj>,
+    ) -> Ty {
         let expr_ty = self.expr.0.check(project, state);
         let mut ret = Ty::Unknown;
         for arm in &self.arms {
