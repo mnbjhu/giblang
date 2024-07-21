@@ -71,6 +71,18 @@ impl ModuleNode {
         }
     }
 
+    pub fn get_without_error(&self, path: &[Spanned<String>]) -> Option<u32> {
+        if path.is_empty() {
+            Some(self.id)
+        } else {
+            if let Some(child) = self.children.iter().find(|c| c.name == path[0].0) {
+                return child.get_without_error(&path[1..]);
+            } else {
+                None
+            }
+        }
+    }
+
     pub fn get_module(&self, path: &[String], file: &FileData) -> Option<&ModuleNode> {
         if path.is_empty() {
             return Some(self);

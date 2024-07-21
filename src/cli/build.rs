@@ -9,7 +9,7 @@ use crate::project::Project;
 pub fn build() {
     let mut project = Project::init_pwd();
     project.resolve();
-    // project.check();
+    project.check();
 }
 
 pub fn print_error<T: Display>(error: Rich<'_, T>, source: Source, name: &str, code: &str) {

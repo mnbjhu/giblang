@@ -12,6 +12,13 @@ pub mod trait_;
 impl<'proj> Top {
     pub fn check(&'proj self, project: &'proj Project, state: &mut CheckState<'proj>) {
         state.enter_scope();
+        if let Some(id) = self.get_id() {
+            project
+                .get_decl(id)
+                .generics()
+                .iter()
+                .for_each(|g| state.insert_generic(g.name.to_string(), g.clone()));
+        }
         match self {
             Top::Use(use_) => {
                 state.import(use_);

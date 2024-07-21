@@ -4,6 +4,7 @@ use ariadne::Source;
 use glob::glob;
 
 use crate::{
+    check::state::CheckState,
     fs::util::path_from_filename,
     parser::parse_file,
     project::{file_data::FileData, module::ModuleNode},
@@ -68,6 +69,9 @@ impl Project {
     pub fn get_path_with_error(&self, path: &[Spanned<String>], file: &FileData) -> Option<u32> {
         self.root.get_with_error(path, file)
     }
+    pub fn get_path_without_error(&self, path: &[Spanned<String>]) -> Option<u32> {
+        self.root.get_without_error(path)
+    }
 
     pub fn init_pwd() -> Project {
         let mut counter = 0;
@@ -112,5 +116,14 @@ impl Project {
         self.decls = decls;
         self.impls = impls;
         self.impl_map = impl_map;
+    }
+
+    pub fn check(&self) {
+        for file in &self.files {
+            let mut state = CheckState::from_file(file, self);
+            for item in &file.ast {
+                item.0.check(self, &mut state)
+            }
+        }
     }
 }
