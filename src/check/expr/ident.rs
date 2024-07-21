@@ -6,7 +6,7 @@ use crate::{
 pub fn check_ident<'module>(
     state: &mut CheckState,
     path: &SpannedQualifiedName,
-    project: &Project,
+    _: &Project,
 ) -> Ty {
     if path.len() == 1 {
         if let Some(ty) = state.get_variable(&path[0].0) {
@@ -16,7 +16,7 @@ pub fn check_ident<'module>(
         }
     }
     // TODO: Check for functions and constructors
-    if let Some(decl) = state.get_decl_with_error(path) {}
+    if let Some(_) = state.get_decl_with_error(path) {}
     todo!("Create default ty for decl");
     // Ty::Meta(...)
 }

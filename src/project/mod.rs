@@ -4,10 +4,11 @@ use ariadne::Source;
 use glob::glob;
 
 use crate::{
+    fs::util::path_from_filename,
     parser::parse_file,
     project::{file_data::FileData, module::ModuleNode},
-    resolve::top::{Decl, GenericArgDecl},
-    ty::Ty,
+    resolve::{resolve_file, top::Decl},
+    ty::{Generic, Ty},
     util::Spanned,
 };
 
@@ -24,7 +25,7 @@ pub struct Project {
 }
 
 pub struct ImplData {
-    pub generics: Vec<GenericArgDecl>,
+    pub generics: Vec<Generic>,
     pub from: Ty,
     pub to: Ty,
     pub functions: Vec<u32>,
@@ -33,7 +34,7 @@ pub struct ImplData {
 impl Project {
     pub fn insert_file(&mut self, text: String, name: String, counter: &mut u32) {
         let ast = parse_file(&text, &name, &Source::from(text.clone()), counter);
-        let path = name.split('/').collect::<Vec<&str>>();
+        let path = path_from_filename(&name);
         for item in &ast {
             if let Some(name) = item.0.get_name() {
                 let id = item.0.get_id().unwrap();
@@ -99,5 +100,17 @@ impl Project {
             impls.push(self.impls.get(id).expect("Think these should be valid"))
         }
         impls
+    }
+
+    pub fn resolve(&mut self) {
+        let mut decls = HashMap::new();
+        let mut impls = HashMap::new();
+        let mut impl_map = HashMap::new();
+        self.files
+            .iter()
+            .for_each(|file| resolve_file(file, &mut decls, &mut impls, &mut impl_map, self));
+        self.decls = decls;
+        self.impls = impls;
+        self.impl_map = impl_map;
     }
 }

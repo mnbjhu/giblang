@@ -1,7 +1,7 @@
-
+use gib_mod::another
 struct Thing {
-  name: String,
-  age: Int,
+  name: (),
+  age: (),
 }
 
 trait Magic
@@ -30,13 +30,13 @@ enum Option[out T] {
   None,
 }
 
-fn my_tuple(): (String, String) {
-  
+struct Test2 {
+  name: another::Test3,
+  age: Magic,
 }
 
 
-fn test(hello: String, world: Int): Thing {
-}
+
 
 fn main() {
   let my_thing = Thing("Hello", 123)

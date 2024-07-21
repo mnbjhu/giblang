@@ -57,7 +57,7 @@ pub fn get_shared_named_subtype<'module>(
         return Ty::Any;
     } else if shared.len() == 1 {
         return shared[0].clone();
+    } else {
+        Ty::Sum(shared)
     }
-    return Ty::Sum(shared);
-    Ty::Any
 }

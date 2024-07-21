@@ -1,10 +1,8 @@
 use std::collections::HashMap;
 
-use ariadne::Source;
-
 use crate::{
-    fs::{name::QualifiedName, util::path_from_filename},
-    parser::{expr::qualified_name::SpannedQualifiedName, top::Top, File},
+    fs::name::QualifiedName,
+    parser::expr::qualified_name::SpannedQualifiedName,
     project::{file_data::FileData, Project},
     ty::{Generic, Ty},
     util::{Span, Spanned},
@@ -21,7 +19,6 @@ pub struct CheckState<'file> {
 
 impl<'file> CheckState<'file> {
     pub fn from_file(file_data: &'file FileData, project: &'file Project) -> CheckState<'file> {
-        let source = Source::from(file_data.text.clone());
         let mut state = CheckState {
             imports: HashMap::new(),
             decls: HashMap::new(),
@@ -33,19 +30,10 @@ impl<'file> CheckState<'file> {
         for (top, _) in &file_data.ast {
             if let Some(name) = top.get_name() {
                 let id = top.get_id().unwrap();
-                let mut path = path_from_filename(&file_data.name);
                 state.insert_decl(name.to_string(), id)
             }
         }
         state
-    }
-
-    pub fn import_all(&mut self, file: &File, project: &Project) {
-        for top in file {
-            if let Top::Use(path) = &top.0 {
-                self.import(path);
-            }
-        }
     }
 
     pub fn enter_scope(&mut self) {
@@ -124,7 +112,7 @@ impl<'file> CheckState<'file> {
         self.decls.insert(name, id);
     }
 
-    pub fn get_expr(&self, path: &[Spanned<String>]) -> Ty {
+    pub fn get_expr(&self, _: &[Spanned<String>]) -> Ty {
         todo!()
     }
 }

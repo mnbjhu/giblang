@@ -8,7 +8,7 @@ use crate::project::Project;
 
 pub fn build() {
     let mut project = Project::init_pwd();
-    // project.build_impls();
+    project.resolve();
     // project.check();
 }
 

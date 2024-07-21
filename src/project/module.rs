@@ -25,7 +25,7 @@ impl ModuleNode {
         }
     }
 
-    pub fn insert(&mut self, path: &[&str], id: u32, name: &str) {
+    pub fn insert(&mut self, path: &[String], id: u32, name: &str) {
         if path.is_empty() {
             self.children.push(ModuleNode::item(name.to_string(), id));
         } else {
