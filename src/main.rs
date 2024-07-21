@@ -6,6 +6,7 @@ pub mod cli;
 pub mod fs;
 pub mod lexer;
 pub mod parser;
+pub mod project;
 pub mod ty;
 pub mod util;
 

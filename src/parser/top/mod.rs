@@ -2,7 +2,7 @@ use chumsky::{primitive::choice, Parser};
 
 use crate::{fs::project::ImplData, parser::stmt::stmt_parser, util::Span, AstParser};
 
-use self::{enum_::Enum, func::Func, struct_::Struct, trait_::Trait};
+use self::{enum_::Enum, func::Func, impl_::Impl, struct_::Struct, trait_::Trait};
 
 use super::expr::qualified_name::SpannedQualifiedName;
 
@@ -78,6 +78,17 @@ impl Top {
             Top::Enum(e) => Some(&e.impls),
             Top::Trait(t) => Some(&t.impls),
             _ => None,
+        }
+    }
+
+    pub fn get_id(&self) -> Option<u32> {
+        match &self {
+            Top::Func(Func { id, .. }) => Some(*id),
+            Top::Trait(Trait { id, .. }) => Some(*id),
+            Top::Struct(Struct { id, .. }) => Some(*id),
+            Top::Enum(Enum { id, .. }) => Some(*id),
+            Top::Use(_) => None,
+            Top::Impl(Impl { id, .. }) => Some(*id),
         }
     }
 }
