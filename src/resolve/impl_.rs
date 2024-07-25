@@ -136,7 +136,6 @@ impl Ty {
                     }
                 }
             }
-            Ty::Prim(_) => self.clone(),
             Ty::Meta(_) => unimplemented!("Need to thing about this..."),
         }
     }

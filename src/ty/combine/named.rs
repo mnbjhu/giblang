@@ -8,7 +8,8 @@ pub fn get_shared_named_subtype(other: &Ty, name: u32, args: &[Ty], project: &Pr
     {
         let decl = project.get_decl(name);
         if name == *other_name && args.len() == other_args.len() {
-            let iter = args.iter().zip(other_args).zip(decl.generics().iter());
+            let generics = decl.generics();
+            let iter = args.iter().zip(other_args).zip(&generics);
             let mut args: Vec<Ty> = vec![];
             for ((first, second), def) in iter {
                 match def.variance {
@@ -21,7 +22,7 @@ pub fn get_shared_named_subtype(other: &Ty, name: u32, args: &[Ty], project: &Pr
                     Variance::Contravariant => todo!(),
                 };
             }
-            if args.len() == decl.generics().len() {
+            if args.len() == generics.len() {
                 return Ty::Named { name, args };
             }
         }

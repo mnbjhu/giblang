@@ -1,7 +1,8 @@
 use gib_mod::another
+
 struct Thing {
-  name: (),
-  age: (),
+  name: String,
+  age: Int,
 }
 
 trait Magic
@@ -37,6 +38,11 @@ struct Test2 {
 
 
 fn main() {
-  let my_thing = Thing("Hello", 123)
+  let Thing {
+    name,
+    age
+  } = Thing("Hello", 123)
+  let thing = Option::Some("Hello")
+  let test: Int = thing
 }
 

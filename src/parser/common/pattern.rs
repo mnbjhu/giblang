@@ -73,6 +73,7 @@ pub fn pattern_parser<'tokens, 'src: 'tokens>() -> AstParser!(Pattern) {
             .clone()
             .map_with(|p, e| (p, e.span()))
             .separated_by(just(punct(',')).padded_by(optional_newline()))
+            .allow_trailing()
             .collect()
             .delimited_by(
                 just(punct('(')).then(optional_newline()),
@@ -86,6 +87,7 @@ pub fn pattern_parser<'tokens, 'src: 'tokens>() -> AstParser!(Pattern) {
         let struct_ = struct_field_pattern_parser(pat)
             .map_with(|p, e| (p, e.span()))
             .separated_by(just(punct(',')).padded_by(optional_newline()))
+            .allow_trailing()
             .collect()
             .delimited_by(
                 just(punct('{')).then(optional_newline()),

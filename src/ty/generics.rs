@@ -5,7 +5,6 @@ impl Ty {
         match self {
             Ty::Named { args, .. } => args.iter().flat_map(Ty::get_generic_params).collect(),
             Ty::Generic(generic) => vec![generic.clone()],
-            Ty::Prim(_) => vec![],
             Ty::Meta(_) => todo!(),
             Ty::Function {
                 receiver,

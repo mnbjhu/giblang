@@ -8,7 +8,7 @@ use crate::{
     parser::parse_file,
     project::{file_data::FileData, module::ModuleNode, util::path_from_filename},
     resolve::{resolve_file, top::Decl},
-    ty::{Generic, Ty},
+    ty::{Generic, PrimTy, Ty},
     util::Spanned,
 };
 
@@ -75,12 +75,25 @@ impl Project {
     }
 
     pub fn init_pwd() -> Project {
-        let mut counter = 0;
+        let mut counter = 6;
+        let mut decls = HashMap::new();
+        decls.insert(1, Decl::Prim(PrimTy::String));
+        decls.insert(2, Decl::Prim(PrimTy::Int));
+        decls.insert(3, Decl::Prim(PrimTy::Bool));
+        decls.insert(4, Decl::Prim(PrimTy::Float));
+        decls.insert(5, Decl::Prim(PrimTy::Char));
+
+        let mut root = ModuleNode::module("root".to_string());
+        root.insert(&[], 1, "String");
+        root.insert(&[], 2, "Int");
+        root.insert(&[], 3, "Bool");
+        root.insert(&[], 4, "Float");
+        root.insert(&[], 5, "Char");
         let mut project = Project {
-            root: ModuleNode::module("root".to_string()),
+            root,
             files: vec![],
             parents: vec![],
-            decls: HashMap::new(),
+            decls,
             impls: HashMap::new(),
             impl_map: HashMap::new(),
         };
@@ -114,7 +127,7 @@ impl Project {
         self.files
             .iter()
             .for_each(|file| resolve_file(file, &mut decls, &mut impls, &mut impl_map, self));
-        self.decls = decls;
+        self.decls.extend(decls);
         self.impls = impls;
         self.impl_map = impl_map;
     }

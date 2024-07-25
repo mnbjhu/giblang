@@ -66,7 +66,7 @@ impl ModuleNode {
         } else if let Some(child) = self.children.iter().find(|c| c.name == path[0].0) {
             return child.get_with_error(&path[1..], file);
         } else {
-            file.error(&format!("Module '{}' not found", path[0].0), path[0].1);
+            file.error(&format!("Import '{}' not found", path[0].0), path[0].1);
             None
         }
     }

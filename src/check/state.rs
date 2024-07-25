@@ -13,7 +13,7 @@ pub struct CheckState<'file> {
     generics: Vec<HashMap<String, Generic>>,
     variables: Vec<HashMap<String, Ty>>,
     pub file_data: &'file FileData,
-    project: &'file Project,
+    pub project: &'file Project,
 }
 
 impl<'file> CheckState<'file> {

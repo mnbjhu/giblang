@@ -30,13 +30,6 @@ impl Ty {
             }
             // TODO: Think about usecases for this
             (Ty::Meta(_), _) | (_, Ty::Meta(_)) => Ty::Any,
-            (Ty::Prim(s), Ty::Prim(o)) => {
-                if s == o {
-                    self.clone()
-                } else {
-                    Ty::Any
-                }
-            }
             (
                 Ty::Named { name, args },
                 Ty::Named {

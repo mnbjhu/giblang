@@ -3,7 +3,7 @@ use crate::{
     ty::Ty,
 };
 
-pub fn check_ident(state: &mut CheckState, path: &SpannedQualifiedName, _: &Project) -> Ty {
+pub fn check_ident(state: &mut CheckState, path: &SpannedQualifiedName, project: &Project) -> Ty {
     if path.len() == 1 {
         if let Some(ty) = state.get_variable(&path[0].0) {
             return ty.clone();
@@ -11,8 +11,12 @@ pub fn check_ident(state: &mut CheckState, path: &SpannedQualifiedName, _: &Proj
             return Ty::Meta(Box::new(Ty::Generic(generic.clone())));
         }
     }
-    // TODO: Check for functions and constructors
-    todo!("Create default ty for decl");
+    if let Some(decl_id) = state.get_decl_with_error(path) {
+        let decl = project.get_decl(decl_id);
+        decl.get_ty(decl_id, project)
+    } else {
+        Ty::Unknown
+    }
     // Ty::Meta(...)
 }
 
@@ -25,7 +29,11 @@ pub fn check_ident_is(
     let actual = check_ident(state, ident, project);
     if !actual.is_instance_of(expected, project) {
         state.error(
-            &format!("Expected value to be of type '{expected}' but found '{actual}'",),
+            &format!(
+                "Expected value to be of type '{}' but found '{}'",
+                expected.get_name(project),
+                actual.get_name(project),
+            ),
             ident.last().unwrap().1,
         )
     }
@@ -82,38 +90,3 @@ pub fn check_ident_is(
 //     ret
 // }
 //
-// fn get_function_ty<'module>(
-//     project: &'module Project,
-//     path: &[String],
-//     f: &'module crate::parser::top::func::Func,
-// ) -> Ty<'module> {
-//     let file = project.get_file(&path[..path.len() - 1]);
-//     let mut imp_state = CheckState::from_file(file);
-//     imp_state.import_all(&file.ast, project);
-//     // TODO: Check generics
-//     let _ = f.generics.check(project, &mut imp_state, false);
-//     let receiver = f
-//         .receiver
-//         .as_ref()
-//         .map(|(rec, _)| rec.check(project, &mut imp_state, false))
-//         .map(Box::new);
-//
-//     let args = f
-//         .args
-//         .iter()
-//         .map(|(arg, _)| arg.ty.0.check(project, &mut imp_state, false))
-//         .collect();
-//
-//     let ret = f
-//         .ret
-//         .as_ref()
-//         .map(|(ret, _)| ret.check(project, &mut imp_state, false))
-//         .map(Box::new)
-//         .unwrap_or(Box::new(Ty::Tuple(vec![])));
-//
-//     Ty::Function {
-//         receiver,
-//         args,
-//         ret,
-//     }
-// }

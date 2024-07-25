@@ -86,7 +86,11 @@ impl<'proj> Call {
         let actual = self.check(project, state);
         if !actual.is_instance_of(expected, project) {
             state.error(
-                &format!("Expected value to be of type '{expected}' but found '{actual}'",),
+                &format!(
+                    "Expected value to be of type '{}' but found '{}'",
+                    expected.get_name(project),
+                    actual.get_name(project),
+                ),
                 span,
             )
         }

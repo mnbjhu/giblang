@@ -4,17 +4,47 @@ use crate::{
     check::CheckState,
     parser::common::pattern::{Pattern, StructFieldPattern},
     project::Project,
+    resolve::top::{Decl, StructDecl},
     ty::Ty,
     util::Span,
 };
 
 impl Pattern {
-    pub fn check(&self, _: &Project, state: &mut CheckState, ty: Ty) {
+    pub fn check<'module>(
+        &'module self,
+        project: &'module Project,
+        state: &mut CheckState<'module>,
+        ty: Ty,
+    ) {
         if let Pattern::Name(name) = self {
-            return state.insert_variable(name.to_string(), ty);
+            state.insert_variable(name.to_string(), ty);
+            return;
         }
-        let _ = self.name();
-        // TODO: Re-implement
+        let name = self.name();
+        let decl_id = state.get_decl_with_error(name);
+        if let Some(decl_id) = decl_id {
+            if let Decl::Member { body, .. } | Decl::Struct { body, .. } = project.get_decl(decl_id)
+            {
+                match (self, body) {
+                    (Pattern::Struct { name, fields }, StructDecl::Fields(expected)) => {
+                        let expected = expected.iter().cloned().collect::<HashMap<_, _>>();
+                        for field in fields {
+                            field.0.check(project, state, &expected, name[0].1);
+                        }
+                    }
+                    (Pattern::UnitStruct(_), StructDecl::None) => {}
+                    (Pattern::TupleStruct { fields, .. }, StructDecl::Tuple(tys)) => {
+                        for (field, ty) in fields.iter().zip(tys) {
+                            field.0.check(project, state, ty.clone());
+                        }
+                    }
+                    (Pattern::Name(_), _) => unreachable!(),
+                    _ => state.error("Struct pattern doesn't match expected", name[0].1),
+                }
+            } else {
+                state.error("Expected a struct", name[0].1);
+            }
+        }
     }
 }
 

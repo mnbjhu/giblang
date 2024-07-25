@@ -8,7 +8,6 @@ impl<'module> Ty {
             (Ty::Unknown, _) => true,
             (_, Ty::Unknown) => true,
             (Ty::Any, Ty::Any) => true,
-            (Ty::Prim(s), Ty::Prim(o)) => s == o,
             (
                 Ty::Generic(Generic {
                     variance, super_, ..

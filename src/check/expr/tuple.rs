@@ -50,7 +50,11 @@ pub fn check_tuple_is<'proj>(
     } else {
         let actual = check_tuple(tuple, project, state);
         state.error(
-            &format!("Expected value to be of type '{expected}' but found '{actual}'",),
+            &format!(
+                "Expected value to be of type '{}' but found '{}'",
+                expected.get_name(project),
+                actual.get_name(project),
+            ),
             span,
         );
         actual
