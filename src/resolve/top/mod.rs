@@ -40,7 +40,7 @@ impl Top {
                     let id = i.id;
                     let impl_ = i.resolve(state, decls);
                     if let Ty::Named { name, .. } = &impl_.from {
-                        if let Some(existing) = impl_map.get_mut(&name) {
+                        if let Some(existing) = impl_map.get_mut(name) {
                             existing.push(id);
                         } else {
                             impl_map.insert(*name, vec![id]);
@@ -58,6 +58,7 @@ impl Top {
     }
 }
 
+#[derive(Debug)]
 pub enum Decl {
     Struct {
         name: Spanned<String>,
@@ -101,6 +102,7 @@ impl Decl {
     }
 }
 
+#[derive(Debug)]
 pub enum StructDecl {
     Fields(Vec<(String, Ty)>),
     Tuple(Vec<Ty>),

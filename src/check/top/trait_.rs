@@ -7,7 +7,7 @@ use crate::{
 
 impl<'proj> Trait {
     pub fn check(&'proj self, project: &'proj Project, state: &mut CheckState<'proj>) {
-        let args = self.generics.check(project, state, true);
+        let args = self.generics.check(project, state);
         state.insert_generic(
             "Self".to_string(),
             Generic {

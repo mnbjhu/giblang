@@ -1,4 +1,4 @@
-use crate::fs::name::QualifiedName;
+use crate::project::name::QualifiedName;
 
 pub fn path_from_filename(filename: &str) -> QualifiedName {
     filename

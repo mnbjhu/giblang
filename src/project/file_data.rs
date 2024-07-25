@@ -12,12 +12,6 @@ pub struct FileData {
 }
 
 impl FileData {
-    pub fn print_report<'proj>(&'proj self, report: Report<(&'proj String, Range<usize>)>) {
-        let source = Source::from(self.text.clone());
-        let name = &self.name;
-        report.print((name, source)).unwrap();
-    }
-
     pub fn error(&self, text: &str, span: Span) {
         let range: Range<usize> = span.into();
         Report::build(ReportKind::Error, self.name.clone(), span.start)

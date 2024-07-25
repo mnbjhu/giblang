@@ -14,6 +14,12 @@ impl ImplData {
                 .iter()
                 .all(|arg| implied_generics.contains_key(&arg.name))
         {
+            for generic in &self.generics {
+                let implied = implied_generics.get(&generic.name).unwrap();
+                if !implied.is_instance_of(&generic.super_, project) {
+                    return None;
+                }
+            }
             Some(self.to.parameterize(&implied_generics))
         } else {
             None
@@ -84,8 +90,8 @@ impl Ty {
                 }
                 res.extend(ret.imply_generics(other_ret)?);
             }
-            (s, o) => {
-                if s.equals(&o) {
+            _ => {
+                if self.equals(other) {
                     return Some(HashMap::new());
                 }
             }
@@ -98,7 +104,7 @@ impl Ty {
             Ty::Any => Ty::Any,
             Ty::Unknown => Ty::Unknown,
             Ty::Named { name, args } => Ty::Named {
-                name: name.clone(),
+                name: *name,
                 args: args.iter().map(|ty| ty.parameterize(generics)).collect(),
             },
             // TODO: Check use of variance/super

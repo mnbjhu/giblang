@@ -1,9 +1,8 @@
 use std::collections::HashMap;
 
 use crate::{
-    fs::name::QualifiedName,
     parser::expr::qualified_name::SpannedQualifiedName,
-    project::{file_data::FileData, Project},
+    project::{file_data::FileData, name::QualifiedName, Project},
     ty::{Generic, Ty},
     util::{Span, Spanned},
 };
@@ -58,14 +57,29 @@ impl<'file> CheckState<'file> {
             }
         }
         if let Some(import) = self.imports.get(&name) {
-            let module = self
-                .project
-                .root
-                .get_module(import, self.file_data)
-                .expect("There should only be valid paths at this point??");
+            let module = self.project.root.get_module(import)?;
             module.get_with_error(&path[1..], self.file_data)
         } else {
             self.project.get_path_with_error(path, self.file_data)
+        }
+    }
+
+    pub fn get_decl_without_error(&self, path: &SpannedQualifiedName) -> Option<u32> {
+        let name = path[0].0.clone();
+        if path.len() == 1 {
+            if let Some(decl) = self.decls.get(&name) {
+                return Some(*decl);
+            }
+        }
+        if let Some(import) = self.imports.get(&name) {
+            let module = self
+                .project
+                .root
+                .get_module(import)
+                .expect("There should only be valid paths at this point??");
+            module.get_without_error(&path[1..])
+        } else {
+            self.project.get_path_without_error(path)
         }
     }
 
@@ -112,6 +126,7 @@ impl<'file> CheckState<'file> {
         self.decls.insert(name, id);
     }
 
+    #[allow(unused)]
     pub fn get_expr(&self, _: &[Spanned<String>]) -> Ty {
         todo!()
     }

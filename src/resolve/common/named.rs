@@ -7,7 +7,7 @@ impl NamedType {
                 return Ty::Generic(generic.clone());
             }
         };
-        if let Some(decl) = state.get_decl_with_error(&self.name) {
+        if let Some(decl) = state.get_decl_without_error(&self.name) {
             return Ty::Named {
                 name: decl,
                 args: self.args.iter().map(|ty| ty.0.resolve(state)).collect(),

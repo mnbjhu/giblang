@@ -2,12 +2,12 @@ use crate::{check::CheckState, parser::top::func::Func, project::Project};
 
 impl Func {
     pub fn check<'proj>(&'proj self, project: &'proj Project, state: &mut CheckState<'proj>) {
-        self.generics.check(project, state, true);
+        self.generics.check(project, state);
         if let Some(rec) = &self.receiver {
-            rec.0.check(project, state, true);
+            rec.0.check(project, state);
         }
         if let Some(ret) = &self.ret {
-            ret.0.check(project, state, true);
+            ret.0.check(project, state);
         }
         for arg in &self.args {
             arg.0.check(project, state);

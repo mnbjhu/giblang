@@ -6,7 +6,7 @@ use crate::{
     util::Span,
 };
 
-impl<'module> From<&Literal> for Ty {
+impl From<&Literal> for Ty {
     fn from(value: &Literal) -> Self {
         match value {
             Literal::Int(_) => Ty::Prim(PrimTy::Int),
@@ -19,7 +19,7 @@ impl<'module> From<&Literal> for Ty {
 }
 
 impl Literal {
-    pub fn expect_instance_of<'module>(
+    pub fn expect_instance_of(
         &self,
         expected: &Ty,
         project: &Project,

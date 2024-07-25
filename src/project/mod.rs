@@ -5,9 +5,8 @@ use glob::glob;
 
 use crate::{
     check::state::CheckState,
-    fs::util::path_from_filename,
     parser::parse_file,
-    project::{file_data::FileData, module::ModuleNode},
+    project::{file_data::FileData, module::ModuleNode, util::path_from_filename},
     resolve::{resolve_file, top::Decl},
     ty::{Generic, Ty},
     util::Spanned,
@@ -15,6 +14,8 @@ use crate::{
 
 pub mod file_data;
 mod module;
+pub mod name;
+pub mod util;
 
 pub struct Project {
     pub root: ModuleNode,

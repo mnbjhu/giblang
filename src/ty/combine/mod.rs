@@ -3,7 +3,6 @@ use crate::{project::Project, ty::combine::named::get_shared_named_subtype};
 use super::Ty;
 
 pub mod named;
-pub mod vec;
 
 impl Ty {
     pub fn get_shared_subtype(&self, other: &Ty, project: &Project) -> Ty {

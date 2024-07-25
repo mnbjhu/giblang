@@ -45,6 +45,8 @@ impl ModuleNode {
         }
     }
 
+    // TODO: Delete if not needed
+    #[allow(dead_code)]
     pub fn get_id(&self, path: &[String]) -> Option<u32> {
         if path.is_empty() {
             Some(self.id)
@@ -60,38 +62,34 @@ impl ModuleNode {
 
     pub fn get_with_error(&self, path: &[Spanned<String>], file: &FileData) -> Option<u32> {
         if path.is_empty() {
-            return Some(self.id);
+            Some(self.id)
+        } else if let Some(child) = self.children.iter().find(|c| c.name == path[0].0) {
+            return child.get_with_error(&path[1..], file);
         } else {
-            if let Some(child) = self.children.iter().find(|c| c.name == path[0].0) {
-                return child.get_with_error(&path[1..], file);
-            } else {
-                file.error(&format!("Module '{}' not found", path[0].0), path[0].1);
-                None
-            }
+            file.error(&format!("Module '{}' not found", path[0].0), path[0].1);
+            None
         }
     }
 
+    // TODO: Delete if not needed
+    #[allow(dead_code)]
     pub fn get_without_error(&self, path: &[Spanned<String>]) -> Option<u32> {
         if path.is_empty() {
             Some(self.id)
+        } else if let Some(child) = self.children.iter().find(|c| c.name == path[0].0) {
+            return child.get_without_error(&path[1..]);
         } else {
-            if let Some(child) = self.children.iter().find(|c| c.name == path[0].0) {
-                return child.get_without_error(&path[1..]);
-            } else {
-                None
-            }
+            None
         }
     }
 
-    pub fn get_module(&self, path: &[String], file: &FileData) -> Option<&ModuleNode> {
+    pub fn get_module(&self, path: &[String]) -> Option<&ModuleNode> {
         if path.is_empty() {
-            return Some(self);
+            Some(self)
+        } else if let Some(child) = self.children.iter().find(|c| c.name == path[0]) {
+            return child.get_module(&path[1..]);
         } else {
-            if let Some(child) = self.children.iter().find(|c| c.name == path[0]) {
-                return child.get_module(&path[1..], file);
-            } else {
-                None
-            }
+            None
         }
     }
 }

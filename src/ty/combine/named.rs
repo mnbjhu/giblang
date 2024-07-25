@@ -1,11 +1,6 @@
 use crate::{parser::common::variance::Variance, project::Project, ty::Ty};
 
-pub fn get_shared_named_subtype<'module>(
-    other: &Ty,
-    name: u32,
-    args: &[Ty],
-    project: &Project,
-) -> Ty {
+pub fn get_shared_named_subtype(other: &Ty, name: u32, args: &[Ty], project: &Project) -> Ty {
     if let Ty::Named {
         name: other_name,
         args: other_args,
@@ -27,10 +22,7 @@ pub fn get_shared_named_subtype<'module>(
                 };
             }
             if args.len() == decl.generics().len() {
-                return Ty::Named {
-                    name: name.clone(),
-                    args,
-                };
+                return Ty::Named { name, args };
             }
         }
     }
@@ -54,9 +46,9 @@ pub fn get_shared_named_subtype<'module>(
         }
     }
     if shared.is_empty() {
-        return Ty::Any;
+        Ty::Any
     } else if shared.len() == 1 {
-        return shared[0].clone();
+        shared[0].clone()
     } else {
         Ty::Sum(shared)
     }

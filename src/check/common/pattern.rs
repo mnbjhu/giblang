@@ -9,11 +9,11 @@ use crate::{
 };
 
 impl Pattern {
-    pub fn check(&self, project: &Project, state: &mut CheckState, ty: Ty) {
+    pub fn check(&self, _: &Project, state: &mut CheckState, ty: Ty) {
         if let Pattern::Name(name) = self {
             return state.insert_variable(name.to_string(), ty);
         }
-        let name = self.name();
+        let _ = self.name();
         // TODO: Re-implement
     }
 }

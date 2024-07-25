@@ -3,11 +3,7 @@ use crate::{
     ty::Ty,
 };
 
-pub fn check_ident<'module>(
-    state: &mut CheckState,
-    path: &SpannedQualifiedName,
-    _: &Project,
-) -> Ty {
+pub fn check_ident(state: &mut CheckState, path: &SpannedQualifiedName, _: &Project) -> Ty {
     if path.len() == 1 {
         if let Some(ty) = state.get_variable(&path[0].0) {
             return ty.clone();
@@ -16,7 +12,6 @@ pub fn check_ident<'module>(
         }
     }
     // TODO: Check for functions and constructors
-    if let Some(_) = state.get_decl_with_error(path) {}
     todo!("Create default ty for decl");
     // Ty::Meta(...)
 }

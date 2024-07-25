@@ -12,7 +12,8 @@ pub mod trait_;
 impl<'proj> Top {
     pub fn check(&'proj self, project: &'proj Project, state: &mut CheckState<'proj>) {
         state.enter_scope();
-        if let Some(id) = self.get_id() {
+        if self.get_name().is_some() {
+            let id = self.get_id().unwrap();
             project
                 .get_decl(id)
                 .generics()

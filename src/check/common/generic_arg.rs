@@ -6,9 +6,9 @@ use crate::{
 };
 
 impl GenericArg {
-    pub fn check(&self, project: &Project, state: &mut CheckState, print_errors: bool) -> Ty {
+    pub fn check(&self, project: &Project, state: &mut CheckState) -> Ty {
         let super_ = if let Some((super_, _)) = &self.super_ {
-            super_.check(project, state, print_errors)
+            super_.check(project, state)
         } else {
             Ty::Any
         };
