@@ -9,6 +9,11 @@ trait Magic
 trait Epic
 trait Spooky
 
+enum Result[out T, out E] {
+  Ok(T),
+  Err(E),
+}
+
 struct Test
 
 impl Magic for Test
@@ -45,11 +50,7 @@ struct Test2 {
 
 
 fn main() {
-  let option: Option[Int] = Option::None
-  let thing = match option {
-    Option::Some(x) => Thing("Bob", x),
-    Option::None => Test,
-  }
-  let thing2: String = thing
+  let res: Result[Int, String] = Result::Ok(5)
+  let test: String = res
 }
 

@@ -1,6 +1,6 @@
 use crate::{
     check::state::CheckState, parser::expr::qualified_name::SpannedQualifiedName, project::Project,
-    ty::Ty,
+    ty::Ty, util::Span,
 };
 
 pub fn check_ident(state: &mut CheckState, path: &SpannedQualifiedName, project: &Project) -> Ty {
@@ -27,18 +27,36 @@ pub fn check_ident_is(
     project: &Project,
 ) -> Ty {
     let actual = check_ident(state, ident, project);
-    if !actual.is_instance_of(expected, project) {
+    let span = ident.last().unwrap().1;
+    let new = check_ty(actual, expected, project, state, span);
+    new
+}
+
+pub fn check_ty(
+    actual: Ty,
+    expected: &Ty,
+    project: &Project,
+    state: &mut CheckState<'_>,
+    span: Span,
+) -> Ty {
+    let implied = actual.imply_generics(expected);
+    let new = if let Some(implied) = implied {
+        actual.parameterize(&implied)
+    } else {
+        actual
+    };
+    if !new.is_instance_of(expected, project) {
         state.error(
             &format!(
                 "Expected value to be of type '{}' but found '{}'",
                 expected.get_name(project),
-                actual.get_name(project),
+                new.get_name(project),
             ),
-            ident.last().unwrap().1,
+            span,
         )
     }
     // TODO: Consider whether to pass through or use Ty::Unknown
-    actual
+    new
 }
 
 // fn get_body_ty<'module>(
