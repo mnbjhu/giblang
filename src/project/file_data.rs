@@ -2,7 +2,7 @@ use std::ops::Range;
 
 use ariadne::{Color, Label, Report, ReportKind, Source};
 
-use crate::{parser::File, util::Span};
+use crate::{parser::File, project::util::path_from_filename, util::Span};
 
 pub struct FileData {
     pub end: u32,
@@ -23,5 +23,9 @@ impl FileData {
             .finish()
             .print((self.name.clone(), Source::from(self.text.clone())))
             .unwrap();
+    }
+
+    pub fn get_path(&self) -> Vec<String> {
+        path_from_filename(&self.name)
     }
 }

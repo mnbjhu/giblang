@@ -93,4 +93,25 @@ impl Top {
             Top::Impl(_) => true,
         }
     }
+
+    pub fn children(&self) -> Vec<(String, u32)> {
+        match &self {
+            Top::Func(_) => vec![],
+            Top::Trait(Trait { body, .. }) => body
+                .iter()
+                .map(|f| (f.0.name.0.to_string(), f.0.id))
+                .collect(),
+            Top::Struct(Struct { .. }) => vec![],
+            Top::Enum(Enum { members, .. }) => members
+                .iter()
+                .map(|f| (f.0.name.0.to_string(), f.0.id))
+                .collect(),
+            Top::Use(_) => vec![],
+            Top::Impl(impl_) => impl_
+                .body
+                .iter()
+                .map(|f| (f.0.name.0.to_string(), f.0.id))
+                .collect(),
+        }
+    }
 }

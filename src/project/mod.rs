@@ -36,7 +36,7 @@ pub struct ImplData {
 impl Project {
     pub fn insert_file(&mut self, text: String, name: String, counter: &mut u32) {
         let ast = parse_file(&text, &name, &Source::from(text.clone()), counter);
-        let path = path_from_filename(&name);
+        let mut path = path_from_filename(&name);
         for item in &ast {
             if let Some(name) = item.0.get_name() {
                 let id = item.0.get_id().unwrap();
@@ -44,6 +44,11 @@ impl Project {
                     self.parents.push(id);
                 }
                 self.root.insert(&path, id, name);
+                for (child_name, id) in &item.0.children() {
+                    path.push(name.to_string());
+                    self.root.insert(&path, *id, child_name);
+                    path.pop();
+                }
             }
         }
         let file_data = FileData {
@@ -60,7 +65,7 @@ impl Project {
     }
 
     pub fn get_parent(&self, for_id: u32) -> Option<u32> {
-        self.parents.iter().rev().find(|&&id| id < for_id).copied()
+        self.parents.iter().find(|&&id| id > for_id).copied()
     }
 
     pub fn insert_decl(&mut self, id: u32, decl: Decl) {

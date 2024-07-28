@@ -93,3 +93,13 @@ impl ModuleNode {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::cli::build::build;
+
+    #[test]
+    fn run() {
+        build()
+    }
+}

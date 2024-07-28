@@ -7,6 +7,7 @@ struct Thing {
 
 trait Magic
 trait Epic
+trait Spooky
 
 struct Test
 
@@ -26,6 +27,12 @@ impl Epic for Thing {
   }
 }
 
+impl Spooky for Thing {
+  fn do_spooky() {
+    println("Spooky!")
+  }
+}
+
 enum Option[out T] {
   Some(T),
   None,
@@ -38,11 +45,11 @@ struct Test2 {
 
 
 fn main() {
-  let Thing {
-    name,
-    age
-  } = Thing("Hello", 123)
-  let thing = Option::Some("Hello")
-  let test: Int = thing
+  let option: Option[Int] = Option::None
+  let thing = match option {
+    Option::Some(x) => Thing("Bob", x),
+    Option::None => Test,
+  }
+  let thing2: String = thing
 }
 

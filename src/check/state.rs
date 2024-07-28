@@ -9,7 +9,6 @@ use crate::{
 
 pub struct CheckState<'file> {
     imports: HashMap<String, QualifiedName>,
-    decls: HashMap<String, u32>,
     generics: Vec<HashMap<String, Generic>>,
     variables: Vec<HashMap<String, Ty>>,
     pub file_data: &'file FileData,
@@ -20,19 +19,24 @@ impl<'file> CheckState<'file> {
     pub fn from_file(file_data: &'file FileData, project: &'file Project) -> CheckState<'file> {
         let mut state = CheckState {
             imports: HashMap::new(),
-            decls: HashMap::new(),
             generics: vec![],
             variables: vec![],
             file_data,
             project,
         };
+        let mut path = file_data.get_path();
         for (top, _) in &file_data.ast {
             if let Some(name) = top.get_name() {
-                let id = top.get_id().unwrap();
-                state.insert_decl(name.to_string(), id)
+                path.push(name.to_string());
+                state.add_import(name.to_string(), path.clone());
+                path.pop();
             }
         }
         state
+    }
+
+    pub fn add_import(&mut self, name: String, path: QualifiedName) {
+        self.imports.insert(name, path);
     }
 
     pub fn enter_scope(&mut self) {
@@ -51,11 +55,6 @@ impl<'file> CheckState<'file> {
 
     pub fn get_decl_with_error(&self, path: &SpannedQualifiedName) -> Option<u32> {
         let name = path[0].0.clone();
-        if path.len() == 1 {
-            if let Some(decl) = self.decls.get(&name) {
-                return Some(*decl);
-            }
-        }
         if let Some(import) = self.imports.get(&name) {
             let module = self.project.root.get_module(import)?;
             module.get_with_error(&path[1..], self.file_data)
@@ -66,11 +65,6 @@ impl<'file> CheckState<'file> {
 
     pub fn get_decl_without_error(&self, path: &SpannedQualifiedName) -> Option<u32> {
         let name = path[0].0.clone();
-        if path.len() == 1 {
-            if let Some(decl) = self.decls.get(&name) {
-                return Some(*decl);
-            }
-        }
         if let Some(import) = self.imports.get(&name) {
             let module = self
                 .project
@@ -84,15 +78,11 @@ impl<'file> CheckState<'file> {
     }
 
     pub fn import(&mut self, use_: &SpannedQualifiedName) {
-        if let Some(decl) = self.get_decl_with_error(use_) {
-            if decl == 0 {
-                self.imports.insert(
-                    use_.last().unwrap().0.clone(),
-                    use_.iter().map(|(name, _)| name.clone()).collect(),
-                );
-            } else {
-                self.decls.insert(use_.last().unwrap().0.clone(), decl);
-            }
+        if self.get_decl_with_error(use_).is_some() {
+            self.imports.insert(
+                use_.last().unwrap().0.clone(),
+                use_.iter().map(|(name, _)| name.clone()).collect(),
+            );
         }
     }
 
@@ -120,10 +110,6 @@ impl<'file> CheckState<'file> {
             }
         }
         None
-    }
-
-    pub fn insert_decl(&mut self, name: String, id: u32) {
-        self.decls.insert(name, id);
     }
 
     #[allow(unused)]

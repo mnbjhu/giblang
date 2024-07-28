@@ -188,7 +188,7 @@ impl StructDecl {
                     ret: Box::new(self_ty),
                 }
             }
-            StructDecl::None => Ty::Unknown,
+            StructDecl::None => self_ty,
         }
     }
 }

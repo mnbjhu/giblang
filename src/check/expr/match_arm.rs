@@ -15,6 +15,7 @@ impl<'proj> MatchArm {
         state.exit_scope();
         ty
     }
+
     pub fn expected_instance_of(
         &'proj self,
         expected: &Ty,
