@@ -76,4 +76,23 @@ impl<'module> Ty<'module> {
             _ => false,
         }
     }
+    fn get_member_func(&'module self, name: &str, project: &Project) -> Option<Ty<'module>> {
+        match self {
+            Ty::Any => None,
+            Ty::Unknown => None,
+            Ty::Named { name, args } => {
+                todo!()
+            }
+            Ty::Generic(Generic { super_, .. }) => super_.get_member_func(name, project),
+            Ty::Prim(_) => todo!(),
+            Ty::Meta(_) => None,
+            Ty::Function {
+                receiver,
+                args,
+                ret,
+            } => None,
+            Ty::Tuple(_) => todo!(),
+            Ty::Sum(v) => v.iter().find_map(|ty| ty.get_member_func(name, project)),
+        }
+    }
 }

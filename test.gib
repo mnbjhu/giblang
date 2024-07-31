@@ -30,15 +30,31 @@ enum Option[out T] {
   None,
 }
 
+
 fn my_tuple(): (String, String) {
   
 }
 
 
+fn String.to_string(): String {
+
+}
+
 fn test(hello: String, world: Int): Thing {
 }
 
+trait Display {
+  fn Self.to_string(): String
+}
+
+fn print_string(text: String)
+
+fn print[T: Display](item: T) {
+  print_string(123.my_tuple())
+}
+
 fn main() {
-  let my_thing = Thing("Hello", 123)
+  let thing = Option::Some("Thing")
+  let text: String = thing
 }
 

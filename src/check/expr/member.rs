@@ -1,29 +1,41 @@
 use std::collections::HashMap;
 
 use crate::{
-    check::state::CheckState, fs::project::Project, parser::expr::call::Call, ty::Ty, util::Span,
+    check::state::CheckState,
+    fs::project::Project,
+    parser::expr::{member::MemberCall, Expr},
+    ty::Ty,
+    util::Span,
 };
 
-impl Call {
+use super::ident::check_ident;
+
+impl MemberCall {
     pub fn check<'module>(
         &'module self,
         project: &'module Project,
         state: &mut CheckState<'module>,
     ) -> Ty<'module> {
-        let name_ty = self.name.0.check(project, state);
+        let ty = check_ident(state, &vec![self.name.clone()], project);
+
         if let Ty::Function {
             args: expected_args,
             ret,
-            receiver,
-        } = &name_ty
+            receiver: Some(receiver),
+        } = &ty
         {
-            if let Some(receiver) = receiver {
-                state.error(
-                    &format!("Expected a receiver of type {}", receiver),
-                    self.name.1,
-                );
-            }
-            let mut generics = name_ty.get_generic_params();
+            let mut generics = ty.get_generic_params();
+            let mut implied = HashMap::<String, Ty<'_>>::new();
+
+            imply_generic(
+                self.rec.0.as_ref(),
+                receiver,
+                project,
+                state,
+                self.rec.1,
+                &mut implied,
+            );
+
             if expected_args.len() != self.args.len() {
                 state.error(
                     &format!(
@@ -35,24 +47,11 @@ impl Call {
                 );
             }
 
-            let mut implied = HashMap::<String, Ty<'_>>::new();
-
             self.args
                 .iter()
                 .zip(expected_args)
                 .for_each(|((arg, span), expected)| {
-                    let actual = arg.expect_instance_of(expected, project, state, *span);
-                    let implied_geneircs = expected.imply_generics(actual);
-                    if let Some(implied_geneircs) = implied_geneircs {
-                        for (name, ty) in implied_geneircs {
-                            let new = if let Some(existing) = implied.get(&name) {
-                                existing.get_shared_subtype(&ty, project)
-                            } else {
-                                ty
-                            };
-                            implied.insert(name, new);
-                        }
-                    }
+                    imply_generic(arg, expected, project, state, *span, &mut implied);
                 });
 
             generics.retain(|g| !implied.contains_key(&g.name));
@@ -74,13 +73,7 @@ impl Call {
             }
 
             ret.as_ref().parameterize(&implied)
-        } else if let Ty::Unknown = name_ty {
-            Ty::Unknown
         } else {
-            state.error(
-                &format!("Expected a function but found '{name_ty}'"),
-                self.name.1,
-            );
             Ty::Unknown
         }
     }
@@ -100,5 +93,27 @@ impl Call {
             )
         }
         actual
+    }
+}
+
+fn imply_generic<'module>(
+    actual: &'module Expr,
+    expected: &Ty<'module>,
+    project: &'module Project,
+    state: &mut CheckState<'module>,
+    span: chumsky::prelude::SimpleSpan,
+    implied: &mut HashMap<String, Ty<'module>>,
+) {
+    let actual = actual.expect_instance_of(expected, project, state, span);
+    let implied_geneircs = expected.imply_generics(actual);
+    if let Some(implied_geneircs) = implied_geneircs {
+        for (name, ty) in implied_geneircs {
+            let new = if let Some(existing) = implied.get(&name) {
+                existing.get_shared_subtype(&ty, project)
+            } else {
+                ty
+            };
+            implied.insert(name, new);
+        }
     }
 }

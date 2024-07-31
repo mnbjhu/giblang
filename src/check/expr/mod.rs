@@ -19,6 +19,7 @@ pub mod ident;
 pub mod lit;
 pub mod match_;
 pub mod match_arm;
+pub mod member;
 pub mod tuple;
 
 impl Expr {
@@ -37,6 +38,7 @@ impl Expr {
             Expr::Tuple(values) => check_tuple(values, project, state),
             // TODO: Handle if else expr types
             Expr::IfElse(_) => todo!(),
+            Expr::MemberCall(member) => member.check(project, state),
         }
     }
 
@@ -55,6 +57,7 @@ impl Expr {
             Expr::Match(match_) => match_.is_instance_of(expected, project, state),
             Expr::Tuple(v) => check_tuple_is(state, expected, v, project, span),
             Expr::IfElse(_) => todo!(),
+            Expr::MemberCall(member) => member.expected_instance_of(expected, project, state, span),
         }
     }
 }
