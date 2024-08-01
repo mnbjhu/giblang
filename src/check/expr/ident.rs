@@ -28,8 +28,7 @@ pub fn check_ident_is(
 ) -> Ty {
     let actual = check_ident(state, ident, project);
     let span = ident.last().unwrap().1;
-    let new = check_ty(actual, expected, project, state, span);
-    new
+    check_ty(actual, expected, project, state, span)
 }
 
 pub fn check_ty(
