@@ -1,4 +1,4 @@
-use crate::{fs::project::Project, parser::top::Top};
+use crate::{parser::top::Top, project::Project};
 
 use super::CheckState;
 
@@ -9,16 +9,20 @@ pub mod struct_;
 pub mod struct_body;
 pub mod trait_;
 
-impl Top {
-    pub fn check<'module>(
-        &'module self,
-        project: &'module Project,
-        state: &mut CheckState<'module>,
-    ) {
+impl<'proj> Top {
+    pub fn check(&'proj self, project: &'proj Project, state: &mut CheckState<'proj>) {
         state.enter_scope();
+        if self.get_name().is_some() {
+            let id = self.get_id().unwrap();
+            project
+                .get_decl(id)
+                .generics()
+                .iter()
+                .for_each(|g| state.insert_generic(g.name.to_string(), g.clone()));
+        }
         match self {
             Top::Use(use_) => {
-                state.import(use_, project, true);
+                state.import(use_);
             }
             Top::Enum(e) => e.check(project, state),
             Top::Trait(t) => t.check(project, state),

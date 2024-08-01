@@ -1,14 +1,13 @@
 use std::fmt::Display;
 
-use super::{Generic, PrimTy, Ty};
+use super::{Generic, Ty};
 
-impl Display for Ty<'_> {
+impl Display for Ty {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Ty::Any => write!(f, "Any"),
             Ty::Unknown => write!(f, "Unknown"),
             Ty::Named { name, args } => {
-                let name = name.name();
                 write!(f, "{}", name)?;
                 if !args.is_empty() {
                     write!(f, "[")?;
@@ -29,13 +28,6 @@ impl Display for Ty<'_> {
             }) => {
                 write!(f, "{variance}{name}: {super_}")
             }
-            Ty::Prim(p) => match p {
-                PrimTy::String => write!(f, "String"),
-                PrimTy::Bool => write!(f, "Bool"),
-                PrimTy::Float => write!(f, "Float"),
-                PrimTy::Int => write!(f, "Int"),
-                PrimTy::Char => write!(f, "Char"),
-            },
             Ty::Meta(ty) => write!(f, "Type[{}]", ty),
             Ty::Function {
                 receiver,

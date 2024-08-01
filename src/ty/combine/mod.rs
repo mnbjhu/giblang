@@ -1,16 +1,11 @@
-use crate::{fs::project::Project, ty::combine::named::get_shared_named_subtype};
+use crate::{project::Project, ty::combine::named::get_shared_named_subtype};
 
 use super::Ty;
 
 pub mod named;
-pub mod vec;
 
-impl<'module> Ty<'module> {
-    pub fn get_shared_subtype(
-        &self,
-        other: &Ty<'module>,
-        project: &'module Project,
-    ) -> Ty<'module> {
+impl Ty {
+    pub fn get_shared_subtype(&self, other: &Ty, project: &Project) -> Ty {
         if self.is_instance_of(other, project) {
             return other.clone();
         } else if other.is_instance_of(self, project) {
@@ -35,13 +30,6 @@ impl<'module> Ty<'module> {
             }
             // TODO: Think about usecases for this
             (Ty::Meta(_), _) | (_, Ty::Meta(_)) => Ty::Any,
-            (Ty::Prim(s), Ty::Prim(o)) => {
-                if s == o {
-                    self.clone()
-                } else {
-                    Ty::Any
-                }
-            }
             (
                 Ty::Named { name, args },
                 Ty::Named {
@@ -50,12 +38,12 @@ impl<'module> Ty<'module> {
                 },
             ) => {
                 let mut new = vec![];
-                fn insert_ty<'module>(ty: Ty<'module>, new: &mut Vec<Ty<'module>>) {
+                fn insert_ty(ty: Ty, new: &mut Vec<Ty>) {
                     if !new.iter().any(|t| t.equals(&ty)) {
                         new.push(ty)
                     }
                 }
-                match get_shared_named_subtype(other, name, args, project) {
+                match get_shared_named_subtype(other, *name, args, project) {
                     Ty::Any => {}
                     Ty::Sum(v) => {
                         for ty in v {
@@ -64,7 +52,7 @@ impl<'module> Ty<'module> {
                     }
                     ty => insert_ty(ty, &mut new),
                 }
-                match get_shared_named_subtype(self, other_name, other_args, project) {
+                match get_shared_named_subtype(self, *other_name, other_args, project) {
                     Ty::Any => {}
                     Ty::Sum(v) => {
                         for ty in v {
@@ -80,7 +68,7 @@ impl<'module> Ty<'module> {
                 }
             }
             (Ty::Named { name, args }, other) | (other, Ty::Named { name, args }) => {
-                get_shared_named_subtype(other, name, args, project)
+                get_shared_named_subtype(other, *name, args, project)
             }
             _ => todo!(),
         }

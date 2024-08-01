@@ -1,35 +1,50 @@
 use crate::{
-    check::state::CheckState,
-    fs::project::Project,
-    lexer::literal::Literal,
-    ty::{PrimTy, Ty},
-    util::Span,
+    check::state::CheckState, lexer::literal::Literal, project::Project, ty::Ty, util::Span,
 };
 
-impl<'module> From<&Literal> for Ty<'module> {
+impl From<&Literal> for Ty {
     fn from(value: &Literal) -> Self {
         match value {
-            Literal::Int(_) => Ty::Prim(PrimTy::Int),
-            Literal::Float(_) => Ty::Prim(PrimTy::Float),
-            Literal::String(_) => Ty::Prim(PrimTy::String),
-            Literal::Bool(_) => Ty::Prim(PrimTy::Bool),
-            Literal::Char(_) => Ty::Prim(PrimTy::Char),
+            Literal::String(_) => Ty::Named {
+                name: 1,
+                args: vec![],
+            },
+            Literal::Int(_) => Ty::Named {
+                name: 2,
+                args: vec![],
+            },
+            Literal::Bool(_) => Ty::Named {
+                name: 3,
+                args: vec![],
+            },
+            Literal::Float(_) => Ty::Named {
+                name: 4,
+                args: vec![],
+            },
+            Literal::Char(_) => Ty::Named {
+                name: 5,
+                args: vec![],
+            },
         }
     }
 }
 
 impl Literal {
-    pub fn expect_instance_of<'module>(
-        &'module self,
-        expected: &Ty<'module>,
-        project: &'module Project,
-        state: &mut CheckState<'module>,
+    pub fn expect_instance_of(
+        &self,
+        expected: &Ty,
+        project: &Project,
+        state: &mut CheckState,
         span: Span,
-    ) -> Ty<'module> {
+    ) -> Ty {
         let actual = Ty::from(self);
         if !actual.is_instance_of(expected, project) {
             state.error(
-                &format!("Expected value to be of type '{expected}' but found '{actual}'",),
+                &format!(
+                    "Expected value to be of type '{}' but found '{}'",
+                    expected.get_name(project),
+                    actual.get_name(project)
+                ),
                 span,
             )
         }

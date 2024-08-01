@@ -1,4 +1,3 @@
-use crate::fs::project::ImplData;
 use crate::{kw, AstParser};
 use crate::{
     parser::common::{
@@ -16,7 +15,6 @@ pub struct Struct {
     pub name: Spanned<String>,
     pub generics: Spanned<GenericArgs>,
     pub body: StructBody,
-    pub impls: Vec<ImplData>,
     pub id: u32,
 }
 
@@ -34,7 +32,6 @@ pub fn struct_parser<'tokens, 'src: 'tokens>() -> AstParser!(Struct) {
                 name,
                 generics,
                 body,
-                impls: vec![],
                 id: *state,
             }
         })

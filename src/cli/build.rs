@@ -1,13 +1,14 @@
 use std::fmt::Display;
 
-use crate::fs::project::Project;
 use ariadne::{Color, Fmt, Source};
 use ariadne::{ColorGenerator, Label, Report, ReportKind};
 use chumsky::error::Rich;
 
+use crate::project::Project;
+
 pub fn build() {
     let mut project = Project::init_pwd();
-    project.build_impls();
+    project.resolve();
     project.check();
 }
 
@@ -49,5 +50,6 @@ pub fn print_error<T: Display>(error: Rich<'_, T>, source: Source, name: &str, c
             .fg(out),
         );
     }
-    builder.finish().print((name, source.clone())).unwrap();
+    let report = builder.finish();
+    report.print((name, source.clone())).unwrap();
 }

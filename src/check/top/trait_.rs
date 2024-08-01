@@ -1,27 +1,24 @@
 use crate::{
-    check::{CheckState, NamedExpr},
-    fs::project::Project,
+    check::CheckState,
     parser::{common::variance::Variance, top::trait_::Trait},
-    ty::Ty,
+    project::Project,
+    ty::{Generic, Ty},
 };
 
-impl Trait {
-    pub fn check<'module>(
-        &'module self,
-        project: &'module Project,
-        state: &mut CheckState<'module>,
-    ) {
-        let args = self.generics.check(project, state, true);
-        if let NamedExpr::Imported(trait_, _) = state.get_name(&self.name.0) {
-            state.insert(
-                "Self".to_string(),
-                NamedExpr::GenericArg {
-                    name: "Self".to_string(),
-                    super_: Ty::Named { name: trait_, args },
-                    variance: Variance::Invariant,
-                },
-            )
-        }
+impl<'proj> Trait {
+    pub fn check(&'proj self, project: &'proj Project, state: &mut CheckState<'proj>) {
+        let args = self.generics.check(project, state);
+        state.insert_generic(
+            "Self".to_string(),
+            Generic {
+                name: "Self".to_string(),
+                variance: Variance::Invariant,
+                super_: Box::new(Ty::Named {
+                    name: self.id,
+                    args,
+                }),
+            },
+        );
         for func in &self.body {
             state.enter_scope();
             func.0.check(project, state);

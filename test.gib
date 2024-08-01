@@ -1,3 +1,4 @@
+use gib_mod::another
 
 struct Thing {
   name: String,
@@ -6,6 +7,12 @@ struct Thing {
 
 trait Magic
 trait Epic
+trait Spooky
+
+enum Result[out T, out E] {
+  Ok(T),
+  Err(E),
+}
 
 struct Test
 
@@ -25,20 +32,25 @@ impl Epic for Thing {
   }
 }
 
+impl Spooky for Thing {
+  fn do_spooky() {
+    println("Spooky!")
+  }
+}
+
 enum Option[out T] {
   Some(T),
   None,
 }
 
-fn my_tuple(): (String, String) {
-  
+struct Test2 {
+  name: another::Test3,
+  age: Magic,
 }
 
-
-fn test(hello: String, world: Int): Thing {
-}
 
 fn main() {
-  let my_thing = Thing("Hello", 123)
+  let res: Result[Int, String] = Result::Ok(5)
+  let test: String = res
 }
 

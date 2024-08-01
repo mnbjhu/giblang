@@ -1,17 +1,12 @@
 use crate::{
-    check::CheckState, fs::project::Project, parser::common::generic_args::GenericArgs, ty::Ty,
+    check::CheckState, parser::common::generic_args::GenericArgs, project::Project, ty::Ty,
 };
 
 impl GenericArgs {
-    pub fn check<'module>(
-        &'module self,
-        project: &'module Project,
-        state: &mut CheckState<'module>,
-        print_errors: bool,
-    ) -> Vec<Ty<'module>> {
+    pub fn check(&self, project: &Project, state: &mut CheckState) -> Vec<Ty> {
         let mut args = vec![];
         for (arg, _) in &self.0 {
-            args.push(arg.check(project, state, print_errors))
+            args.push(arg.check(project, state))
         }
         args
     }

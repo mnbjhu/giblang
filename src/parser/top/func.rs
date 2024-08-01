@@ -14,6 +14,7 @@ use super::arg::{function_args_parser, FunctionArg};
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Func {
+    pub id: u32,
     pub receiver: Option<Spanned<Type>>,
     pub name: Spanned<String>,
     pub args: Vec<Spanned<FunctionArg>>,
@@ -39,12 +40,17 @@ pub fn func_parser<'tokens, 'src: 'tokens>(stmt: AstParser!(Stmt)) -> AstParser!
         .then(function_args_parser())
         .then(ret)
         .then(code_block_parser(stmt).or_not())
-        .map(|(((((receiver, name), generics), args), ret), body)| Func {
-            receiver,
-            name,
-            args,
-            generics,
-            ret,
-            body,
+        .map_with(|(((((receiver, name), generics), args), ret), body), e| {
+            let state: &mut u32 = e.state();
+            *state += 1;
+            Func {
+                receiver,
+                name,
+                args,
+                generics,
+                ret,
+                body,
+                id: *state,
+            }
         })
 }

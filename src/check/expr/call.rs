@@ -1,15 +1,11 @@
 use std::collections::HashMap;
 
 use crate::{
-    check::state::CheckState, fs::project::Project, parser::expr::call::Call, ty::Ty, util::Span,
+    check::state::CheckState, parser::expr::call::Call, project::Project, ty::Ty, util::Span,
 };
 
-impl Call {
-    pub fn check<'module>(
-        &'module self,
-        project: &'module Project,
-        state: &mut CheckState<'module>,
-    ) -> Ty<'module> {
+impl<'proj> Call {
+    pub fn check(&'proj self, project: &'proj Project, state: &mut CheckState<'proj>) -> Ty {
         let name_ty = self.name.0.check(project, state);
         // TODO: Think about receivers
         if let Ty::Function {
@@ -30,14 +26,14 @@ impl Call {
                 );
             }
 
-            let mut implied = HashMap::<String, Ty<'_>>::new();
+            let mut implied = HashMap::<String, Ty>::new();
 
             self.args
                 .iter()
                 .zip(expected_args)
                 .for_each(|((arg, span), expected)| {
                     let actual = arg.expect_instance_of(expected, project, state, *span);
-                    let implied_geneircs = expected.imply_generics(actual);
+                    let implied_geneircs = expected.imply_generics(&actual);
                     if let Some(implied_geneircs) = implied_geneircs {
                         for (name, ty) in implied_geneircs {
                             let new = if let Some(existing) = implied.get(&name) {
@@ -80,17 +76,21 @@ impl Call {
         }
     }
 
-    pub fn expected_instance_of<'module>(
-        &'module self,
-        expected: &Ty<'module>,
-        project: &'module Project,
-        state: &mut CheckState<'module>,
+    pub fn expected_instance_of(
+        &'proj self,
+        expected: &Ty,
+        project: &'proj Project,
+        state: &mut CheckState<'proj>,
         span: Span,
-    ) -> Ty<'module> {
+    ) -> Ty {
         let actual = self.check(project, state);
         if !actual.is_instance_of(expected, project) {
             state.error(
-                &format!("Expected value to be of type '{expected}' but found '{actual}'",),
+                &format!(
+                    "Expected value to be of type '{}' but found '{}'",
+                    expected.get_name(project),
+                    actual.get_name(project),
+                ),
                 span,
             )
         }

@@ -1,4 +1,4 @@
-use crate::{check::CheckState, fs::project::Project, parser::stmt::let_::LetStatement};
+use crate::{check::CheckState, parser::stmt::let_::LetStatement, project::Project};
 
 impl LetStatement {
     pub fn check<'module>(
@@ -7,7 +7,7 @@ impl LetStatement {
         state: &mut CheckState<'module>,
     ) {
         let ty = if let Some(expected) = &self.ty {
-            let expected = expected.0.check(project, state, true);
+            let expected = expected.0.check(project, state);
             self.value
                 .0
                 .expect_instance_of(&expected, project, state, self.value.1);

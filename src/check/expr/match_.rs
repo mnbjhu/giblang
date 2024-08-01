@@ -1,11 +1,7 @@
-use crate::{check::state::CheckState, fs::project::Project, parser::expr::match_::Match, ty::Ty};
+use crate::{check::state::CheckState, parser::expr::match_::Match, project::Project, ty::Ty};
 
-impl Match {
-    pub fn check<'module>(
-        &'module self,
-        project: &'module Project,
-        state: &mut CheckState<'module>,
-    ) -> Ty<'module> {
+impl<'proj> Match {
+    pub fn check(&'proj self, project: &'proj Project, state: &mut CheckState<'proj>) -> Ty {
         let expr_ty = self.expr.0.check(project, state);
         let mut ret = Ty::Unknown;
         for arm in &self.arms {
@@ -15,12 +11,12 @@ impl Match {
         ret
     }
 
-    pub fn is_instance_of<'module>(
-        &'module self,
-        expected: &Ty<'module>,
-        project: &'module Project,
-        state: &mut CheckState<'module>,
-    ) -> Ty<'module> {
+    pub fn is_instance_of(
+        &'proj self,
+        expected: &Ty,
+        project: &'proj Project,
+        state: &mut CheckState<'proj>,
+    ) -> Ty {
         let expr_ty = self.expr.0.check(project, state);
         let mut ret = Ty::Unknown;
         for arm in &self.arms {

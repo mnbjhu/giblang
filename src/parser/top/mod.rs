@@ -1,8 +1,8 @@
 use chumsky::{primitive::choice, Parser};
 
-use crate::{fs::project::ImplData, parser::stmt::stmt_parser, util::Span, AstParser};
+use crate::{parser::stmt::stmt_parser, util::Span, AstParser};
 
-use self::{enum_::Enum, func::Func, struct_::Struct, trait_::Trait};
+use self::{enum_::Enum, func::Func, impl_::Impl, struct_::Struct, trait_::Trait};
 
 use super::expr::qualified_name::SpannedQualifiedName;
 
@@ -72,12 +72,46 @@ impl Top {
         }
     }
 
-    pub fn impls(&self) -> Option<&Vec<ImplData>> {
+    pub fn get_id(&self) -> Option<u32> {
         match &self {
-            Top::Struct(s) => Some(&s.impls),
-            Top::Enum(e) => Some(&e.impls),
-            Top::Trait(t) => Some(&t.impls),
-            _ => None,
+            Top::Func(Func { id, .. }) => Some(*id),
+            Top::Trait(Trait { id, .. }) => Some(*id),
+            Top::Struct(Struct { id, .. }) => Some(*id),
+            Top::Enum(Enum { id, .. }) => Some(*id),
+            Top::Use(_) => None,
+            Top::Impl(Impl { id, .. }) => Some(*id),
+        }
+    }
+
+    pub fn is_parent(&self) -> bool {
+        match &self {
+            Top::Func(_) => false,
+            Top::Trait(_) => true,
+            Top::Struct(_) => true,
+            Top::Enum(_) => true,
+            Top::Use(_) => false,
+            Top::Impl(_) => true,
+        }
+    }
+
+    pub fn children(&self) -> Vec<(String, u32)> {
+        match &self {
+            Top::Func(_) => vec![],
+            Top::Trait(Trait { body, .. }) => body
+                .iter()
+                .map(|f| (f.0.name.0.to_string(), f.0.id))
+                .collect(),
+            Top::Struct(Struct { .. }) => vec![],
+            Top::Enum(Enum { members, .. }) => members
+                .iter()
+                .map(|f| (f.0.name.0.to_string(), f.0.id))
+                .collect(),
+            Top::Use(_) => vec![],
+            Top::Impl(impl_) => impl_
+                .body
+                .iter()
+                .map(|f| (f.0.name.0.to_string(), f.0.id))
+                .collect(),
         }
     }
 }

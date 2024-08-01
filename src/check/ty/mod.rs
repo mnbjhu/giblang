@@ -1,26 +1,21 @@
-use crate::{check::state::CheckState, fs::project::Project, parser::common::type_::Type, ty::Ty};
+use crate::{check::state::CheckState, parser::common::type_::Type, project::Project, ty::Ty};
 pub mod named;
 
 impl Type {
-    pub fn check<'module>(
-        &'module self,
-        project: &'module Project,
-        state: &mut CheckState<'module>,
-        print_errors: bool,
-    ) -> Ty<'module> {
+    pub fn check(&self, project: &Project, state: &mut CheckState) -> Ty {
         match &self {
-            Type::Named(named) => named.check(project, state, print_errors),
+            Type::Named(named) => named.check(state, project),
             Type::Tuple(tup) => {
                 let mut tys = vec![];
                 for (ty, _) in tup {
-                    tys.push(ty.check(project, state, print_errors))
+                    tys.push(ty.check(project, state))
                 }
                 Ty::Tuple(tys)
             }
             Type::Sum(tup) => {
                 let mut tys = vec![];
                 for (ty, _) in tup {
-                    tys.push(ty.check(project, state, print_errors))
+                    tys.push(ty.check(project, state))
                 }
                 Ty::Sum(tys)
             }
@@ -29,14 +24,11 @@ impl Type {
                 args,
                 ret,
             } => Ty::Function {
-                receiver: receiver.as_ref().map(|receiver| {
-                    Box::new(receiver.as_ref().0.check(project, state, print_errors))
-                }),
-                args: args
-                    .iter()
-                    .map(|r| r.0.check(project, state, print_errors))
-                    .collect(),
-                ret: Box::new(ret.0.check(project, state, print_errors)),
+                receiver: receiver
+                    .as_ref()
+                    .map(|receiver| Box::new(receiver.as_ref().0.check(project, state))),
+                args: args.iter().map(|r| r.0.check(project, state)).collect(),
+                ret: Box::new(ret.0.check(project, state)),
             },
         }
     }

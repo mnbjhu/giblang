@@ -1,12 +1,8 @@
-use crate::{check::CheckState, fs::project::Project, parser::top::struct_::Struct};
+use crate::{check::CheckState, parser::top::struct_::Struct, project::Project};
 
 impl Struct {
-    pub fn check<'module>(
-        &'module self,
-        project: &'module Project,
-        state: &mut CheckState<'module>,
-    ) {
-        self.generics.0.check(project, state, true);
+    pub fn check(&self, project: &Project, state: &mut CheckState) {
+        self.generics.0.check(project, state);
         self.body.check(project, state)
     }
 }

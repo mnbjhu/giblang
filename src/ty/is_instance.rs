@@ -1,9 +1,9 @@
-use crate::{fs::project::Project, parser::common::variance::Variance, ty::Ty};
+use crate::{parser::common::variance::Variance, project::Project, ty::Ty};
 
 use super::Generic;
 
-impl<'module> Ty<'module> {
-    pub fn is_instance_of(&'module self, other: &Ty<'module>, project: &Project) -> bool {
+impl Ty {
+    pub fn is_instance_of(&self, other: &Ty, project: &Project) -> bool {
         if self.equals(other) {
             return true;
         }
@@ -19,24 +19,23 @@ impl<'module> Ty<'module> {
                     args: other_args,
                 },
             ) => {
-                if name.id() == other_name.id() {
+                let decl = project.get_decl(*name);
+                let generics = decl.generics();
+                if name == other_name {
                     args.len() == other_args.len()
-                        && args
-                            .iter()
-                            .zip(other_args)
-                            .zip(name.generic_args().0.iter())
-                            .all(|((first, second), def)| match def.0.variance {
+                        && args.iter().zip(other_args).zip(generics.iter()).all(
+                            |((first, second), def)| match def.variance {
                                 Variance::Invariant => first.equals(second),
                                 Variance::Covariant => first.is_instance_of(second, project),
                                 Variance::Contravariant => second.is_instance_of(first, project),
-                            })
-                } else if let Some(impls) = &name.impls() {
+                            },
+                        )
+                } else {
+                    let impls = project.get_impls(*name);
                     impls
                         .iter()
-                        .filter_map(|impl_| impl_.map(self.clone(), project))
+                        .filter_map(|impl_| impl_.map(self, project))
                         .any(|implied| implied.is_instance_of(other, project))
-                } else {
-                    false
                 }
             }
             (_, Ty::Sum(tys)) => tys.iter().all(|other| self.is_instance_of(other, project)),
