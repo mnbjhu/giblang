@@ -7,13 +7,18 @@ use crate::{
 impl<'proj> Call {
     pub fn check(&'proj self, project: &'proj Project, state: &mut CheckState<'proj>) -> Ty {
         let name_ty = self.name.0.check(project, state);
-        // TODO: Think about receivers
         if let Ty::Function {
             args: expected_args,
             ret,
-            ..
+            receiver,
         } = &name_ty
         {
+            if let Some(receiver) = receiver {
+                state.error(
+                    &format!("Expected a receiver of type {}", receiver),
+                    self.name.1,
+                );
+            }
             let mut generics = name_ty.get_generic_params();
             if expected_args.len() != self.args.len() {
                 state.error(

@@ -54,3 +54,40 @@ fn main() {
   let test: String = res
 }
 
+fn my_tuple(): (String, String) {
+}
+
+
+fn String.to_string(): String {
+
+}
+
+fn test(hello: String, world: Int): Thing {
+}
+
+trait Display {
+  fn Self.to_string(): String
+}
+
+fn print_string(text: String)
+
+fn print[T: Display](item: T) {
+  print_string(123.my_tuple())
+}
+
+struct List[out T]
+
+trait Construct {
+  fn new() -> Self
+}
+
+impl [T] Construct for List[T]  {
+  fn new() -> List[T] {
+    List
+  }
+}
+
+fn main() {
+  let vals = List::new()
+}
+
