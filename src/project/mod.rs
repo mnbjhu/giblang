@@ -1,17 +1,20 @@
 use std::collections::HashMap;
 
-use ariadne::Source;
+use ariadne::{Color, Source};
 use glob::glob;
 
 use crate::{
-    check::state::CheckState,
+    check::state::{CheckError, CheckState},
     parser::parse_file,
     project::{file_data::FileData, module::ModuleNode, util::path_from_filename},
-    resolve::{resolve_file, top::Decl},
-    ty::{Generic, PrimTy, Ty},
+    resolve::resolve_file,
+    ty::{prim::PrimTy, Generic, Ty},
     util::Spanned,
 };
 
+use self::decl::Decl;
+
+pub mod decl;
 pub mod file_data;
 mod module;
 pub mod name;
@@ -24,6 +27,7 @@ pub struct Project {
     decls: HashMap<u32, Decl>,
     impls: HashMap<u32, ImplData>,
     impl_map: HashMap<u32, Vec<u32>>,
+    counter: u32,
 }
 
 pub struct ImplData {
@@ -34,9 +38,14 @@ pub struct ImplData {
 }
 
 impl Project {
-    pub fn insert_file(&mut self, text: String, name: String, counter: &mut u32) {
-        let ast = parse_file(&text, &name, &Source::from(text.clone()), counter);
-        let mut path = path_from_filename(&name);
+    pub fn insert_file(&mut self, file_path: String, text: String) {
+        let ast = parse_file(
+            &text,
+            &file_path,
+            &Source::from(text.clone()),
+            &mut self.counter,
+        );
+        let mut path = path_from_filename(&file_path);
         for item in &ast {
             if let Some(name) = item.0.get_name() {
                 let id = item.0.get_id().unwrap();
@@ -52,22 +61,26 @@ impl Project {
             }
         }
         let file_data = FileData {
-            end: *counter,
+            end: self.counter,
             ast,
             text,
-            name,
+            name: file_path,
         };
         self.files.push(file_data);
     }
 
+    // TODO: Delete if not needed
+    #[allow(dead_code)]
     pub fn get_file(&self, for_id: u32) -> Option<&FileData> {
-        self.files.iter().find(|f| f.end > for_id)
+        self.files.iter().find(|f| f.end >= for_id)
     }
 
     pub fn get_parent(&self, for_id: u32) -> Option<u32> {
         self.parents.iter().find(|&&id| id > for_id).copied()
     }
 
+    // TODO: Delete if not needed
+    #[allow(dead_code)]
     pub fn insert_decl(&mut self, id: u32, decl: Decl) {
         self.decls.insert(id, decl);
     }
@@ -80,32 +93,11 @@ impl Project {
     }
 
     pub fn init_pwd() -> Project {
-        let mut counter = 6;
-        let mut decls = HashMap::new();
-        decls.insert(1, Decl::Prim(PrimTy::String));
-        decls.insert(2, Decl::Prim(PrimTy::Int));
-        decls.insert(3, Decl::Prim(PrimTy::Bool));
-        decls.insert(4, Decl::Prim(PrimTy::Float));
-        decls.insert(5, Decl::Prim(PrimTy::Char));
-
-        let mut root = ModuleNode::module("root".to_string());
-        root.insert(&[], 1, "String");
-        root.insert(&[], 2, "Int");
-        root.insert(&[], 3, "Bool");
-        root.insert(&[], 4, "Float");
-        root.insert(&[], 5, "Char");
-        let mut project = Project {
-            root,
-            files: vec![],
-            parents: vec![],
-            decls,
-            impls: HashMap::new(),
-            impl_map: HashMap::new(),
-        };
+        let mut project = Project::new();
         for file in glob("**/*.gib").unwrap() {
             let file = file.unwrap();
             let text = std::fs::read_to_string(&file).unwrap();
-            project.insert_file(text, file.to_str().unwrap().to_string(), &mut counter);
+            project.insert_file(file.to_str().unwrap().to_string(), text);
         }
         project
     }
@@ -113,7 +105,7 @@ impl Project {
     pub fn get_decl(&self, id: u32) -> &Decl {
         self.decls
             .get(&id)
-            .expect("Should only be called by types, type should be unresolved at this point")
+            .expect(&format!("Failed to resolve decl with id {}", id))
     }
 
     pub fn get_impls(&self, for_decl: u32) -> Vec<&ImplData> {
@@ -137,12 +129,97 @@ impl Project {
         self.impl_map = impl_map;
     }
 
-    pub fn check(&self) {
+    pub fn check(&self) -> Vec<CheckError> {
+        let mut errors = vec![];
         for file in &self.files {
             let mut state = CheckState::from_file(file, self);
             for item in &file.ast {
                 item.0.check(self, &mut state)
             }
+            errors.extend(state.errors);
+        }
+        errors
+    }
+
+    pub fn new() -> Project {
+        let mut decls = HashMap::new();
+        decls.insert(1, Decl::Prim(PrimTy::String));
+        decls.insert(2, Decl::Prim(PrimTy::Int));
+        decls.insert(3, Decl::Prim(PrimTy::Bool));
+        decls.insert(4, Decl::Prim(PrimTy::Float));
+        decls.insert(5, Decl::Prim(PrimTy::Char));
+
+        let mut root = ModuleNode::module("root".to_string());
+        root.insert(&[], 1, "String");
+        root.insert(&[], 2, "Int");
+        root.insert(&[], 3, "Bool");
+        root.insert(&[], 4, "Float");
+        root.insert(&[], 5, "Char");
+        Project {
+            root,
+            files: vec![],
+            parents: vec![],
+            decls,
+            impls: HashMap::new(),
+            impl_map: HashMap::new(),
+            counter: 6,
+        }
+    }
+
+    pub fn print_error(&self, error: CheckError) {
+        let CheckError::Simple {
+            message,
+            span,
+            file,
+        } = error;
+
+        let file_data = self
+            .get_file(file)
+            .expect(format!("No file found for id {}", file).as_str());
+        let source = Source::from(file_data.text.clone());
+        let name = &file_data.name;
+
+        let err = Color::Red;
+
+        let mut builder = ariadne::Report::build(ariadne::ReportKind::Error, name, span.start)
+            .with_message(message.to_string())
+            .with_code("error");
+
+        builder = builder.with_label(
+            ariadne::Label::new((name, span.into_range()))
+                .with_message(message)
+                .with_color(err),
+        );
+
+        let report = builder.finish();
+        report.print((name, source)).unwrap();
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Project;
+
+    impl Project {
+        pub fn from(text: &str) -> Project {
+            let mut project = Project::new();
+            project.insert_file("main.gib".to_string(), text.to_string());
+            project
+        }
+
+        pub fn test() -> Project {
+            let mut project = Project::from(
+                r#"struct Foo
+            struct Bar[T]
+            struct Baz[T, U]"#,
+            );
+            project.resolve();
+            project
+        }
+
+        #[allow(dead_code)]
+        pub fn get_counter(&self) -> u32 {
+            self.counter
         }
     }
 }

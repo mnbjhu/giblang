@@ -78,16 +78,12 @@ fn print[T: Display](item: T) {
 struct List[out T]
 
 trait Construct {
-  fn new() -> Self
+  fn new(): Self
 }
 
 impl [T] Construct for List[T]  {
-  fn new() -> List[T] {
+  fn new(): List[T] {
     List
   }
-}
-
-fn main() {
-  let vals = List::new()
 }
 

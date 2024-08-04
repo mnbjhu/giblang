@@ -33,3 +33,128 @@ impl Type {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use chumsky::{input::Input, Parser};
+
+    use crate::{
+        check::state::{CheckError, CheckState},
+        lexer::parser::lexer,
+        parser::common::type_::type_parser,
+        project::Project,
+        util::Span,
+    };
+
+    use super::Ty;
+
+    fn parse_ty(project: &Project, ty: &str) -> (Ty, Vec<CheckError>) {
+        let eoi = Span::splat(ty.len());
+        let tokens = lexer().parse(ty).unwrap();
+        let ty = type_parser().parse(tokens.spanned(eoi)).unwrap();
+        let file_data = project.get_file(project.get_counter()).unwrap();
+        let mut state = CheckState::from_file(file_data, project);
+        (ty.check(project, &mut state), state.errors)
+    }
+
+    pub fn assert_no_errors(errors: Vec<CheckError>, project: &Project) {
+        if errors.is_empty() {
+            return;
+        }
+        for error in errors {
+            project.print_error(error);
+        }
+        panic!("Expected there to be no 'check' errors")
+    }
+
+    #[test]
+    fn check_unit() {
+        let project = Project::test();
+        let (unit, err) = parse_ty(&project, "()");
+        assert_no_errors(err, &project);
+
+        if let Ty::Tuple(tys) = unit {
+            assert_eq!(tys.len(), 0);
+        } else {
+            panic!("Expected unit type to be a tuple")
+        }
+    }
+
+    #[test]
+    fn check_string() {
+        let project = Project::test();
+        let (string, err) = parse_ty(&project, "String");
+        assert_no_errors(err, &project);
+
+        if let Ty::Named { name, args } = string {
+            assert_eq!(name, 1);
+            assert_eq!(args.len(), 0);
+        } else {
+            panic!("Expected string type to be a named type")
+        }
+    }
+
+    #[test]
+    fn check_foo() {
+        let project = Project::test();
+        let (foo, err) = parse_ty(&project, "Foo");
+        assert_no_errors(err, &project);
+
+        if let Ty::Named { name, args } = foo {
+            assert_eq!(project.get_decl(name).name(), "Foo");
+            assert_eq!(args.len(), 0);
+        } else {
+            panic!("Expected foo type to be a named type")
+        }
+    }
+
+    #[test]
+    fn check_bar() {
+        let project = Project::test();
+        let (bar, err) = parse_ty(&project, "Bar[Foo]");
+        assert_no_errors(err, &project);
+        if let Ty::Named { name, args } = bar {
+            assert_eq!(project.get_decl(name).name(), "Bar");
+            assert_eq!(args.len(), 1);
+            if let Ty::Named { name, args } = &args[0] {
+                assert_eq!(project.get_decl(*name).name(), "Foo");
+                assert_eq!(args.len(), 0);
+            } else {
+                panic!("Expected bar type to have a single argument")
+            }
+        } else {
+            panic!("Expected bar type to be a named type")
+        }
+    }
+
+    #[test]
+    fn check_tuple() {
+        let project = Project::test();
+        let (tuple, err) = parse_ty(&project, "(Foo, Bar[Foo])");
+        assert_no_errors(err, &project);
+
+        if let Ty::Tuple(tys) = tuple {
+            assert_eq!(tys.len(), 2);
+            if let Ty::Named { name, args } = &tys[0] {
+                assert_eq!(project.get_decl(*name).name(), "Foo");
+                assert_eq!(args.len(), 0);
+            } else {
+                panic!("Expected first element of tuple to be a named type")
+            }
+            if let Ty::Named { name, args } = &tys[1] {
+                assert_eq!(project.get_decl(*name).name(), "Bar");
+                assert_eq!(args.len(), 1);
+                if let Ty::Named { name, args } = &args[0] {
+                    assert_eq!(project.get_decl(*name).name(), "Foo");
+                    assert_eq!(args.len(), 0);
+                } else {
+                    panic!("Expected second element of tuple to be a named type")
+                }
+            } else {
+                panic!("Expected second element of tuple to be a named type")
+            }
+        } else {
+            panic!("Expected tuple type to be a tuple")
+        }
+    }
+}

@@ -1,8 +1,10 @@
 use std::collections::HashMap;
 
-use crate::{check::state::CheckState, parser::top::impl_::Impl, project::ImplData};
-
-use super::Decl;
+use crate::{
+    check::state::CheckState,
+    parser::top::impl_::Impl,
+    project::{decl::Decl, ImplData},
+};
 
 impl Impl {
     pub fn resolve(&self, state: &mut CheckState, decls: &mut HashMap<u32, Decl>) -> ImplData {

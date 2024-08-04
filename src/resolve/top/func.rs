@@ -1,6 +1,4 @@
-use crate::{check::state::CheckState, parser::top::func::Func, ty::Ty};
-
-use super::Decl;
+use crate::{check::state::CheckState, parser::top::func::Func, project::decl::Decl, ty::Ty};
 
 impl Func {
     pub fn resolve(&self, state: &mut CheckState) -> Decl {

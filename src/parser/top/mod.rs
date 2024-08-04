@@ -39,17 +39,6 @@ pub fn top_parser<'tokens, 'src: 'tokens>() -> AstParser!(Top) {
 }
 
 impl Top {
-    pub fn name(&self) -> &str {
-        match &self {
-            Top::Func(Func { name, .. }) => &name.0,
-            Top::Trait(Trait { name, .. }) => &name.0,
-            Top::Struct(Struct { name, .. }) => &name.0,
-            Top::Enum(Enum { name, .. }) => &name.0,
-            Top::Use(_) => unimplemented!("Use statement doesn't have a name"),
-            Top::Impl(_) => unimplemented!("Impl statement doesn't have a name"),
-        }
-    }
-
     pub fn get_name(&self) -> Option<&str> {
         match &self {
             Top::Func(Func { name, .. }) => Some(&name.0),

@@ -1,8 +1,6 @@
 use std::collections::HashMap;
 
-use crate::{check::state::CheckState, parser::top::enum_::Enum};
-
-use super::Decl;
+use crate::{check::state::CheckState, parser::top::enum_::Enum, project::decl::Decl};
 
 impl Enum {
     pub fn resolve(&self, state: &mut CheckState, decls: &mut HashMap<u32, Decl>) -> Decl {

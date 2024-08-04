@@ -2,14 +2,12 @@ use std::collections::HashMap;
 
 use crate::{
     check::state::CheckState,
-    project::{file_data::FileData, ImplData, Project},
+    project::{decl::Decl, file_data::FileData, ImplData, Project},
 };
 
-use self::top::Decl;
-
-pub mod common;
-pub mod impl_;
-pub mod top;
+mod common;
+mod impl_;
+mod top;
 
 pub fn resolve_file(
     file_data: &FileData,

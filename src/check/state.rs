@@ -13,6 +13,15 @@ pub struct CheckState<'file> {
     variables: Vec<HashMap<String, Ty>>,
     pub file_data: &'file FileData,
     pub project: &'file Project,
+    pub errors: Vec<CheckError>,
+}
+
+pub enum CheckError {
+    Simple {
+        message: String,
+        span: Span,
+        file: u32,
+    },
 }
 
 impl<'file> CheckState<'file> {
@@ -23,6 +32,7 @@ impl<'file> CheckState<'file> {
             variables: vec![],
             file_data,
             project,
+            errors: vec![],
         };
         let mut path = file_data.get_path();
         for (top, _) in &file_data.ast {
@@ -49,8 +59,12 @@ impl<'file> CheckState<'file> {
         self.generics.pop();
     }
 
-    pub fn error(&self, message: &str, span: Span) {
-        self.file_data.error(message, span);
+    pub fn error(&mut self, message: &str, span: Span) {
+        self.errors.push(CheckError::Simple {
+            message: message.to_string(),
+            span,
+            file: self.file_data.end,
+        });
     }
 
     pub fn get_decl_with_error(&self, path: &SpannedQualifiedName) -> Option<u32> {

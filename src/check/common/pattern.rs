@@ -3,8 +3,10 @@ use std::collections::HashMap;
 use crate::{
     check::CheckState,
     parser::common::pattern::{Pattern, StructFieldPattern},
-    project::Project,
-    resolve::top::{Decl, StructDecl},
+    project::{
+        decl::{struct_::StructDecl, Decl},
+        Project,
+    },
     ty::Ty,
     util::Span,
 };
