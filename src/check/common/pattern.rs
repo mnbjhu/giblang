@@ -38,7 +38,7 @@ impl Pattern {
                         decl_id
                     };
                     if *expected_name != ty_decl_id {
-                        state.error(
+                        state.simple_error(
                             &format!(
                                 "Expected struct '{}' but found '{}'",
                                 project.get_decl(*expected_name).name(),
@@ -72,16 +72,16 @@ impl Pattern {
                             }
                         }
                         (Pattern::Name(_), _) => unreachable!(),
-                        _ => state.error(
+                        _ => state.simple_error(
                             "Struct pattern doesn't match expected",
                             name.last().unwrap().1,
                         ),
                     }
                 } else {
-                    state.error("Expected a struct", name.last().unwrap().1);
+                    state.simple_error("Expected a struct", name.last().unwrap().1);
                 }
             } else {
-                state.error("Expected a struct", name.last().unwrap().1);
+                state.simple_error("Expected a struct", name.last().unwrap().1);
             }
         }
     }
@@ -101,7 +101,7 @@ impl StructFieldPattern {
                 if let Some(ty) = fields.get(name) {
                     state.insert_variable(name.to_string(), ty.clone().parameterize(implied));
                 } else {
-                    state.error(&format!("Field '{}' not found", name), span);
+                    state.simple_error(&format!("Field '{}' not found", name), span);
                 }
             }
             StructFieldPattern::Explicit { field, pattern } => {
@@ -110,7 +110,7 @@ impl StructFieldPattern {
                         .0
                         .check(project, state, ty.clone().parameterize(implied));
                 } else {
-                    state.error(&format!("Field '{}' not found", field.0), field.1);
+                    state.simple_error(&format!("Field '{}' not found", field.0), field.1);
                 }
             }
         }

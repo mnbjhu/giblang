@@ -37,7 +37,7 @@ impl MemberCall {
             );
 
             if expected_args.len() != self.args.len() {
-                state.error(
+                state.simple_error(
                     &format!(
                         "Expected {} arguments but found {}",
                         expected_args.len(),
@@ -66,7 +66,7 @@ impl MemberCall {
                     .map(|g| g.name)
                     .collect::<Vec<_>>()
                     .join(", ");
-                state.error(
+                state.simple_error(
                     &format!("Couldn't imply generic ty args: {}", not_implied),
                     self.name.1,
                 )
@@ -87,7 +87,7 @@ impl MemberCall {
     ) -> Ty {
         let actual = self.check(project, state);
         if !actual.is_instance_of(expected, project) {
-            state.error(
+            state.simple_error(
                 &format!("Expected value to be of type '{expected}' but found '{actual}'",),
                 span,
             )

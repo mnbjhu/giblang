@@ -1,10 +1,10 @@
 use std::collections::HashMap;
 
-use ariadne::{Color, Source};
+use ariadne::Source;
 use glob::glob;
 
 use crate::{
-    check::state::{CheckError, CheckState},
+    check::{err::CheckError, state::CheckState},
     parser::parse_file,
     project::{file_data::FileData, module::ModuleNode, util::path_from_filename},
     resolve::resolve_file,
@@ -87,7 +87,11 @@ impl Project {
         self.root.get_path(path)
     }
 
-    pub fn get_path_with_error(&self, path: &[Spanned<String>], file: &FileData) -> Option<u32> {
+    pub fn get_path_with_error(
+        &self,
+        path: &[Spanned<String>],
+        file: &mut CheckState,
+    ) -> Option<u32> {
         self.root.get_with_error(path, file)
     }
 
@@ -170,35 +174,6 @@ impl Project {
             impl_map: HashMap::new(),
             counter: 6,
         }
-    }
-
-    pub fn print_error(&self, error: &CheckError) {
-        let CheckError::Simple {
-            message,
-            span,
-            file,
-        } = error;
-
-        let file_data = self
-            .get_file(*file)
-            .unwrap_or_else(|| panic!("No file found for id {}", file));
-        let source = Source::from(file_data.text.clone());
-        let name = &file_data.name;
-
-        let err = Color::Red;
-
-        let mut builder = ariadne::Report::build(ariadne::ReportKind::Error, name, span.start)
-            .with_message(message.to_string())
-            .with_code("error");
-
-        builder = builder.with_label(
-            ariadne::Label::new((name, span.into_range()))
-                .with_message(message)
-                .with_color(err),
-        );
-
-        let report = builder.finish();
-        report.print((name, source)).unwrap();
     }
 }
 

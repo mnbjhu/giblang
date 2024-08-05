@@ -39,7 +39,10 @@ pub mod tests {
     use chumsky::{input::Input, Parser};
 
     use crate::{
-        check::state::{CheckError, CheckState},
+        check::{
+            err::{unresolved::Unresolved, CheckError},
+            state::CheckState,
+        },
         lexer::parser::lexer,
         parser::common::type_::type_parser,
         project::Project,
@@ -172,7 +175,12 @@ pub mod tests {
     fn check_unresolved() {
         let project = Project::check_test();
         let (unresolved, err) = try_parse_ty(&project, "Unresolved");
-        assert_eq!(err.len(), 0);
+        assert_eq!(err.len(), 1);
+        if let CheckError::Unresolved(err) = &err[0] {
+            assert_eq!(err.name.0, "Unresolved");
+        } else {
+            panic!("Expected unresolved error")
+        }
         assert_eq!(unresolved, Ty::Unknown)
     }
 }

@@ -37,7 +37,7 @@ pub fn check_tuple_is<'proj>(
             Ty::Tuple(v)
         } else {
             let actual = check_tuple(tuple, project, state);
-            state.error(
+            state.simple_error(
                 &format!(
                     "Expected a tuple of length {} but found one of length {}",
                     ex.len(),
@@ -49,7 +49,7 @@ pub fn check_tuple_is<'proj>(
         }
     } else {
         let actual = check_tuple(tuple, project, state);
-        state.error(
+        state.simple_error(
             &format!(
                 "Expected value to be of type '{}' but found '{}'",
                 expected.get_name(project),

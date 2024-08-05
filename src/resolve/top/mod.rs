@@ -44,7 +44,7 @@ impl Top {
                             impl_map.insert(*name, vec![id]);
                         }
                     } else {
-                        state.error("The 'for' of an 'impl' should a named type", i.for_.1);
+                        state.simple_error("The 'for' of an 'impl' should a named type", i.for_.1);
                     };
                     impls.insert(id, impl_);
                     return;

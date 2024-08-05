@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use crate::{
+    check::err::{simple::Simple, CheckError},
     parser::expr::qualified_name::SpannedQualifiedName,
     project::{file_data::FileData, name::QualifiedName, Project},
     ty::{Generic, Ty},
@@ -14,14 +15,6 @@ pub struct CheckState<'file> {
     pub file_data: &'file FileData,
     pub project: &'file Project,
     pub errors: Vec<CheckError>,
-}
-
-pub enum CheckError {
-    Simple {
-        message: String,
-        span: Span,
-        file: u32,
-    },
 }
 
 impl<'file> CheckState<'file> {
@@ -59,21 +52,25 @@ impl<'file> CheckState<'file> {
         self.generics.pop();
     }
 
-    pub fn error(&mut self, message: &str, span: Span) {
-        self.errors.push(CheckError::Simple {
+    pub fn simple_error(&mut self, message: &str, span: Span) {
+        self.errors.push(CheckError::Simple(Simple {
             message: message.to_string(),
             span,
             file: self.file_data.end,
-        });
+        }));
     }
 
-    pub fn get_decl_with_error(&self, path: &SpannedQualifiedName) -> Option<u32> {
+    pub fn error(&mut self, error: CheckError) {
+        self.errors.push(error);
+    }
+
+    pub fn get_decl_with_error(&mut self, path: &SpannedQualifiedName) -> Option<u32> {
         let name = path[0].0.clone();
         if let Some(import) = self.imports.get(&name) {
             let module = self.project.root.get_module(import)?;
-            module.get_with_error(&path[1..], self.file_data)
+            module.get_with_error(&path[1..], self)
         } else {
-            self.project.get_path_with_error(path, self.file_data)
+            self.project.get_path_with_error(path, self)
         }
     }
 

@@ -1,6 +1,10 @@
-use crate::util::Spanned;
-
-use super::file_data::FileData;
+use crate::{
+    check::{
+        err::{unresolved::Unresolved, CheckError},
+        state::CheckState,
+    },
+    util::Spanned,
+};
 
 pub struct ModuleNode {
     name: String,
@@ -60,13 +64,16 @@ impl ModuleNode {
         }
     }
 
-    pub fn get_with_error(&self, path: &[Spanned<String>], file: &FileData) -> Option<u32> {
+    pub fn get_with_error(&self, path: &[Spanned<String>], state: &mut CheckState) -> Option<u32> {
         if path.is_empty() {
             Some(self.id)
         } else if let Some(child) = self.children.iter().find(|c| c.name == path[0].0) {
-            return child.get_with_error(&path[1..], file);
+            return child.get_with_error(&path[1..], state);
         } else {
-            file.error(&format!("Import '{}' not found", path[0].0), path[0].1);
+            state.error(CheckError::Unresolved(Unresolved {
+                name: path[0].clone(),
+                file: state.file_data.end,
+            }));
             None
         }
     }

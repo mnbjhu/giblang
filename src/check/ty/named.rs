@@ -16,7 +16,7 @@ impl NamedType {
                 .collect::<Vec<_>>();
             for (gen, arg) in decl.generics().iter().zip(args.clone()) {
                 if !arg.is_instance_of(gen.super_.as_ref(), project) {
-                    state.error(
+                    state.simple_error(
                         &format!(
                             "Type argument {} is not a subtype of the generic constraint {}",
                             arg, gen.super_

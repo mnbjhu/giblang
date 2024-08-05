@@ -14,14 +14,14 @@ impl<'proj> Call {
         } = &name_ty
         {
             if let Some(receiver) = receiver {
-                state.error(
+                state.simple_error(
                     &format!("Expected a receiver of type {}", receiver),
                     self.name.1,
                 );
             }
             let mut generics = name_ty.get_generic_params();
             if expected_args.len() != self.args.len() {
-                state.error(
+                state.simple_error(
                     &format!(
                         "Expected {} arguments but found {}",
                         expected_args.len(),
@@ -63,7 +63,7 @@ impl<'proj> Call {
                     .map(|g| g.name)
                     .collect::<Vec<_>>()
                     .join(", ");
-                state.error(
+                state.simple_error(
                     &format!("Couldn't imply generic ty args: {}", not_implied),
                     self.name.1,
                 )
@@ -73,7 +73,7 @@ impl<'proj> Call {
         } else if let Ty::Unknown = name_ty {
             Ty::Unknown
         } else {
-            state.error(
+            state.simple_error(
                 &format!("Expected a function but found '{name_ty}'"),
                 self.name.1,
             );
@@ -90,7 +90,7 @@ impl<'proj> Call {
     ) -> Ty {
         let actual = self.check(project, state);
         if !actual.is_instance_of(expected, project) {
-            state.error(
+            state.simple_error(
                 &format!(
                     "Expected value to be of type '{}' but found '{}'",
                     expected.get_name(project),
