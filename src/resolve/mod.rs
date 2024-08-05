@@ -6,7 +6,6 @@ use crate::{
 };
 
 mod common;
-mod impl_;
 mod top;
 
 pub fn resolve_file(
@@ -27,7 +26,13 @@ pub fn resolve_file(
 
 #[cfg(test)]
 mod tests {
-    use crate::project::Project;
+    use crate::{
+        check::ty::tests::parse_ty,
+        project::{
+            decl::{struct_::StructDecl, Decl},
+            Project,
+        },
+    };
 
     #[test]
     fn single_file() {
@@ -99,6 +104,46 @@ mod tests {
             assert_eq!(bar.name(), "Bar");
         } else {
             panic!("Failed to resolve Bar");
+        }
+    }
+
+    #[test]
+    fn enum_members() {
+        let mut project = Project::new();
+        project.insert_file(
+            "test.gib".to_string(),
+            r#"
+            enum Foo {
+                Bar,
+                Baz(Int),
+            }
+            "#
+            .to_string(),
+        );
+
+        let errors = project.resolve();
+        assert!(errors.is_empty());
+
+        let bar = project
+            .get_path(&["test", "Foo", "Bar"])
+            .expect("Couldn't resolve 'Bar'");
+        if let Decl::Member { name, body } = project.get_decl(bar) {
+            assert_eq!(name.0, "Bar");
+            if !body.is_none() {
+                panic!("Expected an 'None' body")
+            }
+        }
+
+        let baz = project
+            .get_path(&["test", "Foo", "Baz"])
+            .expect("Couldn't resolve 'Baz'");
+
+        if let Decl::Member { name, body } = project.get_decl(baz) {
+            assert_eq!(name.0, "Baz");
+            if let StructDecl::Tuple(v) = body {
+                assert_eq!(v.len(), 1);
+                assert_eq!(v[0], parse_ty(&project, "Int"));
+            }
         }
     }
 }

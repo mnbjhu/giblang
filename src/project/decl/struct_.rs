@@ -29,4 +29,8 @@ impl StructDecl {
             StructDecl::None => self_ty,
         }
     }
+
+    pub fn is_none(&self) -> bool {
+        matches!(self, StructDecl::None)
+    }
 }

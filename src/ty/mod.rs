@@ -5,7 +5,9 @@ pub mod disp;
 pub mod eq;
 pub mod expect;
 pub mod generics;
+pub mod imply;
 pub mod is_instance;
+pub mod parameterize;
 pub mod prim;
 
 #[derive(Clone, Debug, PartialEq)]

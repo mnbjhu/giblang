@@ -49,21 +49,6 @@ impl ModuleNode {
         }
     }
 
-    // TODO: Delete if not needed
-    #[allow(dead_code)]
-    pub fn get_id(&self, path: &[String]) -> Option<u32> {
-        if path.is_empty() {
-            Some(self.id)
-        } else {
-            for child in &self.children {
-                if child.name == path[0] {
-                    return child.get_id(&path[1..]);
-                }
-            }
-            None
-        }
-    }
-
     pub fn get_with_error(&self, path: &[Spanned<String>], state: &mut CheckState) -> Option<u32> {
         if path.is_empty() {
             Some(self.id)

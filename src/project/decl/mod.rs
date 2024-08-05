@@ -7,6 +7,7 @@ use self::struct_::StructDecl;
 
 use super::Project;
 
+pub mod impl_;
 pub mod struct_;
 
 #[derive(Debug)]
