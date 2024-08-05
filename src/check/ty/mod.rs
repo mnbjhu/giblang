@@ -39,10 +39,7 @@ pub mod tests {
     use chumsky::{input::Input, Parser};
 
     use crate::{
-        check::{
-            err::{unresolved::Unresolved, CheckError},
-            state::CheckState,
-        },
+        check::{err::CheckError, state::CheckState},
         lexer::parser::lexer,
         parser::common::type_::type_parser,
         project::Project,
