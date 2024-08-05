@@ -12,7 +12,6 @@ pub mod enum_member;
 pub mod func;
 pub mod func_arg;
 pub mod impl_;
-pub mod member;
 pub mod struct_;
 pub mod struct_body;
 pub mod trait_;
