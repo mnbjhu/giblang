@@ -3,6 +3,9 @@ use crate::{check::state::CheckState, parser::common::type_::NamedType, project:
 impl NamedType {
     pub fn check(&self, state: &mut CheckState, project: &Project) -> Ty {
         if self.name.len() == 1 {
+            if self.name[0].0 == "Any" {
+                return Ty::Any;
+            }
             if let Some(generic) = state.get_generic(&self.name[0].0) {
                 return Ty::Generic(generic.clone());
             }

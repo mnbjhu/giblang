@@ -93,3 +93,101 @@ impl Ty {
         }
     }
 }
+
+#[cfg(test)]
+macro_rules! assert_instance_of {
+    ($s:expr, $o:expr) => {
+        let project = $crate::project::Project::ty_test();
+        let s = $crate::check::ty::tests::parse_ty(&project, $s);
+        if let $crate::ty::Ty::Unknown = s {
+            panic!("First type is unknown");
+        }
+        let o = $crate::check::ty::tests::parse_ty(&project, $o);
+        if let $crate::ty::Ty::Unknown = o {
+            panic!("Second type is unknown");
+        }
+        let res = s.is_instance_of(&o, &project);
+        if !res {
+            panic!(
+                "Expected {} to be instance of {}",
+                s.get_name(&project),
+                o.get_name(&project)
+            );
+        }
+    };
+}
+
+#[cfg(test)]
+macro_rules! assert_not_instance_of {
+    ($s:expr, $o:expr) => {
+        let project = $crate::project::Project::ty_test();
+        let s = $crate::check::ty::tests::parse_ty(&project, $s);
+        let o = $crate::check::ty::tests::parse_ty(&project, $o);
+        let res = s.is_instance_of(&o, &project);
+        if res {
+            panic!(
+                "Expected {} to not be instance of {}",
+                s.get_name(&project),
+                o.get_name(&project)
+            );
+        }
+    };
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::project::Project;
+
+    impl Project {
+        pub fn ty_test() -> Project {
+            let mut project = Project::from(
+                r#"struct Foo
+            struct Bar
+            struct Baz[T]
+            trait Magic {
+                fn magic(): Self
+            }
+            trait Epic {
+                fn epic(): Self
+            }
+            trait Strange [T] {
+                fn strange(): T
+            }
+
+            impl Magic for Foo
+
+            impl Magic for Bar
+            impl Epic for Bar
+
+            impl Strange[T] for Baz[T]"#,
+            );
+            project.resolve();
+            project
+        }
+    }
+
+    #[test]
+    fn any() {
+        assert_instance_of!("Any", "Any");
+        assert_not_instance_of!("Any", "Foo");
+        assert_instance_of!("Foo", "Any");
+    }
+
+    #[test]
+    fn named() {
+        assert_instance_of!("Foo", "Foo");
+        assert_instance_of!("Foo", "Magic");
+        assert_not_instance_of!("Magic", "Foo");
+        assert_not_instance_of!("Foo", "Bar");
+        assert_instance_of!("Magic", "Magic");
+    }
+
+    #[test]
+    fn sum() {
+        assert_instance_of!("Foo + Bar", "Foo");
+        assert_instance_of!("Foo + Bar", "Bar");
+        assert_not_instance_of!("Bar", "Foo + Bar");
+        assert_instance_of!("Foo + Bar", "Foo + Bar");
+        assert_instance_of!("Foo + Bar", "Bar + Foo");
+    }
+}
