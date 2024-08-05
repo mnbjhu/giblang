@@ -35,7 +35,7 @@ impl Type {
 }
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
     use chumsky::{input::Input, Parser};
 
     use crate::{
@@ -48,7 +48,7 @@ mod tests {
 
     use super::Ty;
 
-    fn parse_ty(project: &Project, ty: &str) -> (Ty, Vec<CheckError>) {
+    pub fn try_parse_ty(project: &Project, ty: &str) -> (Ty, Vec<CheckError>) {
         let eoi = Span::splat(ty.len());
         let tokens = lexer().parse(ty).unwrap();
         let ty = type_parser().parse(tokens.spanned(eoi)).unwrap();
@@ -57,7 +57,17 @@ mod tests {
         (ty.check(project, &mut state), state.errors)
     }
 
-    pub fn assert_no_errors(errors: Vec<CheckError>, project: &Project) {
+    pub fn parse_ty(project: &Project, ty: &str) -> Ty {
+        let eoi = Span::splat(ty.len());
+        let tokens = lexer().parse(ty).unwrap();
+        let ty = type_parser().parse(tokens.spanned(eoi)).unwrap();
+        let file_data = project.get_file(project.get_counter()).unwrap();
+        let mut state = CheckState::from_file(file_data, project);
+        assert_no_errors(&state.errors, project);
+        ty.check(project, &mut state)
+    }
+
+    pub fn assert_no_errors(errors: &Vec<CheckError>, project: &Project) {
         if errors.is_empty() {
             return;
         }
@@ -69,9 +79,9 @@ mod tests {
 
     #[test]
     fn check_unit() {
-        let project = Project::test();
-        let (unit, err) = parse_ty(&project, "()");
-        assert_no_errors(err, &project);
+        let project = Project::check_test();
+        let (unit, err) = try_parse_ty(&project, "()");
+        assert_no_errors(&err, &project);
 
         if let Ty::Tuple(tys) = unit {
             assert_eq!(tys.len(), 0);
@@ -82,9 +92,9 @@ mod tests {
 
     #[test]
     fn check_string() {
-        let project = Project::test();
-        let (string, err) = parse_ty(&project, "String");
-        assert_no_errors(err, &project);
+        let project = Project::check_test();
+        let (string, err) = try_parse_ty(&project, "String");
+        assert_no_errors(&err, &project);
 
         if let Ty::Named { name, args } = string {
             assert_eq!(name, 1);
@@ -96,9 +106,9 @@ mod tests {
 
     #[test]
     fn check_foo() {
-        let project = Project::test();
-        let (foo, err) = parse_ty(&project, "Foo");
-        assert_no_errors(err, &project);
+        let project = Project::check_test();
+        let (foo, err) = try_parse_ty(&project, "Foo");
+        assert_no_errors(&err, &project);
 
         if let Ty::Named { name, args } = foo {
             assert_eq!(project.get_decl(name).name(), "Foo");
@@ -110,9 +120,9 @@ mod tests {
 
     #[test]
     fn check_bar() {
-        let project = Project::test();
-        let (bar, err) = parse_ty(&project, "Bar[Foo]");
-        assert_no_errors(err, &project);
+        let project = Project::check_test();
+        let (bar, err) = try_parse_ty(&project, "Bar[Foo]");
+        assert_no_errors(&err, &project);
         if let Ty::Named { name, args } = bar {
             assert_eq!(project.get_decl(name).name(), "Bar");
             assert_eq!(args.len(), 1);
@@ -129,9 +139,9 @@ mod tests {
 
     #[test]
     fn check_tuple() {
-        let project = Project::test();
-        let (tuple, err) = parse_ty(&project, "(Foo, Bar[Foo])");
-        assert_no_errors(err, &project);
+        let project = Project::check_test();
+        let (tuple, err) = try_parse_ty(&project, "(Foo, Bar[Foo])");
+        assert_no_errors(&err, &project);
 
         if let Ty::Tuple(tys) = tuple {
             assert_eq!(tys.len(), 2);
@@ -156,5 +166,13 @@ mod tests {
         } else {
             panic!("Expected tuple type to be a tuple")
         }
+    }
+
+    #[test]
+    fn check_unresolved() {
+        let project = Project::check_test();
+        let (unresolved, err) = try_parse_ty(&project, "Unresolved");
+        assert_eq!(err.len(), 0);
+        assert_eq!(unresolved, Ty::Unknown)
     }
 }

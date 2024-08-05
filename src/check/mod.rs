@@ -5,4 +5,4 @@ mod expr;
 pub mod state;
 mod stmt;
 mod top;
-mod ty;
+pub mod ty;

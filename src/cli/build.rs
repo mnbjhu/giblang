@@ -8,9 +8,12 @@ use crate::project::Project;
 
 pub fn build() {
     let mut project = Project::init_pwd();
-    project.resolve();
+    let errors = project.resolve();
+    for error in &errors {
+        project.print_error(error);
+    }
     let errors = project.check();
-    for error in errors {
+    for error in &errors {
         project.print_error(error);
     }
 }

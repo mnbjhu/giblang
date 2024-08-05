@@ -71,11 +71,22 @@ impl ModuleNode {
         }
     }
 
-    // TODO: Delete if not needed
-    pub fn get_without_error(&self, path: &[Spanned<String>]) -> Option<u32> {
-        if path.is_empty() {
+    pub fn get_path(&self, path: &[&str]) -> Option<u32> {
+        let next = path.first();
+        if next.is_none() {
             Some(self.id)
-        } else if let Some(child) = self.children.iter().find(|c| c.name == path[0].0) {
+        } else if let Some(child) = self.children.iter().find(|c| &c.name == next.unwrap()) {
+            return child.get_path(&path[1..]);
+        } else {
+            None
+        }
+    }
+
+    pub fn get_without_error(&self, path: &[Spanned<String>]) -> Option<u32> {
+        let next = path.first();
+        if next.is_none() {
+            Some(self.id)
+        } else if let Some(child) = self.children.iter().find(|c| c.name == next.unwrap().0) {
             return child.get_without_error(&path[1..]);
         } else {
             None

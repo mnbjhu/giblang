@@ -76,8 +76,8 @@ impl Ty {
         }
     }
 
-    // TODO: Finish impl?
-    #[allow(dead_code)]
+    // TODO: Finish impl
+    #[allow(dead_code, clippy::only_used_in_recursion)]
     fn get_member_func(&self, name: &str, project: &Project) -> Option<Ty> {
         match self {
             Ty::Any => None,

@@ -69,8 +69,6 @@ impl Project {
         self.files.push(file_data);
     }
 
-    // TODO: Delete if not needed
-    #[allow(dead_code)]
     pub fn get_file(&self, for_id: u32) -> Option<&FileData> {
         self.files.iter().find(|f| f.end >= for_id)
     }
@@ -85,9 +83,14 @@ impl Project {
         self.decls.insert(id, decl);
     }
 
+    pub fn get_path(&self, path: &[&str]) -> Option<u32> {
+        self.root.get_path(path)
+    }
+
     pub fn get_path_with_error(&self, path: &[Spanned<String>], file: &FileData) -> Option<u32> {
         self.root.get_with_error(path, file)
     }
+
     pub fn get_path_without_error(&self, path: &[Spanned<String>]) -> Option<u32> {
         self.root.get_without_error(path)
     }
@@ -105,7 +108,7 @@ impl Project {
     pub fn get_decl(&self, id: u32) -> &Decl {
         self.decls
             .get(&id)
-            .expect(&format!("Failed to resolve decl with id {}", id))
+            .unwrap_or_else(|| panic!("Failed to resolve decl with id {}", id))
     }
 
     pub fn get_impls(&self, for_decl: u32) -> Vec<&ImplData> {
@@ -117,16 +120,19 @@ impl Project {
         impls
     }
 
-    pub fn resolve(&mut self) {
+    pub fn resolve(&mut self) -> Vec<CheckError> {
         let mut decls = HashMap::new();
         let mut impls = HashMap::new();
         let mut impl_map = HashMap::new();
-        self.files
-            .iter()
-            .for_each(|file| resolve_file(file, &mut decls, &mut impls, &mut impl_map, self));
+        let mut errors = vec![];
+        self.files.iter().for_each(|file| {
+            let err = resolve_file(file, &mut decls, &mut impls, &mut impl_map, self);
+            errors.extend(err);
+        });
         self.decls.extend(decls);
         self.impls = impls;
         self.impl_map = impl_map;
+        errors
     }
 
     pub fn check(&self) -> Vec<CheckError> {
@@ -166,7 +172,7 @@ impl Project {
         }
     }
 
-    pub fn print_error(&self, error: CheckError) {
+    pub fn print_error(&self, error: &CheckError) {
         let CheckError::Simple {
             message,
             span,
@@ -174,8 +180,8 @@ impl Project {
         } = error;
 
         let file_data = self
-            .get_file(file)
-            .expect(format!("No file found for id {}", file).as_str());
+            .get_file(*file)
+            .unwrap_or_else(|| panic!("No file found for id {}", file));
         let source = Source::from(file_data.text.clone());
         let name = &file_data.name;
 
@@ -196,6 +202,12 @@ impl Project {
     }
 }
 
+impl Default for Project {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::Project;
@@ -207,7 +219,7 @@ mod tests {
             project
         }
 
-        pub fn test() -> Project {
+        pub fn check_test() -> Project {
             let mut project = Project::from(
                 r#"struct Foo
             struct Bar[T]

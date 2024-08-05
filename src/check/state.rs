@@ -77,9 +77,9 @@ impl<'file> CheckState<'file> {
         }
     }
 
-    pub fn get_decl_without_error(&self, path: &SpannedQualifiedName) -> Option<u32> {
-        let name = path[0].0.clone();
-        if let Some(import) = self.imports.get(&name) {
+    pub fn get_decl_without_error(&self, path: &[Spanned<String>]) -> Option<u32> {
+        let name = path.first()?;
+        if let Some(import) = self.imports.get(&name.0) {
             let module = self
                 .project
                 .root

@@ -5,7 +5,7 @@ mod check;
 mod cli;
 mod lexer;
 mod parser;
-mod project;
+pub mod project;
 mod resolve;
 mod ty;
 mod util;

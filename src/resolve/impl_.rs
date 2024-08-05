@@ -140,3 +140,52 @@ impl Ty {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::{project::Project, ty::Ty};
+
+    #[test]
+    fn resolve_impl() {
+        let mut project = Project::new();
+        project.insert_file(
+            "test.gib".to_string(),
+            r#"
+            struct Foo {
+                x: i32,
+            }
+            trait Bar
+            impl Bar for Foo
+            "#
+            .to_string(),
+        );
+
+        let errors = project.resolve();
+        assert!(errors.is_empty());
+
+        let foo = project
+            .get_path(&["test", "Foo"])
+            .expect("Failed to resolve Foo");
+        let bar = project
+            .get_path(&["test", "Bar"])
+            .expect("Failed to resolve Bar");
+        let impls = project.get_impls(foo);
+        assert_eq!(impls.len(), 1);
+
+        let impl_ = impls[0];
+
+        if let Ty::Named { name, args } = &impl_.from {
+            assert_eq!(*name, foo);
+            assert_eq!(args.len(), 0);
+        } else {
+            panic!("Expected Named type");
+        }
+
+        if let Ty::Named { name, args } = &impl_.to {
+            assert_eq!(*name, bar);
+            assert_eq!(args.len(), 0);
+        } else {
+            panic!("Expected Named type");
+        }
+    }
+}
