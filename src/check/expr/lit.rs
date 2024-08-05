@@ -39,7 +39,7 @@ impl Literal {
     ) -> Ty {
         let actual = Ty::from(self);
         if !actual.is_instance_of(expected, project) {
-            state.error(
+            state.simple_error(
                 &format!(
                     "Expected value to be of type '{}' but found '{}'",
                     expected.get_name(project),

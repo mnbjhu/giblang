@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use crate::{
+    check::err::{simple::Simple, CheckError},
     parser::expr::qualified_name::SpannedQualifiedName,
     project::{file_data::FileData, name::QualifiedName, Project},
     ty::{Generic, Ty},
@@ -13,6 +14,7 @@ pub struct CheckState<'file> {
     variables: Vec<HashMap<String, Ty>>,
     pub file_data: &'file FileData,
     pub project: &'file Project,
+    pub errors: Vec<CheckError>,
 }
 
 impl<'file> CheckState<'file> {
@@ -23,6 +25,7 @@ impl<'file> CheckState<'file> {
             variables: vec![],
             file_data,
             project,
+            errors: vec![],
         };
         let mut path = file_data.get_path();
         for (top, _) in &file_data.ast {
@@ -49,23 +52,31 @@ impl<'file> CheckState<'file> {
         self.generics.pop();
     }
 
-    pub fn error(&self, message: &str, span: Span) {
-        self.file_data.error(message, span);
+    pub fn simple_error(&mut self, message: &str, span: Span) {
+        self.errors.push(CheckError::Simple(Simple {
+            message: message.to_string(),
+            span,
+            file: self.file_data.end,
+        }));
     }
 
-    pub fn get_decl_with_error(&self, path: &SpannedQualifiedName) -> Option<u32> {
+    pub fn error(&mut self, error: CheckError) {
+        self.errors.push(error);
+    }
+
+    pub fn get_decl_with_error(&mut self, path: &SpannedQualifiedName) -> Option<u32> {
         let name = path[0].0.clone();
         if let Some(import) = self.imports.get(&name) {
             let module = self.project.root.get_module(import)?;
-            module.get_with_error(&path[1..], self.file_data)
+            module.get_with_error(&path[1..], self)
         } else {
-            self.project.get_path_with_error(path, self.file_data)
+            self.project.get_path_with_error(path, self)
         }
     }
 
-    pub fn get_decl_without_error(&self, path: &SpannedQualifiedName) -> Option<u32> {
-        let name = path[0].0.clone();
-        if let Some(import) = self.imports.get(&name) {
+    pub fn get_decl_without_error(&self, path: &[Spanned<String>]) -> Option<u32> {
+        let name = path.first()?;
+        if let Some(import) = self.imports.get(&name.0) {
             let module = self
                 .project
                 .root

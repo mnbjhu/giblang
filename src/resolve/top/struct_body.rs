@@ -1,10 +1,9 @@
 use crate::{
     check::state::CheckState,
     parser::top::{struct_body::StructBody, struct_field::StructField},
+    project::decl::struct_::StructDecl,
     ty::Ty,
 };
-
-use super::StructDecl;
 
 impl StructBody {
     pub fn resolve(&self, state: &mut CheckState) -> StructDecl {

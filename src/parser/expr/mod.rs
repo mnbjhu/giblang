@@ -18,6 +18,7 @@ use self::{
     call::{call_parser, Call},
     code_block::{code_block_parser, CodeBlock},
     if_else::{if_else_parser, IfElse},
+    member::{member_call_parser, MemberCall},
     qualified_name::{qualified_name_parser, SpannedQualifiedName},
 };
 
@@ -28,6 +29,7 @@ pub mod code_block;
 pub mod if_else;
 pub mod match_;
 pub mod match_arm;
+pub mod member;
 pub mod qualified_name;
 
 #[derive(Clone, PartialEq, Debug)]
@@ -36,6 +38,7 @@ pub enum Expr {
     Ident(SpannedQualifiedName),
     CodeBlock(CodeBlock),
     Call(Call),
+    MemberCall(MemberCall),
     Match(Match),
     Tuple(Vec<Spanned<Expr>>),
     IfElse(IfElse),
@@ -72,10 +75,11 @@ pub fn expr_parser<'tokens, 'src: 'tokens>(stmt: AstParser!(Stmt)) -> AstParser!
             match_parser(expr.clone(), match_arm::match_arm_parser(expr.clone())).map(Expr::Match);
 
         let call = call_parser(atom.clone(), expr.clone()).map(Expr::Call);
+        let member = member_call_parser(atom.clone(), expr.clone()).map(Expr::MemberCall);
 
         let if_else = if_else_parser(expr, stmt).map(Expr::IfElse);
 
-        choice((if_else, match_, block, call, atom))
+        choice((if_else, match_, block, member, call, atom))
     })
 }
 

@@ -8,8 +8,14 @@ use crate::project::Project;
 
 pub fn build() {
     let mut project = Project::init_pwd();
-    project.resolve();
-    project.check();
+    let errors = project.resolve();
+    for error in &errors {
+        project.print_error(error);
+    }
+    let errors = project.check();
+    for error in &errors {
+        project.print_error(error);
+    }
 }
 
 pub fn print_error<T: Display>(error: Rich<'_, T>, source: Source, name: &str, code: &str) {

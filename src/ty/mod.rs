@@ -1,5 +1,3 @@
-use std::fmt::Display;
-
 use crate::{parser::common::variance::Variance, project::Project};
 
 pub mod combine;
@@ -7,7 +5,10 @@ pub mod disp;
 pub mod eq;
 pub mod expect;
 pub mod generics;
+pub mod imply;
 pub mod is_instance;
+pub mod parameterize;
+pub mod prim;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Generic {
@@ -44,54 +45,6 @@ pub enum Ty {
     },
     Tuple(Vec<Ty>),
     Sum(Vec<Ty>),
-}
-
-#[derive(Clone, PartialEq, Debug)]
-pub enum PrimTy {
-    String,
-    Bool,
-    Float,
-    Int,
-    Char,
-}
-
-impl From<&PrimTy> for Ty {
-    fn from(value: &PrimTy) -> Self {
-        match value {
-            PrimTy::String => Ty::Named {
-                name: 1,
-                args: vec![],
-            },
-            PrimTy::Int => Ty::Named {
-                name: 2,
-                args: vec![],
-            },
-            PrimTy::Bool => Ty::Named {
-                name: 3,
-                args: vec![],
-            },
-            PrimTy::Float => Ty::Named {
-                name: 4,
-                args: vec![],
-            },
-            PrimTy::Char => Ty::Named {
-                name: 5,
-                args: vec![],
-            },
-        }
-    }
-}
-
-impl Display for PrimTy {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            PrimTy::String => write!(f, "String"),
-            PrimTy::Bool => write!(f, "Bool"),
-            PrimTy::Float => write!(f, "Float"),
-            PrimTy::Int => write!(f, "Int"),
-            PrimTy::Char => write!(f, "Char"),
-        }
-    }
 }
 
 impl Ty {

@@ -3,6 +3,9 @@ use crate::{check::state::CheckState, parser::common::type_::NamedType, project:
 impl NamedType {
     pub fn check(&self, state: &mut CheckState, project: &Project) -> Ty {
         if self.name.len() == 1 {
+            if self.name[0].0 == "Any" {
+                return Ty::Any;
+            }
             if let Some(generic) = state.get_generic(&self.name[0].0) {
                 return Ty::Generic(generic.clone());
             }
@@ -16,7 +19,7 @@ impl NamedType {
                 .collect::<Vec<_>>();
             for (gen, arg) in decl.generics().iter().zip(args.clone()) {
                 if !arg.is_instance_of(gen.super_.as_ref(), project) {
-                    state.error(
+                    state.simple_error(
                         &format!(
                             "Type argument {} is not a subtype of the generic constraint {}",
                             arg, gen.super_

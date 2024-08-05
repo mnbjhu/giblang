@@ -1,8 +1,9 @@
 use crate::check::state::CheckState;
 
-pub mod common;
-pub mod expr;
+mod common;
+pub mod err;
+mod expr;
 pub mod state;
-pub mod stmt;
-pub mod top;
+mod stmt;
+mod top;
 pub mod ty;

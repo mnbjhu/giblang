@@ -1,6 +1,4 @@
-use crate::{check::state::CheckState, parser::top::enum_member::EnumMember};
-
-use super::Decl;
+use crate::{check::state::CheckState, parser::top::enum_member::EnumMember, project::decl::Decl};
 
 impl EnumMember {
     pub fn resolve(&self, state: &mut CheckState) -> Decl {

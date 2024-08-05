@@ -1,31 +1,6 @@
 use std::collections::HashMap;
 
-use crate::{
-    project::{ImplData, Project},
-    ty::{Generic, Ty},
-};
-
-impl ImplData {
-    pub fn map(&self, ty: &Ty, project: &Project) -> Option<Ty> {
-        let implied_generics = self.from.imply_generics(ty)?;
-        if implied_generics.len() == self.generics.len()
-            && self
-                .generics
-                .iter()
-                .all(|arg| implied_generics.contains_key(&arg.name))
-        {
-            for generic in &self.generics {
-                let implied = implied_generics.get(&generic.name).unwrap();
-                if !implied.is_instance_of(&generic.super_, project) {
-                    return None;
-                }
-            }
-            Some(self.to.parameterize(&implied_generics))
-        } else {
-            None
-        }
-    }
-}
+use super::{Generic, Ty};
 
 impl Ty {
     pub fn imply_generics(&self, other: &Ty) -> Option<HashMap<String, Ty>> {
@@ -97,46 +72,5 @@ impl Ty {
             }
         };
         None
-    }
-
-    pub fn parameterize(&self, generics: &HashMap<String, Ty>) -> Ty {
-        match self {
-            Ty::Any => Ty::Any,
-            Ty::Unknown => Ty::Unknown,
-            Ty::Named { name, args } => Ty::Named {
-                name: *name,
-                args: args.iter().map(|ty| ty.parameterize(generics)).collect(),
-            },
-            // TODO: Check use of variance/super
-            Ty::Generic(Generic { name, .. }) => {
-                if let Some(ty) = generics.get(name) {
-                    ty.clone()
-                } else {
-                    self.clone()
-                }
-            }
-            Ty::Tuple(tys) => Ty::Tuple(tys.iter().map(|ty| ty.parameterize(generics)).collect()),
-            Ty::Sum(tys) => Ty::Sum(tys.iter().map(|ty| ty.parameterize(generics)).collect()),
-            Ty::Function {
-                receiver,
-                args,
-                ret,
-            } => {
-                if let Some(receiver) = receiver {
-                    Ty::Function {
-                        receiver: Some(Box::new(receiver.parameterize(generics))),
-                        args: args.iter().map(|ty| ty.parameterize(generics)).collect(),
-                        ret: Box::new(ret.parameterize(generics)),
-                    }
-                } else {
-                    Ty::Function {
-                        receiver: None,
-                        args: args.iter().map(|ty| ty.parameterize(generics)).collect(),
-                        ret: Box::new(ret.parameterize(generics)),
-                    }
-                }
-            }
-            Ty::Meta(_) => unimplemented!("Need to thing about this..."),
-        }
     }
 }

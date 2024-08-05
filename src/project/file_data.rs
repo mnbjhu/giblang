@@ -29,3 +29,20 @@ impl FileData {
         path_from_filename(&self.name)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::project::file_data::FileData;
+
+    #[test]
+    fn test_get_path() {
+        let file_data = FileData {
+            end: 0,
+            ast: Default::default(),
+            text: "text".to_string(),
+            name: "name.gib".to_string(),
+        };
+
+        assert_eq!(file_data.get_path(), vec!["name"]);
+    }
+}
