@@ -31,7 +31,7 @@ pub fn print_error<T: Display>(error: &Rich<'_, T>, source: Source, name: &str, 
     if let Some(found) = error.found() {
         builder = builder.with_label(
             Label::new((name, error.span().into_range()))
-                .with_message(format!("Found {}", found))
+                .with_message(format!("Found {found}"))
                 .with_color(b),
         );
     } else {
@@ -42,14 +42,18 @@ pub fn print_error<T: Display>(error: &Rich<'_, T>, source: Source, name: &str, 
         );
     }
 
-    let expected = error.expected().map(|e| e.to_string()).collect::<Vec<_>>();
+    let expected = error
+        .expected()
+        .map(std::string::ToString::to_string)
+        .collect::<Vec<_>>();
+    
     if !expected.is_empty() {
         builder = builder.with_note(
             format!(
                 "Expected {}",
                 error
                     .expected()
-                    .map(|e| e.to_string())
+                    .map(std::string::ToString::to_string)
                     .collect::<Vec<_>>()
                     .join(" or ")
             )
@@ -57,5 +61,5 @@ pub fn print_error<T: Display>(error: &Rich<'_, T>, source: Source, name: &str, 
         );
     }
     let report = builder.finish();
-    report.print((name, source.clone())).unwrap();
+    report.print((name, source)).unwrap();
 }

@@ -8,7 +8,7 @@ pub enum StructDecl {
 }
 
 impl StructDecl {
-    pub fn get_constructor_ty(&self, self_ty: Ty) -> Ty {
+    #[must_use] pub fn get_constructor_ty(&self, self_ty: Ty) -> Ty {
         match self {
             StructDecl::Fields(fields) => {
                 let args = fields.iter().map(|(_, ty)| ty.clone()).collect();
@@ -19,7 +19,7 @@ impl StructDecl {
                 }
             }
             StructDecl::Tuple(fields) => {
-                let args = fields.to_vec();
+                let args = fields.clone();
                 Ty::Function {
                     receiver: None,
                     args,
@@ -30,7 +30,7 @@ impl StructDecl {
         }
     }
 
-    pub fn is_none(&self) -> bool {
+    #[must_use] pub fn is_none(&self) -> bool {
         matches!(self, StructDecl::None)
     }
 }

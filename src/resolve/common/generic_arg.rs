@@ -12,8 +12,7 @@ impl GenericArg {
             super_: Box::new(
                 self.super_
                     .as_ref()
-                    .map(|(ty, _)| ty.resolve(state))
-                    .unwrap_or(Ty::Any),
+                    .map_or(Ty::Any, |(ty, _)| ty.resolve(state)),
             ),
         };
         state.insert_generic(self.name.0.to_string(), res.clone());

@@ -35,10 +35,10 @@ mod tests {
 
     #[test]
     fn test_code_block_parser() {
-        let input = r#"{
+        let input = r"{
     let x = 1
     let y = 2
-}"#;
+}";
         let tokens = lexer().parse(input).unwrap();
         let eoi = Span::splat(input.len());
         let input = tokens.spanned(eoi);

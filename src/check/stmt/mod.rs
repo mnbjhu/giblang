@@ -34,7 +34,7 @@ impl<'proj> Stmt {
                             actual.get_name(project),
                         ),
                         span,
-                    )
+                    );
                 }
                 actual
             }

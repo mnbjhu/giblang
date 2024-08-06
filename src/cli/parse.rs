@@ -12,7 +12,7 @@ pub fn parse(path: &str) {
     let mut success = true;
     for error in errors {
         print_error(&error, source.clone(), path, "Lexer");
-        success = false
+        success = false;
     }
 
     if let Some(tokens) = tokens {
@@ -20,7 +20,7 @@ pub fn parse(path: &str) {
         let (_, errors) = file_parser().parse(input).into_output_errors();
         for error in errors {
             print_error(&error, source.clone(), path, "Parser");
-            success = false
+            success = false;
         }
 
         if success {

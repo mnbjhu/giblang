@@ -32,9 +32,9 @@ mod tests {
 
     pub fn resolve_test_project() -> Project {
         Project::from(
-            r#"struct Foo
+            r"struct Foo
             struct Bar[T]
-            struct Baz[T, U]"#,
+            struct Baz[T, U]",
         )
     }
 
