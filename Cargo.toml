@@ -11,3 +11,7 @@ clap = { version = "4.5.3", features = ["derive"] }
 chumsky = "1.0.0-alpha.7"
 ptree = "0.4.0"
 glob = "0.3.1"
+
+# Use toolchain version 1.74
+[package.metadata.toolchain]
+version = "1.74"
