@@ -128,3 +128,80 @@ impl<'file> CheckState<'file> {
         todo!()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::{
+        check::{state::CheckState, ty::tests::parse_ty},
+        project::Project,
+        ty::Generic,
+    };
+
+    fn test_project() -> Project {
+        let mut project = Project::from(
+            r#"struct Foo
+            struct Bar
+            struct Baz[T]
+            trait Magic {
+                fn magic(): Self
+            }
+            trait Epic {
+                fn epic(): Self
+            }
+            trait Strange [T] {
+                fn strange(): T
+            }
+
+            impl Magic for Foo
+
+            impl Magic for Bar
+            impl Epic for Bar
+
+            impl Strange[T] for Baz[T]"#,
+        );
+        project.resolve();
+        project
+    }
+
+    fn test_state(project: &Project) -> CheckState {
+        let file_data = project.get_file(0).unwrap();
+        CheckState::from_file(file_data, project)
+    }
+
+    #[test]
+    fn variables() {
+        let project = test_project();
+        let mut state = test_state(&project);
+        state.enter_scope();
+        state.insert_variable("foo".to_string(), parse_ty(&project, "Foo"));
+        assert_eq!(
+            *state.get_variable("foo").unwrap(),
+            parse_ty(&project, "Foo")
+        );
+        state.exit_scope();
+        assert!(state.get_variable("foo").is_none());
+    }
+
+    #[test]
+    fn generics() {
+        let project = test_project();
+        let mut state = test_state(&project);
+        state.enter_scope();
+        state.insert_generic(
+            "T".to_string(),
+            Generic {
+                name: "T".to_string(),
+                ..Default::default()
+            },
+        );
+        assert_eq!(
+            *state.get_generic("T").unwrap(),
+            Generic {
+                name: "T".to_string(),
+                ..Default::default()
+            }
+        );
+        state.exit_scope();
+        assert!(state.get_generic("T").is_none());
+    }
+}
