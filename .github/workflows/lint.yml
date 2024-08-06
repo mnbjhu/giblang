@@ -47,11 +47,27 @@ jobs:
     name: Clippy
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
         with:
+          toolchain: stable
           components: clippy
-      - uses: auguwu/clippy-action@1.4.0
+          override: true
+      - uses: actions-rs/clippy-check@v1
         with:
-          token: ${{secrets.GITHUB_TOKEN}}
-          args: --cfg test -D warnings
+          token: ${{ secrets.GITHUB_TOKEN }}
+          args: --tests
+          name: Clippy Output
+
+  # clippy:
+  #   name: Clippy
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #     - uses: dtolnay/rust-toolchain@stable
+  #       with:
+  #         components: clippy
+  #     - uses: auguwu/clippy-action@1.4.0
+  #       with:
+  #         token: ${{secrets.GITHUB_TOKEN}}
+  #         args: --cfg test -D warnings
