@@ -4,6 +4,7 @@ use crate::{
 };
 
 impl ImplData {
+    #[must_use]
     pub fn map(&self, ty: &Ty, project: &Project) -> Option<Ty> {
         let implied_generics = self.from.imply_generics(ty)?;
         if implied_generics.len() == self.generics.len()

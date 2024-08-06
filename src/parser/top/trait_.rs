@@ -35,7 +35,7 @@ pub fn trait_parser<'tokens, 'src: 'tokens>(stmt: AstParser!(Stmt)) -> AstParser
             optional_newline().then(just(punct('}'))),
         )
         .or_not()
-        .map(|body| body.unwrap_or_default());
+        .map(std::option::Option::unwrap_or_default);
     just(kw!(trait))
         .ignore_then(spanned_ident_parser())
         .then(generic_args_parser())

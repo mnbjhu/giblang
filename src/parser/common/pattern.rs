@@ -29,9 +29,9 @@ pub enum Pattern {
 impl Pattern {
     pub fn name(&self) -> &SpannedQualifiedName {
         match self {
-            Pattern::Struct { name, .. } => name,
-            Pattern::TupleStruct { name, .. } => name,
-            Pattern::UnitStruct(name) => name,
+            Pattern::Struct { name, .. }
+            | Pattern::TupleStruct { name, .. }
+            | Pattern::UnitStruct(name) => name,
             Pattern::Name(_) => panic!("Name pattern has no name"),
         }
     }

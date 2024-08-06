@@ -21,12 +21,11 @@ impl Ty {
                 if name == other_name && args.len() == other_args.len() {
                     let mut res = HashMap::new();
                     for (s, o) in args.iter().zip(other_args) {
-                        res.extend(s.imply_generics(o)?)
+                        res.extend(s.imply_generics(o)?);
                     }
                     return Some(res);
-                } else {
-                    return None;
                 }
+                return None;
             }
             (Ty::Tuple(s), Ty::Tuple(other)) => {
                 let mut res = HashMap::new();

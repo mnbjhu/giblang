@@ -9,8 +9,7 @@ impl Func {
         let ret = self
             .ret
             .as_ref()
-            .map(|(ret, _)| ret.resolve(state))
-            .unwrap_or(Ty::Tuple(Vec::new()));
+            .map_or(Ty::unit(), |(ret, _)| ret.resolve(state));
         Decl::Function {
             name,
             generics,

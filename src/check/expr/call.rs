@@ -15,7 +15,7 @@ impl<'proj> Call {
         {
             if let Some(receiver) = receiver {
                 state.simple_error(
-                    &format!("Expected a receiver of type {}", receiver),
+                    &format!("Expected a receiver of type {receiver}"),
                     self.name.1,
                 );
             }
@@ -64,9 +64,9 @@ impl<'proj> Call {
                     .collect::<Vec<_>>()
                     .join(", ");
                 state.simple_error(
-                    &format!("Couldn't imply generic ty args: {}", not_implied),
+                    &format!("Couldn't imply generic ty args: {not_implied}"),
                     self.name.1,
-                )
+                );
             }
 
             ret.as_ref().parameterize(&implied)
@@ -97,7 +97,7 @@ impl<'proj> Call {
                     actual.get_name(project),
                 ),
                 span,
-            )
+            );
         }
         actual
     }

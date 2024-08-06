@@ -37,17 +37,17 @@ impl Ty {
                     args: other_args,
                 },
             ) => {
-                let mut new = vec![];
                 fn insert_ty(ty: Ty, new: &mut Vec<Ty>) {
                     if !new.iter().any(|t| t.equals(&ty)) {
-                        new.push(ty)
+                        new.push(ty);
                     }
                 }
+                let mut new = vec![];
                 match get_shared_named_subtype(other, *name, args, project) {
                     Ty::Any => {}
                     Ty::Sum(v) => {
                         for ty in v {
-                            insert_ty(ty, &mut new)
+                            insert_ty(ty, &mut new);
                         }
                     }
                     ty => insert_ty(ty, &mut new),
@@ -56,7 +56,7 @@ impl Ty {
                     Ty::Any => {}
                     Ty::Sum(v) => {
                         for ty in v {
-                            insert_ty(ty, &mut new)
+                            insert_ty(ty, &mut new);
                         }
                     }
                     ty => insert_ty(ty, &mut new),

@@ -33,7 +33,7 @@ pub fn file_parser<'tokens, 'src: 'tokens>() -> AstParser!(File) {
                     if existing.contains(&name.to_string()) {
                         emitter.emit(Rich::custom(
                             top.0.name_span(),
-                            format!("Duplicate top-level item '{}'", name),
+                            format!("Duplicate top-level item '{name}'"),
                         ));
                         false
                     } else {
@@ -52,7 +52,7 @@ pub fn parse_file(txt: &str, filename: &str, src: &Source, counter: &mut u32) ->
     let (tokens, errors) = lexer().parse(txt).into_output_errors();
     let len = txt.len();
     for error in errors {
-        print_error(error, src.clone(), filename, "Lex");
+        print_error(&error, src.clone(), filename, "Lex");
     }
     if let Some(tokens) = tokens {
         let eoi = Span::splat(len);
@@ -61,7 +61,7 @@ pub fn parse_file(txt: &str, filename: &str, src: &Source, counter: &mut u32) ->
             .parse_with_state(input, counter)
             .into_output_errors();
         for error in errors {
-            print_error(error, src.clone(), filename, "Parse");
+            print_error(&error, src.clone(), filename, "Parse");
         }
         if let Some(ast) = ast {
             return ast;

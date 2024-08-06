@@ -42,12 +42,13 @@ pub enum Decl {
 }
 
 impl Decl {
+    #[must_use]
     pub fn generics(&self) -> Vec<Generic> {
         match self {
-            Decl::Struct { generics, .. } => generics.clone(),
-            Decl::Trait { generics, .. } => generics.clone(),
-            Decl::Enum { generics, .. } => generics.clone(),
-            Decl::Function { generics, .. } => generics.clone(),
+            Decl::Struct { generics, .. }
+            | Decl::Trait { generics, .. }
+            | Decl::Enum { generics, .. }
+            | Decl::Function { generics, .. } => generics.clone(),
             Decl::Member { .. } => {
                 panic!("Hmm, don't think I need this, guess I'll find out")
             }
@@ -55,13 +56,14 @@ impl Decl {
         }
     }
 
+    #[must_use]
     pub fn name(&self) -> String {
         match self {
-            Decl::Struct { name, .. } => name.0.clone(),
-            Decl::Trait { name, .. } => name.0.clone(),
-            Decl::Enum { name, .. } => name.0.clone(),
-            Decl::Function { name, .. } => name.0.clone(),
-            Decl::Member { name, .. } => name.0.clone(),
+            Decl::Struct { name, .. }
+            | Decl::Trait { name, .. }
+            | Decl::Enum { name, .. }
+            | Decl::Function { name, .. }
+            | Decl::Member { name, .. } => name.0.clone(),
             Decl::Prim(p) => p.to_string(),
         }
     }
@@ -69,10 +71,11 @@ impl Decl {
     pub fn get_ty(&self, id: u32, project: &Project) -> Ty {
         let self_ty = self.get_named_ty(project, id);
         match self {
-            Decl::Struct { body, .. } => body.get_constructor_ty(self_ty),
             Decl::Trait { .. } => todo!(),
             Decl::Enum { .. } => todo!(),
-            Decl::Member { body, .. } => body.get_constructor_ty(self_ty),
+            Decl::Member { body, .. } | Decl::Struct { body, .. } => {
+                body.get_constructor_ty(self_ty)
+            }
             Decl::Function {
                 receiver,
                 args,

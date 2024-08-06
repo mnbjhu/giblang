@@ -10,7 +10,7 @@ impl Enum {
             let id = m.0.id;
             let decl = m.0.resolve(state);
             decls.insert(id, decl);
-            variants.push(id)
+            variants.push(id);
         }
         Decl::Enum {
             name: self.name.clone(),
@@ -35,14 +35,14 @@ mod tests {
         let mut project = Project::new();
         project.insert_file(
             "test.gib".to_string(),
-            r#"
+            r"
             enum Foo {
                 Bar,
                 Baz {
                     x: String,
                 },
             }
-            "#
+            "
             .to_string(),
         );
 

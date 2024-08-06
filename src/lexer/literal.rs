@@ -12,11 +12,11 @@ pub enum Literal {
 impl Display for Literal {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Literal::Int(i) => write!(f, "{}", i),
-            Literal::Float(v) => write!(f, "{}", v),
-            Literal::String(s) => write!(f, "{}", s),
-            Literal::Bool(b) => write!(f, "{}", b),
-            Literal::Char(c) => write!(f, "{}", c),
+            Literal::Int(i) => write!(f, "{i}"),
+            Literal::Float(v) => write!(f, "{v}"),
+            Literal::String(s) => write!(f, "{s}"),
+            Literal::Bool(b) => write!(f, "{b}"),
+            Literal::Char(c) => write!(f, "{c}"),
         }
     }
 }

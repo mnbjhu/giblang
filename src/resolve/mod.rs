@@ -39,14 +39,14 @@ mod tests {
         let mut project = Project::new();
         project.insert_file(
             "test.gib".to_string(),
-            r#"
+            r"
             struct Foo {
                 x: i32,
             }
             fn main() {
                 let x = 5
             }
-            "#
+            "
             .to_string(),
         );
 
@@ -67,23 +67,23 @@ mod tests {
         let mut project = Project::new();
         project.insert_file(
             "test.gib".to_string(),
-            r#"
+            r"
             struct Foo {
                 x: i32,
             }
             fn main() {
                 let x = 5
             }
-            "#
+            "
             .to_string(),
         );
         project.insert_file(
             "test2.gib".to_string(),
-            r#"
+            r"
             struct Bar {
                 y: i32,
             }
-            "#
+            "
             .to_string(),
         );
 
@@ -107,17 +107,18 @@ mod tests {
         }
     }
 
+    #[allow(clippy::similar_names)]
     #[test]
     fn enum_members() {
         let mut project = Project::new();
         project.insert_file(
             "test.gib".to_string(),
-            r#"
+            r"
             enum Foo {
                 Bar,
                 Baz(Int),
             }
-            "#
+            "
             .to_string(),
         );
 
@@ -129,9 +130,7 @@ mod tests {
             .expect("Couldn't resolve 'Bar'");
         if let Decl::Member { name, body } = project.get_decl(bar) {
             assert_eq!(name.0, "Bar");
-            if !body.is_none() {
-                panic!("Expected an 'None' body")
-            }
+            assert!(body.is_none(), "Expected an 'None' body");
         }
 
         let baz = project

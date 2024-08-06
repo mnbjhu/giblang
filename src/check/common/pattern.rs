@@ -101,7 +101,7 @@ impl StructFieldPattern {
                 if let Some(ty) = fields.get(name) {
                     state.insert_variable(name.to_string(), ty.clone().parameterize(implied));
                 } else {
-                    state.simple_error(&format!("Field '{}' not found", name), span);
+                    state.simple_error(&format!("Field '{name}' not found"), span);
                 }
             }
             StructFieldPattern::Explicit { field, pattern } => {

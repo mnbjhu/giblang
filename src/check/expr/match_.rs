@@ -6,7 +6,7 @@ impl<'proj> Match {
         let mut ret = Ty::Unknown;
         for arm in &self.arms {
             let ty = arm.check(project, state, expr_ty.clone());
-            ret = ret.get_shared_subtype(&ty, project)
+            ret = ret.get_shared_subtype(&ty, project);
         }
         ret
     }
@@ -21,7 +21,7 @@ impl<'proj> Match {
         let mut ret = Ty::Unknown;
         for arm in &self.arms {
             let ty = arm.expected_instance_of(expected, project, state, expr_ty.clone());
-            ret = ret.get_shared_subtype(&ty, project)
+            ret = ret.get_shared_subtype(&ty, project);
         }
         ret
     }

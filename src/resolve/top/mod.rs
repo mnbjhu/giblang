@@ -25,7 +25,7 @@ impl Top {
         impl_map: &mut HashMap<u32, Vec<u32>>,
     ) {
         if let Top::Use(use_) = self {
-            state.import(use_)
+            state.import(use_);
         } else {
             let id = self.get_id().unwrap();
             let decl = match self {
@@ -35,8 +35,8 @@ impl Top {
                 Top::Trait(t) => t.resolve(state, decls),
                 Top::Impl(i) => {
                     let id = i.id;
-                    let impl_ = i.resolve(state, decls);
-                    if let Ty::Named { name, .. } = &impl_.from {
+                    let resolved = i.resolve(state, decls);
+                    if let Ty::Named { name, .. } = &resolved.from {
                         if let Some(existing) = impl_map.get_mut(name) {
                             existing.push(id);
                         } else {
@@ -45,7 +45,7 @@ impl Top {
                     } else {
                         state.simple_error("The 'for' of an 'impl' should a named type", i.for_.1);
                     };
-                    impls.insert(id, impl_);
+                    impls.insert(id, resolved);
                     return;
                 }
                 Top::Use(_) => todo!(),

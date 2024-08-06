@@ -62,5 +62,5 @@ pub fn struct_body_parser<'tokens, 'src: 'tokens>() -> AstParser!(StructBody) {
     fields
         .or(tuple)
         .or_not()
-        .map(|body| body.unwrap_or_default())
+        .map(std::option::Option::unwrap_or_default)
 }

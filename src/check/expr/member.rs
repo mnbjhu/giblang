@@ -67,9 +67,9 @@ impl MemberCall {
                     .collect::<Vec<_>>()
                     .join(", ");
                 state.simple_error(
-                    &format!("Couldn't imply generic ty args: {}", not_implied),
+                    &format!("Couldn't imply generic ty args: {not_implied}"),
                     self.name.1,
-                )
+                );
             }
 
             ret.as_ref().parameterize(&implied)
@@ -90,7 +90,7 @@ impl MemberCall {
             state.simple_error(
                 &format!("Expected value to be of type '{expected}' but found '{actual}'",),
                 span,
-            )
+            );
         }
         actual
     }

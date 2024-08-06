@@ -52,7 +52,7 @@ pub fn check_ty(
                 new.get_name(project),
             ),
             span,
-        )
+        );
     }
     // TODO: Consider whether to pass through or use Ty::Unknown
     new

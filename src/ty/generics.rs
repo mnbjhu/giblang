@@ -13,14 +13,13 @@ impl Ty {
             } => {
                 let mut geneircs = vec![];
                 if let Some(rec) = receiver {
-                    geneircs.extend(rec.get_generic_params())
+                    geneircs.extend(rec.get_generic_params());
                 }
                 geneircs.extend(args.iter().flat_map(Ty::get_generic_params));
                 geneircs.extend(ret.get_generic_params());
                 geneircs
             }
-            Ty::Tuple(v) => v.iter().flat_map(Ty::get_generic_params).collect(),
-            Ty::Sum(v) => v.iter().flat_map(Ty::get_generic_params).collect(),
+            Ty::Tuple(v) | Ty::Sum(v) => v.iter().flat_map(Ty::get_generic_params).collect(),
             _ => vec![],
         }
     }

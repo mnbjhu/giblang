@@ -41,21 +41,20 @@ pub fn top_parser<'tokens, 'src: 'tokens>() -> AstParser!(Top) {
 impl Top {
     pub fn get_name(&self) -> Option<&str> {
         match &self {
-            Top::Func(Func { name, .. }) => Some(&name.0),
-            Top::Trait(Trait { name, .. }) => Some(&name.0),
-            Top::Struct(Struct { name, .. }) => Some(&name.0),
-            Top::Enum(Enum { name, .. }) => Some(&name.0),
-            Top::Use(_) => None,
-            Top::Impl(_) => None,
+            Top::Func(Func { name, .. })
+            | Top::Trait(Trait { name, .. })
+            | Top::Struct(Struct { name, .. })
+            | Top::Enum(Enum { name, .. }) => Some(&name.0),
+            Top::Use(_) | Top::Impl(_) => None,
         }
     }
 
     pub fn name_span(&self) -> Span {
         match &self {
-            Top::Func(Func { name, .. }) => name.1,
-            Top::Trait(Trait { name, .. }) => name.1,
-            Top::Struct(Struct { name, .. }) => name.1,
-            Top::Enum(Enum { name, .. }) => name.1,
+            Top::Func(Func { name, .. })
+            | Top::Trait(Trait { name, .. })
+            | Top::Struct(Struct { name, .. })
+            | Top::Enum(Enum { name, .. }) => name.1,
             Top::Impl(_) => unimplemented!("Impl statement doesn't have a name"),
             Top::Use(_) => unimplemented!("Use statement doesn't have a name"),
         }
@@ -63,44 +62,38 @@ impl Top {
 
     pub fn get_id(&self) -> Option<u32> {
         match &self {
-            Top::Func(Func { id, .. }) => Some(*id),
-            Top::Trait(Trait { id, .. }) => Some(*id),
-            Top::Struct(Struct { id, .. }) => Some(*id),
-            Top::Enum(Enum { id, .. }) => Some(*id),
+            Top::Func(Func { id, .. })
+            | Top::Trait(Trait { id, .. })
+            | Top::Struct(Struct { id, .. })
+            | Top::Enum(Enum { id, .. })
+            | Top::Impl(Impl { id, .. }) => Some(*id),
             Top::Use(_) => None,
-            Top::Impl(Impl { id, .. }) => Some(*id),
         }
     }
 
     pub fn is_parent(&self) -> bool {
         match &self {
-            Top::Func(_) => false,
-            Top::Trait(_) => true,
-            Top::Struct(_) => true,
-            Top::Enum(_) => true,
-            Top::Use(_) => false,
-            Top::Impl(_) => true,
+            Top::Trait(_) | Top::Struct(_) | Top::Enum(_) | Top::Impl(_) => true,
+            Top::Use(_) | Top::Func(_) => false,
         }
     }
 
     pub fn children(&self) -> Vec<(String, u32)> {
         match &self {
-            Top::Func(_) => vec![],
             Top::Trait(Trait { body, .. }) => body
                 .iter()
                 .map(|f| (f.0.name.0.to_string(), f.0.id))
                 .collect(),
-            Top::Struct(Struct { .. }) => vec![],
             Top::Enum(Enum { members, .. }) => members
                 .iter()
                 .map(|f| (f.0.name.0.to_string(), f.0.id))
                 .collect(),
-            Top::Use(_) => vec![],
             Top::Impl(impl_) => impl_
                 .body
                 .iter()
                 .map(|f| (f.0.name.0.to_string(), f.0.id))
                 .collect(),
+            _ => vec![],
         }
     }
 }

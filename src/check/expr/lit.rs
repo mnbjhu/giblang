@@ -46,7 +46,7 @@ impl Literal {
                     actual.get_name(project)
                 ),
                 span,
-            )
+            );
         }
         actual
     }

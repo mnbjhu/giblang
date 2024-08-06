@@ -29,7 +29,7 @@ pub fn get_shared_named_subtype(other: &Ty, name: u32, args: &[Ty], project: &Pr
     }
     let impls = project.get_impls(name);
     let mut shared = vec![];
-    for impl_ in impls.iter() {
+    for impl_ in &impls {
         if let Some(ty) = impl_.map(
             &Ty::Named {
                 name,
@@ -42,7 +42,7 @@ pub fn get_shared_named_subtype(other: &Ty, name: u32, args: &[Ty], project: &Pr
                 shared.extend(v);
             } else if let Ty::Any = found {
             } else {
-                shared.push(found)
+                shared.push(found);
             }
         }
     }

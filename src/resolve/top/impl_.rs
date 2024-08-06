@@ -43,13 +43,13 @@ mod tests {
         let mut project = Project::new();
         project.insert_file(
             "test.gib".to_string(),
-            r#"
+            r"
             struct Foo {
                 x: i32,
             }
             trait Bar
             impl Bar for Foo
-            "#
+            "
             .to_string(),
         );
 
@@ -65,16 +65,16 @@ mod tests {
         let impls = project.get_impls(foo);
         assert_eq!(impls.len(), 1);
 
-        let impl_ = impls[0];
+        let resolved_impl = impls[0];
 
-        if let Ty::Named { name, args } = &impl_.from {
+        if let Ty::Named { name, args } = &resolved_impl.from {
             assert_eq!(*name, foo);
             assert_eq!(args.len(), 0);
         } else {
             panic!("Expected Named type");
         }
 
-        if let Ty::Named { name, args } = &impl_.to {
+        if let Ty::Named { name, args } = &resolved_impl.to {
             assert_eq!(*name, bar);
             assert_eq!(args.len(), 0);
         } else {
@@ -87,7 +87,7 @@ mod tests {
         let mut project = Project::new();
         project.insert_file(
             "test.gib".to_string(),
-            r#"
+            r"
             struct Foo
             trait Bar
             impl Bar for Foo {
@@ -96,7 +96,7 @@ mod tests {
                 }
                 fn baz(text: String): Int
             }
-            "#
+            "
             .to_string(),
         );
 
@@ -112,23 +112,23 @@ mod tests {
         let impls = project.get_impls(foo);
         assert_eq!(impls.len(), 1);
 
-        let impl_ = impls[0];
+        let resolved_impl = impls[0];
 
-        if let Ty::Named { name, args } = &impl_.from {
+        if let Ty::Named { name, args } = &resolved_impl.from {
             assert_eq!(*name, foo);
             assert_eq!(args.len(), 0);
         } else {
             panic!("Expected Named type");
         }
 
-        if let Ty::Named { name, args } = &impl_.to {
+        if let Ty::Named { name, args } = &resolved_impl.to {
             assert_eq!(*name, bar);
             assert_eq!(args.len(), 0);
         } else {
             panic!("Expected Named type");
         }
 
-        assert_eq!(impl_.functions.len(), 2);
+        assert_eq!(resolved_impl.functions.len(), 2);
 
         if let Decl::Function {
             name,
@@ -136,7 +136,7 @@ mod tests {
             receiver,
             args,
             ret,
-        } = project.get_decl(impl_.functions[0])
+        } = project.get_decl(resolved_impl.functions[0])
         {
             assert_eq!(name.0, "baz");
             assert_eq!(generics.len(), 0);
@@ -149,7 +149,7 @@ mod tests {
                     assert_eq!(args.len(), 0);
                 }
             } else {
-                panic!("Expected generic receiver, buf found {:?}", receiver);
+                panic!("Expected generic receiver, buf found {receiver:?}");
             }
             assert_eq!(args.len(), 0);
             assert_eq!(*ret, parse_ty(&project, "Int"));
@@ -163,7 +163,7 @@ mod tests {
             receiver,
             args,
             ret,
-        } = project.get_decl(impl_.functions[1])
+        } = project.get_decl(resolved_impl.functions[1])
         {
             assert_eq!(name.0, "baz");
             assert_eq!(generics.len(), 0);

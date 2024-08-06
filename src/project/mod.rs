@@ -6,7 +6,7 @@ use glob::glob;
 use crate::{
     check::{err::CheckError, state::CheckState},
     parser::parse_file,
-    project::{file_data::FileData, module::ModuleNode, util::path_from_filename},
+    project::{file_data::FileData, module::Node, util::path_from_filename},
     resolve::resolve_file,
     ty::{prim::PrimTy, Generic, Ty},
     util::Spanned,
@@ -21,7 +21,7 @@ pub mod name;
 pub mod util;
 
 pub struct Project {
-    pub root: ModuleNode,
+    pub root: Node,
     files: Vec<FileData>,
     parents: Vec<u32>,
     decls: HashMap<u32, Decl>,
@@ -38,6 +38,7 @@ pub struct ImplData {
 }
 
 impl Project {
+    #[allow(clippy::missing_panics_doc)]
     pub fn insert_file(&mut self, file_path: String, text: String) {
         let ast = parse_file(
             &text,
@@ -69,20 +70,22 @@ impl Project {
         self.files.push(file_data);
     }
 
+    #[must_use]
     pub fn get_file(&self, for_id: u32) -> Option<&FileData> {
         self.files.iter().find(|f| f.end >= for_id)
     }
 
+    #[must_use]
     pub fn get_parent(&self, for_id: u32) -> Option<u32> {
         self.parents.iter().find(|&&id| id > for_id).copied()
     }
 
-    // TODO: Delete if not needed
-    #[allow(dead_code)]
     pub fn insert_decl(&mut self, id: u32, decl: Decl) {
         self.decls.insert(id, decl);
     }
 
+    #[cfg(test)]
+    #[must_use]
     pub fn get_path(&self, path: &[&str]) -> Option<u32> {
         self.root.get_path(path)
     }
@@ -95,10 +98,12 @@ impl Project {
         self.root.get_with_error(path, file)
     }
 
+    #[must_use]
     pub fn get_path_without_error(&self, path: &[Spanned<String>]) -> Option<u32> {
         self.root.get_without_error(path)
     }
 
+    #[must_use]
     pub fn init_pwd() -> Project {
         let mut project = Project::new();
         for file in glob("**/*.gib").unwrap() {
@@ -109,17 +114,19 @@ impl Project {
         project
     }
 
+    #[must_use]
     pub fn get_decl(&self, id: u32) -> &Decl {
         self.decls
             .get(&id)
-            .unwrap_or_else(|| panic!("Failed to resolve decl with id {}", id))
+            .unwrap_or_else(|| panic!("Failed to resolve decl with id {id}"))
     }
 
+    #[must_use]
     pub fn get_impls(&self, for_decl: u32) -> Vec<&ImplData> {
         let impl_ids = self.impl_map.get(&for_decl).cloned().unwrap_or_default();
         let mut impls = vec![];
         for id in &impl_ids {
-            impls.push(self.impls.get(id).expect("Think these should be valid"))
+            impls.push(self.impls.get(id).expect("Think these should be valid"));
         }
         impls
     }
@@ -139,18 +146,20 @@ impl Project {
         errors
     }
 
+    #[must_use]
     pub fn check(&self) -> Vec<CheckError> {
         let mut errors = vec![];
         for file in &self.files {
             let mut state = CheckState::from_file(file, self);
             for item in &file.ast {
-                item.0.check(self, &mut state)
+                item.0.check(self, &mut state);
             }
             errors.extend(state.errors);
         }
         errors
     }
 
+    #[must_use]
     pub fn new() -> Project {
         let mut decls = HashMap::new();
         decls.insert(1, Decl::Prim(PrimTy::String));
@@ -159,7 +168,7 @@ impl Project {
         decls.insert(4, Decl::Prim(PrimTy::Float));
         decls.insert(5, Decl::Prim(PrimTy::Char));
 
-        let mut root = ModuleNode::module("root".to_string());
+        let mut root = Node::module("root".to_string());
         root.insert(&[], 1, "String");
         root.insert(&[], 2, "Int");
         root.insert(&[], 3, "Bool");
@@ -188,23 +197,21 @@ mod tests {
     use super::Project;
 
     impl Project {
+        #[must_use]
         pub fn from(text: &str) -> Project {
             let mut project = Project::new();
             project.insert_file("main.gib".to_string(), text.to_string());
             project
         }
 
+        #[must_use]
         pub fn check_test() -> Project {
-            let mut project = Project::from(
-                r#"struct Foo
-            struct Bar[T]
-            struct Baz[T, U]"#,
-            );
+            let mut project = Project::from("struct Foo\nstruct Bar[T]\nstruct Baz[T, U]");
             project.resolve();
             project
         }
 
-        #[allow(dead_code)]
+        #[must_use]
         pub fn get_counter(&self) -> u32 {
             self.counter
         }
