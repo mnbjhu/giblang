@@ -15,11 +15,11 @@ pub enum Token {
 impl Display for Token {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Token::Keyword(k) => write!(f, "{}", k),
-            Token::Ident(i) => write!(f, "{}", i),
-            Token::Literal(l) => write!(f, "{}", l),
-            Token::Op(o) => write!(f, "{}", o),
-            Token::Punct(p) => write!(f, "{}", p),
+            Token::Keyword(k) => write!(f, "{k}"),
+            Token::Ident(i) => write!(f, "{i}"),
+            Token::Literal(l) => write!(f, "{l}"),
+            Token::Op(o) => write!(f, "{o}"),
+            Token::Punct(p) => write!(f, "{p}"),
             Token::Newline => write!(f, "newline"),
         }
     }

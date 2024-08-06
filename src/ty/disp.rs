@@ -8,15 +8,15 @@ impl Display for Ty {
             Ty::Any => write!(f, "Any"),
             Ty::Unknown => write!(f, "Unknown"),
             Ty::Named { name, args } => {
-                write!(f, "{}", name)?;
+                write!(f, "{name}")?;
                 if !args.is_empty() {
                     write!(f, "[")?;
                     let txt = args
                         .iter()
-                        .map(|ty| ty.to_string())
+                        .map(ToString::to_string)
                         .collect::<Vec<_>>()
                         .join(", ");
-                    write!(f, "{}", txt)?;
+                    write!(f, "{txt}")?;
                     write!(f, "]")?;
                 }
                 Ok(())
@@ -28,7 +28,7 @@ impl Display for Ty {
             }) => {
                 write!(f, "{variance}{name}: {super_}")
             }
-            Ty::Meta(ty) => write!(f, "Type[{}]", ty),
+            Ty::Meta(ty) => write!(f, "Type[{ty}]"),
             Ty::Function {
                 receiver,
                 args,
@@ -36,30 +36,30 @@ impl Display for Ty {
             } => {
                 let args = args
                     .iter()
-                    .map(|ty| ty.to_string())
+                    .map(ToString::to_string)
                     .collect::<Vec<_>>()
                     .join(", ");
                 if let Some(receiver) = receiver {
-                    write!(f, "{}.({}) -> {}", receiver, args, ret)
+                    write!(f, "{receiver}.({args}) -> {ret}")
                 } else {
-                    write!(f, "({}) -> {}", args, ret)
+                    write!(f, "({args}) -> {ret}")
                 }
             }
             Ty::Tuple(tys) => {
                 let txt = tys
                     .iter()
-                    .map(|ty| ty.to_string())
+                    .map(ToString::to_string)
                     .collect::<Vec<_>>()
                     .join(", ");
-                write!(f, "({})", txt)
+                write!(f, "({txt})")
             }
             Ty::Sum(tys) => {
                 let txt = tys
                     .iter()
-                    .map(|ty| ty.to_string())
+                    .map(ToString::to_string)
                     .collect::<Vec<_>>()
                     .join(" + ");
-                write!(f, "{}", txt)
+                write!(f, "{txt}")
             }
         }
     }

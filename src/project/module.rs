@@ -6,23 +6,23 @@ use crate::{
     util::Spanned,
 };
 
-pub struct ModuleNode {
+pub struct Node {
     name: String,
     id: u32,
-    children: Vec<ModuleNode>,
+    children: Vec<Node>,
 }
 
-impl ModuleNode {
-    pub fn module(name: String) -> ModuleNode {
-        ModuleNode {
+impl Node {
+    pub fn module(name: String) -> Node {
+        Node {
             name,
             id: 0,
             children: Vec::new(),
         }
     }
 
-    pub fn item(name: String, id: u32) -> ModuleNode {
-        ModuleNode {
+    pub fn item(name: String, id: u32) -> Node {
+        Node {
             name,
             id,
             children: Vec::new(),
@@ -31,7 +31,7 @@ impl ModuleNode {
 
     pub fn insert(&mut self, path: &[String], id: u32, name: &str) {
         if path.is_empty() {
-            self.children.push(ModuleNode::item(name.to_string(), id));
+            self.children.push(Node::item(name.to_string(), id));
         } else {
             let mut found = false;
             for child in &mut self.children {
@@ -42,7 +42,7 @@ impl ModuleNode {
                 }
             }
             if !found {
-                let mut child = ModuleNode::module(path[0].to_string());
+                let mut child = Node::module(path[0].to_string());
                 child.insert(&path[1..], id, name);
                 self.children.push(child);
             }
@@ -63,6 +63,7 @@ impl ModuleNode {
         }
     }
 
+    #[cfg(test)]
     pub fn get_path(&self, path: &[&str]) -> Option<u32> {
         let next = path.first();
         if next.is_none() {
@@ -85,7 +86,7 @@ impl ModuleNode {
         }
     }
 
-    pub fn get_module(&self, path: &[String]) -> Option<&ModuleNode> {
+    pub fn get_module(&self, path: &[String]) -> Option<&Node> {
         if path.is_empty() {
             Some(self)
         } else if let Some(child) = self.children.iter().find(|c| c.name == path[0]) {
@@ -98,11 +99,11 @@ impl ModuleNode {
 
 #[cfg(test)]
 mod tests {
-    use super::ModuleNode;
+    use super::Node;
 
     #[test]
     fn test_new_module() {
-        let module = ModuleNode::module("my_module".to_string());
+        let module = Node::module("my_module".to_string());
         assert!(module.children.is_empty(), "Children should be empty");
         assert_eq!(module.name, "my_module", "Name should be 'my_module'");
         assert_eq!(module.id, 0, "ID should be 0");
@@ -110,7 +111,7 @@ mod tests {
 
     #[test]
     fn test_new_item() {
-        let item = ModuleNode::item("my_item".to_string(), 42);
+        let item = Node::item("my_item".to_string(), 42);
         assert!(item.children.is_empty(), "Children should be empty");
         assert_eq!(item.name, "my_item", "Name should be 'my_item'");
         assert_eq!(item.id, 42, "ID should be 42");
@@ -118,7 +119,7 @@ mod tests {
 
     #[test]
     fn insert_empty_path() {
-        let mut module = ModuleNode::module("my_module".to_string());
+        let mut module = Node::module("my_module".to_string());
         module.insert(&[], 42, "my_item");
         assert_eq!(module.children.len(), 1, "Children should have 1 item");
         assert_eq!(
@@ -130,7 +131,7 @@ mod tests {
 
     #[test]
     fn insert_path_size_one() {
-        let mut module = ModuleNode::module("my_module".to_string());
+        let mut module = Node::module("my_module".to_string());
         module.insert(&["sub_module".to_string()], 42, "my_item");
         assert_eq!(module.children.len(), 1, "Children should have 1 item");
         let child = &module.children[0];
@@ -145,7 +146,7 @@ mod tests {
 
     #[test]
     fn insert_into_existing_child() {
-        let mut module = ModuleNode::module("my_module".to_string());
+        let mut module = Node::module("my_module".to_string());
         module.insert(
             &[
                 "first_sub_module".to_string(),

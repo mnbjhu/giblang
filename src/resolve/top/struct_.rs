@@ -32,11 +32,11 @@ mod tests {
         let mut project = Project::new();
         project.insert_file(
             "test.gib".to_string(),
-            r#"
+            r"
             struct Foo {
                 x: String,
             }
-            "#
+            "
             .to_string(),
         );
 
@@ -74,12 +74,12 @@ mod tests {
         let mut project = Project::new();
         project.insert_file(
             "test.gib".to_string(),
-            r#"
+            r"
             trait Bar
             struct Foo[T, out U: Bar] {
                 x: String,
             }
-            "#
+            "
             .to_string(),
         );
 

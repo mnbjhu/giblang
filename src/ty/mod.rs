@@ -19,7 +19,7 @@ pub struct Generic {
 impl Default for Generic {
     fn default() -> Self {
         Self {
-            name: "".to_string(),
+            name: String::new(),
             variance: Variance::Invariant,
             super_: Box::new(Ty::Any),
         }
@@ -72,7 +72,7 @@ impl Ty {
                         .map(|arg| arg.get_name(project))
                         .collect::<Vec<_>>()
                         .join(", ");
-                    format!("{}<{}>", name, args)
+                    format!("{name}[{args}]")
                 }
             }
             Ty::Generic(g) => g.get_name(project),
@@ -84,15 +84,14 @@ impl Ty {
             } => {
                 let receiver = receiver
                     .as_ref()
-                    .map(|r| r.get_name(project))
-                    .unwrap_or("".to_string());
+                    .map_or(String::new(), |r| r.get_name(project));
                 let args = args
                     .iter()
                     .map(|arg| arg.get_name(project))
                     .collect::<Vec<_>>()
                     .join(", ");
                 let ret = ret.get_name(project);
-                format!("{}({}) -> {}", receiver, args, ret)
+                format!("{receiver}({args}) -> {ret}")
             }
             Ty::Tuple(tys) => {
                 let tys = tys
@@ -100,7 +99,7 @@ impl Ty {
                     .map(|ty| ty.get_name(project))
                     .collect::<Vec<_>>()
                     .join(", ");
-                format!("({})", tys)
+                format!("({tys})")
             }
             Ty::Sum(tys) => {
                 let tys = tys
@@ -108,8 +107,12 @@ impl Ty {
                     .map(|ty| ty.get_name(project))
                     .collect::<Vec<_>>()
                     .join(" + ");
-                format!("({})", tys)
+                format!("({tys})")
             }
         }
+    }
+
+    pub fn unit() -> Self {
+        Ty::Tuple(Vec::new())
     }
 }

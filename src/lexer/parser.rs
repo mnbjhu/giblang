@@ -65,7 +65,7 @@ pub fn lexer<'src>(
     let newline = text::newline()
         .repeated()
         .at_least(1)
-        .map(|_| Token::Newline);
+        .map(|()| Token::Newline);
 
     choice((newline, ident, char, float, int, string, op, punct))
         .map_with(|t, e| (t, e.span()))
@@ -91,10 +91,10 @@ mod tests {
 
     #[test]
     fn test_lexer() {
-        let input = r#"fn main() {
+        let input = r"fn main() {
             let x = 42;
             x + 1
-        }"#;
+        }";
 
         let tokens = remove_span(lexer().parse(input).unwrap());
         assert_eq!(
@@ -118,6 +118,6 @@ mod tests {
                 newline(),
                 punct('}'),
             ]
-        )
+        );
     }
 }

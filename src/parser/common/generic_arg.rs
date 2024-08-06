@@ -23,7 +23,7 @@ impl Default for GenericArg {
     fn default() -> Self {
         GenericArg {
             variance: Variance::Invariant,
-            name: ("".to_string(), (0..0).into()),
+            name: (String::new(), (0..0).into()),
             super_: None,
         }
     }

@@ -18,7 +18,7 @@ pub fn build() {
     }
 }
 
-pub fn print_error<T: Display>(error: Rich<'_, T>, source: Source, name: &str, code: &str) {
+pub fn print_error<T: Display>(error: &Rich<'_, T>, source: Source, name: &str, code: &str) {
     let mut colors = ColorGenerator::new();
 
     let b = colors.next();

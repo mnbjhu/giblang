@@ -5,9 +5,7 @@ use super::Generic;
 impl<'module> Ty {
     pub fn equals(&'module self, other: &Ty) -> bool {
         match (&self, other) {
-            (Ty::Unknown, _) => true,
-            (_, Ty::Unknown) => true,
-            (Ty::Any, Ty::Any) => true,
+            (Ty::Unknown, _) | (_, Ty::Unknown) | (Ty::Any, Ty::Any) => true,
             (
                 Ty::Generic(Generic {
                     variance, super_, ..

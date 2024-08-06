@@ -8,14 +8,14 @@ impl Type {
             Type::Tuple(tup) => {
                 let mut tys = vec![];
                 for (ty, _) in tup {
-                    tys.push(ty.check(project, state))
+                    tys.push(ty.check(project, state));
                 }
                 Ty::Tuple(tys)
             }
             Type::Sum(tup) => {
                 let mut tys = vec![];
                 for (ty, _) in tup {
-                    tys.push(ty.check(project, state))
+                    tys.push(ty.check(project, state));
                 }
                 Ty::Sum(tys)
             }
@@ -178,6 +178,6 @@ pub mod tests {
         } else {
             panic!("Expected unresolved error")
         }
-        assert_eq!(unresolved, Ty::Unknown)
+        assert_eq!(unresolved, Ty::Unknown);
     }
 }

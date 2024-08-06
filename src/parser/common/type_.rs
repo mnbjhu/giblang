@@ -98,7 +98,7 @@ pub fn named_parser<'tokens, 'src: 'tokens>(ty: AstParser!(Type)) -> AstParser!(
             optional_newline().then(just(punct(']'))),
         )
         .or_not()
-        .map(|args| args.unwrap_or_default());
+        .map(Option::unwrap_or_default);
     ident
         .then(args)
         .map(|(name, args)| NamedType { name, args })

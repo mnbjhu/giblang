@@ -28,7 +28,7 @@ impl<'proj> Top {
             Top::Trait(t) => t.check(project, state),
             Top::Struct(s) => s.check(project, state),
             Top::Func(f) => f.check(project, state),
-            _ => (),
+            Top::Impl(_) => (),
         }
         state.exit_scope();
     }

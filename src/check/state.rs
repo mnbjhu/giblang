@@ -139,7 +139,7 @@ mod tests {
 
     fn test_project() -> Project {
         let mut project = Project::from(
-            r#"struct Foo
+            r"struct Foo
             struct Bar
             struct Baz[T]
             trait Magic {
@@ -157,7 +157,7 @@ mod tests {
             impl Magic for Bar
             impl Epic for Bar
 
-            impl Strange[T] for Baz[T]"#,
+            impl Strange[T] for Baz[T]",
         );
         project.resolve();
         project

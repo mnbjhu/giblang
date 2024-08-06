@@ -8,10 +8,8 @@ impl Ty {
             return true;
         }
         match (&self, other) {
-            (Ty::Unknown, _) => true,
-            (_, Ty::Unknown) => true,
+            (Ty::Unknown, _) | (_, Ty::Unknown | Ty::Any) => true,
             (Ty::Any, _) => false,
-            (_, Ty::Any) => true,
             (
                 Ty::Named { name, args },
                 Ty::Named {
@@ -80,14 +78,11 @@ impl Ty {
     #[allow(dead_code, clippy::only_used_in_recursion)]
     fn get_member_func(&self, name: &str, project: &Project) -> Option<Ty> {
         match self {
-            Ty::Any => None,
-            Ty::Unknown => None,
+            Ty::Any | Ty::Unknown | Ty::Meta(_) | Ty::Function { .. } => None,
             Ty::Named { .. } => {
                 todo!()
             }
             Ty::Generic(Generic { super_, .. }) => super_.get_member_func(name, project),
-            Ty::Meta(_) => None,
-            Ty::Function { .. } => None,
             Ty::Tuple(_) => todo!(),
             Ty::Sum(v) => v.iter().find_map(|ty| ty.get_member_func(name, project)),
         }
@@ -139,9 +134,10 @@ mod tests {
     use crate::project::Project;
 
     impl Project {
+        #[must_use]
         pub fn ty_test() -> Project {
             let mut project = Project::from(
-                r#"struct Foo
+                r"struct Foo
             struct Bar
             struct Baz[T]
             trait Magic {
@@ -159,7 +155,7 @@ mod tests {
             impl Magic for Bar
             impl Epic for Bar
 
-            impl Strange[T] for Baz[T]"#,
+            impl Strange[T] for Baz[T]",
             );
             project.resolve();
             project

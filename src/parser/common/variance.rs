@@ -31,7 +31,7 @@ pub fn variance_parser<'tokens, 'src: 'tokens>() -> AstParser!(Variance) {
         Token::Keyword(Keyword::In) => Variance::Contravariant,
     }
     .or_not()
-    .map(|v| v.unwrap_or_default())
+    .map(Option::unwrap_or_default)
 }
 
 #[cfg(test)]

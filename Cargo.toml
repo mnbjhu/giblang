@@ -15,3 +15,6 @@ chumsky = "1.0.0-alpha.7"
 glob = "0.3.1"
 
 [lints.clippy]
+pedantic = { priority = -1, level = "warn" }
+module_name_repetitions = "allow"
+missing_panics_doc = "allow"
