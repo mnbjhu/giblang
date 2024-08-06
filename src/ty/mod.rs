@@ -16,6 +16,16 @@ pub struct Generic {
     pub super_: Box<Ty>,
 }
 
+impl Default for Generic {
+    fn default() -> Self {
+        Self {
+            name: "".to_string(),
+            variance: Variance::Invariant,
+            super_: Box::new(Ty::Any),
+        }
+    }
+}
+
 impl Generic {
     pub fn get_name(&self, project: &Project) -> String {
         format!(
