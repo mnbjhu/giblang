@@ -46,7 +46,7 @@ pub fn print_error<T: Display>(error: &Rich<'_, T>, source: Source, name: &str, 
         .expected()
         .map(std::string::ToString::to_string)
         .collect::<Vec<_>>();
-    
+
     if !expected.is_empty() {
         builder = builder.with_note(
             format!(
