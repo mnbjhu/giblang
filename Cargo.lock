@@ -30,6 +30,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5c6cb57a04249c6480766f7f7cef5467412af1490f8d1e243141daddada3264f"
 
 [[package]]
+name = "another-giblang-impl"
+version = "0.1.0"
+dependencies = [
+ "ariadne",
+ "chumsky",
+ "clap",
+ "glob",
+ "ptree",
+]
+
+[[package]]
 name = "ansi_term"
 version = "0.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -260,17 +271,6 @@ dependencies = [
  "cfg-if",
  "libc",
  "wasi",
-]
-
-[[package]]
-name = "gibc"
-version = "0.1.0"
-dependencies = [
- "ariadne",
- "chumsky",
- "clap",
- "glob",
- "ptree",
 ]
 
 [[package]]
