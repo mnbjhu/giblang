@@ -134,7 +134,7 @@ mod tests {
     use crate::{
         check::{state::CheckState, ty::tests::parse_ty},
         project::Project,
-        ty::{Generic, Ty},
+        ty::Generic,
     };
 
     fn test_project() -> Project {
@@ -163,7 +163,7 @@ mod tests {
         project
     }
 
-    fn test_state<'a>(project: &'a Project) -> CheckState<'a> {
+    fn test_state(project: &Project) -> CheckState {
         let file_data = project.get_file(0).unwrap();
         CheckState::from_file(file_data, project)
     }
