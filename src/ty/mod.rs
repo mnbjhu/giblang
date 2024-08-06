@@ -3,7 +3,6 @@ use crate::{parser::common::variance::Variance, project::Project};
 pub mod combine;
 pub mod disp;
 pub mod eq;
-pub mod expect;
 pub mod generics;
 pub mod imply;
 pub mod is_instance;
