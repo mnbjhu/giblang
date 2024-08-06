@@ -58,7 +58,7 @@ jobs:
     needs: test
     runs-on: ${{ matrix.OS }}
     env:
-      NAME: rust-cross-compile-example # change with the name of your project
+      NAME: another-giblang-impl # change with the name of your project
       TARGET: ${{ matrix.TARGET }}
       OS: ${{ matrix.OS }}
     steps:
@@ -74,10 +74,11 @@ jobs:
         run: find ./
       - name: Install and configure dependencies
         run: |
+          sudo apt-get install gcc
           # dependencies are only needed on ubuntu as that's the only place where
           # we make cross-compilation
           if [[ $OS =~ ^ubuntu.*$ ]]; then
-            sudo apt-get install -qq crossbuild-essential-arm64 crossbuild-essential-armhf gcc
+            sudo apt-get install -qq crossbuild-essential-arm64 crossbuild-essential-armhf
           fi
 
           # some additional configuration for cross-compilation on linux
