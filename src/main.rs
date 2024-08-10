@@ -7,6 +7,7 @@ mod lexer;
 mod parser;
 pub mod project;
 mod resolve;
+mod resolve_types;
 mod ty;
 mod util;
 

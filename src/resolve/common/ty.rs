@@ -1,10 +1,18 @@
-use crate::{parser::common::type_::Type, resolve::state::ResolveState, ty::Ty};
+use crate::{
+    check::err::{wildcard::UnexpectedWildcard, ResolveError},
+    parser::common::type_::Type,
+    resolve::state::ResolveState,
+    ty::Ty,
+};
 
 impl Type {
     pub fn resolve(&self, state: &mut ResolveState<'_>) -> Ty {
         match self {
             Type::Wildcard(span) => {
-                state.simple_error("Cannot have wildcard in declaration", *span);
+                state.error(ResolveError::UnexpectedWildcard(UnexpectedWildcard {
+                    span: *span,
+                    file: state.get_file(),
+                }));
                 Ty::Unknown
             }
             Type::Named(named) => named.resolve(state),

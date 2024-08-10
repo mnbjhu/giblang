@@ -10,7 +10,7 @@ pub fn build() {
     let mut project = Project::init_pwd();
     let errors = project.resolve();
     for error in &errors {
-        project.print_error(error);
+        project.print_resolve_error(error);
     }
     let errors = project.check();
     for error in &errors {

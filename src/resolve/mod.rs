@@ -1,14 +1,14 @@
 use std::collections::HashMap;
 
 use crate::{
-    check::err::CheckError,
+    check::err::ResolveError,
     project::{decl::Decl, file_data::FileData, ImplData, Project},
 };
 
 use self::state::ResolveState;
 
 mod common;
-mod state;
+pub mod state;
 mod top;
 
 pub fn resolve_file(
@@ -17,7 +17,7 @@ pub fn resolve_file(
     impls: &mut HashMap<u32, ImplData>,
     impl_map: &mut HashMap<u32, Vec<u32>>,
     project: &Project,
-) -> Vec<CheckError> {
+) -> Vec<ResolveError> {
     let mut state = ResolveState::from_file(file_data, project);
     for (item, _) in &file_data.ast {
         state.enter_scope();

@@ -5,7 +5,7 @@ use glob::glob;
 
 use crate::{
     check::{
-        err::{unresolved::Unresolved, CheckError},
+        err::{unresolved::Unresolved, CheckError, ResolveError},
         state::CheckState,
     },
     parser::parse_file,
@@ -144,7 +144,7 @@ impl Project {
         impls
     }
 
-    pub fn resolve(&mut self) -> Vec<CheckError> {
+    pub fn resolve(&mut self) -> Vec<ResolveError> {
         let mut decls = HashMap::new();
         let mut impls = HashMap::new();
         let mut impl_map = HashMap::new();
@@ -197,6 +197,11 @@ impl Project {
             counter: 6,
         }
     }
+
+    #[must_use]
+    pub fn get_counter(&self) -> u32 {
+        self.counter
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -237,11 +242,6 @@ enum Option[out T] {
             );
             project.resolve();
             project
-        }
-
-        #[must_use]
-        pub fn get_counter(&self) -> u32 {
-            self.counter
         }
     }
 }

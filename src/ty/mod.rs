@@ -127,6 +127,20 @@ impl Ty {
     pub fn unit() -> Self {
         Ty::Tuple(Vec::new())
     }
+
+    pub fn kind(&self) -> String {
+        match self {
+            Ty::Any => "Any".to_string(),
+            Ty::Unknown => "Unknown".to_string(),
+            Ty::Named { .. } => "Named".to_string(),
+            Ty::TypeVar { .. } => "TypeVar".to_string(),
+            Ty::Generic(_) => "Generic".to_string(),
+            Ty::Meta(_) => "Meta".to_string(),
+            Ty::Function { .. } => "Function".to_string(),
+            Ty::Tuple(_) => "Tuple".to_string(),
+            Ty::Sum(_) => "Sum".to_string(),
+        }
+    }
 }
 
 impl Ty {

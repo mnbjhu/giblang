@@ -1,19 +1,19 @@
 use std::collections::HashMap;
 
 use crate::{
-    check::err::{simple::Simple, CheckError},
+    check::err::ResolveError,
     parser::{common::variance::Variance, expr::qualified_name::SpannedQualifiedName},
     project::{file_data::FileData, name::QualifiedName, Project},
     ty::{Generic, Ty},
-    util::{Span, Spanned},
+    util::Spanned,
 };
 
 pub struct ResolveState<'file> {
     imports: HashMap<String, QualifiedName>,
     generics: Vec<HashMap<String, Generic>>,
     file_data: &'file FileData,
-    project: &'file Project,
-    pub errors: Vec<CheckError>,
+    pub project: &'file Project,
+    pub errors: Vec<ResolveError>,
 }
 
 impl<'file> ResolveState<'file> {
@@ -58,15 +58,7 @@ impl<'file> ResolveState<'file> {
         self.generics.pop();
     }
 
-    pub fn simple_error(&mut self, message: &str, span: Span) {
-        self.errors.push(CheckError::Simple(Simple {
-            message: message.to_string(),
-            span,
-            file: self.file_data.end,
-        }));
-    }
-
-    pub fn error(&mut self, error: CheckError) {
+    pub fn error(&mut self, error: ResolveError) {
         self.errors.push(error);
     }
 
@@ -81,7 +73,7 @@ impl<'file> ResolveState<'file> {
         match res {
             Ok(decl) => Some(decl),
             Err(e) => {
-                self.error(CheckError::Unresolved(e));
+                self.error(ResolveError::Unresolved(e));
                 None
             }
         }
@@ -121,6 +113,10 @@ impl<'file> ResolveState<'file> {
             }
         }
         None
+    }
+
+    pub fn get_file(&self) -> u32 {
+        self.file_data.end
     }
 }
 
