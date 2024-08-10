@@ -1,7 +1,10 @@
-use crate::{check::state::CheckState, parser::common::type_::NamedType, ty::Ty};
+use crate::{
+    check::state::CheckState, parser::common::type_::NamedType, resolve::state::ResolveState,
+    ty::Ty,
+};
 
 impl NamedType {
-    pub fn resolve(&self, state: &mut CheckState) -> Ty {
+    pub fn resolve(&self, state: &mut ResolveState) -> Ty {
         if self.name.len() == 1 {
             if self.name[0].0 == "Any" {
                 return Ty::Any;
@@ -27,6 +30,7 @@ mod tests {
         check::{state::CheckState, ty::tests::assert_no_errors},
         parser::common::type_::NamedType,
         project::Project,
+        resolve::state::ResolveState,
         ty::Ty,
     };
 
@@ -48,7 +52,7 @@ mod tests {
             args: vec![],
         };
         let project = resolve_test_project();
-        let mut state = CheckState::from_file(project.get_file(0).unwrap(), &project);
+        let mut state = ResolveState::from_file(project.get_file(0).unwrap(), &project);
         let ty = named.resolve(&mut state);
         assert_no_errors(&state.errors, &project);
         assert_eq!(
@@ -67,7 +71,7 @@ mod tests {
             args: vec![],
         };
         let project = resolve_test_project();
-        let mut state = CheckState::from_file(project.get_file(0).unwrap(), &project);
+        let mut state = ResolveState::from_file(project.get_file(0).unwrap(), &project);
         let ty = named.resolve(&mut state);
         assert_no_errors(&state.errors, &project);
         assert_eq!(
@@ -86,7 +90,7 @@ mod tests {
             args: vec![],
         };
         let project = resolve_test_project();
-        let mut state = CheckState::from_file(project.get_file(0).unwrap(), &project);
+        let mut state = ResolveState::from_file(project.get_file(0).unwrap(), &project);
         let ty = named.resolve(&mut state);
         assert_no_errors(&state.errors, &project);
         assert_eq!(ty, Ty::Unknown);
@@ -102,7 +106,7 @@ mod tests {
             args: vec![],
         };
         let project = resolve_test_project();
-        let mut state = CheckState::from_file(project.get_file(0).unwrap(), &project);
+        let mut state = ResolveState::from_file(project.get_file(0).unwrap(), &project);
         let ty = named.resolve(&mut state);
         assert_no_errors(&state.errors, &project);
         assert_eq!(ty, Ty::Unknown);
@@ -115,7 +119,7 @@ mod tests {
             args: vec![],
         };
         let project = resolve_test_project();
-        let mut state = CheckState::from_file(project.get_file(0).unwrap(), &project);
+        let mut state = ResolveState::from_file(project.get_file(0).unwrap(), &project);
         let ty = named.resolve(&mut state);
         assert_no_errors(&state.errors, &project);
         assert_eq!(

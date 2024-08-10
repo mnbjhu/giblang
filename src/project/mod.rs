@@ -4,7 +4,10 @@ use ariadne::Source;
 use glob::glob;
 
 use crate::{
-    check::{err::CheckError, state::CheckState},
+    check::{
+        err::{unresolved::Unresolved, CheckError},
+        state::CheckState,
+    },
     parser::parse_file,
     project::{file_data::FileData, module::Node, util::path_from_filename},
     resolve::resolve_file,
@@ -100,8 +103,8 @@ impl Project {
     pub fn get_path_with_error(
         &self,
         path: &[Spanned<String>],
-        file: &mut CheckState,
-    ) -> Option<u32> {
+        file: u32,
+    ) -> Result<u32, Unresolved> {
         self.root.get_with_error(path, file)
     }
 

@@ -16,6 +16,7 @@ use super::optional_newline::optional_newline;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Type {
+    Wildcard,
     Named(NamedType),
     Tuple(Vec<Spanned<Type>>),
     Sum(Vec<Spanned<Type>>),
@@ -34,7 +35,7 @@ pub struct NamedType {
 
 pub fn type_parser<'tokens, 'src: 'tokens>() -> AstParser!(Type) {
     let arrow = just(punct('-')).then(just(punct('>'))).ignored();
-
+    let widlcard = just(op!(_)).map(|_| Type::Wildcard);
     recursive(|ty| {
         let named = named_parser(ty.clone());
 
@@ -81,7 +82,7 @@ pub fn type_parser<'tokens, 'src: 'tokens>() -> AstParser!(Type) {
                 ret: Box::new(ret),
             });
 
-        choice((function, sum, atom))
+        choice((widlcard, function, sum, atom))
     })
 }
 
@@ -111,6 +112,16 @@ mod tests {
     use crate::{lexer::parser::lexer, parser::common::type_::Type, util::Span};
 
     use super::type_parser;
+
+    #[test]
+    fn test_wildcard_type() {
+        let input = "_";
+        let tokens = lexer().parse(input).unwrap();
+        let end = Span::splat(input.len());
+        let input = tokens.spanned(end);
+        let ty = type_parser().parse(input).unwrap();
+        assert_eq!(ty, Type::Wildcard);
+    }
 
     #[test]
     fn test_named_type() {

@@ -2,13 +2,13 @@ use std::collections::HashMap;
 
 use crate::{
     check::err::{simple::Simple, CheckError},
-    parser::expr::qualified_name::SpannedQualifiedName,
+    parser::{common::variance::Variance, expr::qualified_name::SpannedQualifiedName},
     project::{file_data::FileData, name::QualifiedName, Project, TypeVar},
     ty::{Generic, Ty},
     util::{Span, Spanned},
 };
 
-pub struct CheckState<'file> {
+pub struct ResolveState<'file> {
     imports: HashMap<String, QualifiedName>,
     generics: Vec<HashMap<String, Generic>>,
     variables: Vec<HashMap<String, Ty>>,
@@ -19,9 +19,19 @@ pub struct CheckState<'file> {
     var_count: u32,
 }
 
-impl<'file> CheckState<'file> {
-    pub fn from_file(file_data: &'file FileData, project: &'file Project) -> CheckState<'file> {
-        let mut state = CheckState {
+impl<'file> ResolveState<'file> {
+    pub fn add_self_ty(&mut self, super_: Ty) {
+        self.insert_generic(
+            "Self".to_string(),
+            Generic {
+                name: "Self".to_string(),
+                variance: Variance::Invariant,
+                super_: Box::new(super_),
+            },
+        );
+    }
+    pub fn from_file(file_data: &'file FileData, project: &'file Project) -> ResolveState<'file> {
+        let mut state = ResolveState {
             imports: HashMap::new(),
             generics: vec![],
             variables: vec![],
@@ -71,16 +81,13 @@ impl<'file> CheckState<'file> {
     pub fn get_decl_with_error(&mut self, path: &SpannedQualifiedName) -> Option<u32> {
         let name = path[0].0.clone();
         let res = if let Some(import) = self.imports.get(&name) {
-            if let Some(module) = self.project.root.get_module(import) {
-                module.get_with_error(&path[1..], self.file_data.end)
-            } else {
-                return None;
-            }
+            let module = self.project.root.get_module(import)?;
+            module.get_with_error(&path[1..], self.file_data.end)
         } else {
             self.project.get_path_with_error(path, self.file_data.end)
         };
         match res {
-            Ok(res) => Some(res),
+            Ok(decl) => Some(decl),
             Err(e) => {
                 self.errors.push(CheckError::Unresolved(e));
                 None

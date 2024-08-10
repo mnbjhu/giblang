@@ -1,7 +1,9 @@
-use crate::{check::state::CheckState, parser::top::arg::FunctionArg, ty::Ty};
+use crate::{
+    check::state::CheckState, parser::top::arg::FunctionArg, resolve::state::ResolveState, ty::Ty,
+};
 
 impl FunctionArg {
-    pub fn resolve(&self, state: &mut CheckState) -> (String, Ty) {
+    pub fn resolve(&self, state: &mut ResolveState) -> (String, Ty) {
         (self.name.0.clone(), self.ty.0.resolve(state))
     }
 }

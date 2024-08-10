@@ -19,7 +19,7 @@ pub struct Generic {
 impl Default for Generic {
     fn default() -> Self {
         Self {
-            name: String::new(),
+            name: "_".to_string(),
             variance: Variance::Invariant,
             super_: Box::new(Ty::Any),
         }

@@ -7,6 +7,8 @@ use crate::{
     ty::Ty,
 };
 
+use super::state::ResolveState;
+
 pub mod enum_;
 pub mod enum_member;
 pub mod func;
@@ -19,7 +21,7 @@ pub mod trait_;
 impl Top {
     pub fn resolve(
         &self,
-        state: &mut CheckState,
+        state: &mut ResolveState,
         decls: &mut HashMap<u32, Decl>,
         impls: &mut HashMap<u32, ImplData>,
         impl_map: &mut HashMap<u32, Vec<u32>>,

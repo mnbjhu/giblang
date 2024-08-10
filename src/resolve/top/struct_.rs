@@ -1,9 +1,9 @@
-use crate::{check::state::CheckState, parser::top::struct_::Struct};
+use crate::{parser::top::struct_::Struct, resolve::state::ResolveState};
 
 use super::Decl;
 
 impl Struct {
-    pub fn resolve(&self, project: &mut CheckState) -> Decl {
+    pub fn resolve(&self, project: &mut ResolveState) -> Decl {
         let generics = self.generics.0.resolve(project);
         let name = self.name.clone();
         let body = self.body.resolve(project);

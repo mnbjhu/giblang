@@ -84,9 +84,8 @@ mod tests {
         assert_eq!(*ty, Ty::Unknown);
     }
 
-    #[ignore]
     #[test]
-    fn test_imply_ty() {
+    fn imply_option() {
         let project = Project::check_test();
         let mut state = check_test_state(&project);
         let errors = check_let("let x = Option::Some(5)", &project, &mut state);
@@ -102,5 +101,48 @@ mod tests {
         } else {
             panic!("Expected Named ty");
         }
+    }
+
+    #[test]
+    fn imply_option_with_wildcard() {
+        let project = Project::check_test();
+        let mut state = check_test_state(&project);
+        let errors = check_let("let x: Option[_] = Option::Some(5)", &project, &mut state);
+        assert_eq!(errors, vec![]);
+        let ty = state
+            .get_variable("x")
+            .expect("Expected state to have variable x");
+        if let Ty::Named { name, args } = ty {
+            assert_eq!(project.get_decl(*name).name(), "Option");
+            assert_eq!(args.len(), 1);
+            let inner = assert_type_var_resolved(&args[0], &state);
+            assert_eq!(inner, Ty::int());
+        } else {
+            panic!("Expected Named ty");
+        }
+    }
+    #[test]
+    fn imply_int() {
+        let project = Project::check_test();
+        let mut state = check_test_state(&project);
+        let errors = check_let("let x = 5", &project, &mut state);
+        assert_eq!(errors, vec![]);
+        let ty = state
+            .get_variable("x")
+            .expect("Expected state to have variable x");
+        assert_eq!(*ty, Ty::int());
+    }
+
+    #[test]
+    fn imply_int_with_wildcard() {
+        let project = Project::check_test();
+        let mut state = check_test_state(&project);
+        let errors = check_let("let x: _ = 5", &project, &mut state);
+        assert_eq!(errors, vec![]);
+        let ty = state
+            .get_variable("x")
+            .expect("Expected state to have variable x");
+        let inner = assert_type_var_resolved(&ty, &state);
+        assert_eq!(inner, Ty::int());
     }
 }

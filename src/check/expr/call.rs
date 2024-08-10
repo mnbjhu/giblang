@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use crate::{
     check::state::CheckState, parser::expr::call::Call, project::Project, ty::Ty, util::Span,
 };
@@ -19,7 +17,6 @@ impl<'proj> Call {
                     self.name.1,
                 );
             }
-            let mut generics = name_ty.get_generic_params();
             if expected_args.len() != self.args.len() {
                 state.simple_error(
                     &format!(
@@ -30,9 +27,6 @@ impl<'proj> Call {
                     self.name.1,
                 );
             }
-
-            let mut implied = HashMap::<String, Ty>::new();
-
             self.args
                 .iter()
                 .zip(expected_args)
@@ -40,25 +34,6 @@ impl<'proj> Call {
                     let actual = arg.expect_instance_of(expected, project, state, *span);
                     expected.imply_type_vars(&actual, state);
                 });
-
-            generics.retain(|g| !implied.contains_key(&g.name));
-            for g in &generics {
-                implied.insert(g.name.clone(), Ty::Unknown);
-            }
-
-            if !generics.is_empty() {
-                let not_implied = generics
-                    .iter()
-                    .cloned()
-                    .map(|g| g.name)
-                    .collect::<Vec<_>>()
-                    .join(", ");
-                state.simple_error(
-                    &format!("Couldn't imply generic ty args: {not_implied}"),
-                    self.name.1,
-                );
-            }
-
             ret.as_ref().clone()
         } else if let Ty::Unknown = name_ty {
             Ty::Unknown

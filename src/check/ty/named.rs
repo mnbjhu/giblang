@@ -15,7 +15,7 @@ impl NamedType {
             let args = self
                 .args
                 .iter()
-                .map(|ty| ty.0.resolve(state))
+                .map(|ty| ty.0.check(project, state))
                 .collect::<Vec<_>>();
             let mut vars = vec![];
             for (gen, arg) in decl.generics().iter().zip(args.clone()) {

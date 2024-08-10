@@ -1,8 +1,15 @@
-use crate::{check::state::CheckState, parser::common::type_::Type, ty::Ty};
+use crate::{
+    parser::common::type_::Type,
+    resolve::state::ResolveState,
+    ty::{Generic, Ty},
+};
 
 impl Type {
-    pub fn resolve(&self, state: &mut CheckState<'_>) -> Ty {
+    pub fn resolve(&self, state: &mut ResolveState<'_>) -> Ty {
         match self {
+            Type::Wildcard => Ty::TypeVar {
+                id: state.add_type_var(Generic::default()),
+            },
             Type::Named(named) => named.resolve(state),
             Type::Tuple(v) => Ty::Tuple(v.iter().map(|(ty, _)| ty.resolve(state)).collect()),
             Type::Sum(v) => Ty::Sum(v.iter().map(|(ty, _)| ty.resolve(state)).collect()),
