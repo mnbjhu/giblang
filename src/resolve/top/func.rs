@@ -1,5 +1,5 @@
 use crate::{
-    check::state::CheckState, parser::top::func::Func, project::decl::Decl,
+    parser::top::func::Func, project::decl::Decl,
     resolve::state::ResolveState, ty::Ty,
 };
 

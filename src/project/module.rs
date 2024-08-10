@@ -1,7 +1,6 @@
 use crate::{
     check::{
-        err::{unresolved::Unresolved, CheckError},
-        state::CheckState,
+        err::{unresolved::Unresolved},
     },
     util::Spanned,
 };

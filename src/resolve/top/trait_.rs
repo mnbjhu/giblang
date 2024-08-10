@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::{
-    check::state::CheckState, parser::top::trait_::Trait, resolve::state::ResolveState, ty::Ty,
+    parser::top::trait_::Trait, resolve::state::ResolveState, ty::Ty,
 };
 
 use super::Decl;

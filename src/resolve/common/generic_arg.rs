@@ -1,5 +1,4 @@
 use crate::{
-    check::state::CheckState,
     parser::common::generic_arg::GenericArg,
     resolve::state::ResolveState,
     ty::{Generic, Ty},

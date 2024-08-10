@@ -1,5 +1,5 @@
 use crate::{
-    check::state::CheckState, parser::common::type_::NamedType, resolve::state::ResolveState,
+    parser::common::type_::NamedType, resolve::state::ResolveState,
     ty::Ty,
 };
 

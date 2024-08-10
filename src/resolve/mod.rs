@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::{
-    check::{err::CheckError, state::CheckState},
+    check::{err::CheckError},
     project::{decl::Decl, file_data::FileData, ImplData, Project},
 };
 

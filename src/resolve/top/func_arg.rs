@@ -1,5 +1,5 @@
 use crate::{
-    check::state::CheckState, parser::top::arg::FunctionArg, resolve::state::ResolveState, ty::Ty,
+    parser::top::arg::FunctionArg, resolve::state::ResolveState, ty::Ty,
 };
 
 impl FunctionArg {

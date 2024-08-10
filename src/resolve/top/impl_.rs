@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 
 use crate::{
-    check::state::CheckState,
     parser::top::impl_::Impl,
     project::{decl::Decl, ImplData},
     resolve::state::ResolveState,
