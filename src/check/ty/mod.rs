@@ -41,8 +41,8 @@ pub mod tests {
     use crate::{
         check::{err::CheckError, state::CheckState},
         lexer::parser::lexer,
-        parser::common::type_::type_parser,
-        project::Project,
+        parser::common::type_::{type_parser, NamedType},
+        project::{check_test_state, Project},
         util::Span,
     };
 
@@ -57,6 +57,18 @@ pub mod tests {
         (ty.check(project, &mut state), state.errors)
     }
 
+    pub fn try_parse_ty_with_state(
+        project: &Project,
+        state: &mut CheckState,
+        ty: &str,
+    ) -> (Ty, Vec<CheckError>) {
+        let eoi = Span::splat(ty.len());
+        let tokens = lexer().parse(ty).unwrap();
+        let ty = type_parser().parse(tokens.spanned(eoi)).unwrap();
+        let file_data = project.get_file(project.get_counter()).unwrap();
+        (ty.check(project, state), state.errors.clone())
+    }
+
     pub fn parse_ty(project: &Project, ty: &str) -> Ty {
         let eoi = Span::splat(ty.len());
         let tokens = lexer().parse(ty).unwrap();
@@ -65,6 +77,14 @@ pub mod tests {
         let mut state = CheckState::from_file(file_data, project);
         assert_no_errors(&state.errors, project);
         ty.check(project, &mut state)
+    }
+
+    pub fn parse_ty_with_state(project: &Project, state: &mut CheckState, ty: &str) -> Ty {
+        let eoi = Span::splat(ty.len());
+        let tokens = lexer().parse(ty).unwrap();
+        let ty = type_parser().parse(tokens.spanned(eoi)).unwrap();
+        assert_no_errors(&state.errors, project);
+        ty.check(project, state)
     }
 
     pub fn assert_no_errors(errors: &Vec<CheckError>, project: &Project) {
@@ -121,16 +141,20 @@ pub mod tests {
     #[test]
     fn check_bar() {
         let project = Project::check_test();
-        let (bar, err) = try_parse_ty(&project, "Bar[Foo]");
+        let mut state = check_test_state(&project);
+        let (bar, err) = try_parse_ty_with_state(&project, &mut state, "Bar[Foo]");
         assert_no_errors(&err, &project);
         if let Ty::Named { name, args } = bar {
             assert_eq!(project.get_decl(name).name(), "Bar");
             assert_eq!(args.len(), 1);
-            if let Ty::Named { name, args } = &args[0] {
-                assert_eq!(project.get_decl(*name).name(), "Foo");
-                assert_eq!(args.len(), 0);
+            if let Ty::TypeVar { id } = &args[0] {
+                let ty = state.get_type_var(*id).expect("Unable to find type var");
+                if let Ty::Named { name, args } = ty.ty.as_ref().expect("Type should be resolved") {
+                    assert_eq!(project.get_decl(*name).name(), "Foo");
+                    assert_eq!(args.len(), 0);
+                }
             } else {
-                panic!("Expected bar type to have a single argument")
+                panic!("Expected bar type to have a single TypeVar argument")
             }
         } else {
             panic!("Expected bar type to be a named type")
@@ -140,7 +164,8 @@ pub mod tests {
     #[test]
     fn check_tuple() {
         let project = Project::check_test();
-        let (tuple, err) = try_parse_ty(&project, "(Foo, Bar[Foo])");
+        let mut state = check_test_state(&project);
+        let (tuple, err) = try_parse_ty_with_state(&project, &mut state, "(Foo, Bar[Foo])");
         assert_no_errors(&err, &project);
 
         if let Ty::Tuple(tys) = tuple {
@@ -154,11 +179,18 @@ pub mod tests {
             if let Ty::Named { name, args } = &tys[1] {
                 assert_eq!(project.get_decl(*name).name(), "Bar");
                 assert_eq!(args.len(), 1);
-                if let Ty::Named { name, args } = &args[0] {
-                    assert_eq!(project.get_decl(*name).name(), "Foo");
-                    assert_eq!(args.len(), 0);
+                if let Ty::TypeVar { id } = &args[0] {
+                    let ty = state.get_type_var(*id).expect("Unable to find type var");
+                    if let Ty::Named { name, args } =
+                        &ty.ty.as_ref().expect("Unable to resolve type var")
+                    {
+                        assert_eq!(project.get_decl(*name).name(), "Foo");
+                        assert_eq!(args.len(), 0);
+                    } else {
+                        panic!("Expected second element of tuple to be a named type")
+                    }
                 } else {
-                    panic!("Expected second element of tuple to be a named type")
+                    panic!("Expected a type var")
                 }
             } else {
                 panic!("Expected second element of tuple to be a named type")

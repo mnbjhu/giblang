@@ -72,7 +72,7 @@ impl MemberCall {
                 );
             }
 
-            ret.as_ref().parameterize(&implied)
+            ret.as_ref().clone()
         } else {
             Ty::Unknown
         }
@@ -86,7 +86,7 @@ impl MemberCall {
         span: Span,
     ) -> Ty {
         let actual = self.check(project, state);
-        if !actual.is_instance_of(expected, project) {
+        if !actual.is_instance_of(expected, state, true) {
             state.simple_error(
                 &format!("Expected value to be of type '{expected}' but found '{actual}'",),
                 span,
@@ -105,15 +105,5 @@ fn imply_generic<'module>(
     implied: &mut HashMap<String, Ty>,
 ) {
     let actual = actual.expect_instance_of(expected, project, state, span);
-    let implied_geneircs = expected.imply_generics(&actual);
-    if let Some(implied_geneircs) = implied_geneircs {
-        for (name, ty) in implied_geneircs {
-            let new = if let Some(existing) = implied.get(&name) {
-                existing.get_shared_subtype(&ty, project)
-            } else {
-                ty
-            };
-            implied.insert(name, new);
-        }
-    }
+    let implied_geneircs = expected.imply_type_vars(&actual, state);
 }

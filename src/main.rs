@@ -1,5 +1,5 @@
 use clap::Parser;
-use cli::Command;
+use cli::{build::build, Command};
 
 mod check;
 mod cli;
@@ -10,6 +10,11 @@ mod resolve;
 mod ty;
 mod util;
 
+// fn main() {
+//     Command::parse().run();
+// }
+//
+
 fn main() {
-    Command::parse().run();
+    build()
 }

@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::{
     check::state::CheckState, parser::expr::qualified_name::SpannedQualifiedName, project::Project,
     ty::Ty, util::Span,
@@ -13,7 +15,7 @@ pub fn check_ident(state: &mut CheckState, path: &SpannedQualifiedName, project:
     }
     if let Some(decl_id) = state.get_decl_with_error(path) {
         let decl = project.get_decl(decl_id);
-        decl.get_ty(decl_id, project)
+        decl.get_ty(decl_id, state).inst(&mut HashMap::new(), state)
     } else {
         Ty::Unknown
     }
@@ -38,24 +40,19 @@ pub fn check_ty(
     state: &mut CheckState<'_>,
     span: Span,
 ) -> Ty {
-    let implied = actual.imply_generics(expected);
-    let new = if let Some(implied) = implied {
-        actual.parameterize(&implied)
-    } else {
-        actual
-    };
-    if !new.is_instance_of(expected, project) {
+    actual.imply_type_vars(expected, state);
+    if !actual.is_instance_of(expected, state, true) {
         state.simple_error(
             &format!(
                 "Expected value to be of type '{}' but found '{}'",
-                expected.get_name(project),
-                new.get_name(project),
+                expected.get_name(state),
+                actual.get_name(state),
             ),
             span,
         );
     }
     // TODO: Consider whether to pass through or use Ty::Unknown
-    new
+    actual
 }
 
 // fn get_body_ty<'module>(

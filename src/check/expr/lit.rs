@@ -38,12 +38,13 @@ impl Literal {
         span: Span,
     ) -> Ty {
         let actual = Ty::from(self);
-        if !actual.is_instance_of(expected, project) {
+        if !actual.is_instance_of(expected, state, true) {
             state.simple_error(
                 &format!(
-                    "Expected value to be of type '{}' but found '{}'",
-                    expected.get_name(project),
-                    actual.get_name(project)
+                    "Expected value to be of type '{}' but found '{}'\n{:?}",
+                    expected.get_name(state),
+                    actual.get_name(state),
+                    state.get_type_var(4)
                 ),
                 span,
             );

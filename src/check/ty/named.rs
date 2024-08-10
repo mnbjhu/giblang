@@ -17,8 +17,10 @@ impl NamedType {
                 .iter()
                 .map(|ty| ty.0.resolve(state))
                 .collect::<Vec<_>>();
+            let mut vars = vec![];
             for (gen, arg) in decl.generics().iter().zip(args.clone()) {
-                if !arg.is_instance_of(gen.super_.as_ref(), project) {
+                let var = state.add_type_var(gen.clone());
+                if !arg.is_instance_of(gen.super_.as_ref(), state, true) {
                     state.simple_error(
                         &format!(
                             "Type argument {} is not a subtype of the generic constraint {}",
@@ -26,11 +28,14 @@ impl NamedType {
                         ),
                         self.name[0].1,
                     );
+                } else {
+                    state.add_type_bound(var, arg);
                 }
+                vars.push(var);
             }
             return Ty::Named {
                 name: decl_id,
-                args,
+                args: vars.into_iter().map(|id| Ty::TypeVar { id }).collect(),
             };
         };
         Ty::Unknown

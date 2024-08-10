@@ -1,4 +1,4 @@
-use crate::{parser::common::variance::Variance, project::Project};
+use crate::{check::state::CheckState, parser::common::variance::Variance};
 
 pub mod combine;
 pub mod disp;
@@ -27,12 +27,12 @@ impl Default for Generic {
 }
 
 impl Generic {
-    pub fn get_name(&self, project: &Project) -> String {
+    pub fn get_name(&self, state: &CheckState) -> String {
         format!(
             "{}{}: {}",
             self.variance,
             self.name,
-            self.super_.get_name(project)
+            self.super_.get_name(state)
         )
     }
 }
@@ -44,6 +44,9 @@ pub enum Ty {
     Named {
         name: u32,
         args: Vec<Ty>,
+    },
+    TypeVar {
+        id: u32,
     },
     Generic(Generic),
     Meta(Box<Ty>),
@@ -57,25 +60,25 @@ pub enum Ty {
 }
 
 impl Ty {
-    pub fn get_name(&self, project: &Project) -> String {
+    pub fn get_name(&self, state: &CheckState) -> String {
         match self {
             Ty::Any => "Any".to_string(),
             Ty::Unknown => "Unknown".to_string(),
             Ty::Named { name, args } => {
-                let decl = project.get_decl(*name);
+                let decl = state.project.get_decl(*name);
                 let name = decl.name();
                 if args.is_empty() {
                     name.to_string()
                 } else {
                     let args = args
                         .iter()
-                        .map(|arg| arg.get_name(project))
+                        .map(|arg| arg.get_name(state))
                         .collect::<Vec<_>>()
                         .join(", ");
                     format!("{name}[{args}]")
                 }
             }
-            Ty::Generic(g) => g.get_name(project),
+            Ty::Generic(g) => g.get_name(state),
             Ty::Meta(_) => todo!(),
             Ty::Function {
                 receiver,
@@ -84,19 +87,19 @@ impl Ty {
             } => {
                 let receiver = receiver
                     .as_ref()
-                    .map_or(String::new(), |r| r.get_name(project));
+                    .map_or(String::new(), |r| r.get_name(state));
                 let args = args
                     .iter()
-                    .map(|arg| arg.get_name(project))
+                    .map(|arg| arg.get_name(state))
                     .collect::<Vec<_>>()
                     .join(", ");
-                let ret = ret.get_name(project);
+                let ret = ret.get_name(state);
                 format!("{receiver}({args}) -> {ret}")
             }
             Ty::Tuple(tys) => {
                 let tys = tys
                     .iter()
-                    .map(|ty| ty.get_name(project))
+                    .map(|ty| ty.get_name(state))
                     .collect::<Vec<_>>()
                     .join(", ");
                 format!("({tys})")
@@ -104,10 +107,19 @@ impl Ty {
             Ty::Sum(tys) => {
                 let tys = tys
                     .iter()
-                    .map(|ty| ty.get_name(project))
+                    .map(|ty| ty.get_name(state))
                     .collect::<Vec<_>>()
                     .join(" + ");
                 format!("({tys})")
+            }
+            Ty::TypeVar { id } => {
+                let var = state.get_type_var(*id);
+                if let Some(var) = var {
+                    if let Some(ty) = &var.ty {
+                        return ty.get_name(state);
+                    }
+                }
+                format!("unknown")
             }
         }
     }

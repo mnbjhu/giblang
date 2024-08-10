@@ -38,17 +38,7 @@ impl<'proj> Call {
                 .zip(expected_args)
                 .for_each(|((arg, span), expected)| {
                     let actual = arg.expect_instance_of(expected, project, state, *span);
-                    let implied_geneircs = expected.imply_generics(&actual);
-                    if let Some(implied_geneircs) = implied_geneircs {
-                        for (name, ty) in implied_geneircs {
-                            let new = if let Some(existing) = implied.get(&name) {
-                                existing.get_shared_subtype(&ty, project)
-                            } else {
-                                ty
-                            };
-                            implied.insert(name, new);
-                        }
-                    }
+                    expected.imply_type_vars(&actual, state);
                 });
 
             generics.retain(|g| !implied.contains_key(&g.name));
@@ -69,7 +59,7 @@ impl<'proj> Call {
                 );
             }
 
-            ret.as_ref().parameterize(&implied)
+            ret.as_ref().clone()
         } else if let Ty::Unknown = name_ty {
             Ty::Unknown
         } else {
@@ -89,12 +79,12 @@ impl<'proj> Call {
         span: Span,
     ) -> Ty {
         let actual = self.check(project, state);
-        if !actual.is_instance_of(expected, project) {
+        if !actual.is_instance_of(expected, state, true) {
             state.simple_error(
                 &format!(
                     "Expected value to be of type '{}' but found '{}'",
-                    expected.get_name(project),
-                    actual.get_name(project),
+                    expected.get_name(state),
+                    actual.get_name(state),
                 ),
                 span,
             );

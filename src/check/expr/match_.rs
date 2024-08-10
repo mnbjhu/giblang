@@ -5,8 +5,11 @@ impl<'proj> Match {
         let expr_ty = self.expr.0.check(project, state);
         let mut ret = Ty::Unknown;
         for arm in &self.arms {
-            let ty = arm.check(project, state, expr_ty.clone());
-            ret = ret.get_shared_subtype(&ty, project);
+            if ret != Ty::Unknown {
+                arm.expected_instance_of(&expr_ty, project, state, ret.clone());
+            } else {
+                ret = arm.check(project, state, expr_ty.clone());
+            }
         }
         ret
     }
@@ -18,11 +21,9 @@ impl<'proj> Match {
         state: &mut CheckState<'proj>,
     ) -> Ty {
         let expr_ty = self.expr.0.check(project, state);
-        let mut ret = Ty::Unknown;
         for arm in &self.arms {
-            let ty = arm.expected_instance_of(expected, project, state, expr_ty.clone());
-            ret = ret.get_shared_subtype(&ty, project);
+            arm.expected_instance_of(expected, project, state, expr_ty.clone());
         }
-        ret
+        expected.clone()
     }
 }

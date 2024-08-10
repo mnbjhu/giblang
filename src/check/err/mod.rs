@@ -6,6 +6,7 @@ use crate::{
 pub mod simple;
 pub mod unresolved;
 
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum CheckError {
     Simple(Simple),
     Unresolved(Unresolved),

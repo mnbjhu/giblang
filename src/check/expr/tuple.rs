@@ -52,8 +52,8 @@ pub fn check_tuple_is<'proj>(
         state.simple_error(
             &format!(
                 "Expected value to be of type '{}' but found '{}'",
-                expected.get_name(project),
-                actual.get_name(project),
+                expected.get_name(state),
+                actual.get_name(state),
             ),
             span,
         );

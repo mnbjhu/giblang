@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use crate::{
     check::err::{simple::Simple, CheckError},
     parser::expr::qualified_name::SpannedQualifiedName,
-    project::{file_data::FileData, name::QualifiedName, Project},
+    project::{file_data::FileData, name::QualifiedName, Project, TypeVar},
     ty::{Generic, Ty},
     util::{Span, Spanned},
 };
@@ -15,6 +15,8 @@ pub struct CheckState<'file> {
     pub file_data: &'file FileData,
     pub project: &'file Project,
     pub errors: Vec<CheckError>,
+    type_vars: Vec<TypeVar>,
+    var_count: u32,
 }
 
 impl<'file> CheckState<'file> {
@@ -26,6 +28,8 @@ impl<'file> CheckState<'file> {
             file_data,
             project,
             errors: vec![],
+            type_vars: vec![],
+            var_count: 0,
         };
         let mut path = file_data.get_path();
         for (top, _) in &file_data.ast {
@@ -123,9 +127,27 @@ impl<'file> CheckState<'file> {
         None
     }
 
-    #[allow(unused)]
-    pub fn get_expr(&self, _: &[Spanned<String>]) -> Ty {
-        todo!()
+    pub fn add_type_bound(&mut self, id: u32, ty: Ty) {
+        if let Some(vars) = self.type_vars.get_mut(id as usize) {
+            vars.ty = Some(ty);
+        } else {
+            panic!("Failed to find type var with id {id}");
+        }
+    }
+
+    pub fn add_type_var(&mut self, generic: Generic) -> u32 {
+        let id = self.var_count;
+        self.var_count += 1;
+        self.type_vars.push(TypeVar {
+            id,
+            generic,
+            ty: None,
+        });
+        id
+    }
+
+    pub fn get_type_var(&self, id: u32) -> Option<&TypeVar> {
+        self.type_vars.get(id as usize)
     }
 }
 

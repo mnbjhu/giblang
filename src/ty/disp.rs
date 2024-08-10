@@ -61,6 +61,7 @@ impl Display for Ty {
                     .join(" + ");
                 write!(f, "{txt}")
             }
+            Ty::TypeVar { .. } => "{{unknown}}".fmt(f),
         }
     }
 }

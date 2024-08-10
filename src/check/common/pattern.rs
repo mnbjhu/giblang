@@ -68,7 +68,7 @@ impl Pattern {
                         (Pattern::UnitStruct(_), StructDecl::None) => {}
                         (Pattern::TupleStruct { fields, .. }, StructDecl::Tuple(tys)) => {
                             for (field, ty) in fields.iter().zip(tys) {
-                                field.0.check(project, state, ty.parameterize(&implied));
+                                field.0.check(project, state, ty.clone());
                             }
                         }
                         (Pattern::Name(_), _) => unreachable!(),
@@ -99,16 +99,14 @@ impl StructFieldPattern {
         match self {
             StructFieldPattern::Implied(name) => {
                 if let Some(ty) = fields.get(name) {
-                    state.insert_variable(name.to_string(), ty.clone().parameterize(implied));
+                    state.insert_variable(name.to_string(), ty.clone());
                 } else {
                     state.simple_error(&format!("Field '{name}' not found"), span);
                 }
             }
             StructFieldPattern::Explicit { field, pattern } => {
                 if let Some(ty) = fields.get(&field.0) {
-                    pattern
-                        .0
-                        .check(project, state, ty.clone().parameterize(implied));
+                    pattern.0.check(project, state, ty.clone());
                 } else {
                     state.simple_error(&format!("Field '{}' not found", field.0), field.1);
                 }

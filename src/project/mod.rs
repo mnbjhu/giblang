@@ -16,6 +16,7 @@ use self::decl::Decl;
 
 pub mod decl;
 pub mod file_data;
+pub mod inst;
 mod module;
 pub mod name;
 pub mod util;
@@ -186,6 +187,13 @@ impl Project {
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct TypeVar {
+    pub id: u32,
+    pub generic: Generic,
+    pub ty: Option<Ty>,
+}
+
 impl Default for Project {
     fn default() -> Self {
         Self::new()
@@ -206,7 +214,8 @@ mod tests {
 
         #[must_use]
         pub fn check_test() -> Project {
-            let mut project = Project::from("struct Foo\nstruct Bar[T]\nstruct Baz[T, U]");
+            let mut project =
+                Project::from("struct Foo\nstruct Bar[T]\nstruct Baz[T, U]\nstruct Option[out T]");
             project.resolve();
             project
         }
@@ -216,4 +225,9 @@ mod tests {
             self.counter
         }
     }
+}
+#[cfg(test)]
+#[must_use]
+pub fn check_test_state(project: &Project) -> CheckState {
+    CheckState::from_file(project.get_file(0).unwrap(), project)
 }

@@ -1,15 +1,17 @@
-use std::collections::HashMap;
+use crate::check::state::CheckState;
 
-use super::{Generic, Ty};
+use super::Ty;
 
 impl Ty {
-    pub fn imply_generics(&self, other: &Ty) -> Option<HashMap<String, Ty>> {
+    pub fn imply_type_vars(&self, other: &Ty, state: &mut CheckState) {
         match (self, other) {
-            // TODO: Check use of variance/super
-            (Ty::Generic(Generic { name, .. }), other) => {
-                let mut res = HashMap::new();
-                res.insert(name.to_string(), other.clone());
-                return Some(res);
+            (Ty::TypeVar { id }, other) => {
+                if let Ty::TypeVar { id: other_id } = other {
+                    if id == other_id {
+                        return;
+                    }
+                }
+                state.add_type_bound(*id, other.clone());
             }
             (
                 Ty::Named { name, args },
@@ -19,27 +21,21 @@ impl Ty {
                 },
             ) => {
                 if name == other_name && args.len() == other_args.len() {
-                    let mut res = HashMap::new();
                     for (s, o) in args.iter().zip(other_args) {
-                        res.extend(s.imply_generics(o)?);
+                        s.imply_type_vars(o, state)
                     }
-                    return Some(res);
                 }
-                return None;
+                return;
             }
             (Ty::Tuple(s), Ty::Tuple(other)) => {
-                let mut res = HashMap::new();
                 for (s, o) in s.iter().zip(other) {
-                    res.extend(s.imply_generics(o)?);
+                    s.imply_type_vars(o, state)
                 }
-                return Some(res);
             }
             (Ty::Sum(s), Ty::Sum(other)) => {
-                let mut res = HashMap::new();
                 for (s, o) in s.iter().zip(other) {
-                    res.extend(s.imply_generics(o)?);
+                    s.imply_type_vars(o, state)
                 }
-                return Some(res);
             }
             (
                 Ty::Function {
@@ -53,23 +49,17 @@ impl Ty {
                     ret: other_ret,
                 },
             ) => {
-                let mut res = HashMap::new();
                 match (receiver, other_receiver) {
                     (None, None) => {}
-                    (Some(s), Some(other)) => res.extend(s.imply_generics(other)?),
-                    _ => return None,
+                    (Some(s), Some(other)) => s.imply_type_vars(other, state),
+                    _ => {}
                 }
                 for (s, o) in args.iter().zip(other_args) {
-                    res.extend(s.imply_generics(o)?);
+                    s.imply_type_vars(o, state)
                 }
-                res.extend(ret.imply_generics(other_ret)?);
+                ret.imply_type_vars(other_ret, state)
             }
-            _ => {
-                if self.equals(other) {
-                    return Some(HashMap::new());
-                }
-            }
-        };
-        None
+            _ => {}
+        }
     }
 }

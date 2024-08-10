@@ -1,46 +1,38 @@
-use std::collections::HashMap;
+use crate::check::state::CheckState;
 
-use super::{Generic, Ty};
+use super::Ty;
 
-impl Ty {
-    pub fn parameterize(&self, generics: &HashMap<String, Ty>) -> Ty {
-        match self {
-            Ty::Any => Ty::Any,
-            Ty::Unknown => Ty::Unknown,
-            Ty::Named { name, args } => Ty::Named {
-                name: *name,
-                args: args.iter().map(|ty| ty.parameterize(generics)).collect(),
-            },
-            // TODO: Check use of variance/super
-            Ty::Generic(Generic { name, .. }) => {
-                if let Some(ty) = generics.get(name) {
-                    ty.clone()
-                } else {
-                    self.clone()
-                }
-            }
-            Ty::Tuple(tys) => Ty::Tuple(tys.iter().map(|ty| ty.parameterize(generics)).collect()),
-            Ty::Sum(tys) => Ty::Sum(tys.iter().map(|ty| ty.parameterize(generics)).collect()),
-            Ty::Function {
-                receiver,
-                args,
-                ret,
-            } => {
-                if let Some(receiver) = receiver {
-                    Ty::Function {
-                        receiver: Some(Box::new(receiver.parameterize(generics))),
-                        args: args.iter().map(|ty| ty.parameterize(generics)).collect(),
-                        ret: Box::new(ret.parameterize(generics)),
-                    }
-                } else {
-                    Ty::Function {
-                        receiver: None,
-                        args: args.iter().map(|ty| ty.parameterize(generics)).collect(),
-                        ret: Box::new(ret.parameterize(generics)),
-                    }
-                }
-            }
-            Ty::Meta(_) => unimplemented!("Need to thing about this..."),
-        }
-    }
-}
+// impl Ty {
+//
+//     pub fn parameterize(&self, state: &CheckState) -> Ty {
+//         match self {
+//             Ty::Named { name, args } => Ty::Named {
+//                 name: *name,
+//                 args: args.iter().map(|ty| ty.parameterize(state)).collect(),
+//             },
+//             Ty::Tuple(tys) => Ty::Tuple(tys.iter().map(|ty| ty.parameterize(state)).collect()),
+//             Ty::Sum(tys) => Ty::Sum(tys.iter().map(|ty| ty.parameterize(state)).collect()),
+//             Ty::Function {
+//                 receiver,
+//                 args,
+//                 ret,
+//             } => {
+//                 let receiver = receiver.as_ref().map(|r| Box::new(r.parameterize(state)));
+//                 Ty::Function {
+//                     receiver,
+//                     args: args.iter().map(|ty| ty.parameterize(state)).collect(),
+//                     ret: Box::new(ret.parameterize(state)),
+//                 }
+//             }
+//             Ty::Meta(_) => unimplemented!("Need to thing about this..."),
+//             _ => self.clone(),
+//         }
+//     }
+// }
+//
+// #[cfg(test)]
+// mod tests {
+//
+//     #[test]
+//     fn parameterize() {}
+// }

@@ -2,6 +2,7 @@ use ariadne::{Color, Source};
 
 use crate::{project::Project, util::Span};
 
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Simple {
     pub message: String,
     pub span: Span,
