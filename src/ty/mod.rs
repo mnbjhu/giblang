@@ -119,7 +119,7 @@ impl Ty {
                         return ty.get_name(state);
                     }
                 }
-                format!("unknown")
+                "unknown".to_string()
             }
         }
     }

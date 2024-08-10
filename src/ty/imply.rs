@@ -43,9 +43,8 @@ impl Ty {
                     ret: other_ret,
                 },
             ) => {
-                match (receiver, other_receiver) {
-                    (Some(s), Some(other)) => s.imply_type_vars(other, state),
-                    _ => {}
+                if let (Some(s), Some(other)) = (receiver, other_receiver) {
+                    s.imply_type_vars(other, state);
                 }
                 for (s, o) in args.iter().zip(other_args) {
                     s.imply_type_vars(o, state);

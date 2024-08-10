@@ -58,7 +58,7 @@ impl Ty {
                 let ty = var.and_then(|var| var.ty.clone());
                 let super_ = var.map_or(Ty::Any, |var| var.generic.super_.as_ref().clone());
                 if let Some(ty) = ty {
-                    return self.is_instance_of(&ty, state, imply);
+                    self.is_instance_of(&ty, state, imply)
                 } else {
                     if imply {
                         state.add_type_bound(*id, self.clone());
