@@ -5,10 +5,10 @@ impl<'proj> Match {
         let expr_ty = self.expr.0.check(project, state);
         let mut ret = Ty::Unknown;
         for arm in &self.arms {
-            if ret != Ty::Unknown {
-                arm.expected_instance_of(&expr_ty, project, state, ret.clone());
-            } else {
+            if ret == Ty::Unknown {
                 ret = arm.check(project, state, expr_ty.clone());
+            } else {
+                arm.expected_instance_of(&expr_ty, project, state, ret.clone());
             }
         }
         ret

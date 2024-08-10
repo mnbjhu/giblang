@@ -38,6 +38,12 @@ pub struct ImplData {
     pub functions: Vec<u32>,
 }
 
+#[cfg(test)]
+#[must_use]
+pub fn check_test_state(project: &Project) -> CheckState {
+    CheckState::from_file(project.get_file(0).unwrap(), project)
+}
+
 impl Project {
     #[allow(clippy::missing_panics_doc)]
     pub fn insert_file(&mut self, file_path: String, text: String) {
@@ -215,13 +221,13 @@ mod tests {
         #[must_use]
         pub fn check_test() -> Project {
             let mut project = Project::from(
-                r#"struct Foo
+                r"struct Foo
 struct Bar[T]
 struct Baz[T, U]
 enum Option[out T] {
    Some(T),
    None
-}"#,
+}",
             );
             project.resolve();
             project
@@ -232,9 +238,4 @@ enum Option[out T] {
             self.counter
         }
     }
-}
-#[cfg(test)]
-#[must_use]
-pub fn check_test_state(project: &Project) -> CheckState {
-    CheckState::from_file(project.get_file(0).unwrap(), project)
 }

@@ -16,7 +16,7 @@ impl Ty {
                 Ty::TypeVar { id }
             }
             Ty::Named { name, args } => Ty::Named {
-                name: name.clone(),
+                name: *name,
                 args: args.iter().map(|a| a.inst(ids, state)).collect(),
             },
             Ty::Tuple(t) => Ty::Tuple(t.iter().map(|t| t.inst(ids, state)).collect()),

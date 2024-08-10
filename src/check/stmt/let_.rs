@@ -72,7 +72,7 @@ mod tests {
         let mut state = check_test_state(&project);
         let errors = check_let("let x: Abc = 5", &project, &mut state);
         assert_eq!(errors.len(), 1);
-        let error = errors.get(0).unwrap();
+        let error = errors.first().unwrap();
         if let CheckError::Unresolved(unresolved) = error {
             assert_eq!(unresolved.name.0, "Abc");
         } else {

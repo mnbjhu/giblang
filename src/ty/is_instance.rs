@@ -33,23 +33,19 @@ impl Ty {
                             },
                         )
                 } else {
-                    let impls = state.project.get_impls(*name);
-                    for impl_ in impls {
-                        let ty = impl_.map(&self, state);
-                        return ty.is_instance_of(other, state, imply);
-                    }
-                    false
+                    let declared_impls = state.project.get_impls(*name);
+                    declared_impls.iter().any(|im| {
+                        let ty = im.map(self, state);
+                        ty.is_instance_of(other, state, imply)
+                    })
                 }
             }
             (Ty::TypeVar { id }, other) => {
-                println!("TypeVar: {} {:?}", id, other);
                 let var = state.get_type_var(*id);
-                let s = var.map(|var| var.ty.clone()).unwrap_or(None);
-                let super_ = var
-                    .map(|var| var.generic.clone().super_.as_ref().clone())
-                    .unwrap_or(Ty::Any);
+                let s = var.and_then(|var| var.ty.clone());
+                let super_ = var.map_or(Ty::Any, |var| var.generic.super_.as_ref().clone());
                 if let Some(s) = s {
-                    return s.is_instance_of(other, state, imply);
+                    s.is_instance_of(other, state, imply)
                 } else {
                     if imply {
                         state.add_type_bound(*id, other.clone());
@@ -58,12 +54,9 @@ impl Ty {
                 }
             }
             (_, Ty::TypeVar { id }) => {
-                println!("TypeVar: {} {:?}", id, self);
                 let var = state.get_type_var(*id);
-                let ty = var.map(|var| var.ty.clone()).unwrap_or(None);
-                let super_ = var
-                    .map(|var| var.generic.clone().super_.as_ref().clone())
-                    .unwrap_or(Ty::Any);
+                let ty = var.and_then(|var| var.ty.clone());
+                let super_ = var.map_or(Ty::Any, |var| var.generic.super_.as_ref().clone());
                 if let Some(ty) = ty {
                     return self.is_instance_of(&ty, state, imply);
                 } else {

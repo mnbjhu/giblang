@@ -22,19 +22,13 @@ impl Ty {
             ) => {
                 if name == other_name && args.len() == other_args.len() {
                     for (s, o) in args.iter().zip(other_args) {
-                        s.imply_type_vars(o, state)
+                        s.imply_type_vars(o, state);
                     }
                 }
-                return;
             }
-            (Ty::Tuple(s), Ty::Tuple(other)) => {
+            (Ty::Sum(s), Ty::Sum(other)) | (Ty::Tuple(s), Ty::Tuple(other)) => {
                 for (s, o) in s.iter().zip(other) {
-                    s.imply_type_vars(o, state)
-                }
-            }
-            (Ty::Sum(s), Ty::Sum(other)) => {
-                for (s, o) in s.iter().zip(other) {
-                    s.imply_type_vars(o, state)
+                    s.imply_type_vars(o, state);
                 }
             }
             (
@@ -50,14 +44,13 @@ impl Ty {
                 },
             ) => {
                 match (receiver, other_receiver) {
-                    (None, None) => {}
                     (Some(s), Some(other)) => s.imply_type_vars(other, state),
                     _ => {}
                 }
                 for (s, o) in args.iter().zip(other_args) {
-                    s.imply_type_vars(o, state)
+                    s.imply_type_vars(o, state);
                 }
-                ret.imply_type_vars(other_ret, state)
+                ret.imply_type_vars(other_ret, state);
             }
             _ => {}
         }
