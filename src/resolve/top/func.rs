@@ -1,7 +1,4 @@
-use crate::{
-    parser::top::func::Func, project::decl::Decl,
-    resolve::state::ResolveState, ty::Ty,
-};
+use crate::{parser::top::func::Func, project::decl::Decl, resolve::state::ResolveState, ty::Ty};
 
 impl Func {
     pub fn resolve(&self, state: &mut ResolveState) -> Decl {

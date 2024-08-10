@@ -1,9 +1,4 @@
-use crate::{
-    check::{
-        err::{unresolved::Unresolved},
-    },
-    util::Spanned,
-};
+use crate::{check::err::unresolved::Unresolved, util::Spanned};
 
 pub struct Node {
     name: String,

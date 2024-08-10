@@ -1,8 +1,6 @@
 use std::collections::HashMap;
 
-use crate::{
-    parser::top::trait_::Trait, resolve::state::ResolveState, ty::Ty,
-};
+use crate::{parser::top::trait_::Trait, resolve::state::ResolveState, ty::Ty};
 
 use super::Decl;
 
