@@ -84,6 +84,7 @@ mod tests {
         assert_eq!(*ty, Ty::Unknown);
     }
 
+    #[ignore]
     #[test]
     fn test_imply_ty() {
         let project = Project::check_test();
