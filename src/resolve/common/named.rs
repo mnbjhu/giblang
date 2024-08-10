@@ -1,7 +1,4 @@
-use crate::{
-    parser::common::type_::NamedType, resolve::state::ResolveState,
-    ty::Ty,
-};
+use crate::{parser::common::type_::NamedType, resolve::state::ResolveState, ty::Ty};
 
 impl NamedType {
     pub fn resolve(&self, state: &mut ResolveState) -> Ty {
@@ -27,11 +24,8 @@ impl NamedType {
 mod tests {
 
     use crate::{
-        check::{state::CheckState, ty::tests::assert_no_errors},
-        parser::common::type_::NamedType,
-        project::Project,
-        resolve::state::ResolveState,
-        ty::Ty,
+        check::ty::tests::assert_no_errors, parser::common::type_::NamedType, project::Project,
+        resolve::state::ResolveState, ty::Ty,
     };
 
     pub fn resolve_test_project() -> Project {

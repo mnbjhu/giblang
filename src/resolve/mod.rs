@@ -1,14 +1,14 @@
 use std::collections::HashMap;
 
 use crate::{
-    check::{err::CheckError},
+    check::err::CheckError,
     project::{decl::Decl, file_data::FileData, ImplData, Project},
 };
 
 use self::state::ResolveState;
 
 mod common;
-pub mod state;
+mod state;
 mod top;
 
 pub fn resolve_file(

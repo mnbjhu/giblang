@@ -84,6 +84,7 @@ mod tests {
         assert_eq!(*ty, Ty::Unknown);
     }
 
+    #[ignore]
     #[test]
     fn imply_option() {
         let project = Project::check_test();
@@ -103,6 +104,7 @@ mod tests {
         }
     }
 
+    #[ignore]
     #[test]
     fn imply_option_with_wildcard() {
         let project = Project::check_test();

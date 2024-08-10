@@ -8,7 +8,7 @@ use crate::{
     lexer::token::punct,
     op,
     parser::expr::qualified_name::{qualified_name_parser, SpannedQualifiedName},
-    util::Spanned,
+    util::{Span, Spanned},
     AstParser,
 };
 
@@ -16,7 +16,7 @@ use super::optional_newline::optional_newline;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Type {
-    Wildcard,
+    Wildcard(Span),
     Named(NamedType),
     Tuple(Vec<Spanned<Type>>),
     Sum(Vec<Spanned<Type>>),
@@ -35,7 +35,7 @@ pub struct NamedType {
 
 pub fn type_parser<'tokens, 'src: 'tokens>() -> AstParser!(Type) {
     let arrow = just(punct('-')).then(just(punct('>'))).ignored();
-    let widlcard = just(op!(_)).map(|_| Type::Wildcard);
+    let widlcard = just(op!(_)).map_with(|_, e| e.span()).map(Type::Wildcard);
     recursive(|ty| {
         let named = named_parser(ty.clone());
 
@@ -120,7 +120,7 @@ mod tests {
         let end = Span::splat(input.len());
         let input = tokens.spanned(end);
         let ty = type_parser().parse(input).unwrap();
-        assert_eq!(ty, Type::Wildcard);
+        assert!(matches!(ty, Type::Wildcard(_)));
     }
 
     #[test]

@@ -35,7 +35,7 @@ impl Type {
                 args: args.iter().map(|r| r.0.check(project, state)).collect(),
                 ret: Box::new(ret.0.check(project, state)),
             },
-            Type::Wildcard => {
+            Type::Wildcard(_) => {
                 let id = state.add_type_var(Generic::default());
                 Ty::TypeVar { id }
             }

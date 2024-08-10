@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use crate::{
     check::err::{simple::Simple, CheckError},
     parser::{common::variance::Variance, expr::qualified_name::SpannedQualifiedName},
-    project::{file_data::FileData, name::QualifiedName, Project, TypeVar},
+    project::{file_data::FileData, name::QualifiedName, Project},
     ty::{Generic, Ty},
     util::{Span, Spanned},
 };
@@ -11,12 +11,9 @@ use crate::{
 pub struct ResolveState<'file> {
     imports: HashMap<String, QualifiedName>,
     generics: Vec<HashMap<String, Generic>>,
-    variables: Vec<HashMap<String, Ty>>,
-    pub file_data: &'file FileData,
-    pub project: &'file Project,
+    file_data: &'file FileData,
+    project: &'file Project,
     pub errors: Vec<CheckError>,
-    type_vars: Vec<TypeVar>,
-    var_count: u32,
 }
 
 impl<'file> ResolveState<'file> {
@@ -34,12 +31,9 @@ impl<'file> ResolveState<'file> {
         let mut state = ResolveState {
             imports: HashMap::new(),
             generics: vec![],
-            variables: vec![],
             file_data,
             project,
             errors: vec![],
-            type_vars: vec![],
-            var_count: 0,
         };
         let mut path = file_data.get_path();
         for (top, _) in &file_data.ast {
@@ -57,12 +51,10 @@ impl<'file> ResolveState<'file> {
     }
 
     pub fn enter_scope(&mut self) {
-        self.variables.push(HashMap::new());
         self.generics.push(HashMap::new());
     }
 
     pub fn exit_scope(&mut self) {
-        self.variables.pop();
         self.generics.pop();
     }
 
@@ -89,7 +81,7 @@ impl<'file> ResolveState<'file> {
         match res {
             Ok(decl) => Some(decl),
             Err(e) => {
-                self.errors.push(CheckError::Unresolved(e));
+                self.error(CheckError::Unresolved(e));
                 None
             }
         }
@@ -122,10 +114,6 @@ impl<'file> ResolveState<'file> {
         self.generics.last_mut().unwrap().insert(name, ty);
     }
 
-    pub fn insert_variable(&mut self, name: String, ty: Ty) {
-        self.variables.last_mut().unwrap().insert(name, ty);
-    }
-
     pub fn get_generic(&self, name: &str) -> Option<&Generic> {
         for generics in self.generics.iter().rev() {
             if let Some(g) = generics.get(name) {
@@ -133,38 +121,6 @@ impl<'file> ResolveState<'file> {
             }
         }
         None
-    }
-
-    pub fn get_variable(&self, name: &str) -> Option<&Ty> {
-        for variables in self.variables.iter().rev() {
-            if let Some(v) = variables.get(name) {
-                return Some(v);
-            }
-        }
-        None
-    }
-
-    pub fn add_type_bound(&mut self, id: u32, ty: Ty) {
-        if let Some(vars) = self.type_vars.get_mut(id as usize) {
-            vars.ty = Some(ty);
-        } else {
-            panic!("Failed to find type var with id {id}");
-        }
-    }
-
-    pub fn add_type_var(&mut self, generic: Generic) -> u32 {
-        let id = self.var_count;
-        self.var_count += 1;
-        self.type_vars.push(TypeVar {
-            id,
-            generic,
-            ty: None,
-        });
-        id
-    }
-
-    pub fn get_type_var(&self, id: u32) -> Option<&TypeVar> {
-        self.type_vars.get(id as usize)
     }
 }
 
