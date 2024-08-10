@@ -19,7 +19,6 @@ pub fn check_ident(state: &mut CheckState, path: &SpannedQualifiedName, project:
     } else {
         Ty::Unknown
     }
-    // Ty::Meta(...)
 }
 
 pub fn check_ident_is(
@@ -30,16 +29,10 @@ pub fn check_ident_is(
 ) -> Ty {
     let actual = check_ident(state, ident, project);
     let span = ident.last().unwrap().1;
-    check_ty(actual, expected, project, state, span)
+    check_ty(actual, expected, state, span)
 }
 
-pub fn check_ty(
-    actual: Ty,
-    expected: &Ty,
-    project: &Project,
-    state: &mut CheckState<'_>,
-    span: Span,
-) -> Ty {
+pub fn check_ty(actual: Ty, expected: &Ty, state: &mut CheckState<'_>, span: Span) -> Ty {
     actual.imply_type_vars(expected, state);
     if !actual.is_instance_of(expected, state, true) {
         state.simple_error(

@@ -5,7 +5,7 @@ use crate::{
 };
 
 impl<'proj> Call {
-    pub fn check(&'proj self, project: &'proj Project, state: &mut CheckState<'proj>) -> Ty {
+    pub fn check(&self, project: &'proj Project, state: &mut CheckState<'proj>) -> Ty {
         let name_ty = self.name.0.check(project, state);
         if let Ty::Function {
             args: expected_args,
@@ -72,7 +72,7 @@ impl<'proj> Call {
     }
 
     pub fn expected_instance_of(
-        &'proj self,
+        &self,
         expected: &Ty,
         project: &'proj Project,
         state: &mut CheckState<'proj>,

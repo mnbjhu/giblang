@@ -3,12 +3,7 @@ use crate::{
 };
 
 impl<'proj> MatchArm {
-    pub fn check(
-        &'proj self,
-        project: &'proj Project,
-        state: &mut CheckState<'proj>,
-        ty: Ty,
-    ) -> Ty {
+    pub fn check(&self, project: &'proj Project, state: &mut CheckState<'proj>, ty: Ty) -> Ty {
         state.enter_scope();
         self.pattern.check(project, state, ty);
         let ty = self.expr.0.check(project, state);
@@ -17,7 +12,7 @@ impl<'proj> MatchArm {
     }
 
     pub fn expected_instance_of(
-        &'proj self,
+        &self,
         expected: &Ty,
         project: &'proj Project,
         state: &mut CheckState<'proj>,

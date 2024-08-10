@@ -41,7 +41,7 @@ pub mod tests {
     use crate::{
         check::{err::CheckError, state::CheckState},
         lexer::parser::lexer,
-        parser::common::type_::{type_parser, NamedType},
+        parser::common::type_::type_parser,
         project::{check_test_state, Project},
         util::Span,
     };
@@ -65,7 +65,6 @@ pub mod tests {
         let eoi = Span::splat(ty.len());
         let tokens = lexer().parse(ty).unwrap();
         let ty = type_parser().parse(tokens.spanned(eoi)).unwrap();
-        let file_data = project.get_file(project.get_counter()).unwrap();
         (ty.check(project, state), state.errors.clone())
     }
 

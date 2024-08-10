@@ -214,8 +214,15 @@ mod tests {
 
         #[must_use]
         pub fn check_test() -> Project {
-            let mut project =
-                Project::from("struct Foo\nstruct Bar[T]\nstruct Baz[T, U]\nstruct Option[out T]");
+            let mut project = Project::from(
+                r#"struct Foo
+struct Bar[T]
+struct Baz[T, U]
+enum Option[out T] {
+   Some(T),
+   None
+}"#,
+            );
             project.resolve();
             project
         }

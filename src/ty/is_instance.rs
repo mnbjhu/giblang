@@ -10,6 +10,37 @@ impl Ty {
             return true;
         }
         match (self, other) {
+            (Ty::Unknown, _) | (_, Ty::Unknown | Ty::Any) => true,
+            (Ty::Any, _) => false,
+            (
+                Ty::Named { name, args },
+                Ty::Named {
+                    name: other_name,
+                    args: other_args,
+                },
+            ) => {
+                let decl = state.project.get_decl(*name);
+                let generics = decl.generics();
+                if name == other_name {
+                    args.len() == other_args.len()
+                        && args.iter().zip(other_args).zip(generics.iter()).all(
+                            |((first, second), def)| match def.variance {
+                                Variance::Invariant => first.equals(second),
+                                Variance::Covariant => first.is_instance_of(second, state, imply),
+                                Variance::Contravariant => {
+                                    second.is_instance_of(first, state, imply)
+                                }
+                            },
+                        )
+                } else {
+                    let impls = state.project.get_impls(*name);
+                    for impl_ in impls {
+                        let ty = impl_.map(&self, state);
+                        return ty.is_instance_of(other, state, imply);
+                    }
+                    false
+                }
+            }
             (Ty::TypeVar { id }, other) => {
                 println!("TypeVar: {} {:?}", id, other);
                 let var = state.get_type_var(*id);
@@ -40,37 +71,6 @@ impl Ty {
                         state.add_type_bound(*id, self.clone());
                     }
                     self.is_instance_of(&super_, state, imply)
-                }
-            }
-            (Ty::Unknown, _) | (_, Ty::Unknown | Ty::Any) => true,
-            (Ty::Any, _) => false,
-            (
-                Ty::Named { name, args },
-                Ty::Named {
-                    name: other_name,
-                    args: other_args,
-                },
-            ) => {
-                let decl = state.project.get_decl(*name);
-                let generics = decl.generics();
-                if name == other_name {
-                    args.len() == other_args.len()
-                        && args.iter().zip(other_args).zip(generics.iter()).all(
-                            |((first, second), def)| match def.variance {
-                                Variance::Invariant => first.equals(second),
-                                Variance::Covariant => first.is_instance_of(second, state, imply),
-                                Variance::Contravariant => {
-                                    second.is_instance_of(first, state, imply)
-                                }
-                            },
-                        )
-                } else {
-                    let impls = state.project.get_impls(*name);
-                    for impl_ in impls {
-                        let ty = impl_.map(&self, state);
-                        return ty.is_instance_of(other, state, imply);
-                    }
-                    false
                 }
             }
             (_, Ty::Sum(tys)) => tys

@@ -9,7 +9,7 @@ use crate::{
 type Tuple = Vec<Spanned<Expr>>;
 
 pub fn check_tuple<'proj>(
-    values: &'proj Tuple,
+    values: &Tuple,
     project: &'proj Project,
     state: &mut CheckState<'proj>,
 ) -> Ty {
@@ -23,7 +23,7 @@ pub fn check_tuple<'proj>(
 pub fn check_tuple_is<'proj>(
     state: &mut CheckState<'proj>,
     expected: &Ty,
-    tuple: &'proj Tuple,
+    tuple: &Tuple,
     project: &'proj Project,
     span: Span,
 ) -> Ty {

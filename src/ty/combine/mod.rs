@@ -1,5 +1,3 @@
-use crate::check::state::CheckState;
-
 use super::Ty;
 
 pub mod named;

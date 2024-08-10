@@ -1,7 +1,3 @@
-use crate::check::state::CheckState;
-
-use super::Ty;
-
 // impl Ty {
 //
 //     pub fn parameterize(&self, state: &CheckState) -> Ty {

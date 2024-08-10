@@ -128,3 +128,40 @@ impl Ty {
         Ty::Tuple(Vec::new())
     }
 }
+
+impl Ty {
+    pub fn string() -> Self {
+        Ty::Named {
+            name: 1,
+            args: Vec::new(),
+        }
+    }
+
+    pub fn int() -> Self {
+        Ty::Named {
+            name: 2,
+            args: Vec::new(),
+        }
+    }
+
+    pub fn bool() -> Self {
+        Ty::Named {
+            name: 3,
+            args: Vec::new(),
+        }
+    }
+
+    pub fn float() -> Self {
+        Ty::Named {
+            name: 4,
+            args: Vec::new(),
+        }
+    }
+
+    pub fn char() -> Self {
+        Ty::Named {
+            name: 5,
+            args: Vec::new(),
+        }
+    }
+}

@@ -18,7 +18,7 @@ pub mod member;
 pub mod tuple;
 
 impl Expr {
-    pub fn check<'proj>(&'proj self, project: &'proj Project, state: &mut CheckState<'proj>) -> Ty {
+    pub fn check<'proj>(&self, project: &'proj Project, state: &mut CheckState<'proj>) -> Ty {
         match self {
             Expr::Literal(lit) => lit.into(),
             Expr::Ident(ident) => check_ident(state, ident, project),
@@ -34,14 +34,14 @@ impl Expr {
     }
 
     pub fn expect_instance_of<'proj>(
-        &'proj self,
+        &self,
         expected: &Ty,
         project: &'proj Project,
         state: &mut CheckState<'proj>,
         span: Span,
     ) -> Ty {
         match self {
-            Expr::Literal(lit) => lit.expect_instance_of(expected, project, state, span),
+            Expr::Literal(lit) => lit.expect_instance_of(expected, state, span),
             Expr::Ident(ident) => check_ident_is(state, ident, expected, project),
             Expr::CodeBlock(block) => check_code_block_is(state, expected, block, project),
             Expr::Call(call) => call.expected_instance_of(expected, project, state, span),

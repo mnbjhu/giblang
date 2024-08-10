@@ -1,6 +1,4 @@
-use crate::{
-    check::state::CheckState, lexer::literal::Literal, project::Project, ty::Ty, util::Span,
-};
+use crate::{check::state::CheckState, lexer::literal::Literal, ty::Ty, util::Span};
 
 impl From<&Literal> for Ty {
     fn from(value: &Literal) -> Self {
@@ -30,13 +28,7 @@ impl From<&Literal> for Ty {
 }
 
 impl Literal {
-    pub fn expect_instance_of(
-        &self,
-        expected: &Ty,
-        project: &Project,
-        state: &mut CheckState,
-        span: Span,
-    ) -> Ty {
+    pub fn expect_instance_of(&self, expected: &Ty, state: &mut CheckState, span: Span) -> Ty {
         let actual = Ty::from(self);
         if !actual.is_instance_of(expected, state, true) {
             state.simple_error(
