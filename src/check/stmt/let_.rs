@@ -144,7 +144,7 @@ mod tests {
         let ty = state
             .get_variable("x")
             .expect("Expected state to have variable x");
-        let inner = assert_type_var_resolved(&ty, &state);
+        let inner = assert_type_var_resolved(ty, &state);
         assert_eq!(inner, Ty::int());
     }
 }

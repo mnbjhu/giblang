@@ -100,6 +100,9 @@ impl Project {
         self.root.get_path(path)
     }
 
+    /// # Errors
+    ///
+    /// This function will return an error if no path is found.
     pub fn get_path_with_error(
         &self,
         path: &[Spanned<String>],
