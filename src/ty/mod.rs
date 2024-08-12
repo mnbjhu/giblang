@@ -1,7 +1,5 @@
 use crate::{check::state::CheckState, parser::common::variance::Variance, util::Spanned};
 
-pub mod combine;
-pub mod disp;
 pub mod eq;
 pub mod generics;
 pub mod imply;

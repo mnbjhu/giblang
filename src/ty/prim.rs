@@ -54,6 +54,15 @@ mod tests {
     use crate::ty::{prim::PrimTy, Ty};
 
     #[test]
+    fn test_display() {
+        assert_eq!(PrimTy::String.to_string(), "String");
+        assert_eq!(PrimTy::Bool.to_string(), "Bool");
+        assert_eq!(PrimTy::Float.to_string(), "Float");
+        assert_eq!(PrimTy::Int.to_string(), "Int");
+        assert_eq!(PrimTy::Char.to_string(), "Char");
+    }
+
+    #[test]
     fn from_prim() {
         assert_eq!(
             Ty::from(&PrimTy::String),
