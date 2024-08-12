@@ -1,4 +1,3 @@
-
 use crate::{
     check::state::CheckState,
     ty::{prim::PrimTy, Generic, Ty},

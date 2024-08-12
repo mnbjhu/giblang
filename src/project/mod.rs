@@ -217,7 +217,8 @@ impl Project {
         self.counter
     }
 
-    #[must_use] pub fn get_impl(&self, id: &u32) -> &ImplData {
+    #[must_use]
+    pub fn get_impl(&self, id: &u32) -> &ImplData {
         self.impls.get(id).expect("Invalid impl id")
     }
 }

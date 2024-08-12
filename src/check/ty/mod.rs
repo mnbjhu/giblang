@@ -1,9 +1,4 @@
-use crate::{
-    check::state::CheckState,
-    parser::common::type_::Type,
-    project::Project,
-    ty::Ty,
-};
+use crate::{check::state::CheckState, parser::common::type_::Type, project::Project, ty::Ty};
 pub mod named;
 
 impl Type {

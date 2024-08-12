@@ -1,4 +1,3 @@
-
 use crate::{check::state::CheckState, parser::common::variance::Variance, util::Spanned};
 
 pub mod combine;

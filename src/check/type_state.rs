@@ -6,7 +6,6 @@ use crate::{
     util::{Span, Spanned},
 };
 
-
 #[derive(Default)]
 pub struct TypeState<'ty> {
     pub vars: HashMap<u32, MaybeTypeVar<'ty>>,
