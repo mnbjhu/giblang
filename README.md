@@ -1,9 +1,11 @@
 # Giblang
-[![Test](https://github.com/mnbjhu/another-giblang-impl/actions/workflows/test.yml/badge.svg)](https://github.com/mnbjhu/another-giblang-impl/actions/workflows/test.yml)
-[![codecov](https://codecov.io/gh/mnbjhu/another-giblang-impl/graph/badge.svg?token=ELHSUHZM1N)](https://codecov.io/gh/mnbjhu/another-giblang-impl)
+
+[![Test](https://github.com/mnbjhu/giblang/actions/workflows/test.yml/badge.svg)](https://github.com/mnbjhu/another-giblang-impl/actions/workflows/test.yml)
+[![codecov](https://codecov.io/gh/mnbjhu/giblang/graph/badge.svg?token=ELHSUHZM1N)](https://codecov.io/gh/mnbjhu/another-giblang-impl)
+
 ## About
 
-WIP transpiler for an awesome language
+WIP transpiler for the Giblang language
 
 ## CLI
 

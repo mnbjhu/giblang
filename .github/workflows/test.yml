@@ -83,8 +83,8 @@ jobs:
         with:
           toolchain: nightly
           override: true
-      - name: Build
-        run: cargo build --verbose
+      - name: Clean
+        run: cargo clean
       - name: Run tests
         run: cargo test --verbose
         env:
