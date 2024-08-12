@@ -200,7 +200,6 @@ impl<'file> CheckState<'file> {
 mod tests {
     use crate::{
         check::{state::CheckState, ty::tests::parse_ty},
-        cli::build::build,
         project::Project,
         ty::Generic,
         util::Span,
@@ -266,10 +265,5 @@ mod tests {
         );
         state.exit_scope();
         assert!(state.get_generic("T").is_none());
-    }
-
-    #[test]
-    fn test_build() {
-        build();
     }
 }

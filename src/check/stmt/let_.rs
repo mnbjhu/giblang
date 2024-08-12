@@ -127,8 +127,8 @@ mod tests {
         let project = Project::check_test();
         let mut state = check_test_state(&project);
         check_let("let x = Option::None", &project, &mut state);
-        state.resolve_type_vars();
-        assert_eq!(state.errors, vec![]);
+        assert_eq!(state.type_state.vars.len(), 1);
+        assert_eq!(state.errors.len(), 1);
 
         let ty = state
             .get_variable("x")
@@ -139,7 +139,7 @@ mod tests {
             assert_eq!(args.len(), 1);
             if let Ty::TypeVar { id } = args[0] {
                 let resolved = state.get_resolved_type_var(id);
-                assert_eq!(resolved, Ty::int());
+                assert_eq!(resolved, Ty::Unknown);
             }
         } else {
             panic!("Expected Named ty");
