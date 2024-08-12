@@ -1,19 +1,18 @@
-use core::panic;
 use std::{collections::HashMap, vec};
 
 use chumsky::container::Container;
 
 use crate::{
     check::err::{simple::Simple, CheckError},
-    parser::expr::{qualified_name::SpannedQualifiedName, Expr},
-    project::{file_data::FileData, name::QualifiedName, Project, TypeVar},
+    parser::expr::qualified_name::SpannedQualifiedName,
+    project::{file_data::FileData, name::QualifiedName, Project},
     ty::{Generic, Ty},
     util::{Span, Spanned},
 };
 
 use super::{
     err::unresolved_type_var::UnboundTypeVar,
-    type_state::{MaybeTypeVar, TypeState, TypeVarData, TypeVarUsage},
+    type_state::{MaybeTypeVar, TypeState, TypeVarUsage},
 };
 
 pub struct CheckState<'file> {
@@ -159,8 +158,7 @@ impl<'file> CheckState<'file> {
                             name: data
                                 .bounds
                                 .first()
-                                .map(|g| g.name.0.to_string())
-                                .unwrap_or("_".to_string()),
+                                .map_or("_".to_string(), |g| g.name.0.to_string()),
                         }));
                         None
                     } else {

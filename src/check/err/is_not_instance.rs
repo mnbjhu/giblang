@@ -1,6 +1,6 @@
 use ariadne::{Color, Source};
 
-use crate::{check::state::CheckState, project::Project, ty::Ty, util::Span};
+use crate::{check::state::CheckState, ty::Ty, util::Span};
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct IsNotInstance {

@@ -50,11 +50,11 @@ impl Ty {
                         let variance = g.variance;
                         match variance {
                             Variance::Invariant => {
-                                arg.expect_is_instance_of(&other, state, explicit, span);
+                                arg.expect_is_instance_of(other, state, explicit, span);
                                 other.expect_is_instance_of(&arg, state, explicit, span);
                             }
                             Variance::Covariant => {
-                                arg.expect_is_instance_of(&other, state, explicit, span);
+                                arg.expect_is_instance_of(other, state, explicit, span);
                             }
                             Variance::Contravariant => {
                                 other.expect_is_instance_of(&arg, state, explicit, span);
@@ -115,7 +115,7 @@ impl Ty {
                 first: self.clone(),
                 second: other.clone(),
                 file: state.file_data.end,
-            }))
+            }));
         }
         res
     }
@@ -126,7 +126,7 @@ impl Ty {
             let mut ty = self.clone();
             for id in path {
                 let impl_ = state.project.get_impl(&id);
-                ty = impl_.map(&ty)
+                ty = impl_.map(&ty);
             }
             Some(ty)
         } else {

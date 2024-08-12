@@ -6,7 +6,6 @@ use crate::{
     util::{Span, Spanned},
 };
 
-use super::{err::CheckError, state::CheckState};
 
 #[derive(Default)]
 pub struct TypeState<'ty> {
@@ -178,7 +177,7 @@ pub enum TypeVarUsage<'ast> {
 impl<'ast> TypeVarData<'ast> {
     pub fn resolve(&mut self) {
         if let Some(ty) = &self.explicit {
-            self.resolved = ty.0.clone()
+            self.resolved = ty.0.clone();
         }
         if let Some(usage) = self.usages.first() {
             self.resolved = match usage {
