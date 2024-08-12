@@ -26,7 +26,7 @@ impl Display for Ty {
                 variance,
                 super_,
             }) => {
-                write!(f, "{variance}{name}: {super_}")
+                write!(f, "{variance}{}: {super_}", name.0)
             }
             Ty::Meta(ty) => write!(f, "Type[{ty}]"),
             Ty::Function {
@@ -61,6 +61,7 @@ impl Display for Ty {
                     .join(" + ");
                 write!(f, "{txt}")
             }
+            Ty::TypeVar { .. } => "{{unknown}}".fmt(f),
         }
     }
 }

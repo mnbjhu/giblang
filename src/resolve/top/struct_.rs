@@ -1,9 +1,9 @@
-use crate::{check::state::CheckState, parser::top::struct_::Struct};
+use crate::{parser::top::struct_::Struct, resolve::state::ResolveState};
 
 use super::Decl;
 
 impl Struct {
-    pub fn resolve(&self, project: &mut CheckState) -> Decl {
+    pub fn resolve(&self, project: &mut ResolveState) -> Decl {
         let generics = self.generics.0.resolve(project);
         let name = self.name.clone();
         let body = self.body.resolve(project);
@@ -102,12 +102,12 @@ mod tests {
             assert_eq!(generics.len(), 2);
 
             let first_arg = &generics[0];
-            assert_eq!(first_arg.name, "T");
+            assert_eq!(first_arg.name.0, "T");
             assert_eq!(first_arg.super_.as_ref(), &Ty::Any);
             assert_eq!(first_arg.variance, Variance::Invariant);
 
             let second_arg = &generics[1];
-            assert_eq!(second_arg.name, "U");
+            assert_eq!(second_arg.name.0, "U");
             assert_eq!(second_arg.super_.as_ref(), &parse_ty(&project, "Bar"));
             assert_eq!(second_arg.variance, Variance::Covariant);
 

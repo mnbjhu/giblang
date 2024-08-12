@@ -4,7 +4,10 @@ use ariadne::Source;
 use glob::glob;
 
 use crate::{
-    check::{err::CheckError, state::CheckState},
+    check::{
+        err::{unresolved::Unresolved, CheckError, ResolveError},
+        state::CheckState,
+    },
     parser::parse_file,
     project::{file_data::FileData, module::Node, util::path_from_filename},
     resolve::resolve_file,
@@ -16,6 +19,7 @@ use self::decl::Decl;
 
 pub mod decl;
 pub mod file_data;
+pub mod inst;
 mod module;
 pub mod name;
 pub mod util;
@@ -31,10 +35,17 @@ pub struct Project {
 }
 
 pub struct ImplData {
+    pub id: u32,
     pub generics: Vec<Generic>,
     pub from: Ty,
     pub to: Ty,
     pub functions: Vec<u32>,
+}
+
+#[cfg(test)]
+#[must_use]
+pub fn check_test_state(project: &Project) -> CheckState {
+    CheckState::from_file(project.get_file(0).unwrap(), project)
 }
 
 impl Project {
@@ -90,11 +101,14 @@ impl Project {
         self.root.get_path(path)
     }
 
+    /// # Errors
+    ///
+    /// This function will return an error if no path is found.
     pub fn get_path_with_error(
         &self,
         path: &[Spanned<String>],
-        file: &mut CheckState,
-    ) -> Option<u32> {
+        file: u32,
+    ) -> Result<u32, Unresolved> {
         self.root.get_with_error(path, file)
     }
 
@@ -131,7 +145,7 @@ impl Project {
         impls
     }
 
-    pub fn resolve(&mut self) -> Vec<CheckError> {
+    pub fn resolve(&mut self) -> Vec<ResolveError> {
         let mut decls = HashMap::new();
         let mut impls = HashMap::new();
         let mut impl_map = HashMap::new();
@@ -159,6 +173,19 @@ impl Project {
         errors
     }
 
+    pub fn check_with_errors(&self) {
+        for file in &self.files {
+            let mut state = CheckState::from_file(file, self);
+            for item in &file.ast {
+                item.0.check(self, &mut state);
+            }
+            state.resolve_type_vars();
+            for err in &state.errors {
+                state.print_error(err);
+            }
+        }
+    }
+
     #[must_use]
     pub fn new() -> Project {
         let mut decls = HashMap::new();
@@ -184,6 +211,23 @@ impl Project {
             counter: 6,
         }
     }
+
+    #[must_use]
+    pub fn get_counter(&self) -> u32 {
+        self.counter
+    }
+
+    #[must_use]
+    pub fn get_impl(&self, id: &u32) -> &ImplData {
+        self.impls.get(id).expect("Invalid impl id")
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct TypeVar {
+    pub id: u32,
+    pub generic: Generic,
+    pub ty: Option<Ty>,
 }
 
 impl Default for Project {
@@ -206,14 +250,17 @@ mod tests {
 
         #[must_use]
         pub fn check_test() -> Project {
-            let mut project = Project::from("struct Foo\nstruct Bar[T]\nstruct Baz[T, U]");
+            let mut project = Project::from(
+                r"struct Foo
+struct Bar[T]
+struct Baz[T, U]
+enum Option[out T] {
+   Some(T),
+   None
+}",
+            );
             project.resolve();
             project
-        }
-
-        #[must_use]
-        pub fn get_counter(&self) -> u32 {
-            self.counter
         }
     }
 }

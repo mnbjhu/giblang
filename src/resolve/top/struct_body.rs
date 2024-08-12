@@ -1,12 +1,12 @@
 use crate::{
-    check::state::CheckState,
     parser::top::{struct_body::StructBody, struct_field::StructField},
     project::decl::struct_::StructDecl,
+    resolve::state::ResolveState,
     ty::Ty,
 };
 
 impl StructBody {
-    pub fn resolve(&self, state: &mut CheckState) -> StructDecl {
+    pub fn resolve(&self, state: &mut ResolveState) -> StructDecl {
         match self {
             StructBody::None => StructDecl::None,
             StructBody::Tuple(v) => {
@@ -24,7 +24,7 @@ impl StructBody {
 }
 
 impl StructField {
-    pub fn resolve(&self, state: &mut CheckState) -> (String, Ty) {
+    pub fn resolve(&self, state: &mut ResolveState) -> (String, Ty) {
         (self.name.0.to_string(), self.ty.0.resolve(state))
     }
 }

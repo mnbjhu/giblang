@@ -15,22 +15,15 @@ impl NamedType {
             let args = self
                 .args
                 .iter()
-                .map(|ty| ty.0.resolve(state))
+                .map(|ty| (ty.0.check(project, state), ty.1))
                 .collect::<Vec<_>>();
             for (gen, arg) in decl.generics().iter().zip(args.clone()) {
-                if !arg.is_instance_of(gen.super_.as_ref(), project) {
-                    state.simple_error(
-                        &format!(
-                            "Type argument {} is not a subtype of the generic constraint {}",
-                            arg, gen.super_
-                        ),
-                        self.name[0].1,
-                    );
-                }
+                arg.0
+                    .expect_is_instance_of(&gen.super_, state, false, arg.1);
             }
             return Ty::Named {
                 name: decl_id,
-                args,
+                args: args.iter().map(|(arg, _)| arg).cloned().collect(),
             };
         };
         Ty::Unknown

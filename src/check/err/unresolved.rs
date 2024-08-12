@@ -2,6 +2,7 @@ use ariadne::{Color, Source};
 
 use crate::{project::Project, util::Spanned};
 
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Unresolved {
     pub name: Spanned<String>,
     pub file: u32,

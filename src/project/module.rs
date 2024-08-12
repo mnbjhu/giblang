@@ -1,10 +1,4 @@
-use crate::{
-    check::{
-        err::{unresolved::Unresolved, CheckError},
-        state::CheckState,
-    },
-    util::Spanned,
-};
+use crate::{check::err::unresolved::Unresolved, util::Spanned};
 
 pub struct Node {
     name: String,
@@ -49,17 +43,16 @@ impl Node {
         }
     }
 
-    pub fn get_with_error(&self, path: &[Spanned<String>], state: &mut CheckState) -> Option<u32> {
+    pub fn get_with_error(&self, path: &[Spanned<String>], file: u32) -> Result<u32, Unresolved> {
         if path.is_empty() {
-            Some(self.id)
+            Ok(self.id)
         } else if let Some(child) = self.children.iter().find(|c| c.name == path[0].0) {
-            return child.get_with_error(&path[1..], state);
+            return child.get_with_error(&path[1..], file);
         } else {
-            state.error(CheckError::Unresolved(Unresolved {
+            Err(Unresolved {
                 name: path[0].clone(),
-                file: state.file_data.end,
-            }));
-            None
+                file,
+            })
         }
     }
 

@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::{
     check::state::CheckState, parser::expr::qualified_name::SpannedQualifiedName, project::Project,
     ty::Ty, util::Span,
@@ -13,11 +15,10 @@ pub fn check_ident(state: &mut CheckState, path: &SpannedQualifiedName, project:
     }
     if let Some(decl_id) = state.get_decl_with_error(path) {
         let decl = project.get_decl(decl_id);
-        decl.get_ty(decl_id, project)
+        decl.get_ty(decl_id, state).inst(&mut HashMap::new(), state)
     } else {
         Ty::Unknown
     }
-    // Ty::Meta(...)
 }
 
 pub fn check_ident_is(
@@ -28,34 +29,12 @@ pub fn check_ident_is(
 ) -> Ty {
     let actual = check_ident(state, ident, project);
     let span = ident.last().unwrap().1;
-    check_ty(actual, expected, project, state, span)
+    check_ty(actual, expected, state, span)
 }
 
-pub fn check_ty(
-    actual: Ty,
-    expected: &Ty,
-    project: &Project,
-    state: &mut CheckState<'_>,
-    span: Span,
-) -> Ty {
-    let implied = actual.imply_generics(expected);
-    let new = if let Some(implied) = implied {
-        actual.parameterize(&implied)
-    } else {
-        actual
-    };
-    if !new.is_instance_of(expected, project) {
-        state.simple_error(
-            &format!(
-                "Expected value to be of type '{}' but found '{}'",
-                expected.get_name(project),
-                new.get_name(project),
-            ),
-            span,
-        );
-    }
-    // TODO: Consider whether to pass through or use Ty::Unknown
-    new
+pub fn check_ty(actual: Ty, expected: &Ty, state: &mut CheckState<'_>, span: Span) -> Ty {
+    actual.expect_is_instance_of(expected, state, false, span);
+    actual
 }
 
 // fn get_body_ty<'module>(

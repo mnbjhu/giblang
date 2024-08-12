@@ -1,24 +1,16 @@
 use std::collections::HashMap;
 
-use super::{Generic, Ty};
+use super::Ty;
 
+// TODO: This should use unique ids instead of the String names for generic type args
 impl Ty {
     pub fn parameterize(&self, generics: &HashMap<String, Ty>) -> Ty {
         match self {
-            Ty::Any => Ty::Any,
-            Ty::Unknown => Ty::Unknown,
+            Ty::Generic(arg) => generics.get(&arg.name.0).unwrap_or(self).clone(),
             Ty::Named { name, args } => Ty::Named {
                 name: *name,
                 args: args.iter().map(|ty| ty.parameterize(generics)).collect(),
             },
-            // TODO: Check use of variance/super
-            Ty::Generic(Generic { name, .. }) => {
-                if let Some(ty) = generics.get(name) {
-                    ty.clone()
-                } else {
-                    self.clone()
-                }
-            }
             Ty::Tuple(tys) => Ty::Tuple(tys.iter().map(|ty| ty.parameterize(generics)).collect()),
             Ty::Sum(tys) => Ty::Sum(tys.iter().map(|ty| ty.parameterize(generics)).collect()),
             Ty::Function {
@@ -26,21 +18,18 @@ impl Ty {
                 args,
                 ret,
             } => {
-                if let Some(receiver) = receiver {
-                    Ty::Function {
-                        receiver: Some(Box::new(receiver.parameterize(generics))),
-                        args: args.iter().map(|ty| ty.parameterize(generics)).collect(),
-                        ret: Box::new(ret.parameterize(generics)),
-                    }
-                } else {
-                    Ty::Function {
-                        receiver: None,
-                        args: args.iter().map(|ty| ty.parameterize(generics)).collect(),
-                        ret: Box::new(ret.parameterize(generics)),
-                    }
+                let receiver = receiver
+                    .as_ref()
+                    .map(|r| Box::new(r.parameterize(generics)));
+                Ty::Function {
+                    receiver,
+                    args: args.iter().map(|ty| ty.parameterize(generics)).collect(),
+                    ret: Box::new(ret.parameterize(generics)),
                 }
             }
             Ty::Meta(_) => unimplemented!("Need to thing about this..."),
+
+            _ => self.clone(),
         }
     }
 }

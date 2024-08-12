@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 
-use crate::{check::state::CheckState, parser::top::enum_::Enum, project::decl::Decl};
+use crate::{parser::top::enum_::Enum, project::decl::Decl, resolve::state::ResolveState};
 
 impl Enum {
-    pub fn resolve(&self, state: &mut CheckState, decls: &mut HashMap<u32, Decl>) -> Decl {
+    pub fn resolve(&self, state: &mut ResolveState, decls: &mut HashMap<u32, Decl>) -> Decl {
         let generics = self.generics.0.resolve(state);
         let mut variants = vec![];
         for m in &self.members {

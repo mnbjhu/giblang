@@ -5,7 +5,7 @@ use super::CheckState;
 pub mod let_;
 
 impl<'proj> Stmt {
-    pub fn check(&'proj self, project: &'proj Project, state: &mut CheckState<'proj>) -> Ty {
+    pub fn check(&self, project: &'proj Project, state: &mut CheckState<'proj>) -> Ty {
         match self {
             Stmt::Let(l) => {
                 l.check(project, state);
@@ -16,7 +16,7 @@ impl<'proj> Stmt {
     }
 
     pub fn expect_is_instance(
-        &'proj self,
+        &self,
         expected: &Ty,
         project: &'proj Project,
         state: &mut CheckState<'proj>,
@@ -30,8 +30,8 @@ impl<'proj> Stmt {
                     state.simple_error(
                         &format!(
                             "Expected value to be of type '{}' but found '{}'",
-                            expected.get_name(project),
-                            actual.get_name(project),
+                            expected.get_name(state),
+                            actual.get_name(state),
                         ),
                         span,
                     );

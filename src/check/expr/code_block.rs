@@ -4,7 +4,7 @@ use crate::{
 
 pub fn check_code_block<'proj>(
     state: &mut CheckState<'proj>,
-    block: &'proj CodeBlock,
+    block: &CodeBlock,
     project: &'proj Project,
 ) -> Ty {
     state.enter_scope();
@@ -19,7 +19,7 @@ pub fn check_code_block<'proj>(
 pub fn check_code_block_is<'proj>(
     state: &mut CheckState<'proj>,
     expected: &Ty,
-    block: &'proj CodeBlock,
+    block: &CodeBlock,
     project: &'proj Project,
 ) -> Ty {
     if block.is_empty() {

@@ -18,7 +18,7 @@ impl<'proj> Top {
                 .get_decl(id)
                 .generics()
                 .iter()
-                .for_each(|g| state.insert_generic(g.name.to_string(), g.clone()));
+                .for_each(|g| state.insert_generic(g.name.0.to_string(), g.clone()));
         }
         match self {
             Top::Use(use_) => {
