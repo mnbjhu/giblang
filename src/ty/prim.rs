@@ -10,29 +10,52 @@ pub enum PrimTy {
     Int,
     Char,
 }
+
+impl Ty {
+    pub fn string() -> Self {
+        Ty::Named {
+            name: 1,
+            args: Vec::new(),
+        }
+    }
+
+    pub fn int() -> Self {
+        Ty::Named {
+            name: 2,
+            args: Vec::new(),
+        }
+    }
+
+    pub fn bool() -> Self {
+        Ty::Named {
+            name: 3,
+            args: Vec::new(),
+        }
+    }
+
+    pub fn float() -> Self {
+        Ty::Named {
+            name: 4,
+            args: Vec::new(),
+        }
+    }
+
+    pub fn char() -> Self {
+        Ty::Named {
+            name: 5,
+            args: Vec::new(),
+        }
+    }
+}
+
 impl From<&PrimTy> for Ty {
     fn from(value: &PrimTy) -> Self {
         match value {
-            PrimTy::String => Ty::Named {
-                name: 1,
-                args: vec![],
-            },
-            PrimTy::Int => Ty::Named {
-                name: 2,
-                args: vec![],
-            },
-            PrimTy::Bool => Ty::Named {
-                name: 3,
-                args: vec![],
-            },
-            PrimTy::Float => Ty::Named {
-                name: 4,
-                args: vec![],
-            },
-            PrimTy::Char => Ty::Named {
-                name: 5,
-                args: vec![],
-            },
+            PrimTy::String => Ty::string(),
+            PrimTy::Bool => Ty::bool(),
+            PrimTy::Float => Ty::float(),
+            PrimTy::Int => Ty::int(),
+            PrimTy::Char => Ty::char(),
         }
     }
 }
@@ -64,44 +87,10 @@ mod tests {
 
     #[test]
     fn from_prim() {
-        assert_eq!(
-            Ty::from(&PrimTy::String),
-            Ty::Named {
-                name: 1,
-                args: vec![]
-            }
-        );
-
-        assert_eq!(
-            Ty::from(&PrimTy::Int),
-            Ty::Named {
-                name: 2,
-                args: vec![]
-            }
-        );
-
-        assert_eq!(
-            Ty::from(&PrimTy::Bool),
-            Ty::Named {
-                name: 3,
-                args: vec![]
-            }
-        );
-
-        assert_eq!(
-            Ty::from(&PrimTy::Float),
-            Ty::Named {
-                name: 4,
-                args: vec![]
-            }
-        );
-
-        assert_eq!(
-            Ty::from(&PrimTy::Char),
-            Ty::Named {
-                name: 5,
-                args: vec![]
-            }
-        );
+        assert_eq!(Ty::from(&PrimTy::String), Ty::string());
+        assert_eq!(Ty::from(&PrimTy::Bool), Ty::bool());
+        assert_eq!(Ty::from(&PrimTy::Float), Ty::float());
+        assert_eq!(Ty::from(&PrimTy::Int), Ty::int());
+        assert_eq!(Ty::from(&PrimTy::Char), Ty::char());
     }
 }

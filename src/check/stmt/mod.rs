@@ -26,7 +26,7 @@ impl<'proj> Stmt {
             Stmt::Let(l) => {
                 l.check(project, state);
                 let actual = Ty::Tuple(vec![]);
-                if !expected.equals(&actual) {
+                if !expected.eq(&actual) {
                     state.simple_error(
                         &format!(
                             "Expected value to be of type '{}' but found '{}'",
