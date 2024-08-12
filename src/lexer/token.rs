@@ -118,4 +118,26 @@ mod tests {
         assert_eq!(punct(':'), Token::Punct(':'));
         assert_eq!(punct(';'), Token::Punct(';'));
     }
+
+    #[test]
+    fn test_display() {
+        assert_eq!(ident!(foo).to_string(), "foo");
+
+        assert_eq!(lit!("foo").to_string(), r#""foo""#);
+        assert_eq!(lit!(42).to_string(), "42");
+        assert_eq!(lit!(42.5).to_string(), "42.5");
+        assert_eq!(lit!('c').to_string(), "'c'");
+        assert_eq!(lit!(true).to_string(), "true");
+        assert_eq!(lit!(false).to_string(), "false");
+
+        assert_eq!(op!(+).to_string(), "+");
+        assert_eq!(op!(-).to_string(), "-");
+
+        assert_eq!(punct('(').to_string(), "(");
+        assert_eq!(punct(':').to_string(), ":");
+
+        assert_eq!(newline().to_string(), "newline");
+
+        assert_eq!(Token::Keyword(Keyword::Let).to_string(), "let");
+    }
 }
