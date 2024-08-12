@@ -1,9 +1,9 @@
 [package]
-name = "another-giblang-impl"
+name = "giblang"
 version = "0.1.0"
 edition = "2021"
 description = "Another implementation of the Giblang programming language"
-repository = "https:://github.com/mnbjhu/another-giblang-impl"
+repository = "https:://github.com/mnbjhu/giblang"
 rust-version = "1.74"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html

@@ -62,7 +62,7 @@ jobs:
     needs: test
     runs-on: ${{ matrix.OS }}
     env:
-      NAME: another-giblang-impl # change with the name of your project
+      NAME: giblang # change with the name of your project
       TARGET: ${{ matrix.TARGET }}
       OS: ${{ matrix.OS }}
     steps:
