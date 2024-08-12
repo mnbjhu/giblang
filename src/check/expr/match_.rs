@@ -8,7 +8,7 @@ impl<'proj> Match {
             if ret == Ty::Unknown {
                 ret = arm.check(project, state, expr_ty.clone());
             } else {
-                arm.expected_instance_of(&expr_ty, project, state, ret.clone());
+                arm.expected_instance_of(&ret, project, state, expr_ty.clone());
             }
         }
         ret
