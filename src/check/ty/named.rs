@@ -1,5 +1,3 @@
-use chumsky::container::Container;
-
 use crate::{check::state::CheckState, parser::common::type_::NamedType, project::Project, ty::Ty};
 
 impl NamedType {
@@ -19,19 +17,13 @@ impl NamedType {
                 .iter()
                 .map(|ty| (ty.0.check(project, state), ty.1))
                 .collect::<Vec<_>>();
-            let mut vars = vec![];
             for (gen, arg) in decl.generics().iter().zip(args.clone()) {
-                let var = state.type_state.new_type_var_with_bound(gen.clone());
-                if let Ty::TypeVar { id } = arg.0 {
-                    state.type_state.merge(id, var);
-                } else {
-                    state.type_state.add_explicit_type(var, arg);
-                }
-                vars.push(var);
+                arg.0
+                    .expect_is_instance_of(&gen.super_, state, false, arg.1);
             }
             return Ty::Named {
                 name: decl_id,
-                args: vars.into_iter().map(|id| Ty::TypeVar { id }).collect(),
+                args: args.iter().map(|(arg, _)| arg).cloned().collect(),
             };
         };
         Ty::Unknown

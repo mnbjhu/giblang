@@ -1,7 +1,5 @@
 use std::{collections::HashMap, vec};
 
-use chumsky::container::Container;
-
 use crate::{
     check::err::{simple::Simple, CheckError},
     parser::expr::qualified_name::SpannedQualifiedName,
@@ -151,7 +149,7 @@ impl<'file> CheckState<'file> {
             .filter_map(|var| {
                 if let MaybeTypeVar::Data(data) = var {
                     data.resolve();
-                    if let Ty::Unknown = data.resolved {
+                    if data.resolved.is_none() || matches!(data.resolved, Some(Ty::Unknown)) {
                         errs.push(CheckError::UnboundTypeVar(UnboundTypeVar {
                             file: self.file_data.end,
                             span: data.span,
@@ -177,8 +175,12 @@ impl<'file> CheckState<'file> {
 
         for (var, usage) in deferred {
             match usage {
-                TypeVarUsage::VarIsTy(ty) => var.expect_is_instance_of(&ty.0, self, false, ty.1),
-                TypeVarUsage::TyIsVar(ty) => ty.0.expect_is_instance_of(&var, self, false, ty.1),
+                TypeVarUsage::VarIsTy(ty) => {
+                    var.unwrap().expect_is_instance_of(&ty.0, self, false, ty.1)
+                }
+                TypeVarUsage::TyIsVar(ty) => {
+                    ty.0.expect_is_instance_of(&var.unwrap(), self, false, ty.1)
+                }
                 _ => todo!("Check if needed"),
             };
         }
@@ -186,7 +188,11 @@ impl<'file> CheckState<'file> {
     }
 
     pub fn get_resolved_type_var(&self, id: u32) -> Ty {
-        self.type_state.get_type_var(id).resolved.clone()
+        self.type_state
+            .get_type_var(id)
+            .resolved
+            .clone()
+            .expect("Type var should be resolved")
     }
 }
 
@@ -194,6 +200,7 @@ impl<'file> CheckState<'file> {
 mod tests {
     use crate::{
         check::{state::CheckState, ty::tests::parse_ty},
+        cli::build::build,
         project::Project,
         ty::Generic,
         util::Span,
@@ -259,5 +266,10 @@ mod tests {
         );
         state.exit_scope();
         assert!(state.get_generic("T").is_none());
+    }
+
+    #[test]
+    fn test_build() {
+        build();
     }
 }

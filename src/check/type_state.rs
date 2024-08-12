@@ -28,7 +28,7 @@ impl<'ast> TypeState<'ast> {
             bounds: vec![generic],
             usages: vec![],
             explicit: None,
-            resolved: Ty::Unknown,
+            resolved: None,
         });
         self.vars.insert(id, new);
         self.counter += 1;
@@ -108,7 +108,6 @@ impl<'ast> TypeState<'ast> {
     }
 
     pub fn merge(&mut self, first: u32, second: u32) {
-        println!("Merging ids {first} and {second}");
         let first = self.get_data_pointer(first);
         let second = self.get_data_pointer(second);
         if first == second {
@@ -149,17 +148,17 @@ pub struct TypeVarData<'ast> {
     pub bounds: Vec<Generic>,
     pub usages: Vec<TypeVarUsage<'ast>>,
     pub explicit: Option<Spanned<Ty>>,
-    pub resolved: Ty,
+    pub resolved: Option<Ty>,
     pub span: Span,
 }
 
 impl<'ast> TypeVarData<'ast> {
     fn new(span: Span) -> TypeVarData<'ast> {
         TypeVarData {
-            bounds: Default::default(),
-            usages: Default::default(),
-            explicit: Default::default(),
-            resolved: Default::default(),
+            bounds: Vec::default(),
+            usages: Vec::default(),
+            explicit: None,
+            resolved: None,
             span,
         }
     }
@@ -176,14 +175,15 @@ pub enum TypeVarUsage<'ast> {
 impl<'ast> TypeVarData<'ast> {
     pub fn resolve(&mut self) {
         if let Some(ty) = &self.explicit {
-            self.resolved = ty.0.clone();
+            self.resolved = Some(ty.0.clone());
         }
         if let Some(usage) = self.usages.first() {
             self.resolved = match usage {
-                TypeVarUsage::VarIsTy(ty) => ty.0.clone(),
-                TypeVarUsage::TyIsVar(ty) => ty.0.clone(),
+                TypeVarUsage::VarIsTy(ty) | TypeVarUsage::TyIsVar(ty) => Some(ty.0.clone()),
                 _ => todo!("Check if needed"),
             };
+        } else {
+            self.resolved = Some(Ty::Unknown);
         }
     }
 }

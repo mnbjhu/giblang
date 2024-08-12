@@ -24,47 +24,24 @@ impl Ty {
         let res = match (self, other) {
             (Ty::Unknown, _) | (_, Ty::Unknown) => true,
             (Ty::TypeVar { id }, _) => {
-                state
-                    .type_state
-                    .expected_var_is_ty(*id, other.clone(), span);
+                if explicit {
+                    state
+                        .type_state
+                        .add_explicit_type(*id, (other.clone(), span));
+                } else {
+                    state
+                        .type_state
+                        .expected_var_is_ty(*id, other.clone(), span);
+                }
                 true
             }
             (_, Ty::TypeVar { id }) => {
                 state.type_state.expected_var_is_ty(*id, self.clone(), span);
                 true
             }
-            (
-                Ty::Named { name, args },
-                Ty::Named {
-                    name: other_name,
-                    args: other_args,
-                },
-            ) => {
-                if let Some(Ty::Named {
-                    args: implied_args, ..
-                }) = self.imply_named_sub_ty(*other_name, state)
-                {
-                    let decl = state.project.get_decl(*name);
-                    let generics = decl.generics();
-                    for ((g, arg), other) in generics.iter().zip(implied_args).zip(other_args) {
-                        let variance = g.variance;
-                        match variance {
-                            Variance::Invariant => {
-                                arg.expect_is_instance_of(other, state, explicit, span);
-                                other.expect_is_instance_of(&arg, state, explicit, span);
-                            }
-                            Variance::Covariant => {
-                                arg.expect_is_instance_of(other, state, explicit, span);
-                            }
-                            Variance::Contravariant => {
-                                other.expect_is_instance_of(&arg, state, explicit, span);
-                            }
-                        }
-                    }
-                    true
-                } else {
-                    false
-                }
+            (_, Ty::Any) => true,
+            (Ty::Named { .. }, Ty::Named { .. }) => {
+                expect_named_is_instance_of_named(self, other, state, explicit, span)
             }
             (_, Ty::Sum(tys)) => tys
                 .iter()
@@ -153,6 +130,51 @@ fn path_to_sub_ty(name: u32, sub_ty: u32, state: &mut CheckState) -> Option<Vec<
         .find_map(|(id, n)| path_to_sub_ty(*n, sub_ty, state).map(|p| (id, p)))?;
     path.insert(0, id);
     Some(path)
+}
+
+fn expect_named_is_instance_of_named(
+    first: &Ty,
+    second: &Ty,
+    state: &mut CheckState,
+    explicit: bool,
+    span: Span,
+) -> bool {
+    if let (
+        Ty::Named { name, .. },
+        Ty::Named {
+            name: other_name,
+            args: other_args,
+        },
+    ) = (first, second)
+    {
+        if let Some(Ty::Named {
+            args: implied_args, ..
+        }) = first.imply_named_sub_ty(*other_name, state)
+        {
+            let decl = state.project.get_decl(*name);
+            let generics = decl.generics();
+            for ((g, arg), other) in generics.iter().zip(implied_args).zip(other_args) {
+                let variance = g.variance;
+                match variance {
+                    Variance::Invariant => {
+                        arg.expect_is_instance_of(other, state, explicit, span);
+                        other.expect_is_instance_of(&arg, state, explicit, span);
+                    }
+                    Variance::Covariant => {
+                        arg.expect_is_instance_of(other, state, explicit, span);
+                    }
+                    Variance::Contravariant => {
+                        other.expect_is_instance_of(&arg, state, explicit, span);
+                    }
+                }
+            }
+            true
+        } else {
+            false
+        }
+    } else {
+        panic!("Expected named types")
+    }
 }
 
 // impl Ty {

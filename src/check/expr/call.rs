@@ -58,13 +58,3 @@ impl<'proj> Call {
         actual
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use crate::cli::build::build;
-
-    #[test]
-    fn test_build() {
-        build();
-    }
-}

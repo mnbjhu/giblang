@@ -15,9 +15,7 @@ pub fn check_ident(state: &mut CheckState, path: &SpannedQualifiedName, project:
     }
     if let Some(decl_id) = state.get_decl_with_error(path) {
         let decl = project.get_decl(decl_id);
-        let ty = decl.get_ty(decl_id, state).inst(&mut HashMap::new(), state);
-        println!("{ty:#?}");
-        ty
+        decl.get_ty(decl_id, state).inst(&mut HashMap::new(), state)
     } else {
         Ty::Unknown
     }

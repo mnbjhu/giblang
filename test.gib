@@ -14,9 +14,5 @@ enum Result[R, E] {
 struct Box[T](T)
 
 fn main() {
-  let first: Option[()] = Option::None
-  let test = match first {
-    Option::Some(some) => Result::Ok("Hello"),
-    Option::None => Result::Err(123)
-  }
+  let test2: Option[String] = Option::Some(123)
 }
