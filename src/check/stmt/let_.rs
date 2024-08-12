@@ -42,18 +42,19 @@ mod tests {
         let let_ = parser.parse(input).unwrap();
         state.enter_scope();
         let_.check(project, state);
+        state.resolve_type_vars();
         state.errors.clone()
     }
 
-    fn assert_type_var_resolved(ty: &Ty, state: &CheckState) -> Ty {
-        if let Ty::TypeVar { id } = ty {
-            let var = state.get_type_var(*id).expect("Unable to find type var");
-            var.ty.as_ref().expect("Type not resolved").clone()
-        } else {
-            panic!("Expected type var");
-        }
-    }
-
+    // fn assert_type_var_resolved(ty: &Ty, state: &CheckState) -> Ty {
+    //     if let Ty::TypeVar { id } = ty {
+    //         let var = state.get_type_var(*id).expect("Unable to find type var");
+    //         var.ty.as_ref().expect("Type not resolved").clone()
+    //     } else {
+    //         panic!("Expected type var");
+    //     }
+    // }
+    //
     #[test]
     fn test_let() {
         let project = Project::check_test();
@@ -84,43 +85,49 @@ mod tests {
         assert_eq!(*ty, Ty::Unknown);
     }
 
-    // #[test]
-    // fn imply_option() {
-    //     let project = Project::check_test();
-    //     let mut state = check_test_state(&project);
-    //     let errors = check_let("let x = Option::Some(5)", &project, &mut state);
-    //     assert_eq!(errors, vec![]);
-    //     let ty = state
-    //         .get_variable("x")
-    //         .expect("Expected state to have variable x");
-    //     if let Ty::Named { name, args } = ty {
-    //         assert_eq!(project.get_decl(*name).name(), "Option");
-    //         assert_eq!(args.len(), 1);
-    //         let inner = assert_type_var_resolved(&args[0], &state);
-    //         assert_eq!(inner, Ty::int());
-    //     } else {
-    //         panic!("Expected Named ty");
-    //     }
-    // }
+    #[test]
+    fn imply_option() {
+        let project = Project::check_test();
+        let mut state = check_test_state(&project);
+        let errors = check_let("let x = Option::Some(5)", &project, &mut state);
+        assert_eq!(errors, vec![]);
 
-    // #[test]
-    // fn imply_option_with_wildcard() {
-    //     let project = Project::check_test();
-    //     let mut state = check_test_state(&project);
-    //     let errors = check_let("let x: Option[_] = Option::Some(5)", &project, &mut state);
-    //     assert_eq!(errors, vec![]);
-    //     let ty = state
-    //         .get_variable("x")
-    //         .expect("Expected state to have variable x");
-    //     if let Ty::Named { name, args } = ty {
-    //         assert_eq!(project.get_decl(*name).name(), "Option");
-    //         assert_eq!(args.len(), 1);
-    //         let inner = assert_type_var_resolved(&args[0], &state);
-    //         assert_eq!(inner, Ty::int());
-    //     } else {
-    //         panic!("Expected Named ty");
-    //     }
-    // }
+        let ty = state
+            .get_variable("x")
+            .expect("Expected state to have variable x");
+
+        if let Ty::Named { name, args } = ty {
+            assert_eq!(project.get_decl(*name).name(), "Option");
+            assert_eq!(args.len(), 1);
+            if let Ty::TypeVar { id } = args[0] {
+                let resolved = state.get_resolved_type_var(id);
+                assert_eq!(resolved, Ty::int());
+            }
+        } else {
+            panic!("Expected Named ty");
+        }
+    }
+
+    #[test]
+    fn imply_option_with_wildcard() {
+        let project = Project::check_test();
+        let mut state = check_test_state(&project);
+        let errors = check_let("let x: Option[_] = Option::Some(5)", &project, &mut state);
+        assert_eq!(errors, vec![]);
+        let ty = state
+            .get_variable("x")
+            .expect("Expected state to have variable x");
+        if let Ty::Named { name, args } = ty {
+            assert_eq!(project.get_decl(*name).name(), "Option");
+            assert_eq!(args.len(), 1);
+            if let Ty::TypeVar { id } = args[0] {
+                let resolved = state.get_resolved_type_var(id);
+                assert_eq!(resolved, Ty::int())
+            }
+        } else {
+            panic!("Expected Named ty");
+        }
+    }
 
     #[test]
     fn imply_int() {
@@ -138,12 +145,17 @@ mod tests {
     fn imply_int_with_wildcard() {
         let project = Project::check_test();
         let mut state = check_test_state(&project);
+
         let errors = check_let("let x: _ = 5", &project, &mut state);
         assert_eq!(errors, vec![]);
+
         let ty = state
             .get_variable("x")
             .expect("Expected state to have variable x");
-        let inner = assert_type_var_resolved(ty, &state);
-        assert_eq!(inner, Ty::int());
+
+        if let Ty::TypeVar { id } = ty {
+            let resolved = state.get_resolved_type_var(*id);
+            assert_eq!(resolved, Ty::int());
+        }
     }
 }

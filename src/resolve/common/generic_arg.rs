@@ -7,7 +7,7 @@ use crate::{
 impl GenericArg {
     pub fn resolve(&self, state: &mut ResolveState<'_>) -> Generic {
         let res = Generic {
-            name: self.name.0.to_string(),
+            name: self.name.clone(),
             variance: self.variance,
             super_: Box::new(
                 self.super_

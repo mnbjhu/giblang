@@ -102,12 +102,12 @@ mod tests {
             assert_eq!(generics.len(), 2);
 
             let first_arg = &generics[0];
-            assert_eq!(first_arg.name, "T");
+            assert_eq!(first_arg.name.0, "T");
             assert_eq!(first_arg.super_.as_ref(), &Ty::Any);
             assert_eq!(first_arg.variance, Variance::Invariant);
 
             let second_arg = &generics[1];
-            assert_eq!(second_arg.name, "U");
+            assert_eq!(second_arg.name.0, "U");
             assert_eq!(second_arg.super_.as_ref(), &parse_ty(&project, "Bar"));
             assert_eq!(second_arg.variance, Variance::Covariant);
 

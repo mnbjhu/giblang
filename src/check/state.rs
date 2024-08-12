@@ -1,11 +1,19 @@
-use std::collections::HashMap;
+use core::panic;
+use std::{collections::HashMap, vec};
+
+use chumsky::container::Container;
 
 use crate::{
     check::err::{simple::Simple, CheckError},
-    parser::expr::qualified_name::SpannedQualifiedName,
+    parser::expr::{qualified_name::SpannedQualifiedName, Expr},
     project::{file_data::FileData, name::QualifiedName, Project, TypeVar},
     ty::{Generic, Ty},
     util::{Span, Spanned},
+};
+
+use super::{
+    err::unresolved_type_var::UnboundTypeVar,
+    type_state::{MaybeTypeVar, TypeState, TypeVarData, TypeVarUsage},
 };
 
 pub struct CheckState<'file> {
@@ -15,8 +23,7 @@ pub struct CheckState<'file> {
     pub file_data: &'file FileData,
     pub project: &'file Project,
     pub errors: Vec<CheckError>,
-    type_vars: Vec<TypeVar>,
-    var_count: u32,
+    pub type_state: TypeState<'file>,
 }
 
 impl<'file> CheckState<'file> {
@@ -28,8 +35,7 @@ impl<'file> CheckState<'file> {
             file_data,
             project,
             errors: vec![],
-            type_vars: vec![],
-            var_count: 0,
+            type_state: TypeState::default(),
         };
         let mut path = file_data.get_path();
         for (top, _) in &file_data.ast {
@@ -137,27 +143,52 @@ impl<'file> CheckState<'file> {
         None
     }
 
-    pub fn add_type_bound(&mut self, id: u32, ty: Ty) {
-        if let Some(vars) = self.type_vars.get_mut(id as usize) {
-            vars.ty = Some(ty);
-        } else {
-            panic!("Failed to find type var with id {id}");
+    pub fn resolve_type_vars(&mut self) {
+        let mut errs = vec![];
+        let deferred = self
+            .type_state
+            .vars
+            .values_mut()
+            .filter_map(|var| {
+                if let MaybeTypeVar::Data(data) = var {
+                    data.resolve();
+                    if let Ty::Unknown = data.resolved {
+                        errs.push(CheckError::UnboundTypeVar(UnboundTypeVar {
+                            file: self.file_data.end,
+                            span: data.span,
+                            name: data
+                                .bounds
+                                .first()
+                                .map(|g| g.name.0.to_string())
+                                .unwrap_or("_".to_string()),
+                        }));
+                        None
+                    } else {
+                        Some(data)
+                    }
+                } else {
+                    None
+                }
+            })
+            .flat_map(|data| {
+                data.usages
+                    .iter()
+                    .map(|u| (data.resolved.clone(), u.clone()))
+            })
+            .collect::<Vec<_>>();
+
+        for (var, usage) in deferred {
+            match usage {
+                TypeVarUsage::VarIsTy(ty) => var.expect_is_instance_of(&ty.0, self, false, ty.1),
+                TypeVarUsage::TyIsVar(ty) => ty.0.expect_is_instance_of(&var, self, false, ty.1),
+                _ => todo!("Check if needed"),
+            };
         }
+        self.errors.extend(errs);
     }
 
-    pub fn add_type_var(&mut self, generic: Generic) -> u32 {
-        let id = self.var_count;
-        self.var_count += 1;
-        self.type_vars.push(TypeVar {
-            id,
-            generic,
-            ty: None,
-        });
-        id
-    }
-
-    pub fn get_type_var(&self, id: u32) -> Option<&TypeVar> {
-        self.type_vars.get(id as usize)
+    pub fn get_resolved_type_var(&self, id: u32) -> Ty {
+        self.type_state.get_type_var(id).resolved.clone()
     }
 }
 
@@ -167,6 +198,7 @@ mod tests {
         check::{state::CheckState, ty::tests::parse_ty},
         project::Project,
         ty::Generic,
+        util::Span,
     };
 
     fn test_project() -> Project {
@@ -221,17 +253,11 @@ mod tests {
         state.enter_scope();
         state.insert_generic(
             "T".to_string(),
-            Generic {
-                name: "T".to_string(),
-                ..Default::default()
-            },
+            Generic::new(("T".to_string(), Span::splat(0))),
         );
         assert_eq!(
             *state.get_generic("T").unwrap(),
-            Generic {
-                name: "T".to_string(),
-                ..Default::default()
-            }
+            Generic::new(("T".to_string(), Span::splat(0))),
         );
         state.exit_scope();
         assert!(state.get_generic("T").is_none());

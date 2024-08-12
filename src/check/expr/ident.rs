@@ -15,7 +15,9 @@ pub fn check_ident(state: &mut CheckState, path: &SpannedQualifiedName, project:
     }
     if let Some(decl_id) = state.get_decl_with_error(path) {
         let decl = project.get_decl(decl_id);
-        decl.get_ty(decl_id, state).inst(&mut HashMap::new(), state)
+        let ty = decl.get_ty(decl_id, state).inst(&mut HashMap::new(), state);
+        println!("{ty:#?}");
+        ty
     } else {
         Ty::Unknown
     }
@@ -33,18 +35,7 @@ pub fn check_ident_is(
 }
 
 pub fn check_ty(actual: Ty, expected: &Ty, state: &mut CheckState<'_>, span: Span) -> Ty {
-    actual.imply_type_vars(expected, state);
-    if !actual.is_instance_of(expected, state, true) {
-        state.simple_error(
-            &format!(
-                "Expected value to be of type '{}' but found '{}'",
-                expected.get_name(state),
-                actual.get_name(state),
-            ),
-            span,
-        );
-    }
-    // TODO: Consider whether to pass through or use Ty::Unknown
+    actual.expect_is_instance_of(expected, state, false, span);
     actual
 }
 

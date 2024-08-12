@@ -14,7 +14,7 @@ impl GenericArg {
         };
 
         Ty::Generic(Generic {
-            name: self.name.0.clone(),
+            name: self.name.clone(),
             variance: self.variance,
             super_: Box::new(super_),
         })

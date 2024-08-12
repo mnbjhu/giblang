@@ -1,4 +1,6 @@
-use crate::{check::state::CheckState, parser::common::variance::Variance};
+use std::default;
+
+use crate::{check::state::CheckState, parser::common::variance::Variance, util::Spanned};
 
 pub mod combine;
 pub mod disp;
@@ -11,35 +13,34 @@ pub mod prim;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Generic {
-    pub name: String,
+    pub name: Spanned<String>,
     pub variance: Variance,
     pub super_: Box<Ty>,
 }
 
-impl Default for Generic {
-    fn default() -> Self {
-        Self {
-            name: "_".to_string(),
+impl Generic {
+    pub fn new(name: Spanned<String>) -> Generic {
+        Generic {
+            name,
             variance: Variance::Invariant,
             super_: Box::new(Ty::Any),
         }
     }
-}
 
-impl Generic {
     pub fn get_name(&self, state: &CheckState) -> String {
         format!(
             "{}{}: {}",
             self.variance,
-            self.name,
+            self.name.0,
             self.super_.get_name(state)
         )
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Default)]
 pub enum Ty {
     Any,
+    #[default]
     Unknown,
     Named {
         name: u32,
@@ -113,13 +114,8 @@ impl Ty {
                 format!("({tys})")
             }
             Ty::TypeVar { id } => {
-                let var = state.get_type_var(*id);
-                if let Some(var) = var {
-                    if let Some(ty) = &var.ty {
-                        return ty.get_name(state);
-                    }
-                }
-                "unknown".to_string()
+                let var = state.get_resolved_type_var(*id);
+                var.get_name(state)
             }
         }
     }

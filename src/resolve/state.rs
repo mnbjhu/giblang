@@ -5,7 +5,7 @@ use crate::{
     parser::{common::variance::Variance, expr::qualified_name::SpannedQualifiedName},
     project::{file_data::FileData, name::QualifiedName, Project},
     ty::{Generic, Ty},
-    util::Spanned,
+    util::{Span, Spanned},
 };
 
 pub struct ResolveState<'file> {
@@ -17,11 +17,11 @@ pub struct ResolveState<'file> {
 }
 
 impl<'file> ResolveState<'file> {
-    pub fn add_self_ty(&mut self, super_: Ty) {
+    pub fn add_self_ty(&mut self, super_: Ty, span: Span) {
         self.insert_generic(
             "Self".to_string(),
             Generic {
-                name: "Self".to_string(),
+                name: ("Self".to_string(), span),
                 variance: Variance::Invariant,
                 super_: Box::new(super_),
             },
@@ -126,6 +126,7 @@ mod tests {
         check::{state::CheckState, ty::tests::parse_ty},
         project::Project,
         ty::Generic,
+        util::Span,
     };
 
     fn test_project() -> Project {
@@ -180,17 +181,11 @@ mod tests {
         state.enter_scope();
         state.insert_generic(
             "T".to_string(),
-            Generic {
-                name: "T".to_string(),
-                ..Default::default()
-            },
+            Generic::new(("T".to_string(), Span::splat(0))),
         );
         assert_eq!(
             *state.get_generic("T").unwrap(),
-            Generic {
-                name: "T".to_string(),
-                ..Default::default()
-            }
+            Generic::new(("T".to_string(), Span::splat(0))),
         );
         state.exit_scope();
         assert!(state.get_generic("T").is_none());

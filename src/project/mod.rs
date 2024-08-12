@@ -35,6 +35,7 @@ pub struct Project {
 }
 
 pub struct ImplData {
+    pub id: u32,
     pub generics: Vec<Generic>,
     pub from: Ty,
     pub to: Ty,
@@ -172,6 +173,19 @@ impl Project {
         errors
     }
 
+    pub fn check_with_errors(&self) {
+        for file in &self.files {
+            let mut state = CheckState::from_file(file, self);
+            for item in &file.ast {
+                item.0.check(self, &mut state);
+            }
+            state.resolve_type_vars();
+            for err in &state.errors {
+                state.print_error(err);
+            }
+        }
+    }
+
     #[must_use]
     pub fn new() -> Project {
         let mut decls = HashMap::new();
@@ -201,6 +215,10 @@ impl Project {
     #[must_use]
     pub fn get_counter(&self) -> u32 {
         self.counter
+    }
+
+    pub fn get_impl(&self, id: &u32) -> &ImplData {
+        self.impls.get(id).expect("Invalid impl id")
     }
 }
 

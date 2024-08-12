@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::{
     check::state::CheckState,
     ty::{prim::PrimTy, Generic, Ty},
@@ -68,11 +70,11 @@ impl Decl {
     }
 
     pub fn get_ty(&self, id: u32, state: &mut CheckState) -> Ty {
-        let self_ty = self.get_named_ty(state, id);
         match self {
             Decl::Trait { .. } => todo!(),
             Decl::Enum { .. } => todo!(),
             Decl::Member { body, .. } | Decl::Struct { body, .. } => {
+                let self_ty = self.get_named_ty(state, id);
                 body.get_constructor_ty(self_ty)
             }
             Decl::Function {
@@ -105,10 +107,7 @@ impl Decl {
                     .generics()
                     .iter()
                     .cloned()
-                    .map(|g| {
-                        let id = state.add_type_var(g);
-                        Ty::TypeVar { id }
-                    })
+                    .map(Ty::Generic)
                     .collect(),
             }
         } else {

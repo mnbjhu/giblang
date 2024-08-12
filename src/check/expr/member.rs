@@ -1,10 +1,7 @@
 use std::collections::HashMap;
 
 use crate::{
-    check::state::CheckState,
-    parser::expr::{member::MemberCall, Expr},
-    project::Project,
-    ty::Ty,
+    check::state::CheckState, parser::expr::member::MemberCall, project::Project, ty::Ty,
     util::Span,
 };
 
@@ -23,7 +20,10 @@ impl MemberCall {
             let mut generics = ty.get_generic_params();
             let mut implied = HashMap::<String, Ty>::new();
 
-            imply_generic(self.rec.0.as_ref(), receiver, project, state, self.rec.1);
+            self.rec
+                .0
+                .as_ref()
+                .expect_instance_of(receiver, project, state, self.rec.1);
 
             if expected_args.len() != self.args.len() {
                 state.simple_error(
@@ -40,19 +40,19 @@ impl MemberCall {
                 .iter()
                 .zip(expected_args)
                 .for_each(|((arg, span), expected)| {
-                    imply_generic(arg, expected, project, state, *span);
+                    arg.expect_instance_of(expected, project, state, *span);
                 });
 
-            generics.retain(|g| !implied.contains_key(&g.name));
+            generics.retain(|g| !implied.contains_key(&g.name.0));
             for g in &generics {
-                implied.insert(g.name.clone(), Ty::Unknown);
+                implied.insert(g.name.0.clone(), Ty::Unknown);
             }
 
             if !generics.is_empty() {
                 let not_implied = generics
                     .iter()
                     .cloned()
-                    .map(|g| g.name)
+                    .map(|g| g.name.0)
                     .collect::<Vec<_>>()
                     .join(", ");
                 state.simple_error(
@@ -75,23 +75,7 @@ impl MemberCall {
         span: Span,
     ) -> Ty {
         let actual = self.check(project, state);
-        if !actual.is_instance_of(expected, state, true) {
-            state.simple_error(
-                &format!("Expected value to be of type '{expected}' but found '{actual}'",),
-                span,
-            );
-        }
+        actual.expect_is_instance_of(expected, state, false, span);
         actual
     }
-}
-
-fn imply_generic<'module>(
-    actual: &Expr,
-    expected: &Ty,
-    project: &'module Project,
-    state: &mut CheckState<'module>,
-    span: chumsky::prelude::SimpleSpan,
-) {
-    let actual = actual.expect_instance_of(expected, project, state, span);
-    expected.imply_type_vars(&actual, state);
 }

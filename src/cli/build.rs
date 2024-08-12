@@ -12,10 +12,7 @@ pub fn build() {
     for error in &errors {
         project.print_resolve_error(error);
     }
-    let errors = project.check();
-    for error in &errors {
-        project.print_error(error);
-    }
+    project.check_with_errors();
 }
 
 pub fn print_error<T: Display>(error: &Rich<'_, T>, source: Source, name: &str, code: &str) {

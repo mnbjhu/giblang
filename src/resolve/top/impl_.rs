@@ -11,7 +11,7 @@ impl Impl {
         let generics = self.generics.resolve(state);
         let to = self.trait_.0.resolve(state);
         let from = self.for_.0.resolve(state);
-        state.add_self_ty(from.clone());
+        state.add_self_ty(from.clone(), self.for_.1);
         let mut functions = Vec::new();
         for func in &self.body {
             state.enter_scope();
@@ -26,6 +26,7 @@ impl Impl {
             from,
             to,
             functions,
+            id: self.id,
         }
     }
 }
@@ -142,7 +143,7 @@ mod tests {
             assert_eq!(generics.len(), 0);
 
             if let Some(Ty::Generic(rec)) = &receiver {
-                assert_eq!(rec.name, "Self");
+                assert_eq!(rec.name.0, "Self");
                 assert_eq!(rec.variance, Variance::Invariant);
                 if let Ty::Named { name, args } = rec.super_.as_ref() {
                     assert_eq!(*name, foo,);

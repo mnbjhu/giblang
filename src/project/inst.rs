@@ -6,11 +6,11 @@ impl Ty {
     pub fn inst(&self, ids: &mut HashMap<String, u32>, state: &mut CheckState) -> Ty {
         match self {
             Ty::Generic(g) => {
-                let id = if let Some(id) = ids.get(&g.name) {
+                let id = if let Some(id) = ids.get(&g.name.0) {
                     *id
                 } else {
-                    let id = state.add_type_var(g.clone());
-                    ids.insert(g.name.clone(), id);
+                    let id = state.type_state.new_type_var_with_bound(g.clone());
+                    ids.insert(g.name.0.clone(), id);
                     id
                 };
                 Ty::TypeVar { id }

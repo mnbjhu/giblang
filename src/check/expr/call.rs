@@ -32,7 +32,7 @@ impl<'proj> Call {
                 .zip(expected_args)
                 .for_each(|((arg, span), expected)| {
                     let actual = arg.expect_instance_of(expected, project, state, *span);
-                    expected.imply_type_vars(&actual, state);
+                    expected.expect_is_instance_of(&actual, state, false, *span);
                 });
             ret.as_ref().clone()
         } else if let Ty::Unknown = name_ty {
@@ -54,16 +54,17 @@ impl<'proj> Call {
         span: Span,
     ) -> Ty {
         let actual = self.check(project, state);
-        if !actual.is_instance_of(expected, state, true) {
-            state.simple_error(
-                &format!(
-                    "Expected value to be of type '{}' but found '{}'",
-                    expected.get_name(state),
-                    actual.get_name(state),
-                ),
-                span,
-            );
-        }
+        actual.expect_is_instance_of(expected, state, false, span);
         actual
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::cli::build::build;
+
+    #[test]
+    fn test_build() {
+        build();
     }
 }

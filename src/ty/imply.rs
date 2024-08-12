@@ -1,17 +1,13 @@
-use crate::check::state::CheckState;
+use std::collections::HashMap;
 
 use super::Ty;
 
+// TODO: Makes assumptions about correct generic args
 impl Ty {
-    pub fn imply_type_vars(&self, other: &Ty, state: &mut CheckState) {
+    pub fn imply_generic_args(&self, other: &Ty, implied: &mut HashMap<String, Ty>) {
         match (self, other) {
-            (Ty::TypeVar { id }, other) => {
-                if let Ty::TypeVar { id: other_id } = other {
-                    if id == other_id {
-                        return;
-                    }
-                }
-                state.add_type_bound(*id, other.clone());
+            (Ty::Generic(g), _) => {
+                implied.insert(g.name.0.to_string(), other.clone());
             }
             (
                 Ty::Named { name, args },
@@ -22,13 +18,13 @@ impl Ty {
             ) => {
                 if name == other_name && args.len() == other_args.len() {
                     for (s, o) in args.iter().zip(other_args) {
-                        s.imply_type_vars(o, state);
+                        s.imply_generic_args(o, implied);
                     }
                 }
             }
             (Ty::Sum(s), Ty::Sum(other)) | (Ty::Tuple(s), Ty::Tuple(other)) => {
                 for (s, o) in s.iter().zip(other) {
-                    s.imply_type_vars(o, state);
+                    s.imply_generic_args(o, implied);
                 }
             }
             (
@@ -44,12 +40,12 @@ impl Ty {
                 },
             ) => {
                 if let (Some(s), Some(other)) = (receiver, other_receiver) {
-                    s.imply_type_vars(other, state);
+                    s.imply_generic_args(other, implied);
                 }
                 for (s, o) in args.iter().zip(other_args) {
-                    s.imply_type_vars(o, state);
+                    s.imply_generic_args(o, implied);
                 }
-                ret.imply_type_vars(other_ret, state);
+                ret.imply_generic_args(other_ret, implied);
             }
             _ => {}
         }

@@ -1,3 +1,5 @@
+use chumsky::container::Container;
+
 use crate::{check::state::CheckState, parser::common::type_::NamedType, project::Project, ty::Ty};
 
 impl NamedType {
@@ -15,21 +17,15 @@ impl NamedType {
             let args = self
                 .args
                 .iter()
-                .map(|ty| ty.0.check(project, state))
+                .map(|ty| (ty.0.check(project, state), ty.1))
                 .collect::<Vec<_>>();
             let mut vars = vec![];
             for (gen, arg) in decl.generics().iter().zip(args.clone()) {
-                let var = state.add_type_var(gen.clone());
-                if arg.is_instance_of(gen.super_.as_ref(), state, true) {
-                    state.add_type_bound(var, arg);
+                let var = state.type_state.new_type_var_with_bound(gen.clone());
+                if let Ty::TypeVar { id } = arg.0 {
+                    state.type_state.merge(id, var);
                 } else {
-                    state.simple_error(
-                        &format!(
-                            "Type argument {} is not a subtype of the generic constraint {}",
-                            arg, gen.super_
-                        ),
-                        self.name[0].1,
-                    );
+                    state.type_state.add_explicit_type(var, arg);
                 }
                 vars.push(var);
             }

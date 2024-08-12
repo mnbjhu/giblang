@@ -7,10 +7,13 @@ use super::Decl;
 impl Trait {
     pub fn resolve(&self, state: &mut ResolveState, decls: &mut HashMap<u32, Decl>) -> Decl {
         let generics = self.generics.resolve(state);
-        state.add_self_ty(Ty::Named {
-            name: self.id,
-            args: generics.iter().map(|g| Ty::Generic(g.clone())).collect(),
-        });
+        state.add_self_ty(
+            Ty::Named {
+                name: self.id,
+                args: generics.iter().map(|g| Ty::Generic(g.clone())).collect(),
+            },
+            self.name.1,
+        );
         let name = self.name.clone();
         let mut body = Vec::new();
         for func in &self.body {
