@@ -237,8 +237,8 @@ mod tests {
         let project = Project::ty_test();
         let file_data = project.get_file(project.get_counter()).unwrap();
         let mut state = CheckState::from_file(file_data, &project);
-        let first = parse_ty_with_state(&project, &mut state, first);
-        let second = parse_ty_with_state(&project, &mut state, second);
+        let first = parse_ty_with_state(&mut state, first);
+        let second = parse_ty_with_state(&mut state, second);
         let res = first.expect_is_instance_of(&second, &mut state, false, Span::splat(0));
         assert_eq!(state.errors, vec![]);
         assert!(
@@ -253,8 +253,8 @@ mod tests {
         let project = Project::ty_test();
         let file_data = project.get_file(project.get_counter()).unwrap();
         let mut state = CheckState::from_file(file_data, &project);
-        let first = parse_ty_with_state(&project, &mut state, first);
-        let second = parse_ty_with_state(&project, &mut state, second);
+        let first = parse_ty_with_state(&mut state, first);
+        let second = parse_ty_with_state(&mut state, second);
         let res = first.expect_is_instance_of(&second, &mut state, false, Span::splat(0));
         assert!(
             !res,

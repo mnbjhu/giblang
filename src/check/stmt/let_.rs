@@ -31,11 +31,7 @@ mod tests {
         util::Span,
     };
 
-    fn check_let<'project>(
-        text: &'static str,
-        project: &'project Project,
-        state: &mut CheckState<'project>,
-    ) -> Vec<CheckError> {
+    fn check_let(text: &'static str, state: &mut CheckState) -> Vec<CheckError> {
         let tokens = lexer().parse(text).unwrap();
         let input = tokens.spanned(Span::splat(text.len()));
         let parser = let_parser(expr_parser(stmt_parser()));
@@ -50,7 +46,7 @@ mod tests {
     fn test_let() {
         let project = Project::check_test();
         let mut state = check_test_state(&project);
-        let errors = check_let("let x = 5", &project, &mut state);
+        let errors = check_let("let x = 5", &mut state);
         assert!(errors.is_empty());
         let ty = state
             .get_variable("x")
@@ -62,7 +58,7 @@ mod tests {
     fn test_let_ty() {
         let project = Project::check_test();
         let mut state = check_test_state(&project);
-        let errors = check_let("let x: Abc = 5", &project, &mut state);
+        let errors = check_let("let x: Abc = 5", &mut state);
         assert_eq!(errors.len(), 1);
         let error = errors.first().unwrap();
         if let CheckError::Unresolved(unresolved) = error {
@@ -80,7 +76,7 @@ mod tests {
     fn imply_option() {
         let project = Project::check_test();
         let mut state = check_test_state(&project);
-        check_let("let x = Option::Some(5)", &project, &mut state);
+        check_let("let x = Option::Some(5)", &mut state);
         state.resolve_type_vars();
         assert_eq!(state.errors, vec![]);
 
@@ -104,7 +100,7 @@ mod tests {
     fn imply_option_with_wildcard() {
         let project = Project::check_test();
         let mut state = check_test_state(&project);
-        check_let("let x: Option[_] = Option::Some(5)", &project, &mut state);
+        check_let("let x: Option[_] = Option::Some(5)", &mut state);
         state.resolve_type_vars();
         assert_eq!(state.errors, vec![]);
         let ty = state
@@ -126,7 +122,7 @@ mod tests {
     fn fails_to_imply_none() {
         let project = Project::check_test();
         let mut state = check_test_state(&project);
-        check_let("let x = Option::None", &project, &mut state);
+        check_let("let x = Option::None", &mut state);
         assert_eq!(state.type_state.vars.len(), 1);
         assert_eq!(state.errors.len(), 1);
 
@@ -150,7 +146,7 @@ mod tests {
     fn test_unresolved_type_var() {
         let project = Project::check_test();
         let mut state = check_test_state(&project);
-        let type_var = parse_ty_with_state(&project, &mut state, "_");
+        let type_var = parse_ty_with_state(&mut state, "_");
         assert_eq!(type_var, Ty::TypeVar { id: 0 });
         state.resolve_type_vars();
         assert_eq!(state.errors.len(), 1);
@@ -165,8 +161,8 @@ mod tests {
     fn test_imply_type() {
         let project = Project::check_test();
         let mut state = check_test_state(&project);
-        let type_var = parse_ty_with_state(&project, &mut state, "_");
-        let string_ty = parse_ty_with_state(&project, &mut state, "String");
+        let type_var = parse_ty_with_state(&mut state, "_");
+        let string_ty = parse_ty_with_state(&mut state, "String");
         type_var.expect_is_instance_of(&string_ty, &mut state, false, Span::splat(0));
         assert_eq!(type_var, Ty::TypeVar { id: 0 });
         state.resolve_type_vars();
@@ -178,7 +174,7 @@ mod tests {
     fn imply_int() {
         let project = Project::check_test();
         let mut state = check_test_state(&project);
-        let errors = check_let("let x = 5", &project, &mut state);
+        let errors = check_let("let x = 5", &mut state);
         assert_eq!(errors, vec![]);
         let ty = state
             .get_variable("x")
@@ -191,7 +187,7 @@ mod tests {
         let project = Project::check_test();
         let mut state = check_test_state(&project);
 
-        let errors = check_let("let x: _ = 5", &project, &mut state);
+        let errors = check_let("let x: _ = 5", &mut state);
         assert_eq!(errors, vec![]);
 
         let ty = state

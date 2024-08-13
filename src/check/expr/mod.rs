@@ -58,7 +58,7 @@ mod tests {
     use chumsky::input::Input;
     use chumsky::Parser;
 
-    pub fn parse_expr<'proj>(state: &mut CheckState<'proj>, expr: &str) -> Ty {
+    pub fn parse_expr(state: &mut CheckState, expr: &str) -> Ty {
         let eoi = Span::splat(expr.len());
         let tokens = lexer().parse(expr).unwrap();
         let ty = expr_parser(stmt_parser())
@@ -67,11 +67,7 @@ mod tests {
         ty.check(state)
     }
 
-    pub fn parse_expr_with_expected<'proj>(
-        state: &mut CheckState<'proj>,
-        expected: &Ty,
-        expr: &str,
-    ) {
+    pub fn parse_expr_with_expected(state: &mut CheckState, expected: &Ty, expr: &str) {
         let eoi = Span::splat(expr.len());
         let tokens = lexer().parse(expr).unwrap();
         let expr = expr_parser(stmt_parser())

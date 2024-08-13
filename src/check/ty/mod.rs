@@ -76,18 +76,14 @@ pub mod tests {
         (ty.check(&mut state), state.errors)
     }
 
-    pub fn try_parse_ty_with_state(
-        project: &Project,
-        state: &mut CheckState,
-        ty: &str,
-    ) -> (Ty, Vec<CheckError>) {
+    pub fn try_parse_ty_with_state(state: &mut CheckState, ty: &str) -> (Ty, Vec<CheckError>) {
         let eoi = Span::splat(ty.len());
         let tokens = lexer().parse(ty).unwrap();
         let ty = type_parser().parse(tokens.spanned(eoi)).unwrap();
         (ty.check(state), state.errors.clone())
     }
 
-    pub fn parse_ty_with_state(project: &Project, state: &mut CheckState, ty: &str) -> Ty {
+    pub fn parse_ty_with_state(state: &mut CheckState, ty: &str) -> Ty {
         let eoi = Span::splat(ty.len());
         let tokens = lexer().parse(ty).unwrap();
         let ty = type_parser().parse(tokens.spanned(eoi)).unwrap();
@@ -149,7 +145,7 @@ pub mod tests {
     fn check_bar() {
         let project = Project::check_test();
         let mut state = check_test_state(&project);
-        let (bar, _) = try_parse_ty_with_state(&project, &mut state, "Bar[Foo]");
+        let (bar, _) = try_parse_ty_with_state(&mut state, "Bar[Foo]");
         state.resolve_type_vars();
         assert_eq!(state.errors, vec![]);
         if let Ty::Named { name, args } = bar {
@@ -165,7 +161,7 @@ pub mod tests {
     fn check_tuple() {
         let project = Project::check_test();
         let mut state = check_test_state(&project);
-        let (tuple, _) = try_parse_ty_with_state(&project, &mut state, "(Foo, Bar[Foo])");
+        let (tuple, _) = try_parse_ty_with_state(&mut state, "(Foo, Bar[Foo])");
         assert_eq!(state.type_state.vars.len(), 0);
         state.resolve_type_vars();
         assert_eq!(state.errors, vec![]);

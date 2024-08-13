@@ -92,7 +92,7 @@ mod tests {
     fn named() {
         let project = Project::check_test();
         let mut state = check_test_state(&project);
-        let ty = parse_ty_with_state(&project, &mut state, "Int");
+        let ty = parse_ty_with_state(&mut state, "Int");
         let name = ty.get_name(&state);
         assert_eq!(name, "Int");
     }
@@ -101,7 +101,7 @@ mod tests {
     fn named_args() {
         let project = Project::check_test();
         let mut state = check_test_state(&project);
-        let ty = parse_ty_with_state(&project, &mut state, "Result[Int, String]");
+        let ty = parse_ty_with_state(&mut state, "Result[Int, String]");
         let name = ty.get_name(&state);
         assert_eq!(name, "Result[Int, String]");
     }
@@ -131,7 +131,7 @@ mod tests {
     fn tuple() {
         let project = Project::check_test();
         let mut state = check_test_state(&project);
-        let ty = parse_ty_with_state(&project, &mut state, "(Int, String)");
+        let ty = parse_ty_with_state(&mut state, "(Int, String)");
         let name = ty.get_name(&state);
         assert_eq!(name, "(Int, String)");
     }
@@ -140,7 +140,7 @@ mod tests {
     fn sum() {
         let project = Project::check_test();
         let mut state = check_test_state(&project);
-        let ty = parse_ty_with_state(&project, &mut state, "Int + String");
+        let ty = parse_ty_with_state(&mut state, "Int + String");
         let name = ty.get_name(&state);
         assert_eq!(name, "(Int + String)");
     }
