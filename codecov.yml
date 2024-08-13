@@ -1,0 +1,4 @@
+ignore:
+  - "src/main.rs"
+  - "src/check/err/*"
+  - "src/cli/*"
