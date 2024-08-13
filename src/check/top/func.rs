@@ -1,20 +1,20 @@
-use crate::{check::CheckState, parser::top::func::Func, project::Project};
+use crate::{check::CheckState, parser::top::func::Func};
 
 impl Func {
-    pub fn check<'proj>(&'proj self, project: &'proj Project, state: &mut CheckState<'proj>) {
-        self.generics.check(project, state);
+    pub fn check<'proj>(&'proj self, state: &mut CheckState<'proj>) {
+        self.generics.check(state);
         if let Some(rec) = &self.receiver {
-            rec.0.check(project, state);
+            rec.0.check(state);
         }
         if let Some(ret) = &self.ret {
-            ret.0.check(project, state);
+            ret.0.check(state);
         }
         for arg in &self.args {
-            arg.0.check(project, state);
+            arg.0.check(state);
         }
         if let Some(body) = &self.body {
             for stmt in body {
-                stmt.0.check(project, state);
+                stmt.0.check(state);
             }
         }
     }

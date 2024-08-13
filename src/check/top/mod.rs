@@ -24,10 +24,10 @@ impl<'proj> Top {
             Top::Use(use_) => {
                 state.import(use_);
             }
-            Top::Enum(e) => e.check(project, state),
-            Top::Trait(t) => t.check(project, state),
-            Top::Struct(s) => s.check(project, state),
-            Top::Func(f) => f.check(project, state),
+            Top::Enum(e) => e.check(state),
+            Top::Trait(t) => t.check(state),
+            Top::Struct(s) => s.check(state),
+            Top::Func(f) => f.check(state),
             Top::Impl(_) => (),
         }
         state.exit_scope();

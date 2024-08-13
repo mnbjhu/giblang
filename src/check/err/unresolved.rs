@@ -25,7 +25,7 @@ impl Unresolved {
 
         builder = builder.with_label(
             ariadne::Label::new((name, self.name.1.into_range()))
-                .with_message(&format!("Unresolved name `{}`", self.name.0))
+                .with_message(format!("Unresolved name `{}`", self.name.0))
                 .with_color(err),
         );
 

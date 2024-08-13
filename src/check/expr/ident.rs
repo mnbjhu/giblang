@@ -1,11 +1,8 @@
 use std::collections::HashMap;
 
-use crate::{
-    check::state::CheckState, parser::expr::qualified_name::SpannedQualifiedName, project::Project,
-    ty::Ty, util::Span,
-};
+use crate::{check::state::CheckState, parser::expr::qualified_name::SpannedQualifiedName, ty::Ty};
 
-pub fn check_ident(state: &mut CheckState, path: &SpannedQualifiedName, project: &Project) -> Ty {
+pub fn check_ident(state: &mut CheckState, path: &SpannedQualifiedName) -> Ty {
     if path.len() == 1 {
         if let Some(ty) = state.get_variable(&path[0].0) {
             return ty.clone();
@@ -14,27 +11,17 @@ pub fn check_ident(state: &mut CheckState, path: &SpannedQualifiedName, project:
         }
     }
     if let Some(decl_id) = state.get_decl_with_error(path) {
-        let decl = project.get_decl(decl_id);
+        let decl = state.project.get_decl(decl_id);
         decl.get_ty(decl_id, state).inst(&mut HashMap::new(), state)
     } else {
         Ty::Unknown
     }
 }
 
-pub fn check_ident_is(
-    state: &mut CheckState<'_>,
-    ident: &SpannedQualifiedName,
-    expected: &Ty,
-    project: &Project,
-) -> Ty {
-    let actual = check_ident(state, ident, project);
+pub fn check_ident_is(state: &mut CheckState<'_>, ident: &SpannedQualifiedName, expected: &Ty) {
+    let actual = check_ident(state, ident);
     let span = ident.last().unwrap().1;
-    check_ty(actual, expected, state, span)
-}
-
-pub fn check_ty(actual: Ty, expected: &Ty, state: &mut CheckState<'_>, span: Span) -> Ty {
     actual.expect_is_instance_of(expected, state, false, span);
-    actual
 }
 
 // fn get_body_ty<'module>(

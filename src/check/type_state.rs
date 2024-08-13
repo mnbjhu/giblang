@@ -128,6 +128,11 @@ impl<'ast> TypeState<'ast> {
         };
         first.explicit = explicit;
     }
+
+    pub fn add_bound(&mut self, id: u32, bound: Generic) {
+        let var = self.get_type_var_mut(id);
+        var.bounds.push(bound);
+    }
 }
 
 pub enum MaybeTypeVar<'ast> {

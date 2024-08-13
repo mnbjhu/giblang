@@ -1,42 +1,25 @@
 use crate::{
     check::state::CheckState,
     parser::expr::Expr,
-    project::Project,
     ty::Ty,
     util::{Span, Spanned},
 };
 
 type Tuple = Vec<Spanned<Expr>>;
 
-pub fn check_tuple<'proj>(
-    values: &Tuple,
-    project: &'proj Project,
-    state: &mut CheckState<'proj>,
-) -> Ty {
-    Ty::Tuple(
-        values
-            .iter()
-            .map(|value| value.0.check(project, state))
-            .collect(),
-    )
+pub fn check_tuple(values: &Tuple, state: &mut CheckState<'_>) -> Ty {
+    Ty::Tuple(values.iter().map(|value| value.0.check(state)).collect())
 }
-pub fn check_tuple_is<'proj>(
-    state: &mut CheckState<'proj>,
-    expected: &Ty,
-    tuple: &Tuple,
-    project: &'proj Project,
-    span: Span,
-) -> Ty {
+pub fn check_tuple_is(state: &mut CheckState<'_>, expected: &Ty, tuple: &Tuple, span: Span) {
     if let Ty::Tuple(ex) = expected {
         if ex.len() == tuple.len() {
-            let v = ex
-                .iter()
+            ex.iter()
                 .zip(tuple)
-                .map(|(ex, ac)| ac.0.expect_instance_of(ex, project, state, span))
-                .collect();
-            Ty::Tuple(v)
+                .for_each(|(ex, ac)| ac.0.expect_instance_of(ex, state, span));
         } else {
-            let actual = check_tuple(tuple, project, state);
+            for value in tuple {
+                value.0.check(state);
+            }
             state.simple_error(
                 &format!(
                     "Expected a tuple of length {} but found one of length {}",
@@ -45,18 +28,9 @@ pub fn check_tuple_is<'proj>(
                 ),
                 span,
             );
-            actual
         }
     } else {
-        let actual = check_tuple(tuple, project, state);
-        state.simple_error(
-            &format!(
-                "Expected value to be of type '{}' but found '{}'",
-                expected.get_name(state),
-                actual.get_name(state),
-            ),
-            span,
-        );
-        actual
+        check_tuple(tuple, state);
+        todo!("TODO: Add expected a tuple error");
     }
 }

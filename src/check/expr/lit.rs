@@ -28,9 +28,8 @@ impl From<&Literal> for Ty {
 }
 
 impl Literal {
-    pub fn expect_instance_of(&self, expected: &Ty, state: &mut CheckState, span: Span) -> Ty {
+    pub fn expect_instance_of(&self, expected: &Ty, state: &mut CheckState, span: Span) {
         let actual = Ty::from(self);
         actual.expect_is_instance_of(expected, state, false, span);
-        actual
     }
 }

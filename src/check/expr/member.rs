@@ -1,7 +1,6 @@
 use crate::{
     check::state::CheckState,
     parser::expr::member::MemberCall,
-    project::Project,
     ty::{FuncTy, Ty},
     util::Span,
 };
@@ -9,8 +8,8 @@ use crate::{
 use super::ident::check_ident;
 
 impl MemberCall {
-    pub fn check<'module>(&self, project: &'module Project, state: &mut CheckState<'module>) -> Ty {
-        let ty = check_ident(state, &vec![self.name.clone()], project);
+    pub fn check(&self, state: &mut CheckState<'_>) -> Ty {
+        let ty = check_ident(state, &vec![self.name.clone()]);
 
         if let Ty::Function(FuncTy {
             args: expected_args,
@@ -21,7 +20,7 @@ impl MemberCall {
             self.rec
                 .0
                 .as_ref()
-                .expect_instance_of(receiver, project, state, self.rec.1);
+                .expect_instance_of(receiver, state, self.rec.1);
 
             if expected_args.len() != self.args.len() {
                 state.simple_error(
@@ -38,7 +37,7 @@ impl MemberCall {
                 .iter()
                 .zip(expected_args)
                 .for_each(|((arg, span), expected)| {
-                    arg.expect_instance_of(expected, project, state, *span);
+                    arg.expect_instance_of(expected, state, *span);
                 });
             ret.as_ref().clone()
         } else {
@@ -46,15 +45,8 @@ impl MemberCall {
         }
     }
 
-    pub fn expected_instance_of<'module>(
-        &self,
-        expected: &Ty,
-        project: &'module Project,
-        state: &mut CheckState<'module>,
-        span: Span,
-    ) -> Ty {
-        let actual = self.check(project, state);
+    pub fn expected_instance_of(&self, expected: &Ty, state: &mut CheckState<'_>, span: Span) {
+        let actual = self.check(state);
         actual.expect_is_instance_of(expected, state, false, span);
-        actual
     }
 }

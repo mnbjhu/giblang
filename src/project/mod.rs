@@ -258,6 +258,10 @@ enum Option[out T] {
    Some(T),
    None
 }
+enum Result[out R, out E] {
+   Ok(R),
+   Err(E),
+}
 fn add(a: Int, b: Int): Int { }
 fn Int.factorial(): Int { }
 fn ident[T](t: T): T { }
