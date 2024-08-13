@@ -3,10 +3,10 @@ use crate::{
 };
 
 impl GenericArgs {
-    pub fn check(&self, project: &Project, state: &mut CheckState) -> Vec<Ty> {
+    pub fn check(&self, state: &mut CheckState) -> Vec<Ty> {
         let mut args = vec![];
         for (arg, _) in &self.0 {
-            args.push(arg.check(project, state));
+            args.push(arg.check(state));
         }
         args
     }

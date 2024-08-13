@@ -36,7 +36,7 @@ impl Ty {
                 true
             }
             (_, Ty::TypeVar { id }) => {
-                state.type_state.expected_var_is_ty(*id, self.clone(), span);
+                state.type_state.expected_ty_is_var(*id, self.clone(), span);
                 true
             }
             (_, Ty::Any) => true,

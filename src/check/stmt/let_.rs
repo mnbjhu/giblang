@@ -1,17 +1,17 @@
 use crate::{check::CheckState, parser::stmt::let_::LetStatement, project::Project};
 
 impl LetStatement {
-    pub fn check<'module>(&self, project: &'module Project, state: &mut CheckState<'module>) {
+    pub fn check<'module>(&self, state: &mut CheckState<'module>) {
         let ty = if let Some(expected) = &self.ty {
-            let expected = expected.0.check(project, state);
+            let expected = expected.0.check(state);
             self.value
                 .0
-                .expect_instance_of(&expected, project, state, self.value.1);
+                .expect_instance_of(&expected, state, self.value.1);
             expected
         } else {
-            self.value.0.check(project, state)
+            self.value.0.check(state)
         };
-        self.pattern.0.check(project, state, ty);
+        self.pattern.0.check(state, ty);
     }
 }
 
@@ -41,7 +41,7 @@ mod tests {
         let parser = let_parser(expr_parser(stmt_parser()));
         let let_ = parser.parse(input).unwrap();
         state.enter_scope();
-        let_.check(project, state);
+        let_.check(state);
         state.resolve_type_vars();
         state.errors.clone()
     }

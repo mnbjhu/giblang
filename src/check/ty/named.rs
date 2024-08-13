@@ -1,7 +1,7 @@
-use crate::{check::state::CheckState, parser::common::type_::NamedType, project::Project, ty::Ty};
+use crate::{check::state::CheckState, parser::common::type_::NamedType, ty::Ty};
 
 impl NamedType {
-    pub fn check(&self, state: &mut CheckState, project: &Project) -> Ty {
+    pub fn check(&self, state: &mut CheckState) -> Ty {
         if self.name.len() == 1 {
             if self.name[0].0 == "Any" {
                 return Ty::Any;
@@ -11,19 +11,16 @@ impl NamedType {
             }
         };
         if let Some(decl_id) = state.get_decl_with_error(&self.name) {
-            let decl = project.get_decl(decl_id);
+            let decl = state.project.get_decl(decl_id);
             let args = self
                 .args
                 .iter()
-                .map(|ty| (ty.0.check(project, state), ty.1))
-                .collect::<Vec<_>>();
-            for (gen, arg) in decl.generics().iter().zip(args.clone()) {
-                arg.0
-                    .expect_is_instance_of(&gen.super_, state, false, arg.1);
-            }
+                .zip(decl.generics())
+                .map(|(arg, gen)| arg.0.expect_is_bound_by(&gen, state, arg.1))
+                .collect();
             return Ty::Named {
                 name: decl_id,
-                args: args.iter().map(|(arg, _)| arg).cloned().collect(),
+                args,
             };
         };
         Ty::Unknown

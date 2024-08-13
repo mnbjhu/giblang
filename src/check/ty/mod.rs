@@ -1,26 +1,26 @@
 use crate::{
     check::state::CheckState,
     parser::common::type_::Type,
-    project::Project,
-    ty::{FuncTy, Ty},
+    ty::{FuncTy, Generic, Ty},
+    util::Span,
 };
 pub mod named;
 
 impl Type {
-    pub fn check(&self, project: &Project, state: &mut CheckState) -> Ty {
+    pub fn check(&self, state: &mut CheckState) -> Ty {
         match &self {
-            Type::Named(named) => named.check(state, project),
+            Type::Named(named) => named.check(state),
             Type::Tuple(tup) => {
                 let mut tys = vec![];
                 for (ty, _) in tup {
-                    tys.push(ty.check(project, state));
+                    tys.push(ty.check(state));
                 }
                 Ty::Tuple(tys)
             }
             Type::Sum(tup) => {
                 let mut tys = vec![];
                 for (ty, _) in tup {
-                    tys.push(ty.check(project, state));
+                    tys.push(ty.check(state));
                 }
                 Ty::Sum(tys)
             }
@@ -31,15 +31,25 @@ impl Type {
             } => Ty::Function(FuncTy {
                 receiver: receiver
                     .as_ref()
-                    .map(|receiver| Box::new(receiver.as_ref().0.check(project, state))),
-                args: args.iter().map(|r| r.0.check(project, state)).collect(),
-                ret: Box::new(ret.0.check(project, state)),
+                    .map(|receiver| Box::new(receiver.as_ref().0.check(state))),
+                args: args.iter().map(|r| r.0.check(state)).collect(),
+                ret: Box::new(ret.0.check(state)),
             }),
             Type::Wildcard(s) => {
                 let id = state.type_state.new_type_var(*s);
                 Ty::TypeVar { id }
             }
         }
+    }
+
+    pub fn expect_is_bound_by(&self, bound: &Generic, state: &mut CheckState, span: Span) -> Ty {
+        let ty = self.check(state);
+        if let Ty::TypeVar { id } = ty {
+            state.type_state.add_bound(id, bound.clone());
+        } else {
+            ty.expect_is_instance_of(&bound.super_, state, false, span);
+        }
+        ty
     }
 }
 
@@ -63,7 +73,7 @@ pub mod tests {
         let ty = type_parser().parse(tokens.spanned(eoi)).unwrap();
         let file_data = project.get_file(project.get_counter()).unwrap();
         let mut state = CheckState::from_file(file_data, project);
-        (ty.check(project, &mut state), state.errors)
+        (ty.check(&mut state), state.errors)
     }
 
     pub fn try_parse_ty_with_state(
@@ -74,7 +84,7 @@ pub mod tests {
         let eoi = Span::splat(ty.len());
         let tokens = lexer().parse(ty).unwrap();
         let ty = type_parser().parse(tokens.spanned(eoi)).unwrap();
-        (ty.check(project, state), state.errors.clone())
+        (ty.check(state), state.errors.clone())
     }
 
     pub fn parse_ty_with_state(project: &Project, state: &mut CheckState, ty: &str) -> Ty {
@@ -82,7 +92,7 @@ pub mod tests {
         let tokens = lexer().parse(ty).unwrap();
         let ty = type_parser().parse(tokens.spanned(eoi)).unwrap();
         assert_eq!(state.errors, vec![]);
-        ty.check(project, state)
+        ty.check(state)
     }
 
     pub fn parse_ty(project: &Project, ty: &str) -> Ty {
@@ -92,7 +102,7 @@ pub mod tests {
         let file_data = project.get_file(project.get_counter()).unwrap();
         let mut state = CheckState::from_file(file_data, project);
         assert_eq!(state.errors, vec![]);
-        ty.check(project, &mut state)
+        ty.check(&mut state)
     }
 
     #[test]

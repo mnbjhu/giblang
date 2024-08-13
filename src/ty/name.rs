@@ -101,9 +101,9 @@ mod tests {
     fn named_args() {
         let project = Project::check_test();
         let mut state = check_test_state(&project);
-        let ty = parse_ty_with_state(&project, &mut state, "Option[Int, String]");
+        let ty = parse_ty_with_state(&project, &mut state, "Result[Int, String]");
         let name = ty.get_name(&state);
-        assert_eq!(name, "Option[Int, String]");
+        assert_eq!(name, "Result[Int, String]");
     }
 
     #[test]

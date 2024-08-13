@@ -1,14 +1,13 @@
 use crate::{
     check::CheckState,
     parser::{common::variance::Variance, top::trait_::Trait},
-    project::Project,
     ty::{Generic, Ty},
     util::Span,
 };
 
 impl<'proj> Trait {
-    pub fn check(&'proj self, project: &'proj Project, state: &mut CheckState<'proj>) {
-        let args = self.generics.check(project, state);
+    pub fn check(&'proj self, state: &mut CheckState<'proj>) {
+        let args = self.generics.check(state);
         state.add_self_ty(
             Ty::Named {
                 name: self.id,
@@ -18,7 +17,7 @@ impl<'proj> Trait {
         );
         for func in &self.body {
             state.enter_scope();
-            func.0.check(project, state);
+            func.0.check(state);
             state.exit_scope();
         }
     }
