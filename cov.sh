@@ -1,6 +1,6 @@
 #!/bin/bash
 
-cargo clean && cargo test
+# cargo clean && cargo test
 
 grcov . \
   -s . \

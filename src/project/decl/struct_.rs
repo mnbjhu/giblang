@@ -1,4 +1,4 @@
-use crate::ty::Ty;
+use crate::ty::{FuncTy, Ty};
 
 #[derive(Debug)]
 pub enum StructDecl {
@@ -13,19 +13,19 @@ impl StructDecl {
         match self {
             StructDecl::Fields(fields) => {
                 let args = fields.iter().map(|(_, ty)| ty.clone()).collect();
-                Ty::Function {
+                Ty::Function(FuncTy {
                     receiver: None,
                     args,
                     ret: Box::new(self_ty),
-                }
+                })
             }
             StructDecl::Tuple(fields) => {
                 let args = fields.clone();
-                Ty::Function {
+                Ty::Function(FuncTy {
                     receiver: None,
                     args,
                     ret: Box::new(self_ty),
-                }
+                })
             }
             StructDecl::None => self_ty,
         }

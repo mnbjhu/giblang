@@ -1,5 +1,7 @@
 use impl_type::ImplTypeMismatch;
 use is_not_instance::IsNotInstance;
+use missing_receiver::MissingReceiver;
+use unexpected_args::UnexpectedArgs;
 use unresolved_type_var::UnboundTypeVar;
 use wildcard::UnexpectedWildcard;
 
@@ -12,7 +14,9 @@ use super::state::CheckState;
 
 pub mod impl_type;
 pub mod is_not_instance;
+pub mod missing_receiver;
 pub mod simple;
+pub mod unexpected_args;
 pub mod unresolved;
 pub mod unresolved_type_var;
 pub mod wildcard;
@@ -23,6 +27,8 @@ pub enum CheckError {
     Unresolved(Unresolved),
     IsNotInstance(IsNotInstance),
     UnboundTypeVar(UnboundTypeVar),
+    UnexpectedArgs(UnexpectedArgs),
+    MissingReceiver(MissingReceiver),
 }
 
 pub enum ResolveError {
@@ -37,6 +43,8 @@ impl CheckState<'_> {
             CheckError::Unresolved(e) => e.print(self.project),
             CheckError::IsNotInstance(e) => e.print(self),
             CheckError::UnboundTypeVar(e) => e.print(self),
+            CheckError::MissingReceiver(e) => e.print(self),
+            CheckError::UnexpectedArgs(e) => e.print(self),
         }
     }
 }

@@ -1,16 +1,17 @@
 use ariadne::{Color, Source};
 
-use crate::{check::state::CheckState, ty::Ty, util::Span};
+use crate::{check::state::CheckState, ty::FuncTy, util::Span};
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct IsNotInstance {
-    pub found: Ty,
-    pub expected: Ty,
+pub struct UnexpectedArgs {
     pub span: Span,
     pub file: u32,
+    pub func: FuncTy,
+    pub expected: usize,
+    pub found: usize,
 }
 
-impl IsNotInstance {
+impl UnexpectedArgs {
     pub fn print(&self, state: &CheckState) {
         let file_data = state
             .project
@@ -21,9 +22,8 @@ impl IsNotInstance {
 
         let err = Color::Red;
         let msg = format!(
-            "Expected {} but found {}",
-            self.expected.get_name(state),
-            self.found.get_name(state),
+            "Expected {} arguments but found {}",
+            self.expected, self.found,
         );
 
         let mut builder = ariadne::Report::build(ariadne::ReportKind::Error, name, self.span.start)

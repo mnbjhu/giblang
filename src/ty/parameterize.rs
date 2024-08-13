@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use super::Ty;
+use super::{FuncTy, Ty};
 
 // TODO: This should use unique ids instead of the String names for generic type args
 impl Ty {
@@ -13,19 +13,19 @@ impl Ty {
             },
             Ty::Tuple(tys) => Ty::Tuple(tys.iter().map(|ty| ty.parameterize(generics)).collect()),
             Ty::Sum(tys) => Ty::Sum(tys.iter().map(|ty| ty.parameterize(generics)).collect()),
-            Ty::Function {
+            Ty::Function(FuncTy {
                 receiver,
                 args,
                 ret,
-            } => {
+            }) => {
                 let receiver = receiver
                     .as_ref()
                     .map(|r| Box::new(r.parameterize(generics)));
-                Ty::Function {
+                Ty::Function(FuncTy {
                     receiver,
                     args: args.iter().map(|ty| ty.parameterize(generics)).collect(),
                     ret: Box::new(ret.parameterize(generics)),
-                }
+                })
             }
             Ty::Meta(_) => unimplemented!("Need to thing about this..."),
             _ => self.clone(),
@@ -38,7 +38,7 @@ mod tests {
     use std::collections::HashMap;
 
     use crate::{
-        ty::{Generic, Ty},
+        ty::{FuncTy, Generic, Ty},
         util::Span,
     };
 
@@ -95,24 +95,24 @@ mod tests {
 
     #[test]
     fn parameterize_function() {
-        let ty = Ty::Function {
+        let ty = Ty::Function(FuncTy {
             receiver: Some(Box::new(Ty::Generic(Generic::new((
                 "T".to_string(),
                 Span::splat(0),
             ))))),
             args: vec![Ty::Generic(Generic::new(("T".to_string(), Span::splat(0))))],
             ret: Box::new(Ty::Generic(Generic::new(("T".to_string(), Span::splat(0))))),
-        };
+        });
         let mut implied = HashMap::new();
         implied.insert("T".to_string(), Ty::int());
         let new_ty = ty.parameterize(&implied);
         assert_eq!(
             new_ty,
-            Ty::Function {
+            Ty::Function(FuncTy {
                 receiver: Some(Box::new(Ty::int())),
                 args: vec![Ty::int()],
                 ret: Box::new(Ty::int())
-            }
+            })
         );
     }
 

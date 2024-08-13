@@ -2,7 +2,7 @@ use crate::{
     check::err::{wildcard::UnexpectedWildcard, ResolveError},
     parser::common::type_::Type,
     resolve::state::ResolveState,
-    ty::Ty,
+    ty::{FuncTy, Ty},
 };
 
 impl Type {
@@ -22,13 +22,13 @@ impl Type {
                 receiver,
                 args,
                 ret,
-            } => Ty::Function {
+            } => Ty::Function(FuncTy {
                 receiver: receiver
                     .as_ref()
                     .map(|ty| Box::new(ty.as_ref().0.resolve(state))),
                 args: args.iter().map(|(ty, _)| ty.resolve(state)).collect(),
                 ret: Box::new(ret.0.resolve(state)),
-            },
+            }),
         }
     }
 }

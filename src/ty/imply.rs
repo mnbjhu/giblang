@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use super::Ty;
+use super::{FuncTy, Ty};
 
 // TODO: Makes assumptions about correct generic args
 impl Ty {
@@ -28,16 +28,16 @@ impl Ty {
                 }
             }
             (
-                Ty::Function {
+                Ty::Function(FuncTy {
                     receiver,
                     args,
                     ret,
-                },
-                Ty::Function {
+                }),
+                Ty::Function(FuncTy {
                     receiver: other_receiver,
                     args: other_args,
                     ret: other_ret,
-                },
+                }),
             ) => {
                 if let (Some(s), Some(other)) = (receiver, other_receiver) {
                     s.imply_generic_args(other, implied);

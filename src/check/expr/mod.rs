@@ -52,3 +52,44 @@ impl Expr {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::check::state::CheckState;
+    use crate::lexer::parser::lexer;
+    use crate::parser::expr::expr_parser;
+    use crate::parser::stmt::stmt_parser;
+    use crate::ty::Ty;
+    use chumsky::input::Input;
+    use chumsky::Parser;
+
+    use crate::project::Project;
+    use crate::util::Span;
+
+    pub fn parse_expr<'proj>(
+        project: &'proj Project,
+        state: &mut CheckState<'proj>,
+        expr: &str,
+    ) -> Ty {
+        let eoi = Span::splat(expr.len());
+        let tokens = lexer().parse(expr).unwrap();
+        let ty = expr_parser(stmt_parser())
+            .parse(tokens.spanned(eoi))
+            .unwrap();
+        ty.check(project, state)
+    }
+
+    pub fn parse_expr_with_expected<'proj>(
+        project: &'proj Project,
+        state: &mut CheckState<'proj>,
+        expected: &Ty,
+        expr: &str,
+    ) -> Ty {
+        let eoi = Span::splat(expr.len());
+        let tokens = lexer().parse(expr).unwrap();
+        let expr = expr_parser(stmt_parser())
+            .parse(tokens.spanned(eoi))
+            .unwrap();
+        expr.expect_instance_of(expected, project, state, Span::splat(0))
+    }
+}

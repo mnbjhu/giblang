@@ -1,4 +1,9 @@
-use crate::{check::state::CheckState, parser::common::type_::Type, project::Project, ty::Ty};
+use crate::{
+    check::state::CheckState,
+    parser::common::type_::Type,
+    project::Project,
+    ty::{FuncTy, Ty},
+};
 pub mod named;
 
 impl Type {
@@ -23,13 +28,13 @@ impl Type {
                 receiver,
                 args,
                 ret,
-            } => Ty::Function {
+            } => Ty::Function(FuncTy {
                 receiver: receiver
                     .as_ref()
                     .map(|receiver| Box::new(receiver.as_ref().0.check(project, state))),
                 args: args.iter().map(|r| r.0.check(project, state)).collect(),
                 ret: Box::new(ret.0.check(project, state)),
-            },
+            }),
             Type::Wildcard(s) => {
                 let id = state.type_state.new_type_var(*s);
                 Ty::TypeVar { id }

@@ -257,7 +257,11 @@ struct Baz[T, U]
 enum Option[out T] {
    Some(T),
    None
-}",
+}
+fn add(a: Int, b: Int): Int { }
+fn Int.factorial(): Int { }
+fn ident[T](t: T): T { }
+",
             );
             project.resolve();
             project

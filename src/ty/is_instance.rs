@@ -8,7 +8,7 @@ use crate::{
     util::Span,
 };
 
-use super::Generic;
+use super::{FuncTy, Generic};
 
 impl Ty {
     pub fn expect_is_instance_of(
@@ -63,16 +63,16 @@ impl Ty {
                 self.expect_is_instance_of(super_, state, explicit, span)
             }
             (
-                Ty::Function {
+                Ty::Function(FuncTy {
                     receiver,
                     args,
                     ret,
-                },
-                Ty::Function {
+                }),
+                Ty::Function(FuncTy {
                     receiver: other_receiver,
                     args: other_args,
                     ret: other_ret,
-                },
+                }),
             ) => {
                 args.len() == other_args.len()
                     && args.iter().zip(other_args).all(|(first, second)| {
@@ -90,8 +90,8 @@ impl Ty {
         if !res {
             state.error(CheckError::IsNotInstance(IsNotInstance {
                 span,
-                first: self.clone(),
-                second: other.clone(),
+                found: self.clone(),
+                expected: other.clone(),
                 file: state.file_data.end,
             }));
         }

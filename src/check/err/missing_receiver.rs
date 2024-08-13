@@ -3,14 +3,13 @@ use ariadne::{Color, Source};
 use crate::{check::state::CheckState, ty::Ty, util::Span};
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct IsNotInstance {
-    pub found: Ty,
+pub struct MissingReceiver {
     pub expected: Ty,
     pub span: Span,
     pub file: u32,
 }
 
-impl IsNotInstance {
+impl MissingReceiver {
     pub fn print(&self, state: &CheckState) {
         let file_data = state
             .project
@@ -21,9 +20,8 @@ impl IsNotInstance {
 
         let err = Color::Red;
         let msg = format!(
-            "Expected {} but found {}",
+            "Expected function to have a receiver of type {} but found no receiver",
             self.expected.get_name(state),
-            self.found.get_name(state),
         );
 
         let mut builder = ariadne::Report::build(ariadne::ReportKind::Error, name, self.span.start)

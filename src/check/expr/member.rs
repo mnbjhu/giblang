@@ -1,5 +1,8 @@
 use crate::{
-    check::state::CheckState, parser::expr::member::MemberCall, project::Project, ty::Ty,
+    check::state::CheckState,
+    parser::expr::member::MemberCall,
+    project::Project,
+    ty::{FuncTy, Ty},
     util::Span,
 };
 
@@ -9,11 +12,11 @@ impl MemberCall {
     pub fn check<'module>(&self, project: &'module Project, state: &mut CheckState<'module>) -> Ty {
         let ty = check_ident(state, &vec![self.name.clone()], project);
 
-        if let Ty::Function {
+        if let Ty::Function(FuncTy {
             args: expected_args,
             ret,
             receiver: Some(receiver),
-        } = &ty
+        }) = &ty
         {
             self.rec
                 .0

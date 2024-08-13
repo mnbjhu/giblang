@@ -1,6 +1,6 @@
 use crate::check::state::CheckState;
 
-use super::Ty;
+use super::{FuncTy, Ty};
 
 impl Ty {
     pub fn get_name(&self, state: &CheckState) -> String {
@@ -23,11 +23,11 @@ impl Ty {
             }
             Ty::Generic(g) => g.get_name(state),
             Ty::Meta(_) => todo!(),
-            Ty::Function {
+            Ty::Function(FuncTy {
                 receiver,
                 args,
                 ret,
-            } => {
+            }) => {
                 let receiver = receiver
                     .as_ref()
                     .map_or(String::new(), |r| r.get_name(state));
@@ -74,7 +74,7 @@ impl Ty {
             Ty::TypeVar { .. } => "TypeVar".to_string(),
             Ty::Generic(_) => "Generic".to_string(),
             Ty::Meta(_) => "Meta".to_string(),
-            Ty::Function { .. } => "Function".to_string(),
+            Ty::Function(FuncTy { .. }) => "Function".to_string(),
             Ty::Tuple(_) => "Tuple".to_string(),
             Ty::Sum(_) => "Sum".to_string(),
         }
@@ -85,7 +85,7 @@ impl Ty {
 mod tests {
     use crate::check::ty::tests::parse_ty_with_state;
     use crate::project::{check_test_state, Project};
-    use crate::ty::{Generic, Ty};
+    use crate::ty::{FuncTy, Generic, Ty};
     use crate::util::Span;
 
     #[test]
@@ -163,11 +163,11 @@ mod tests {
             "Generic"
         );
         assert_eq!(
-            Ty::Function {
+            Ty::Function(FuncTy {
                 receiver: None,
                 args: vec![],
                 ret: Box::new(Ty::Any)
-            }
+            })
             .kind(),
             "Function"
         );

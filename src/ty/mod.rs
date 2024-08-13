@@ -37,6 +37,13 @@ impl Generic {
 }
 
 #[derive(Clone, Debug, PartialEq, Default)]
+pub struct FuncTy {
+    pub receiver: Option<Box<Ty>>,
+    pub args: Vec<Ty>,
+    pub ret: Box<Ty>,
+}
+
+#[derive(Clone, Debug, PartialEq, Default)]
 pub enum Ty {
     Any,
     #[default]
@@ -50,11 +57,7 @@ pub enum Ty {
     },
     Generic(Generic),
     Meta(Box<Ty>),
-    Function {
-        receiver: Option<Box<Ty>>,
-        args: Vec<Ty>,
-        ret: Box<Ty>,
-    },
+    Function(FuncTy),
     Tuple(Vec<Ty>),
     Sum(Vec<Ty>),
 }

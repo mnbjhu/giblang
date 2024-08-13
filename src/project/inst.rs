@@ -1,6 +1,9 @@
 use std::collections::HashMap;
 
-use crate::{check::state::CheckState, ty::Ty};
+use crate::{
+    check::state::CheckState,
+    ty::{FuncTy, Ty},
+};
 
 impl Ty {
     pub fn inst(&self, ids: &mut HashMap<String, u32>, state: &mut CheckState) -> Ty {
@@ -21,15 +24,15 @@ impl Ty {
             },
             Ty::Tuple(t) => Ty::Tuple(t.iter().map(|t| t.inst(ids, state)).collect()),
             Ty::Sum(s) => Ty::Sum(s.iter().map(|t| t.inst(ids, state)).collect()),
-            Ty::Function {
+            Ty::Function(FuncTy {
                 receiver,
                 args,
                 ret,
-            } => Ty::Function {
+            }) => Ty::Function(FuncTy {
                 receiver: receiver.as_ref().map(|r| Box::new(r.inst(ids, state))),
                 args: args.iter().map(|a| a.inst(ids, state)).collect(),
                 ret: Box::new(ret.inst(ids, state)),
-            },
+            }),
             _ => self.clone(),
         }
     }

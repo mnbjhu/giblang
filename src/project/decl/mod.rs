@@ -1,6 +1,6 @@
 use crate::{
     check::state::CheckState,
-    ty::{prim::PrimTy, Generic, Ty},
+    ty::{prim::PrimTy, FuncTy, Generic, Ty},
     util::Spanned,
 };
 
@@ -82,11 +82,11 @@ impl Decl {
                 ..
             } => {
                 let args = args.iter().map(|(_, ty)| ty.clone()).collect::<Vec<_>>();
-                Ty::Function {
+                Ty::Function(FuncTy {
                     receiver: receiver.clone().map(Box::new),
                     args,
                     ret: Box::new(ret.clone()),
-                }
+                })
             }
             Decl::Prim(p) => Ty::Meta(Box::new(p.into())),
         }
