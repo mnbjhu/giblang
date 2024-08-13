@@ -13,7 +13,7 @@ impl<'proj> Call {
         {
             if let Some(receiver) = receiver {
                 state.simple_error(
-                    &format!("Expected a receiver of type {receiver}"),
+                    &format!("Expected a receiver of type {}", receiver.get_name(state)),
                     self.name.1,
                 );
             }
@@ -39,7 +39,10 @@ impl<'proj> Call {
             Ty::Unknown
         } else {
             state.simple_error(
-                &format!("Expected a function but found '{name_ty}'"),
+                &format!(
+                    "Expected a function but found '{}'",
+                    name_ty.get_name(state)
+                ),
                 self.name.1,
             );
             Ty::Unknown
