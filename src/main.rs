@@ -4,12 +4,14 @@ use cli::Command;
 mod check;
 mod cli;
 mod lexer;
+mod ls;
 mod parser;
 pub mod project;
 mod resolve;
 mod ty;
 mod util;
 
-fn main() {
-    Command::parse().run();
+#[tokio::main]
+async fn main() {
+    Command::parse().run().await;
 }

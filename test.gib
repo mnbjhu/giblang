@@ -17,6 +17,6 @@ fn test(thing: String) {}
 
 fn main() {
   let test2: Option[String] = Option::Some(123)
-  test(123)
   let test: String = 123
+  let test3: Result[String, String] = Result::Ok(123)
 }
