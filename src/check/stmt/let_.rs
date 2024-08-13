@@ -1,7 +1,7 @@
-use crate::{check::CheckState, parser::stmt::let_::LetStatement, project::Project};
+use crate::{check::CheckState, parser::stmt::let_::LetStatement};
 
 impl LetStatement {
-    pub fn check<'module>(&self, state: &mut CheckState<'module>) {
+    pub fn check(&self, state: &mut CheckState<'_>) {
         let ty = if let Some(expected) = &self.ty {
             let expected = expected.0.check(state);
             self.value

@@ -1,4 +1,4 @@
-use crate::{check::state::CheckState, parser::expr::match_::Match, project::Project, ty::Ty};
+use crate::{check::state::CheckState, parser::expr::match_::Match, ty::Ty};
 
 impl<'proj> Match {
     pub fn check(&self, state: &mut CheckState<'proj>) -> Ty {

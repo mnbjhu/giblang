@@ -4,7 +4,6 @@ use crate::{
         state::CheckState,
     },
     parser::expr::call::Call,
-    project::Project,
     ty::{FuncTy, Ty},
     util::Span,
 };

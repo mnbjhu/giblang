@@ -3,16 +3,13 @@ use std::collections::HashMap;
 use crate::{
     check::CheckState,
     parser::common::pattern::{Pattern, StructFieldPattern},
-    project::{
-        decl::{struct_::StructDecl, Decl},
-        Project,
-    },
+    project::decl::{struct_::StructDecl, Decl},
     ty::Ty,
     util::Span,
 };
 
 impl Pattern {
-    pub fn check<'module>(&self, state: &mut CheckState<'module>, ty: Ty) {
+    pub fn check(&self, state: &mut CheckState<'_>, ty: Ty) {
         if let Pattern::Name(name) = self {
             state.insert_variable(name.to_string(), ty);
             return;
@@ -74,12 +71,7 @@ impl Pattern {
 }
 
 impl StructFieldPattern {
-    pub fn check<'module>(
-        &self,
-        state: &mut CheckState<'module>,
-        fields: &HashMap<String, Ty>,
-        span: Span,
-    ) {
+    pub fn check(&self, state: &mut CheckState<'_>, fields: &HashMap<String, Ty>, span: Span) {
         match self {
             StructFieldPattern::Implied(name) => {
                 if let Some(ty) = fields.get(name) {

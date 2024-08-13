@@ -1,4 +1,4 @@
-use crate::{check::state::CheckState, parser::top::arg::FunctionArg, project::Project};
+use crate::{check::state::CheckState, parser::top::arg::FunctionArg};
 
 impl FunctionArg {
     pub fn check(&self, state: &mut CheckState) {

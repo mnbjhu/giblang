@@ -1,4 +1,4 @@
-use crate::{check::CheckState, parser::top::enum_::Enum, project::Project};
+use crate::{check::CheckState, parser::top::enum_::Enum};
 
 impl Enum {
     pub fn check(&self, state: &mut CheckState) {

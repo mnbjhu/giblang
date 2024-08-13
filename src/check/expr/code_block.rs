@@ -1,9 +1,6 @@
-use crate::{
-    check::state::CheckState, parser::expr::code_block::CodeBlock, project::Project, ty::Ty,
-    util::Span,
-};
+use crate::{check::state::CheckState, parser::expr::code_block::CodeBlock, ty::Ty, util::Span};
 
-pub fn check_code_block<'proj>(state: &mut CheckState<'proj>, block: &CodeBlock) -> Ty {
+pub fn check_code_block(state: &mut CheckState<'_>, block: &CodeBlock) -> Ty {
     state.enter_scope();
     let mut ret = Ty::unit();
     for (stmt, _) in block {
@@ -13,8 +10,8 @@ pub fn check_code_block<'proj>(state: &mut CheckState<'proj>, block: &CodeBlock)
     ret
 }
 
-pub fn check_code_block_is<'proj>(
-    state: &mut CheckState<'proj>,
+pub fn check_code_block_is(
+    state: &mut CheckState<'_>,
     expected: &Ty,
     block: &CodeBlock,
     span: Span,

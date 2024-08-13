@@ -1,7 +1,6 @@
 use crate::{
     check::state::CheckState,
     parser::expr::member::MemberCall,
-    project::Project,
     ty::{FuncTy, Ty},
     util::Span,
 };
@@ -9,7 +8,7 @@ use crate::{
 use super::ident::check_ident;
 
 impl MemberCall {
-    pub fn check<'module>(&self, state: &mut CheckState<'module>) -> Ty {
+    pub fn check(&self, state: &mut CheckState<'_>) -> Ty {
         let ty = check_ident(state, &vec![self.name.clone()]);
 
         if let Ty::Function(FuncTy {
@@ -46,12 +45,7 @@ impl MemberCall {
         }
     }
 
-    pub fn expected_instance_of<'module>(
-        &self,
-        expected: &Ty,
-        state: &mut CheckState<'module>,
-        span: Span,
-    ) {
+    pub fn expected_instance_of(&self, expected: &Ty, state: &mut CheckState<'_>, span: Span) {
         let actual = self.check(state);
         actual.expect_is_instance_of(expected, state, false, span);
     }

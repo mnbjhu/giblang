@@ -1,6 +1,4 @@
-use crate::{
-    check::CheckState, parser::common::generic_args::GenericArgs, project::Project, ty::Ty,
-};
+use crate::{check::CheckState, parser::common::generic_args::GenericArgs, ty::Ty};
 
 impl GenericArgs {
     pub fn check(&self, state: &mut CheckState) -> Vec<Ty> {

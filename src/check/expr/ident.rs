@@ -1,9 +1,6 @@
 use std::collections::HashMap;
 
-use crate::{
-    check::state::CheckState, parser::expr::qualified_name::SpannedQualifiedName, project::Project,
-    ty::Ty,
-};
+use crate::{check::state::CheckState, parser::expr::qualified_name::SpannedQualifiedName, ty::Ty};
 
 pub fn check_ident(state: &mut CheckState, path: &SpannedQualifiedName) -> Ty {
     if path.len() == 1 {

@@ -7,15 +7,10 @@ use crate::{
 
 type Tuple = Vec<Spanned<Expr>>;
 
-pub fn check_tuple<'proj>(values: &Tuple, state: &mut CheckState<'proj>) -> Ty {
+pub fn check_tuple(values: &Tuple, state: &mut CheckState<'_>) -> Ty {
     Ty::Tuple(values.iter().map(|value| value.0.check(state)).collect())
 }
-pub fn check_tuple_is<'proj>(
-    state: &mut CheckState<'proj>,
-    expected: &Ty,
-    tuple: &Tuple,
-    span: Span,
-) {
+pub fn check_tuple_is(state: &mut CheckState<'_>, expected: &Ty, tuple: &Tuple, span: Span) {
     if let Ty::Tuple(ex) = expected {
         if ex.len() == tuple.len() {
             ex.iter()
