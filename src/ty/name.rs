@@ -62,10 +62,6 @@ impl Ty {
         }
     }
 
-    pub fn unit() -> Self {
-        Ty::Tuple(Vec::new())
-    }
-
     pub fn kind(&self) -> String {
         match self {
             Ty::Any => "Any".to_string(),

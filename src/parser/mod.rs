@@ -2,7 +2,7 @@ use ariadne::Source;
 use chumsky::{error::Rich, input::Input, primitive::just, IterParser, Parser};
 
 use crate::{
-    cli::build::print_error,
+    cli::check::print_error,
     lexer::{parser::lexer, token::newline},
     util::{Span, Spanned},
     AstParser,

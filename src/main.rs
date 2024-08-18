@@ -1,6 +1,7 @@
 use clap::Parser;
 use cli::Command;
 
+pub mod build;
 mod check;
 mod cli;
 mod lexer;

@@ -46,6 +46,10 @@ impl Ty {
             args: Vec::new(),
         }
     }
+
+    pub fn unit() -> Self {
+        Ty::Tuple(Vec::new())
+    }
 }
 
 impl From<&PrimTy> for Ty {

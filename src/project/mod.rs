@@ -1,4 +1,8 @@
-use std::collections::HashMap;
+use std::{
+    collections::HashMap,
+    fs::{self, OpenOptions},
+    io::Write,
+};
 
 use ariadne::Source;
 use glob::glob;
@@ -136,6 +140,27 @@ impl Project {
     }
 
     #[must_use]
+    pub fn get_qualified_name(&self, id: u32) -> String {
+        let file = self.get_file(id).unwrap();
+        let mut name = file.get_path();
+        let decl = self.get_decl(id);
+        if matches!(decl, Decl::Member { .. }) {
+            let parent = self
+                .get_parent(id)
+                .expect("Member decls should have a parent");
+            let parent_decl = self.get_decl(parent);
+            name.push(parent_decl.name());
+        } else if matches!(decl, Decl::Function { .. }) {
+            if let Some(parent) = self.get_parent(id) {
+                let parent_decl = self.get_decl(parent);
+                name.push(parent_decl.name());
+            }
+        };
+        name.push(decl.name());
+        name.join("::")
+    }
+
+    #[must_use]
     pub fn get_impls(&self, for_decl: u32) -> Vec<&ImplData> {
         let impl_ids = self.impl_map.get(&for_decl).cloned().unwrap_or_default();
         let mut impls = vec![];
@@ -173,7 +198,36 @@ impl Project {
         errors
     }
 
-    pub fn check_with_errors(&self) {
+    pub fn build(&self) {
+        for file in &self.files {
+            let mut state = CheckState::from_file(file, self);
+            let out = &file.get_out_path();
+            let mut path = file.get_path();
+            path.pop();
+            let mod_ = path.last().cloned().unwrap_or("main".to_string());
+            path.insert(0, "build".to_string());
+            let path = path.join("/");
+            fs::create_dir_all(path).expect("Failed to create directory");
+            let mut out_file = OpenOptions::new()
+                .create_new(true)
+                .append(true)
+                .open(out)
+                .unwrap();
+            out_file
+                .write_all(format!("package {mod_}\n").as_bytes())
+                .expect("Failed to write to file");
+            for item in &file.ast {
+                let text = item.0.build(&mut state);
+                out_file
+                    .write_all(text.as_bytes())
+                    .expect("Failed to write to file");
+            }
+        }
+    }
+
+    #[must_use]
+    pub fn check_with_errors(&self) -> bool {
+        let mut pass = true;
         for file in &self.files {
             let mut state = CheckState::from_file(file, self);
             for item in &file.ast {
@@ -182,8 +236,10 @@ impl Project {
             state.resolve_type_vars();
             for err in &state.errors {
                 state.print_error(err);
+                pass = false;
             }
         }
+        pass
     }
 
     #[must_use]

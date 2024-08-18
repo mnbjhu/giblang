@@ -1,8 +1,4 @@
-use std::fmt::Display;
-
-use ariadne::{Color, Fmt, Source};
-use ariadne::{ColorGenerator, Label, Report, ReportKind};
-use chumsky::error::Rich;
+use std::{env::set_current_dir, fs, process::Command};
 
 use crate::project::Project;
 
@@ -12,51 +8,15 @@ pub fn build() {
     for error in &errors {
         project.print_resolve_error(error);
     }
-    project.check_with_errors();
-}
-
-pub fn print_error<T: Display>(error: &Rich<'_, T>, source: Source, name: &str, code: &str) {
-    let mut colors = ColorGenerator::new();
-
-    let b = colors.next();
-    let out = Color::Fixed(81);
-
-    let mut builder = Report::build(ReportKind::Error, name, error.span().start)
-        .with_code(code)
-        .with_message(error.reason().to_string());
-
-    if let Some(found) = error.found() {
-        builder = builder.with_label(
-            Label::new((name, error.span().into_range()))
-                .with_message(format!("Found {found}"))
-                .with_color(b),
-        );
-    } else {
-        builder = builder.with_label(
-            Label::new((name, error.span().into_range()))
-                .with_color(b)
-                .with_message(error.reason().to_string()),
-        );
+    if project.check_with_errors() {
+        let _ = fs::remove_dir_all("build");
+        fs::create_dir("build").expect("Failed to create directory");
+        set_current_dir("build").expect("Failed to change directory");
+        println!("Pwd: {:?}", std::env::current_dir());
+        project.build();
+        Command::new("go")
+            .arg("build")
+            .status()
+            .expect("Failed to build");
     }
-
-    let expected = error
-        .expected()
-        .map(std::string::ToString::to_string)
-        .collect::<Vec<_>>();
-
-    if !expected.is_empty() {
-        builder = builder.with_note(
-            format!(
-                "Expected {}",
-                error
-                    .expected()
-                    .map(std::string::ToString::to_string)
-                    .collect::<Vec<_>>()
-                    .join(" or ")
-            )
-            .fg(out),
-        );
-    }
-    let report = builder.finish();
-    report.print((name, source)).unwrap();
 }

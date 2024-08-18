@@ -1,8 +1,10 @@
 pub mod build;
+pub mod check;
 pub mod exports;
 pub mod parse;
 
 use build::build;
+use check::check;
 use exports::exports;
 use parse::parse;
 
@@ -14,7 +16,10 @@ pub enum Command {
         path: String,
     },
 
-    /// Parses a source file
+    /// Checks the project
+    Check,
+
+    /// Build the project
     Build,
 
     /// Shows a tree of the exports
@@ -26,6 +31,7 @@ impl Command {
         match self {
             Command::Parse { path } => parse(path),
             Command::Exports => exports(),
+            Command::Check => check(),
             Command::Build => build(),
         }
     }

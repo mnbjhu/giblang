@@ -1,4 +1,4 @@
-use super::build::print_error;
+use super::check::print_error;
 use crate::{lexer::parser::lexer, parser::file_parser, util::Span};
 use ariadne::{Color, Fmt, Source};
 use chumsky::{input::Input, Parser};
