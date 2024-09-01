@@ -3,6 +3,7 @@ use chumsky::{
     recursive::recursive,
     select, IterParser, Parser,
 };
+use property::{property_parser, Property};
 
 use crate::{
     lexer::{
@@ -30,6 +31,7 @@ pub mod if_else;
 pub mod match_;
 pub mod match_arm;
 pub mod member;
+pub mod property;
 pub mod qualified_name;
 
 #[derive(Clone, PartialEq, Debug)]
@@ -42,6 +44,7 @@ pub enum Expr {
     Match(Match),
     Tuple(Vec<Spanned<Expr>>),
     IfElse(IfElse),
+    Property(Property),
 }
 
 pub fn expr_parser<'tokens, 'src: 'tokens>(stmt: AstParser!(Stmt)) -> AstParser!(Expr) {
@@ -71,15 +74,17 @@ pub fn expr_parser<'tokens, 'src: 'tokens>(stmt: AstParser!(Stmt)) -> AstParser!
         .or(bracketed)
         .or(tuple);
 
+        // TODO: Make foldL with all types of access
         let match_ =
             match_parser(expr.clone(), match_arm::match_arm_parser(expr.clone())).map(Expr::Match);
 
         let call = call_parser(atom.clone(), expr.clone()).map(Expr::Call);
         let member = member_call_parser(atom.clone(), expr.clone()).map(Expr::MemberCall);
+        let property = property_parser(atom.clone()).map(Expr::Property);
 
         let if_else = if_else_parser(expr, stmt).map(Expr::IfElse);
 
-        choice((if_else, match_, block, member, call, atom))
+        choice((if_else, match_, block, member, property, call, atom))
     })
 }
 

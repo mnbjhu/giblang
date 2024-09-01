@@ -26,6 +26,7 @@ impl Func {
             for (index, stmt) in body.iter().enumerate() {
                 if index == last {
                     if self.ret.is_some() {
+                        println!("Building ret {:?}", stmt.0);
                         res.push_str(&stmt.0.build(state, &ExprKind::Return));
                     } else {
                         res.push_str(&stmt.0.build(state, &ExprKind::Inline));

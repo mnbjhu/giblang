@@ -8,31 +8,36 @@ use super::ty::type_name;
 mod call;
 mod lit;
 mod match_;
+mod property;
 
 impl Expr {
     pub fn build(&self, state: &mut CheckState, kind: &ExprKind) -> String {
         match self {
             Expr::Literal(lit) => lit.build(kind),
-            Expr::Ident(ident) => match state.get_name(ident) {
-                FoundItem::Var(_) => ident[0].0.to_string(),
-                FoundItem::Decl(name) => {
-                    println!(
-                        "{}",
-                        ident
-                            .iter()
-                            .map(|x| x.0.to_string())
-                            .collect::<Vec<_>>()
-                            .join(".")
-                    );
-                    type_name(name)
-                }
-            },
+            Expr::Ident(ident) => {
+                let name = match state.get_name(ident) {
+                    FoundItem::Var(_) => ident[0].0.to_string(),
+                    FoundItem::Decl(name) => {
+                        println!(
+                            "{}",
+                            ident
+                                .iter()
+                                .map(|x| x.0.to_string())
+                                .collect::<Vec<_>>()
+                                .join(".")
+                        );
+                        type_name(name)
+                    }
+                };
+                kind.basic_apply(name)
+            }
             Expr::Call(call) => call.build(state, kind),
             Expr::Match(_) => todo!(),
             Expr::MemberCall(_) => todo!(),
             Expr::Tuple(_) => todo!(),
             Expr::IfElse(_) => todo!(),
             Expr::CodeBlock(_) => todo!(),
+            Expr::Property(prop) => prop.build(state, kind),
         }
     }
 }
