@@ -105,6 +105,16 @@ impl<'file> CheckState<'file> {
         }
     }
 
+    pub fn get_name(&self, ident: &SpannedQualifiedName) -> FoundItem {
+        if ident.len() == 1 {
+            if let Some(var) = self.get_variable(&ident[0].0) {
+                return FoundItem::Var(var.clone());
+            }
+        }
+        let decl = self.get_decl_without_error(ident).unwrap();
+        FoundItem::Decl(decl)
+    }
+
     pub fn import(&mut self, use_: &SpannedQualifiedName) {
         if self.get_decl_with_error(use_).is_some() {
             self.imports.insert(
@@ -194,6 +204,11 @@ impl<'file> CheckState<'file> {
             .clone()
             .expect("Type var should be resolved")
     }
+}
+
+pub enum FoundItem {
+    Var(Ty),
+    Decl(u32),
 }
 
 #[cfg(test)]

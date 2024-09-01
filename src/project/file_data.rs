@@ -15,11 +15,7 @@ impl FileData {
 
     #[must_use]
     pub fn get_out_path(&self) -> String {
-        let mut path = "build".to_string();
-        for seg in self.get_path() {
-            path.push('/');
-            path.push_str(&seg);
-        }
+        let mut path = self.get_path().join("/");
         path.push_str(".go");
         path
     }

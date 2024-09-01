@@ -13,6 +13,12 @@ pub fn build() {
         fs::create_dir("build").expect("Failed to create directory");
         set_current_dir("build").expect("Failed to change directory");
         println!("Pwd: {:?}", std::env::current_dir());
+        Command::new("go")
+            .arg("mod")
+            .arg("init")
+            .arg("example.com")
+            .status()
+            .expect("Failed to init module");
         project.build();
         Command::new("go")
             .arg("build")

@@ -4,21 +4,18 @@ impl Ty {
     pub fn build(&self, state: &mut CheckState) -> String {
         match self {
             Ty::Named { name, args } => {
-                match name {
-                    1 => return "string".to_string(),
-                    2 => return "int".to_string(),
-                    3 => return "bool".to_string(),
-                    4 => return "float".to_string(),
-                    5 => return "char".to_string(),
-                    _ => {}
+                let name = type_name(*name);
+                let args = if args.is_empty() {
+                    String::new()
+                } else {
+                    let inner = args
+                        .iter()
+                        .map(|arg| arg.build(state))
+                        .collect::<Vec<_>>()
+                        .join(", ");
+                    format!("[{inner}]")
                 };
-                let qualified = state.project.get_qualified_name(*name);
-                let args = args
-                    .iter()
-                    .map(|arg| arg.build(state))
-                    .collect::<Vec<_>>()
-                    .join(", ");
-                format!("{qualified}[{args}]")
+                format!("{name}{args}")
             }
             Ty::Tuple(args) => {
                 let args = args
@@ -36,5 +33,16 @@ impl Ty {
             Ty::Function(_) => todo!(),
             Ty::Sum(_) => todo!(),
         }
+    }
+}
+#[must_use]
+pub fn type_name(name: u32) -> String {
+    match name {
+        1 => "string".to_string(),
+        2 => "int".to_string(),
+        3 => "bool".to_string(),
+        4 => "float".to_string(),
+        5 => "char".to_string(),
+        _ => format!("T{name}"),
     }
 }

@@ -2,6 +2,7 @@ use std::{
     collections::HashMap,
     fs::{self, OpenOptions},
     io::Write,
+    vec,
 };
 
 use ariadne::Source;
@@ -16,7 +17,7 @@ use crate::{
     project::{file_data::FileData, module::Node, util::path_from_filename},
     resolve::resolve_file,
     ty::{prim::PrimTy, Generic, Ty},
-    util::Spanned,
+    util::{Span, Spanned},
 };
 
 use self::decl::Decl;
@@ -201,25 +202,30 @@ impl Project {
     pub fn build(&self) {
         for file in &self.files {
             let mut state = CheckState::from_file(file, self);
-            let out = &file.get_out_path();
+            let out = "main.go";
             let mut path = file.get_path();
             path.pop();
-            let mod_ = path.last().cloned().unwrap_or("main".to_string());
-            path.insert(0, "build".to_string());
             let path = path.join("/");
             fs::create_dir_all(path).expect("Failed to create directory");
-            let mut out_file = OpenOptions::new()
-                .create_new(true)
-                .append(true)
-                .open(out)
-                .unwrap();
-            out_file
-                .write_all(format!("package {mod_}\n").as_bytes())
+            let new = OpenOptions::new().create_new(true).append(true).open(out);
+            let mut out = if let Ok(mut new) = new {
+                new.write_all(
+                    r#"package main
+import "fmt"
+"#
+                    .to_string()
+                    .as_bytes(),
+                )
                 .expect("Failed to write to file");
+                new
+            } else {
+                OpenOptions::new().append(true).open(out).unwrap()
+            };
+
             for item in &file.ast {
-                let text = item.0.build(&mut state);
-                out_file
-                    .write_all(text.as_bytes())
+                let mut text = item.0.build(&mut state);
+                text.push('\n');
+                out.write_all(text.as_bytes())
                     .expect("Failed to write to file");
             }
         }
@@ -250,6 +256,16 @@ impl Project {
         decls.insert(3, Decl::Prim(PrimTy::Bool));
         decls.insert(4, Decl::Prim(PrimTy::Float));
         decls.insert(5, Decl::Prim(PrimTy::Char));
+        decls.insert(
+            6,
+            Decl::Function {
+                name: ("print".to_string(), Span::splat(0)),
+                generics: vec![],
+                receiver: None,
+                args: vec![("text".to_string(), Ty::string())],
+                ret: Ty::unit(),
+            },
+        );
 
         let mut root = Node::module("root".to_string());
         root.insert(&[], 1, "String");
@@ -257,6 +273,7 @@ impl Project {
         root.insert(&[], 3, "Bool");
         root.insert(&[], 4, "Float");
         root.insert(&[], 5, "Char");
+        root.insert(&[], 6, "print");
         Project {
             root,
             files: vec![],

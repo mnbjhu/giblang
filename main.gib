@@ -1,3 +1,26 @@
+use gib_mod::another::Test3
+
 struct Thing {
   test: Int,
+  even_more: String
+}
+
+fn main() {
+  let test = "Hello, World!"
+  print(test)
+  another()
+}
+
+fn another(): Thing {
+  let test = Thing(123, "Hello")
+  print(test.even_more)
+}
+
+enum TestEnum {
+  A,
+  B(Int),
+  C {
+    some: Int,
+    other: String
+  }
 }
