@@ -2,8 +2,7 @@ use crate::{
     build::expr::ExprKind,
     check::state::CheckState,
     parser::{
-        common::pattern::{Pattern, StructFieldPattern},
-        expr::Expr,
+        common::pattern::Pattern,
         stmt::let_::LetStatement,
     },
 };

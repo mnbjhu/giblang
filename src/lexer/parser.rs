@@ -62,7 +62,15 @@ pub fn lexer<'src>(
 
     let whitespace = one_of(" \t").repeated();
 
-    let newline = text::newline()
+    let line_comment = just("/")
+        .then(just('/'))
+        .then(one_of(" \t").repeated())
+        .then(none_of('\n').repeated())
+        .then(just('\n'))
+        .ignored();
+
+    let newline = line_comment
+        .or(text::newline())
         .repeated()
         .at_least(1)
         .map(|()| Token::Newline);

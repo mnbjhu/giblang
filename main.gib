@@ -1,8 +1,22 @@
 use gib_mod::another::Test3
 
+trait ToStr {
+  fn Self.to_str(): String
+}
+
+impl ToStr for Thing {
+  fn Self.to_str(): String {
+    "Thing String"
+  }
+}
+
 struct Thing {
   test: Int,
   even_more: String
+}
+
+struct Other {
+  inner: Thing
 }
 
 fn main() {
@@ -11,9 +25,9 @@ fn main() {
   another()
 }
 
-fn another(): Thing {
-  let test = Thing(123, "Hello")
-  print(test.even_more)
+fn another(): ToStr {
+  let test: ToStr = Thing(123, "Hello")
+  print(test.to_str())
   test
 }
 

@@ -4,6 +4,7 @@ use crate::{
         state::CheckState,
     },
     parser::common::variance::Variance,
+    project::decl::Decl,
     ty::Ty,
     util::Span,
 };
@@ -113,13 +114,13 @@ impl Ty {
     }
 }
 
-fn path_to_sub_ty(name: u32, sub_ty: u32, state: &mut CheckState) -> Option<Vec<u32>> {
-    if name == sub_ty {
+fn path_to_sub_ty(ty: u32, sub_ty: u32, state: &mut CheckState) -> Option<Vec<u32>> {
+    if ty == sub_ty {
         return Some(Vec::new());
     }
     let (id, mut path) = state
         .project
-        .get_impls(name)
+        .get_impls(ty)
         .iter()
         .map(|i| {
             if let Ty::Named { name, .. } = &i.to {
@@ -131,6 +132,38 @@ fn path_to_sub_ty(name: u32, sub_ty: u32, state: &mut CheckState) -> Option<Vec<
         .find_map(|(id, n)| path_to_sub_ty(*n, sub_ty, state).map(|p| (id, p)))?;
     path.insert(0, id);
     Some(path)
+}
+
+pub fn find_function(name: &str, ty: u32, state: &mut CheckState) -> Option<u32> {
+    let decl = state.project.get_decl(ty);
+    if let Decl::Trait { body, .. } = decl {
+        let found = body
+            .iter()
+            .find(|f| {
+                let f = state.project.get_decl(**f);
+                if let Decl::Function { name: n, .. } = f {
+                    n.0 == name
+                } else {
+                    false
+                }
+            })
+            .copied();
+        if found.is_some() {
+            return found;
+        }
+    }
+    state
+        .project
+        .get_impls(ty)
+        .iter()
+        .map(|i| {
+            if let Ty::Named { name: n, .. } = &i.to {
+                n
+            } else {
+                unreachable!()
+            }
+        })
+        .find_map(|n| find_function(name, *n, state))
 }
 
 fn expect_named_is_instance_of_named(

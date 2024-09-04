@@ -2,11 +2,13 @@ pub mod build;
 pub mod check;
 pub mod exports;
 pub mod parse;
+pub mod run;
 
 use build::build;
 use check::check;
 use exports::exports;
 use parse::parse;
+use run::run;
 
 #[derive(Debug, clap::Parser)]
 pub enum Command {
@@ -19,8 +21,11 @@ pub enum Command {
     /// Checks the project
     Check,
 
-    /// Build the project
+    /// Builds the project
     Build,
+
+    /// Builds and runs the project
+    Run,
 
     /// Shows a tree of the exports
     Exports,
@@ -33,6 +38,7 @@ impl Command {
             Command::Exports => exports(),
             Command::Check => check(),
             Command::Build => build(),
+            Command::Run => run(),
         }
     }
 }

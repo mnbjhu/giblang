@@ -69,7 +69,7 @@ impl Decl {
 
     pub fn get_ty(&self, id: u32, state: &mut CheckState) -> Ty {
         match self {
-            Decl::Trait { .. } => todo!(),
+            Decl::Trait { .. } => self.get_named_ty(state, id),
             Decl::Enum { .. } => todo!(),
             Decl::Member { body, .. } | Decl::Struct { body, .. } => {
                 let self_ty = self.get_named_ty(state, id);

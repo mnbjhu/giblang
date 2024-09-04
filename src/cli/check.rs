@@ -10,9 +10,11 @@ pub fn check() {
     let mut project = Project::init_pwd();
     let errors = project.resolve();
     for error in &errors {
+        project.valid = false;
         project.print_resolve_error(error);
     }
-    if project.check_with_errors() {
+    project.check_with_errors();
+    if project.valid {
         println!("{}", "[Success]".fg(Color::Green));
     } else {
         println!("{}", "[Failed]".fg(Color::Red));

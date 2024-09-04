@@ -37,6 +37,7 @@ pub struct Project {
     impls: HashMap<u32, ImplData>,
     impl_map: HashMap<u32, Vec<u32>>,
     counter: u32,
+    pub valid: bool,
 }
 
 pub struct ImplData {
@@ -56,12 +57,13 @@ pub fn check_test_state(project: &Project) -> CheckState {
 impl Project {
     #[allow(clippy::missing_panics_doc)]
     pub fn insert_file(&mut self, file_path: String, text: String) {
-        let ast = parse_file(
+        let (ast, valid) = parse_file(
             &text,
             &file_path,
             &Source::from(text.clone()),
             &mut self.counter,
         );
+        self.valid &= valid;
         let mut path = path_from_filename(&file_path);
         for item in &ast {
             if let Some(name) = item.0.get_name() {
@@ -231,9 +233,8 @@ import "fmt"
         }
     }
 
-    #[must_use]
-    pub fn check_with_errors(&self) -> bool {
-        let mut pass = true;
+    pub fn check_with_errors(&mut self) {
+        let mut valid = true;
         for file in &self.files {
             let mut state = CheckState::from_file(file, self);
             for item in &file.ast {
@@ -242,10 +243,10 @@ import "fmt"
             state.resolve_type_vars();
             for err in &state.errors {
                 state.print_error(err);
-                pass = false;
+                valid = false;
             }
         }
-        pass
+        self.valid &= valid;
     }
 
     #[must_use]
@@ -282,6 +283,7 @@ import "fmt"
             impls: HashMap::new(),
             impl_map: HashMap::new(),
             counter: 6,
+            valid: true,
         }
     }
 

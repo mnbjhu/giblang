@@ -1,9 +1,10 @@
+use access::access_parser;
 use chumsky::{
     primitive::{choice, just},
     recursive::recursive,
     select, IterParser, Parser,
 };
-use property::{property_parser, Property};
+use property::Property;
 
 use crate::{
     lexer::{
@@ -19,12 +20,13 @@ use self::{
     call::{call_parser, Call},
     code_block::{code_block_parser, CodeBlock},
     if_else::{if_else_parser, IfElse},
-    member::{member_call_parser, MemberCall},
+    member::MemberCall,
     qualified_name::{qualified_name_parser, SpannedQualifiedName},
 };
 
 use super::{common::optional_newline::optional_newline, stmt::Stmt};
 
+pub mod access;
 pub mod call;
 pub mod code_block;
 pub mod if_else;
@@ -74,17 +76,16 @@ pub fn expr_parser<'tokens, 'src: 'tokens>(stmt: AstParser!(Stmt)) -> AstParser!
         .or(bracketed)
         .or(tuple);
 
-        // TODO: Make foldL with all types of access
         let match_ =
             match_parser(expr.clone(), match_arm::match_arm_parser(expr.clone())).map(Expr::Match);
 
+        // TODO: Make foldL with all types of access
         let call = call_parser(atom.clone(), expr.clone()).map(Expr::Call);
-        let member = member_call_parser(atom.clone(), expr.clone()).map(Expr::MemberCall);
-        let property = property_parser(atom.clone()).map(Expr::Property);
+        let access = access_parser(atom.clone(), expr.clone());
 
         let if_else = if_else_parser(expr, stmt).map(Expr::IfElse);
 
-        choice((if_else, match_, block, member, property, call, atom))
+        choice((if_else, match_, block, call, access))
     })
 }
 

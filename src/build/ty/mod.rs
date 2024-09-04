@@ -27,7 +27,10 @@ impl Ty {
             }
             Ty::Any => "any".to_string(),
             Ty::Unknown => panic!("Unknown types should not be built"),
-            Ty::TypeVar { .. } => todo!(),
+            Ty::TypeVar { id } => {
+                let name = state.type_state.get_type_var(*id);
+                name.resolved.as_ref().unwrap().clone().build(state)
+            }
             Ty::Generic(g) => g.name.0.to_string(),
             Ty::Meta(_) => todo!(),
             Ty::Function(_) => todo!(),

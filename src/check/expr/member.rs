@@ -1,7 +1,7 @@
 use crate::{
     check::state::CheckState,
     parser::expr::member::MemberCall,
-    ty::{FuncTy, Ty},
+    ty::{is_instance::find_function, FuncTy, Ty},
     util::Span,
 };
 
@@ -9,7 +9,17 @@ use super::ident::check_ident;
 
 impl MemberCall {
     pub fn check(&self, state: &mut CheckState<'_>) -> Ty {
-        let ty = check_ident(state, &vec![self.name.clone()]);
+        let expr_ty = self.rec.0.check(state);
+        let ty = if let Ty::Named { name: n, .. } = expr_ty {
+            let func = find_function(&self.name.0, n, state);
+            if let Some(func) = func {
+                state.project.get_decl(func).get_ty(func, state)
+            } else {
+                check_ident(state, &vec![self.name.clone()])
+            }
+        } else {
+            check_ident(state, &vec![self.name.clone()])
+        };
 
         if let Ty::Function(FuncTy {
             args: expected_args,

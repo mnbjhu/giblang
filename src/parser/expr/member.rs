@@ -17,9 +17,8 @@ pub struct MemberCall {
 }
 
 pub fn member_call_parser<'tokens, 'src: 'tokens>(
-    atom: AstParser!(Expr),
     expr: AstParser!(Expr),
-) -> AstParser!(MemberCall) {
+) -> AstParser!(CallAccess) {
     let args = expr
         .map_with(|ex, e| (ex, e.span()))
         .separated_by(just(punct(',')).padded_by(optional_newline()))
@@ -32,9 +31,12 @@ pub fn member_call_parser<'tokens, 'src: 'tokens>(
 
     let name = just(punct('.')).ignore_then(spanned_ident_parser());
 
-    atom.map(Box::new)
-        .map_with(|ex, e| (ex, e.span()))
-        .then(name)
-        .then(args)
-        .map(|((rec, name), args)| MemberCall { rec, name, args })
+    name.then(args)
+        .map(|(name, args)| CallAccess { name, args })
+}
+
+#[derive(Clone, PartialEq, Debug)]
+pub struct CallAccess {
+    pub name: Spanned<String>,
+    pub args: Vec<Spanned<Expr>>,
 }

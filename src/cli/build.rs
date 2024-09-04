@@ -6,18 +6,20 @@ pub fn build() {
     let mut project = Project::init_pwd();
     let errors = project.resolve();
     for error in &errors {
+        project.valid = false;
         project.print_resolve_error(error);
     }
-    if project.check_with_errors() {
+    project.check_with_errors();
+    if project.valid {
         let _ = fs::remove_dir_all("build");
         fs::create_dir("build").expect("Failed to create directory");
         set_current_dir("build").expect("Failed to change directory");
-        println!("Pwd: {:?}", std::env::current_dir());
+        // Ignore the output of the command
         Command::new("go")
             .arg("mod")
             .arg("init")
-            .arg("example.com")
-            .status()
+            .arg("out")
+            .output()
             .expect("Failed to init module");
         project.build();
         Command::new("go")

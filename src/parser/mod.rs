@@ -48,10 +48,12 @@ pub fn file_parser<'tokens, 'src: 'tokens>() -> AstParser!(File) {
         })
 }
 
-pub fn parse_file(txt: &str, filename: &str, src: &Source, counter: &mut u32) -> File {
+pub fn parse_file(txt: &str, filename: &str, src: &Source, counter: &mut u32) -> (File, bool) {
+    let mut valid = true;
     let (tokens, errors) = lexer().parse(txt).into_output_errors();
     let len = txt.len();
     for error in errors {
+        valid = false;
         print_error(&error, src.clone(), filename, "Lex");
     }
     if let Some(tokens) = tokens {
@@ -61,13 +63,14 @@ pub fn parse_file(txt: &str, filename: &str, src: &Source, counter: &mut u32) ->
             .parse_with_state(input, counter)
             .into_output_errors();
         for error in errors {
+            valid = false;
             print_error(&error, src.clone(), filename, "Parse");
         }
         if let Some(ast) = ast {
-            return ast;
+            return (ast, valid);
         }
     }
-    vec![]
+    (vec![], valid)
 }
 
 #[macro_export]

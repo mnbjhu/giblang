@@ -17,7 +17,7 @@ impl Top {
                 String::new()
             }
             Top::Impl(impl_) => impl_.build(state),
-            Top::Func(func) => func.build(state),
+            Top::Func(func) => func.build(state, None),
             Top::Struct(struct_) => struct_.build(state),
             Top::Enum(enum_) => enum_.build(state),
             Top::Trait(trait_) => trait_.build(state),
