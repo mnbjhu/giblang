@@ -21,6 +21,7 @@ pub struct Enum {
     pub members: Vec<Spanned<EnumMember>>,
 }
 
+#[must_use]
 pub fn enum_parser<'tokens, 'src: 'tokens>() -> AstParser!(Enum) {
     let members = enum_member_parser()
         .map_with(|t, s| (t, s.span()))

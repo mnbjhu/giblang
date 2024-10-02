@@ -1,7 +1,6 @@
 use core::panic;
 use std::{fs::read_to_string, path::PathBuf, vec};
 
-use chumsky::container::Container;
 use glob::glob;
 use salsa::{Database, Setter, Update};
 
@@ -62,7 +61,9 @@ pub enum Module {
 impl Module {
     pub fn from_path(db: &dyn Database, path: &str) -> Self {
         let module = Module::Dir(Dir::new(db, "root".to_string(), vec![]));
-        for file in glob(path).unwrap() {}
+        for _ in glob(path).unwrap() {
+            todo!()
+        }
         module
     }
 

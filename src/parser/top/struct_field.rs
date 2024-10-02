@@ -13,6 +13,7 @@ pub struct StructField {
     pub ty: Spanned<Type>,
 }
 
+#[must_use]
 pub fn struct_field_parser<'tokens, 'src: 'tokens>() -> AstParser!(StructField) {
     spanned_ident_parser()
         .then_ignore(just(punct(':')))

@@ -17,6 +17,7 @@ pub struct FunctionArg {
     pub ty: Spanned<Type>,
 }
 
+#[must_use]
 pub fn function_arg_parser<'tokens, 'src: 'tokens>() -> AstParser!(FunctionArg) {
     let name = spanned_ident_parser();
     let ty = type_parser().map_with(|t, e| (t, e.span()));
@@ -28,6 +29,7 @@ pub fn function_arg_parser<'tokens, 'src: 'tokens>() -> AstParser!(FunctionArg) 
 
 type FunctionArgs = Vec<Spanned<FunctionArg>>;
 
+#[must_use]
 pub fn function_args_parser<'tokens, 'src: 'tokens>() -> AstParser!(FunctionArgs) {
     function_arg_parser()
         .map_with(|a, e| (a, e.span()))

@@ -10,6 +10,7 @@ pub struct EnumMember {
     pub body: StructBody,
 }
 
+#[must_use]
 pub fn enum_member_parser<'tokens, 'src: 'tokens>() -> AstParser!(EnumMember) {
     spanned_ident_parser()
         .then(struct_body_parser())

@@ -6,6 +6,7 @@ use crate::{
     AstParser,
 };
 
+#[must_use]
 pub fn use_parser<'tokens, 'src: 'tokens>() -> AstParser!(SpannedQualifiedName) {
     just(kw!(use)).ignore_then(qualified_name_parser())
 }

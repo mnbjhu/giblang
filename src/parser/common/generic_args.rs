@@ -10,6 +10,7 @@ use super::{
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct GenericArgs(pub Vec<Spanned<GenericArg>>);
 
+#[must_use]
 pub fn generic_args_parser<'tokens, 'src: 'tokens>() -> AstParser!(GenericArgs) {
     generic_arg_parser()
         .map_with(|t, s| (t, s.span()))

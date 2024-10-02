@@ -8,6 +8,7 @@ use crate::{
 
 pub type SpannedQualifiedName = Vec<Spanned<String>>;
 
+#[must_use]
 pub fn qualified_name_parser<'tokens, 'src: 'tokens>() -> AstParser!(SpannedQualifiedName) {
     let separator = just(punct(':')).then(just(punct(':')));
     let ident = select! {

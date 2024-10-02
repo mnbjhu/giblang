@@ -17,6 +17,7 @@ pub struct Struct {
     pub body: StructBody,
 }
 
+#[must_use]
 pub fn struct_parser<'tokens, 'src: 'tokens>() -> AstParser!(Struct) {
     let name = spanned_ident_parser();
     let generics = generic_args_parser().map_with(|t, s| (t, s.span()));

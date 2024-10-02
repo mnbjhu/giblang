@@ -47,6 +47,7 @@ pub struct ImplData<'db> {
     pub data: Impl,
 }
 
+#[must_use]
 pub fn file_parser<'tokens, 'src: 'tokens>() -> AstParser!(File) {
     top_parser()
         .map_with(|t, e| (t, e.span()))
