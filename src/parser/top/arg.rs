@@ -11,7 +11,7 @@ use crate::{
     AstParser,
 };
 
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Debug, Eq)]
 pub struct FunctionArg {
     pub name: Spanned<String>,
     pub ty: Spanned<Type>,

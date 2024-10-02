@@ -7,7 +7,7 @@ use crate::{
     AstParser,
 };
 
-#[derive(Clone, Debug, PartialEq, Default, Copy)]
+#[derive(Clone, Debug, PartialEq, Default, Copy, Eq)]
 pub enum Variance {
     #[default]
     Invariant,

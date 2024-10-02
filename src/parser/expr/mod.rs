@@ -32,7 +32,7 @@ pub mod match_arm;
 pub mod member;
 pub mod qualified_name;
 
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Debug, Eq)]
 pub enum Expr {
     Literal(Literal),
     Ident(SpannedQualifiedName),

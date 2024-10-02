@@ -1,8 +1,9 @@
 use chumsky::{primitive::choice, Parser};
+use salsa::Update;
 
 use crate::{parser::stmt::stmt_parser, util::Span, AstParser};
 
-use self::{enum_::Enum, func::Func, impl_::Impl, struct_::Struct, trait_::Trait};
+use self::{enum_::Enum, func::Func, struct_::Struct, trait_::Trait};
 
 use super::expr::qualified_name::SpannedQualifiedName;
 
@@ -17,7 +18,7 @@ pub mod struct_field;
 pub mod trait_;
 pub mod use_;
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Update, Eq)]
 pub enum Top {
     Func(func::Func),
     Struct(struct_::Struct),
@@ -60,17 +61,6 @@ impl Top {
         }
     }
 
-    pub fn get_id(&self) -> Option<u32> {
-        match &self {
-            Top::Func(Func { id, .. })
-            | Top::Trait(Trait { id, .. })
-            | Top::Struct(Struct { id, .. })
-            | Top::Enum(Enum { id, .. })
-            | Top::Impl(Impl { id, .. }) => Some(*id),
-            Top::Use(_) => None,
-        }
-    }
-
     pub fn is_parent(&self) -> bool {
         match &self {
             Top::Trait(_) | Top::Struct(_) | Top::Enum(_) | Top::Impl(_) => true,
@@ -78,22 +68,22 @@ impl Top {
         }
     }
 
-    pub fn children(&self) -> Vec<(String, u32)> {
-        match &self {
-            Top::Trait(Trait { body, .. }) => body
-                .iter()
-                .map(|f| (f.0.name.0.to_string(), f.0.id))
-                .collect(),
-            Top::Enum(Enum { members, .. }) => members
-                .iter()
-                .map(|f| (f.0.name.0.to_string(), f.0.id))
-                .collect(),
-            Top::Impl(impl_) => impl_
-                .body
-                .iter()
-                .map(|f| (f.0.name.0.to_string(), f.0.id))
-                .collect(),
-            _ => vec![],
-        }
-    }
+    // pub fn children(&self) -> Vec<(String, u32)> {
+    //     match &self {
+    //         Top::Trait(Trait { body, .. }) => body
+    //             .iter()
+    //             .map(|f| (f.0.name.0.to_string(), f.0.id))
+    //             .collect(),
+    //         Top::Enum(Enum { members, .. }) => members
+    //             .iter()
+    //             .map(|f| (f.0.name.0.to_string(), f.0.id))
+    //             .collect(),
+    //         Top::Impl(impl_) => impl_
+    //             .body
+    //             .iter()
+    //             .map(|f| (f.0.name.0.to_string(), f.0.id))
+    //             .collect(),
+    //         _ => vec![],
+    //     }
+    // }
 }

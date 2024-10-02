@@ -17,12 +17,11 @@ use crate::{
 
 use super::func::{func_parser, Func};
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Eq)]
 pub struct Trait {
     pub name: Spanned<String>,
     pub generics: GenericArgs,
     pub body: Vec<Spanned<Func>>,
-    pub id: u32,
 }
 
 pub fn trait_parser<'tokens, 'src: 'tokens>(stmt: AstParser!(Stmt)) -> AstParser!(Trait) {
@@ -40,14 +39,9 @@ pub fn trait_parser<'tokens, 'src: 'tokens>(stmt: AstParser!(Stmt)) -> AstParser
         .ignore_then(spanned_ident_parser())
         .then(generic_args_parser())
         .then(body)
-        .map_with(|((name, generics), body), e| {
-            let state: &mut u32 = e.state();
-            *state += 1;
-            Trait {
-                name,
-                generics,
-                body,
-                id: *state,
-            }
+        .map(|((name, generics), body)| Trait {
+            name,
+            generics,
+            body,
         })
 }

@@ -8,7 +8,7 @@ use super::expr::{expr_parser, Expr};
 
 pub mod let_;
 
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Debug, Eq)]
 pub enum Stmt {
     Let(LetStatement),
     Expr(Expr),

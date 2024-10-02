@@ -10,7 +10,7 @@ use crate::{
     AstParser,
 };
 
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Debug, Eq)]
 pub struct MatchArm {
     pub pattern: Pattern,
     pub expr: Spanned<Expr>,

@@ -1,8 +1,11 @@
-use ariadne::Source;
+use crate::db::lazy::{Db, File as SourceFile};
 use chumsky::{error::Rich, input::Input, primitive::just, IterParser, Parser};
+use salsa::{Accumulator, Database};
+use top::impl_::Impl;
 
 use crate::{
-    cli::build::print_error,
+    // cli::build::print_error,
+    db::input::{Diagnostic, Level},
     lexer::{parser::lexer, token::newline},
     util::{Span, Spanned},
     AstParser,
@@ -19,6 +22,30 @@ pub mod stmt;
 pub mod top;
 
 pub type File = Vec<Spanned<Top>>;
+
+#[salsa::tracked]
+pub struct FileData<'db> {
+    #[return_ref]
+    pub tops: Vec<TopData<'db>>,
+
+    #[return_ref]
+    pub impls: Vec<ImplData<'db>>,
+}
+
+#[salsa::tracked]
+pub struct TopData<'db> {
+    #[id]
+    #[interned]
+    pub name: String,
+    #[return_ref]
+    pub data: Top,
+}
+
+#[salsa::tracked]
+pub struct ImplData<'db> {
+    #[return_ref]
+    pub data: Impl,
+}
 
 pub fn file_parser<'tokens, 'src: 'tokens>() -> AstParser!(File) {
     top_parser()
@@ -48,20 +75,32 @@ pub fn file_parser<'tokens, 'src: 'tokens>() -> AstParser!(File) {
         })
 }
 
-pub fn parse_file(txt: &str, filename: &str, src: &Source, counter: &mut u32) -> File {
-    let (tokens, errors) = lexer().parse(txt).into_output_errors();
-    let len = txt.len();
+#[salsa::tracked]
+pub fn parse_file(db: &dyn Db, file: SourceFile) -> File {
+    let text = file.contents(db);
+    let (tokens, errors) = lexer().parse(text).into_output_errors();
+    let len = text.len();
     for error in errors {
-        print_error(&error, src.clone(), filename, "Lex");
+        Diagnostic {
+            message: error.reason().to_string(),
+            span: *error.span(),
+            level: Level::Error,
+            path: file.path(db),
+        }
+        .accumulate(db);
     }
     if let Some(tokens) = tokens {
         let eoi = Span::splat(len);
         let input = tokens.spanned(eoi);
-        let (ast, errors) = file_parser()
-            .parse_with_state(input, counter)
-            .into_output_errors();
+        let (ast, errors) = file_parser().parse(input).into_output_errors();
         for error in errors {
-            print_error(&error, src.clone(), filename, "Parse");
+            Diagnostic {
+                message: error.reason().to_string(),
+                span: *error.span(),
+                level: Level::Error,
+                path: file.path(db),
+            }
+            .accumulate(db);
         }
         if let Some(ast) = ast {
             return ast;

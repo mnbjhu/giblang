@@ -12,7 +12,7 @@ use super::{
     optional_newline::optional_newline,
 };
 
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Debug, Eq)]
 pub enum Pattern {
     Name(String),
     Struct {
@@ -37,7 +37,7 @@ impl Pattern {
     }
 }
 
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Debug, Eq)]
 pub enum StructFieldPattern {
     Implied(String),
     Explicit {

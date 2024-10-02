@@ -1,15 +1,18 @@
 use clap::Parser;
-use cli::Command;
+use db::lazy::watch_test;
+// use cli::Command;
 
-mod check;
-mod cli;
+// mod check;
+// mod cli;
+pub mod db;
 mod lexer;
-mod parser;
-pub mod project;
-mod resolve;
-mod ty;
+pub mod parser;
+// pub mod project;
+// mod resolve;
+// mod ty;
 mod util;
 
-fn main() {
-    Command::parse().run();
+fn main() -> ! {
+    watch_test();
+    // Command::parse().run();
 }

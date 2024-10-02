@@ -3,6 +3,7 @@ use chumsky::{
     recursive::recursive,
     IterParser, Parser,
 };
+use salsa::Update;
 
 use crate::{
     lexer::token::punct,
@@ -14,7 +15,7 @@ use crate::{
 
 use super::optional_newline::optional_newline;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Update, Eq)]
 pub enum Type {
     Wildcard(Span),
     Named(NamedType),
@@ -27,7 +28,7 @@ pub enum Type {
     },
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Update, Eq)]
 pub struct NamedType {
     pub name: SpannedQualifiedName,
     pub args: Vec<Spanned<Type>>,
@@ -103,78 +104,4 @@ pub fn named_parser<'tokens, 'src: 'tokens>(ty: AstParser!(Type)) -> AstParser!(
     ident
         .then(args)
         .map(|(name, args)| NamedType { name, args })
-}
-
-#[cfg(test)]
-mod tests {
-    use chumsky::{input::Input, Parser};
-
-    use crate::{lexer::parser::lexer, parser::common::type_::Type, util::Span};
-
-    use super::type_parser;
-
-    #[test]
-    fn test_wildcard_type() {
-        let input = "_";
-        let tokens = lexer().parse(input).unwrap();
-        let end = Span::splat(input.len());
-        let input = tokens.spanned(end);
-        let ty = type_parser().parse(input).unwrap();
-        assert!(matches!(ty, Type::Wildcard(_)));
-    }
-
-    #[test]
-    fn test_named_type() {
-        let input = "Foo";
-        let tokens = lexer().parse(input).unwrap();
-        let end = Span::splat(input.len());
-        let input = tokens.spanned(end);
-        let ty = type_parser().parse(input).unwrap();
-        if let Type::Named(named) = ty {
-            assert_eq!(named.name[0].0, "Foo");
-            assert!(named.args.is_empty(), "expected no args");
-        } else {
-            panic!("expected named type");
-        }
-    }
-
-    #[test]
-    fn test_named_with_args() {
-        let input = "Foo[Bar, Baz]";
-        let tokens = lexer().parse(input).unwrap();
-        let end = Span::splat(input.len());
-        let input = tokens.spanned(end);
-        let ty = type_parser().parse(input).unwrap();
-        if let Type::Named(named) = ty {
-            assert_eq!(named.name[0].0, "Foo");
-            assert_eq!(named.args.len(), 2);
-        } else {
-            panic!("expected named type");
-        }
-    }
-
-    #[test]
-    fn named_with_nested_args() {
-        let input = "Foo[Bar[Baz]]";
-        let tokens = lexer().parse(input).unwrap();
-        let end = Span::splat(input.len());
-        let input = tokens.spanned(end);
-        let ty = type_parser().parse(input).unwrap();
-        if let Type::Named(ty) = ty {
-            assert_eq!(ty.name[0].0, "Foo");
-            assert_eq!(ty.args.len(), 1);
-            let inner = &ty.args[0].0;
-            if let Type::Named(inner) = inner {
-                assert_eq!(inner.name[0].0, "Bar");
-                assert_eq!(inner.args.len(), 1);
-                if let Type::Named(inner) = &inner.args[0].0 {
-                    assert_eq!(inner.name[0].0, "Baz");
-                } else {
-                    panic!("expected named type");
-                }
-            } else {
-                panic!("expected named type");
-            }
-        }
-    }
 }

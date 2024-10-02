@@ -12,7 +12,7 @@ use super::{
     variance::{variance_parser, Variance},
 };
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct GenericArg {
     pub variance: Variance,
     pub name: Spanned<String>,

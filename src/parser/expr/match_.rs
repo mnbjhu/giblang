@@ -11,7 +11,7 @@ use crate::{
     AstParser,
 };
 
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Debug, Eq)]
 pub struct Match {
     pub expr: Spanned<Box<Expr>>,
     pub arms: Vec<MatchArm>,

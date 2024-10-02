@@ -14,12 +14,11 @@ use crate::{
 
 use super::enum_member::{enum_member_parser, EnumMember};
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Eq)]
 pub struct Enum {
     pub name: Spanned<String>,
     pub generics: Spanned<GenericArgs>,
     pub members: Vec<Spanned<EnumMember>>,
-    pub id: u32,
 }
 
 pub fn enum_parser<'tokens, 'src: 'tokens>() -> AstParser!(Enum) {
@@ -53,14 +52,9 @@ pub fn enum_parser<'tokens, 'src: 'tokens>() -> AstParser!(Enum) {
         .ignore_then(spanned_ident_parser())
         .then(generic_args_parser().map_with(|a, e| (a, e.span())))
         .then(members)
-        .map_with(|((name, generics), members), e| {
-            let state: &mut u32 = e.state();
-            *state += 1;
-            Enum {
-                name,
-                generics,
-                members,
-                id: *state,
-            }
+        .map(|((name, generics), members)| Enum {
+            name,
+            generics,
+            members,
         })
 }

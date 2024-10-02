@@ -16,7 +16,7 @@ use crate::{
     AstParser,
 };
 
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Debug, Eq)]
 pub struct LetStatement {
     pub pattern: Spanned<Pattern>,
     pub ty: Option<Spanned<Type>>,
