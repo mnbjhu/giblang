@@ -61,7 +61,7 @@ pub enum Module {
 
 impl Module {
     pub fn from_path(db: &dyn Database, path: &str) -> Self {
-        let mut module = Module::Dir(Dir::new(db, "root".to_string(), vec![]));
+        let module = Module::Dir(Dir::new(db, "root".to_string(), vec![]));
         for file in glob(path).unwrap() {}
         module
     }

@@ -1,4 +1,3 @@
-use clap::Parser;
 use db::lazy::watch_test;
 // use cli::Command;
 

@@ -1,6 +1,6 @@
 use crate::db::lazy::{Db, File as SourceFile};
 use chumsky::{error::Rich, input::Input, primitive::just, IterParser, Parser};
-use salsa::{Accumulator, Database};
+use salsa::Accumulator;
 use top::impl_::Impl;
 
 use crate::{

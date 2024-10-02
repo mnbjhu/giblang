@@ -98,7 +98,7 @@ impl salsa::Database for LazyInputDatabase {
         // don't log boring events
         let event = event();
         if let salsa::EventKind::WillExecute { .. } = event.kind {
-            self.logs.lock().unwrap().push(format!("{:?}", event));
+            self.logs.lock().unwrap().push(format!("{event:?}"));
         }
     }
 }

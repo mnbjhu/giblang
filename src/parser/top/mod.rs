@@ -40,7 +40,7 @@ pub fn top_parser<'tokens, 'src: 'tokens>() -> AstParser!(Top) {
 }
 
 impl Top {
-    pub fn get_name(&self) -> Option<&str> {
+    #[must_use] pub fn get_name(&self) -> Option<&str> {
         match &self {
             Top::Func(Func { name, .. })
             | Top::Trait(Trait { name, .. })
@@ -50,7 +50,7 @@ impl Top {
         }
     }
 
-    pub fn name_span(&self) -> Span {
+    #[must_use] pub fn name_span(&self) -> Span {
         match &self {
             Top::Func(Func { name, .. })
             | Top::Trait(Trait { name, .. })
@@ -61,7 +61,7 @@ impl Top {
         }
     }
 
-    pub fn is_parent(&self) -> bool {
+    #[must_use] pub fn is_parent(&self) -> bool {
         match &self {
             Top::Trait(_) | Top::Struct(_) | Top::Enum(_) | Top::Impl(_) => true,
             Top::Use(_) | Top::Func(_) => false,
