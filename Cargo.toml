@@ -13,7 +13,7 @@ ariadne = "0.4.1"
 clap = { version = "4.5.3", features = ["derive"] }
 chumsky = "1.0.0-alpha.7"
 glob = "0.3.1"
-salsa = { path = "../salsa" }
+salsa = { git = "https://github.com/salsa-rs/salsa.git", branch = "master" }
 rustc-hash = "2.0.0"
 tracing = "0.1.40"
 anyhow = "1.0.89"
