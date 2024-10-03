@@ -1,9 +1,7 @@
 use std::{path::PathBuf, sync::Mutex};
 
 use dashmap::{mapref::entry::Entry, DashMap};
-use salsa::{Setter, Storage};
-
-use crate::parser::parse_file;
+use salsa::Storage;
 
 // ANCHOR: main
 // pub fn watch_test() -> ! {
@@ -73,7 +71,14 @@ pub struct LazyInputDatabase {
     files: DashMap<PathBuf, File>,
 }
 
+impl Default for LazyInputDatabase {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl LazyInputDatabase {
+    #[must_use]
     pub fn new() -> Self {
         Self {
             storage: Storage::default(),
@@ -112,17 +117,3 @@ impl Db for LazyInputDatabase {
         }
     }
 }
-// ANCHOR_END: db
-
-#[salsa::accumulator]
-struct Diagnostic(String);
-
-// #[salsa::tracked]
-// fn sum<'db>(db: &'db dyn Db, input: FileData<'db>) -> u32 {
-//     input.value(db)
-//         + input
-//             .links(db)
-//             .iter()
-//             .map(|&file| sum(db, file))
-//             .sum::<u32>()
-// }

@@ -1,6 +1,6 @@
 use async_lsp::lsp_types::{Position, Range};
 
-pub fn offset_to_position_str(offset: usize, txt: &str) -> Position {
+#[must_use] pub fn offset_to_position_str(offset: usize, txt: &str) -> Position {
     let mut line = 0;
     let mut column = 0;
     for (i, c) in txt.chars().enumerate() {
@@ -17,14 +17,14 @@ pub fn offset_to_position_str(offset: usize, txt: &str) -> Position {
     Position::new(line as u32, column as u32)
 }
 
-pub fn span_to_range_str(span: std::ops::Range<usize>, txt: &str) -> Range {
+#[must_use] pub fn span_to_range_str(span: std::ops::Range<usize>, txt: &str) -> Range {
     let start_position = offset_to_position_str(span.start, txt);
     let end_position = offset_to_position_str(span.end, txt);
     Range::new(start_position, end_position)
 }
 
 #[allow(dead_code)]
-pub fn position_to_offset(position: Position, txt: &str) -> usize {
+#[must_use] pub fn position_to_offset(position: Position, txt: &str) -> usize {
     let mut offset = 0;
     let mut line = 0;
     let mut column = 0;

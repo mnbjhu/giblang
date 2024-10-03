@@ -1,15 +1,9 @@
 use async_lsp::lsp_types::{
-    DocumentSymbolResponse, Location, SemanticToken, SemanticTokens, SymbolInformation, SymbolKind,
+    SemanticToken, SemanticTokens,
 };
 use chumsky::span::SimpleSpan;
-use salsa::Database;
 
-use crate::{
-    db::input::SourceFile,
-    lexer::{literal::Literal, token::Token},
-    parser::{top::Top, FileData},
-    range::span_to_range_str,
-};
+use crate::lexer::{literal::Literal, token::Token};
 
 pub fn get_semantic_tokens(tokens: Vec<(Token, SimpleSpan)>, text: &str) -> Option<SemanticTokens> {
     let found = {

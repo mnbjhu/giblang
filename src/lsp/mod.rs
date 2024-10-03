@@ -1,6 +1,6 @@
+mod capabilities;
 mod semantic_tokens;
 
-use std::collections::HashMap;
 use std::ops::ControlFlow;
 use std::time::Duration;
 
@@ -21,8 +21,8 @@ use salsa::{AsDynDatabase, Setter};
 use tower::ServiceBuilder;
 use tracing::Level;
 
-use crate::db::input::{Diagnostic, SourceFile};
-use crate::db::lazy::{Db, File, LazyInputDatabase};
+use crate::db::input::Diagnostic;
+use crate::db::lazy::{Db, LazyInputDatabase};
 use crate::parser::{self};
 use crate::range::span_to_range_str;
 
@@ -58,47 +58,7 @@ pub async fn main_loop() {
         router
             .request::<request::Initialize, _>(|_, params| async move {
                 eprintln!("Initialize with {params:?}");
-                Ok(InitializeResult {
-                    capabilities: ServerCapabilities {
-                        hover_provider: Some(HoverProviderCapability::Simple(true)),
-                        definition_provider: Some(OneOf::Left(true)),
-                        text_document_sync: Some(TextDocumentSyncCapability::Kind(
-                            TextDocumentSyncKind::FULL,
-                        )),
-                        document_symbol_provider: Some(OneOf::Left(true)),
-                        semantic_tokens_provider: Some(
-                            SemanticTokensServerCapabilities::SemanticTokensOptions(
-                                SemanticTokensOptions {
-                                    legend: SemanticTokensLegend {
-                                        token_types: vec![
-                                            SemanticTokenType::KEYWORD,
-                                            SemanticTokenType::VARIABLE,
-                                            SemanticTokenType::FUNCTION,
-                                            SemanticTokenType::STRING,
-                                            SemanticTokenType::NUMBER,
-                                            SemanticTokenType::COMMENT,
-                                            SemanticTokenType::TYPE,
-                                            SemanticTokenType::PARAMETER,
-                                            SemanticTokenType::PROPERTY,
-                                            SemanticTokenType::STRUCT,
-                                            SemanticTokenType::ENUM,
-                                            SemanticTokenType::ENUM_MEMBER,
-                                            SemanticTokenType::INTERFACE,
-                                            SemanticTokenType::NAMESPACE,
-                                        ],
-                                        token_modifiers: vec![],
-                                    },
-                                    full: Some(SemanticTokensFullOptions::Delta {
-                                        delta: Some(true),
-                                    }),
-                                    ..Default::default()
-                                },
-                            ),
-                        ),
-                        ..ServerCapabilities::default()
-                    },
-                    server_info: None,
-                })
+                Ok(capabilities::capabilities())
             })
             // .request::<request::SemanticTokensFullRequest, _>(|st, _| {
             //     let file = st.file.unwrap();
