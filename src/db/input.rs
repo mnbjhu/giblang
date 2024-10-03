@@ -6,7 +6,7 @@ use salsa::{Database, Setter, Update};
 
 use crate::util::Span;
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 #[salsa::db]
 pub struct SourceDatabase {
     storage: salsa::Storage<Self>,
@@ -59,10 +59,20 @@ pub enum Module {
 }
 
 impl Module {
-    pub fn from_path(db: &dyn Database, path: &str) -> Self {
+    pub fn from_path(db: &mut dyn Database, path: &str) -> Self {
         let module = Module::Dir(Dir::new(db, "root".to_string(), vec![]));
-        for _ in glob(path).unwrap() {
-            todo!()
+        for file in glob(path).unwrap() {
+            let file = file.unwrap();
+            let src = SourceFile::open(db, file.clone());
+            let mut mod_path = file
+                .to_str()
+                .unwrap()
+                .strip_suffix(".gib")
+                .unwrap()
+                .split('/')
+                .collect::<Vec<&str>>();
+            mod_path.pop().unwrap();
+            module.get_or_add(db, &mod_path, src);
         }
         module
     }

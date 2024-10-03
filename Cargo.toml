@@ -21,6 +21,18 @@ rayon = "1.10.0"
 dashmap = "6.1.0"
 crossbeam = "0.8.0"
 notify-debouncer-mini = "0.4.1"
+tower = "0.5.1"
+async-lsp = { version = "0.2.0", features = [
+  "client-monitor",
+  "omni-trait",
+  "stdio",
+  "tracing",
+  "tokio",
+] }
+tokio = { version = "1.40.0", features = ["full"] }
+tracing-subscriber = "0.3.16"
+# tokio-util = "0.7.12"
+# codespan = "0.11.1"
 
 [lints.clippy]
 pedantic = { priority = -1, level = "warn" }
