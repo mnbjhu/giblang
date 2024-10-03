@@ -7,10 +7,8 @@ use std::time::Duration;
 use async_lsp::client_monitor::ClientProcessMonitorLayer;
 use async_lsp::concurrency::ConcurrencyLayer;
 use async_lsp::lsp_types::{
-    notification, request, DiagnosticSeverity, HoverProviderCapability, InitializeResult, OneOf,
-    PublishDiagnosticsParams, SemanticTokenType, SemanticTokensFullOptions, SemanticTokensLegend,
-    SemanticTokensOptions, SemanticTokensServerCapabilities, ServerCapabilities,
-    TextDocumentSyncCapability, TextDocumentSyncKind, Url,
+    notification, request, DiagnosticSeverity,
+    PublishDiagnosticsParams, Url,
 };
 use async_lsp::panic::CatchUnwindLayer;
 use async_lsp::router::Router;
