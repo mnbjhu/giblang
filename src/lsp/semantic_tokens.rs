@@ -1,17 +1,16 @@
-use async_lsp::lsp_types::{
-    SemanticToken, SemanticTokens,
-};
+use async_lsp::lsp_types::{SemanticToken, SemanticTokens};
 use chumsky::span::SimpleSpan;
 
 use crate::lexer::{literal::Literal, token::Token};
 
+#[allow(dead_code, clippy::cast_possible_truncation)]
 pub fn get_semantic_tokens(tokens: Vec<(Token, SimpleSpan)>, text: &str) -> Option<SemanticTokens> {
     let found = {
         let mut found = Vec::new();
         let mut tokens = tokens.into_iter();
         let mut current = tokens.next()?;
-        let mut last_line = 0;
-        let mut last_char = 0;
+        let mut last_line: u32 = 0;
+        let mut last_char: u32 = 0;
         for (index, char) in text.chars().enumerate() {
             if current.1.start == index {
                 let ty = match current.0 {
@@ -22,9 +21,9 @@ pub fn get_semantic_tokens(tokens: Vec<(Token, SimpleSpan)>, text: &str) -> Opti
                 };
                 if let Some(ty) = ty {
                     found.push(SemanticToken {
-                        delta_line: last_line as u32,
-                        delta_start: last_char as u32,
-                        length: (current.1.end - current.1.start) as u32,
+                        delta_line: last_line,
+                        delta_start: last_char,
+                        length: current.1.end.saturating_sub(current.1.start) as u32,
                         token_type: ty,
                         token_modifiers_bitset: 0,
                     });

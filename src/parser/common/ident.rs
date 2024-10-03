@@ -5,7 +5,8 @@ use crate::{
     util::{ParserInput, Span, Spanned},
 };
 
-#[must_use] pub fn ident_parser<'tokens, 'src: 'tokens, 'db: 'tokens>() -> impl Parser<
+#[must_use]
+pub fn ident_parser<'tokens, 'src: 'tokens, 'db: 'tokens>() -> impl Parser<
     'tokens,
     ParserInput<'tokens, 'src>,
     String,
@@ -17,7 +18,8 @@ use crate::{
     }
 }
 
-#[must_use] pub fn spanned_ident_parser<'tokens, 'src: 'tokens, 'db: 'tokens>() -> impl Parser<
+#[must_use]
+pub fn spanned_ident_parser<'tokens, 'src: 'tokens, 'db: 'tokens>() -> impl Parser<
     'tokens,
     ParserInput<'tokens, 'src>,
     Spanned<String>,

@@ -27,7 +27,8 @@ pub enum Pattern {
 }
 
 impl Pattern {
-    #[must_use] pub fn name(&self) -> &SpannedQualifiedName {
+    #[must_use]
+    pub fn name(&self) -> &SpannedQualifiedName {
         match self {
             Pattern::Struct { name, .. }
             | Pattern::TupleStruct { name, .. }

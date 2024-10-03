@@ -5,7 +5,8 @@ use crate::{
     util::{ParserInput, Span},
 };
 
-#[must_use] pub fn optional_newline<'tokens, 'src: 'tokens>() -> impl Parser<
+#[must_use]
+pub fn optional_newline<'tokens, 'src: 'tokens>() -> impl Parser<
     'tokens,
     ParserInput<'tokens, 'src>,
     (),
