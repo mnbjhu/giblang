@@ -5,7 +5,7 @@ use crate::{
     ty::{FuncTy, Ty},
 };
 
-impl Ty {
+impl Ty<'_> {
     pub fn inst(&self, ids: &mut HashMap<String, u32>, state: &mut CheckState) -> Ty {
         match self {
             Ty::Generic(g) => {

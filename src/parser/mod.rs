@@ -1,11 +1,16 @@
-use crate::db::lazy::{Db, File as SourceFile};
+use std::vec;
+
+use crate::db::{
+    err::{Diagnostic, Level},
+    lazy::{Db, File as SourceFile},
+};
 use chumsky::{error::Rich, input::Input, primitive::just, IterParser, Parser};
 use salsa::Accumulator;
 use top::impl_::Impl;
+use tracing::info;
 
 use crate::{
     // cli::build::print_error,
-    db::input::{Diagnostic, Level},
     lexer::{parser::lexer, token::newline},
     util::{Span, Spanned},
     AstParser,
@@ -77,10 +82,12 @@ pub fn file_parser<'tokens, 'src: 'tokens>() -> AstParser!(File) {
 }
 
 #[salsa::tracked]
-pub fn parse_file(db: &dyn Db, file: SourceFile) -> File {
+pub fn parse_file<'db>(db: &'db dyn Db, file: SourceFile) -> FileData<'db> {
+    info!("Parsing file: {:?}", file.path(db));
     let text = file.contents(db);
     let (tokens, errors) = lexer().parse(text).into_output_errors();
     let len = text.len();
+    let mut found = vec![];
     for error in errors {
         Diagnostic {
             message: error.reason().to_string(),
@@ -104,10 +111,20 @@ pub fn parse_file(db: &dyn Db, file: SourceFile) -> File {
             .accumulate(db);
         }
         if let Some(ast) = ast {
-            return ast;
+            found = ast;
         }
     }
-    vec![]
+    FileData::new(
+        db,
+        found
+            .iter()
+            .filter_map(|(top, _)| {
+                top.get_name()
+                    .map(|name| TopData::new(db, name.to_string(), top.clone()))
+            })
+            .collect(),
+        vec![],
+    )
 }
 
 #[macro_export]

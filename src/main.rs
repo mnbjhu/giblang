@@ -3,16 +3,16 @@
 
 use lsp::main_loop;
 
-// mod check;
+mod check;
 // mod cli;
 pub mod db;
 mod lexer;
 pub mod lsp;
 pub mod parser;
+pub mod project;
 pub mod range;
-// pub mod project;
-// mod resolve;
-// mod ty;
+mod resolve;
+mod ty;
 mod util;
 
 #[tokio::main]

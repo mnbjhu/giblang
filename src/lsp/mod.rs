@@ -16,9 +16,9 @@ use async_lsp::tracing::TracingLayer;
 use async_lsp::ClientSocket;
 use salsa::{AsDynDatabase, Setter};
 use tower::ServiceBuilder;
-use tracing::Level;
+use tracing::{info, Level};
 
-use crate::db::input::Diagnostic;
+use crate::db::err::Diagnostic;
 use crate::db::lazy::{Db, LazyInputDatabase};
 use crate::parser::{self};
 use crate::range::span_to_range_str;
@@ -125,9 +125,12 @@ pub async fn main_loop() {
                 ControlFlow::Continue(())
             })
             .notification::<notification::DidCloseTextDocument>(|_, _| ControlFlow::Continue(()))
-            .notification::<notification::DidSaveTextDocument>(|_, _| ControlFlow::Continue(()))
+            .notification::<notification::DidSaveTextDocument>(|st, msg| {
+                st.report_diags(msg.text_document.uri);
+                info!("Saving 123");
+                ControlFlow::Continue(())
+            })
             .event::<TickEvent>(|st, _| {
-                // info!("tick");
                 st.counter += 1;
                 ControlFlow::Continue(())
             });

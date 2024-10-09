@@ -44,23 +44,22 @@ pub struct SourceFile {
 }
 
 #[salsa::input]
-pub struct Dir {
-    #[return_ref]
+pub struct Vfs {
     pub name: String,
-
     #[return_ref]
-    modules: Vec<Module>,
+    pub inner: VfsInner,
 }
 
 #[derive(Debug, Update, Clone)]
-pub enum Module {
+pub enum VfsInner {
     File(SourceFile),
-    Dir(Dir),
+    Dir(Vec<Vfs>),
 }
 
-impl Module {
-    pub fn from_path(db: &mut dyn Database, path: &str) -> Self {
-        let module = Module::Dir(Dir::new(db, "root".to_string(), vec![]));
+#[salsa::tracked]
+impl Vfs {
+    pub fn from_path(db: &mut dyn Database, path: &str) -> Vfs {
+        let module = Vfs::new(db, "root".to_string(), VfsInner::Dir(vec![]));
         for file in glob(path).unwrap() {
             let file = file.unwrap();
             let src = SourceFile::open(db, file.clone());
@@ -72,79 +71,46 @@ impl Module {
                 .split('/')
                 .collect::<Vec<&str>>();
             mod_path.pop().unwrap();
-            module.get_or_add(db, &mod_path, src);
+            module.insert_path(db.as_dyn_database_mut(), &mod_path, src);
         }
         module
     }
 
-    pub fn name<'db>(&self, db: &'db dyn Database) -> &'db str {
-        match self {
-            Module::File(f) => f.name(db),
-            Module::Dir(d) => d.name(db),
-        }
-    }
-
-    pub fn get_or_add(&self, db: &mut dyn Database, path: &[&str], src: SourceFile) {
-        let mut module: Module = self.clone();
+    pub fn insert_path(&self, db: &mut dyn Database, path: &[&str], src: SourceFile) {
+        let mut module: Vfs = self.clone();
         for seg in path {
             if let Some(exising) = module.get(db, seg) {
                 module = exising.clone();
             } else {
-                let new = Module::Dir(Dir::new(db, (*seg).to_string(), vec![]));
+                let new = Vfs::new(db, (*seg).to_string(), VfsInner::Dir(vec![]));
                 module.insert(db, new.clone());
                 module = new;
             }
         }
-        module.insert(db, Module::File(src));
+        module.set_inner(db).to(VfsInner::File(src));
     }
 
-    pub fn file_set<'db>(&self, db: &'db dyn Database) -> Vec<&'db SourceFile> {
-        if let Module::Dir(dir) = self {
-            dir.modules(db)
-                .iter()
-                .filter_map(|mod_| {
-                    if let Module::File(f) = mod_ {
-                        Some(f)
-                    } else {
-                        None
-                    }
-                })
-                .collect()
-        } else {
-            panic!("Files set called on file")
-        }
-    }
-
-    pub fn get<'db>(&self, db: &'db dyn Database, name: &str) -> Option<&'db Module> {
-        if let Module::Dir(dir) = self {
-            Some(dir.get(db, name)?)
+    pub fn get<'module, 'db: 'module>(
+        &'module self,
+        db: &'db dyn Database,
+        name: &str,
+    ) -> Option<&'module Vfs> {
+        if let VfsInner::Dir(dir) = self.inner(db) {
+            dir.iter().find(|mod_| mod_.name(db) == name)
         } else {
             panic!("Get dir called on file")
         }
     }
 
-    pub fn insert(&self, db: &mut dyn Database, mod_: Module) {
-        if let Module::Dir(dir) = self {
-            let mut new = dir.modules(db).clone();
+    pub fn insert<'module, 'db: 'module>(&'module mut self, db: &'db mut dyn Database, mod_: Vfs) {
+        let new = if let VfsInner::Dir(dir) = self.inner(db) {
+            let mut new = dir.to_vec();
             new.push(mod_);
-            dir.set_modules(db).to(new);
+            new
         } else {
             panic!("Inserted into file")
-        }
-    }
-}
-
-impl Dir {
-    pub fn get<'db>(&self, db: &'db dyn Database, name: &str) -> Option<&'db Module> {
-        self.modules(db).iter().find(|mod_| mod_.name(db) == name)
-    }
-
-    pub fn get_dir<'db>(&self, db: &'db dyn Database, name: &str) -> Option<&'db Dir> {
-        if let Some(Module::Dir(dir)) = self.get(db, name) {
-            Some(dir)
-        } else {
-            None
-        }
+        };
+        self.set_inner(db).to(VfsInner::Dir(new));
     }
 }
 

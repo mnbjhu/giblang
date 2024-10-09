@@ -1,10 +1,8 @@
-use crate::check::state::CheckState;
-
-mod common;
+// mod common;
 pub mod err;
-mod expr;
+// mod expr;
 pub mod state;
-mod stmt;
-mod top;
+// mod stmt;
+// mod top;
 pub mod ty;
 mod type_state;

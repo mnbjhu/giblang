@@ -1,14 +1,16 @@
 use std::collections::HashMap;
 
+use salsa::Database;
+
 use crate::{project::ImplData, ty::Ty};
 
 // Create generic arg
 
-impl ImplData {
+impl<'db> ImplData<'db> {
     #[must_use]
-    pub fn map(&self, ty: &Ty) -> Ty {
+    pub fn map(self, db: &'db dyn Database, ty: &Ty<'db>) -> Ty<'db> {
         let mut implied = HashMap::new();
-        self.from.imply_generic_args(ty, &mut implied);
-        self.to.parameterize(&implied)
+        self.from_ty(db).imply_generic_args(ty, &mut implied);
+        self.to_ty(db).parameterize(&implied)
     }
 }

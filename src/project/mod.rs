@@ -2,11 +2,16 @@ use std::collections::HashMap;
 
 use ariadne::Source;
 use glob::glob;
+use salsa::Database;
 
 use crate::{
     check::{
         err::{unresolved::Unresolved, CheckError, ResolveError},
         state::CheckState,
+    },
+    db::{
+        input::Vfs,
+        modules::{Module, ModulePath},
     },
     parser::parse_file,
     project::{file_data::FileData, module::Node, util::path_from_filename},
@@ -24,31 +29,33 @@ mod module;
 pub mod name;
 pub mod util;
 
-pub struct Project {
-    pub root: Node,
-    files: Vec<FileData>,
-    parents: Vec<u32>,
-    decls: HashMap<u32, Decl>,
-    impls: HashMap<u32, ImplData>,
-    impl_map: HashMap<u32, Vec<u32>>,
-    counter: u32,
+#[salsa::tracked]
+pub struct Project<'db> {
+    decls: Module<'db>,
+    impls: HashMap<ModulePath<'db>, ImplData<'db>>,
 }
 
-pub struct ImplData {
-    pub id: u32,
-    pub generics: Vec<Generic>,
-    pub from: Ty,
-    pub to: Ty,
+#[salsa::tracked]
+pub struct ImplData<'db> {
+    pub generics: Vec<Generic<'db>>,
+    #[id]
+    pub from_ty: Ty<'db>,
+    #[id]
+    pub to_ty: Ty<'db>,
     pub functions: Vec<u32>,
 }
 
-#[cfg(test)]
-#[must_use]
-pub fn check_test_state(project: &Project) -> CheckState {
-    CheckState::from_file(project.get_file(0).unwrap(), project)
-}
+// #[cfg(test)]
+// #[must_use]
+// pub fn check_test_state(project: &Project) -> CheckState {
+//     CheckState::from_file(project.get_file(0).unwrap(), project)
+// }
+//
 
-impl Project {
+#[salsa::tracked]
+pub fn parse_project<'db>(db: &'db dyn Database, fs: Vfs) -> Project<'db> {}
+
+impl<'db> Project<'db> {
     #[allow(clippy::missing_panics_doc)]
     pub fn insert_file(&mut self, file_path: String, text: String) {
         let ast = parse_file(
@@ -87,7 +94,7 @@ impl Project {
     }
 
     #[must_use]
-    pub fn get_parent(&self, for_id: u32) -> Option<u32> {
+    pub fn get_parent(&self, db: &dyn Database, for_id: ModulePath) -> Option<ModulePath> {
         self.parents.iter().find(|&&id| id > for_id).copied()
     }
 
@@ -136,7 +143,7 @@ impl Project {
     }
 
     #[must_use]
-    pub fn get_impls(&self, for_decl: u32) -> Vec<&ImplData> {
+    pub fn get_impls(&self, for_decl: ModulePath) -> Vec<&ImplData> {
         let impl_ids = self.impl_map.get(&for_decl).cloned().unwrap_or_default();
         let mut impls = vec![];
         for id in &impl_ids {
@@ -186,31 +193,31 @@ impl Project {
         }
     }
 
-    #[must_use]
-    pub fn new() -> Project {
-        let mut decls = HashMap::new();
-        decls.insert(1, Decl::Prim(PrimTy::String));
-        decls.insert(2, Decl::Prim(PrimTy::Int));
-        decls.insert(3, Decl::Prim(PrimTy::Bool));
-        decls.insert(4, Decl::Prim(PrimTy::Float));
-        decls.insert(5, Decl::Prim(PrimTy::Char));
-
-        let mut root = Node::module("root".to_string());
-        root.insert(&[], 1, "String");
-        root.insert(&[], 2, "Int");
-        root.insert(&[], 3, "Bool");
-        root.insert(&[], 4, "Float");
-        root.insert(&[], 5, "Char");
-        Project {
-            root,
-            files: vec![],
-            parents: vec![],
-            decls,
-            impls: HashMap::new(),
-            impl_map: HashMap::new(),
-            counter: 6,
-        }
-    }
+    // #[must_use]
+    // pub fn new() -> Project<'db> {
+    //     let mut decls = HashMap::new();
+    //     decls.insert(1, Decl::Prim(PrimTy::String));
+    //     decls.insert(2, Decl::Prim(PrimTy::Int));
+    //     decls.insert(3, Decl::Prim(PrimTy::Bool));
+    //     decls.insert(4, Decl::Prim(PrimTy::Float));
+    //     decls.insert(5, Decl::Prim(PrimTy::Char));
+    //
+    //     let mut root = Node::module("root".to_string());
+    //     root.insert(&[], 1, "String");
+    //     root.insert(&[], 2, "Int");
+    //     root.insert(&[], 3, "Bool");
+    //     root.insert(&[], 4, "Float");
+    //     root.insert(&[], 5, "Char");
+    //     Project {
+    //         root,
+    //         files: vec![],
+    //         parents: vec![],
+    //         decls,
+    //         impls: HashMap::new(),
+    //         impl_map: HashMap::new(),
+    //         counter: 6,
+    //     }
+    // }
 
     #[must_use]
     pub fn get_counter(&self) -> u32 {
@@ -236,39 +243,39 @@ impl Default for Project {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::Project;
-
-    impl Project {
-        #[must_use]
-        pub fn from(text: &str) -> Project {
-            let mut project = Project::new();
-            project.insert_file("main.gib".to_string(), text.to_string());
-            project
-        }
-
-        #[must_use]
-        pub fn check_test() -> Project {
-            let mut project = Project::from(
-                r"struct Foo
-struct Bar[T]
-struct Baz[T, U]
-enum Option[out T] {
-   Some(T),
-   None
-}
-enum Result[out R, out E] {
-   Ok(R),
-   Err(E),
-}
-fn add(a: Int, b: Int): Int { }
-fn Int.factorial(): Int { }
-fn ident[T](t: T): T { }
-",
-            );
-            project.resolve();
-            project
-        }
-    }
-}
+// #[cfg(test)]
+// mod tests {
+//     use super::Project;
+//
+//     impl Project {
+//         #[must_use]
+//         pub fn from(text: &str) -> Project {
+//             let mut project = Project::new();
+//             project.insert_file("main.gib".to_string(), text.to_string());
+//             project
+//         }
+//
+//         #[must_use]
+//         pub fn check_test() -> Project {
+//             let mut project = Project::from(
+//                 r"struct Foo
+// struct Bar[T]
+// struct Baz[T, U]
+// enum Option[out T] {
+//    Some(T),
+//    None
+// }
+// enum Result[out R, out E] {
+//    Ok(R),
+//    Err(E),
+// }
+// fn add(a: Int, b: Int): Int { }
+// fn Int.factorial(): Int { }
+// fn ident[T](t: T): T { }
+// ",
+//             );
+//             project.resolve();
+//             project
+//         }
+//     }
+// }

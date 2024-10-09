@@ -3,6 +3,10 @@ use std::{path::PathBuf, sync::Mutex};
 use dashmap::{mapref::entry::Entry, DashMap};
 use salsa::Storage;
 
+use crate::parser::parse_file;
+
+use super::input::Vfs;
+
 // ANCHOR: main
 // pub fn watch_test() -> ! {
 //     // Create the channel to receive file change events.
@@ -69,6 +73,7 @@ pub struct LazyInputDatabase {
     storage: Storage<Self>,
     logs: Mutex<Vec<String>>,
     files: DashMap<PathBuf, File>,
+    module: Option<Vfs>,
 }
 
 impl Default for LazyInputDatabase {
@@ -84,6 +89,7 @@ impl LazyInputDatabase {
             storage: Storage::default(),
             logs: Mutex::default(),
             files: DashMap::new(),
+            module: None,
         }
     }
 }
@@ -109,10 +115,9 @@ impl Db for LazyInputDatabase {
             // If we haven't read this file yet set up the watch, read the
             // contents, store it in the cache, and return it.
             Entry::Vacant(entry) => {
-                // Set up the watch before reading the contents to try to avoid
-                // race conditions.
                 let contents = std::fs::read_to_string(&path).unwrap();
-                *entry.insert(File::new(self, path, contents))
+                let file = File::new(self, path, contents);
+                *entry.insert(file)
             }
         }
     }

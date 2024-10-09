@@ -1,15 +1,17 @@
+use salsa::Update;
+
 use crate::ty::{FuncTy, Ty};
 
-#[derive(Debug)]
-pub enum StructDecl {
-    Fields(Vec<(String, Ty)>),
-    Tuple(Vec<Ty>),
+#[derive(Update, Debug, Clone, PartialEq)]
+pub enum StructDecl<'db> {
+    Fields(Vec<(String, Ty<'db>)>),
+    Tuple(Vec<Ty<'db>>),
     None,
 }
 
-impl StructDecl {
+impl<'db> StructDecl<'db> {
     #[must_use]
-    pub fn get_constructor_ty(&self, self_ty: Ty) -> Ty {
+    pub fn get_constructor_ty(&self, self_ty: Ty<'db>) -> Ty<'db> {
         match self {
             StructDecl::Fields(fields) => {
                 let args = fields.iter().map(|(_, ty)| ty.clone()).collect();

@@ -1,13 +1,14 @@
 use std::fmt::Display;
 
 use chumsky::{select, Parser};
+use salsa::Update;
 
 use crate::{
     lexer::{keyword::Keyword, token::Token},
     AstParser,
 };
 
-#[derive(Clone, Debug, PartialEq, Default, Copy, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Update, Hash, Copy, Default)]
 pub enum Variance {
     #[default]
     Invariant,
