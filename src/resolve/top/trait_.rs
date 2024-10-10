@@ -1,15 +1,20 @@
-use std::collections::HashMap;
+use chumsky::container::Container;
 
-use crate::{parser::top::trait_::Trait, resolve::state::ResolveState, ty::Ty};
+use crate::{
+    db::modules::ModulePath, parser::top::trait_::Trait, project::decl::DeclKind,
+    resolve::state::ResolveState, ty::Ty,
+};
 
 use super::Decl;
 
 impl Trait {
-    pub fn resolve(&self, state: &mut ResolveState, decls: &mut HashMap<u32, Decl>) -> Decl {
+    pub fn resolve<'db>(&self, state: &mut ResolveState<'db>) -> Decl<'db> {
         let generics = self.generics.resolve(state);
+        let mut self_path = state.file_data.module_path(state.db).name(state.db).clone();
+        self_path.push(self.name.0.to_string());
         state.add_self_ty(
             Ty::Named {
-                name: self.id,
+                name: ModulePath::new(state.db, self_path),
                 args: generics.iter().map(|g| Ty::Generic(g.clone())).collect(),
             },
             self.name.1,
@@ -18,16 +23,11 @@ impl Trait {
         let mut body = Vec::new();
         for func in &self.body {
             state.enter_scope();
-            let id = func.0.id;
             let decl = func.0.resolve(state);
-            decls.insert(id, decl);
-            body.push(id);
+            body.push(decl);
             state.exit_scope();
         }
-        Decl::Trait {
-            name,
-            generics,
-            body,
-        }
+        let kind = DeclKind::Trait { generics, body };
+        Decl::new(state.db, name.0, name.1, kind)
     }
 }

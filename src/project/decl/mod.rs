@@ -1,8 +1,8 @@
-use salsa::{Database, Update};
+use salsa::Update;
 
 use crate::{
     check::state::CheckState,
-    db::modules::ModulePath,
+    db::{input::Db, modules::ModulePath},
     ty::{prim::PrimTy, FuncTy, Generic, Ty},
     util::Span,
 };
@@ -51,7 +51,7 @@ pub enum DeclKind<'db> {
 impl<'db> Decl<'db> {
     #[must_use]
     #[salsa::tracked]
-    pub fn generics(self, db: &'db dyn Database) -> Vec<Generic<'db>> {
+    pub fn generics(self, db: &'db dyn Db) -> Vec<Generic<'db>> {
         match self.kind(db) {
             DeclKind::Struct { generics, .. }
             | DeclKind::Trait { generics, .. }
@@ -66,7 +66,7 @@ impl<'db> Decl<'db> {
 
     pub fn get_ty(
         &'db self,
-        db: &'db dyn Database,
+        db: &'db dyn Db,
         id: ModulePath<'db>,
         state: &mut CheckState<'_, 'db>,
     ) -> Ty<'db> {
@@ -96,13 +96,17 @@ impl<'db> Decl<'db> {
 
     fn get_named_ty(
         &self,
-        db: &'db dyn Database,
+        db: &'db dyn Db,
         state: &mut CheckState<'_, 'db>,
         id: ModulePath<'db>,
-    ) -> Ty {
+    ) -> Ty<'db> {
         if let DeclKind::Member { .. } = &self.kind(db) {
             let parent = id.get_parent(db);
             let parent_decl = state.project.get_decl(db, id);
+            if parent_decl.is_none() {
+                return Ty::Unknown;
+            }
+            let parent_decl = parent_decl.unwrap();
             Ty::Named {
                 name: parent,
                 args: parent_decl

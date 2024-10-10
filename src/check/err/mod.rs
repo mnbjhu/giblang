@@ -21,7 +21,7 @@ pub mod wildcard;
 
 #[salsa::accumulator]
 pub struct Error {
-    inner: CheckError,
+    pub inner: CheckError,
 }
 
 #[derive(Clone, Debug)]

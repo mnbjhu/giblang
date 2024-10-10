@@ -1,7 +1,9 @@
 use salsa::{Database, Update};
 
 use crate::{
-    check::state::CheckState, db::modules::ModulePath, parser::common::variance::Variance,
+    check::state::CheckState,
+    db::{input::Db, modules::ModulePath},
+    parser::common::variance::Variance,
     util::Spanned,
 };
 
@@ -27,7 +29,7 @@ impl<'db> Generic<'db> {
         }
     }
 
-    pub fn get_name(&self, db: &'db dyn Database, state: &CheckState) -> String {
+    pub fn get_name(&self, db: &'db dyn Db, state: &CheckState) -> String {
         if let Ty::Any = self.super_.as_ref() {
             format!("{}{}", self.variance, self.name.0)
         } else {

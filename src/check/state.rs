@@ -1,20 +1,26 @@
 use std::{collections::HashMap, vec};
 
+use salsa::Accumulator;
+
 use crate::{
     check::err::{simple::Simple, CheckError},
-    db::input::{Db, SourceFile},
+    db::{
+        input::{Db, SourceFile},
+        modules::ModulePath,
+    },
     parser::{expr::qualified_name::SpannedQualifiedName, parse_file},
-    project::{name::QualifiedName, Project},
+    project::{decl::Decl, name::QualifiedName, Project},
     ty::{Generic, Ty},
     util::{Span, Spanned},
 };
 
 use super::{
-    err::unresolved_type_var::UnboundTypeVar,
+    err::{unresolved_type_var::UnboundTypeVar, Error},
     type_state::{MaybeTypeVar, TypeState, TypeVarUsage},
 };
 
 pub struct CheckState<'ty, 'db: 'ty> {
+    pub db: &'db dyn Db,
     imports: HashMap<String, QualifiedName>,
     generics: Vec<HashMap<String, Generic<'db>>>,
     variables: Vec<HashMap<String, Ty<'db>>>,
@@ -30,6 +36,7 @@ impl<'ty, 'db: 'ty> CheckState<'ty, 'db> {
         project: Project<'db>,
     ) -> CheckState<'db, 'ty> {
         let mut state = CheckState {
+            db,
             imports: HashMap::new(),
             generics: vec![],
             variables: vec![],
@@ -61,48 +68,46 @@ impl<'ty, 'db: 'ty> CheckState<'ty, 'db> {
     }
 
     pub fn simple_error(&mut self, message: &str, span: Span) {
-        self.errors.push(CheckError::Simple(Simple {
+        self.error(CheckError::Simple(Simple {
             message: message.to_string(),
             span,
-            file: self.file_data.end,
+            file: self.file_data,
         }));
     }
 
     pub fn error(&mut self, error: CheckError) {
-        self.errors.push(error);
+        Error { inner: error }.accumulate(self.db);
     }
 
-    pub fn get_decl_with_error(&mut self, path: &SpannedQualifiedName) -> Option<u32> {
-        let name = path[0].0.clone();
-        let res = if let Some(import) = self.imports.get(&name) {
-            if let Some(module) = self.project.root.get_module(import) {
-                module.get_with_error(&path[1..], self.file_data.end)
-            } else {
-                return None;
-            }
+    pub fn get_decl_with_error(&mut self, path: &SpannedQualifiedName) -> Option<ModulePath<'db>> {
+        if self
+            .project
+            .decls(self.db)
+            .get_path_with_error(self.db, path.clone(), self.file_data)
+            .is_some()
+        {
+            Some(ModulePath::new(
+                self.db,
+                path.iter().map(|(n, _)| n.to_string()).collect(),
+            ))
         } else {
-            self.project.get_path_with_error(path, self.file_data.end)
-        };
-        match res {
-            Ok(res) => Some(res),
-            Err(e) => {
-                self.errors.push(CheckError::Unresolved(e));
-                None
-            }
+            None
         }
     }
 
-    pub fn get_decl_without_error(&self, path: &[Spanned<String>]) -> Option<u32> {
-        let name = path.first()?;
-        if let Some(import) = self.imports.get(&name.0) {
-            let module = self
-                .project
-                .root
-                .get_module(import)
-                .expect("There should only be valid paths at this point??");
-            module.get_without_error(&path[1..])
+    pub fn get_decl_without_error(&self, path: &SpannedQualifiedName) -> Option<ModulePath<'db>> {
+        if self
+            .project
+            .decls(self.db)
+            .get_path_without_error(self.db, path.clone())
+            .is_some()
+        {
+            Some(ModulePath::new(
+                self.db,
+                path.iter().map(|(n, _)| n.to_string()).collect(),
+            ))
         } else {
-            self.project.get_path_without_error(path)
+            None
         }
     }
 
@@ -176,16 +181,18 @@ impl<'ty, 'db: 'ty> CheckState<'ty, 'db> {
 
         for (var, usage) in deferred {
             match usage {
-                TypeVarUsage::VarIsTy(ty) => {
-                    var.unwrap().expect_is_instance_of(&ty.0, self, false, ty.1)
-                }
+                TypeVarUsage::VarIsTy(ty) => var
+                    .unwrap()
+                    .expect_is_instance_of(self.db, &ty.0, self, false, ty.1),
                 TypeVarUsage::TyIsVar(ty) => {
-                    ty.0.expect_is_instance_of(&var.unwrap(), self, false, ty.1)
+                    ty.0.expect_is_instance_of(self.db, &var.unwrap(), self, false, ty.1)
                 }
                 _ => todo!("Check if needed"),
             };
         }
-        self.errors.extend(errs);
+        for err in errs {
+            self.error(err)
+        }
     }
 
     pub fn get_resolved_type_var(&self, id: u32) -> Ty {

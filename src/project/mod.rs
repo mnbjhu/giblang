@@ -1,11 +1,10 @@
 use std::collections::HashMap;
 
 use decl::Decl;
-use salsa::Database;
 
 use crate::{
     db::{
-        input::Vfs,
+        input::Db,
         modules::{Module, ModuleData, ModulePath},
     },
     parser::ImplData,
@@ -21,19 +20,19 @@ pub mod util;
 
 #[salsa::tracked]
 pub struct Project<'db> {
-    decls: Module<'db>,
-    impls: HashMap<ModulePath<'db>, ImplData<'db>>,
-    impl_map: HashMap<ModulePath<'db>, Vec<ImplData<'db>>>,
+    pub decls: Module<'db>,
+    pub impls: HashMap<ModulePath<'db>, ImplDecl<'db>>,
+    pub impl_map: HashMap<ImplDecl<'db>, Vec<ImplDecl<'db>>>,
 }
 
 #[salsa::tracked]
-pub struct ImplData<'db> {
+pub struct ImplDecl<'db> {
     pub generics: Vec<Generic<'db>>,
     #[id]
     pub from_ty: Ty<'db>,
     #[id]
     pub to_ty: Ty<'db>,
-    pub functions: Vec<ModulePath<'db>>,
+    pub functions: Vec<Decl<'db>>,
 }
 
 // #[cfg(test)]
@@ -44,20 +43,21 @@ pub struct ImplData<'db> {
 //
 
 impl<'db> Project<'db> {
-    pub fn get_decl(self, db: &'db dyn Database, path: ModulePath<'db>) -> Decl<'db> {
-        let module = self.decls(db).get_path(db, path).unwrap();
+    pub fn get_decl(self, db: &'db dyn Db, path: ModulePath<'db>) -> Option<Decl<'db>> {
+        let module = self.decls(db).get_path(db, path)?;
         match module.content(db) {
-            ModuleData::Export(decl) => *decl,
-            _ => unreachable!(),
+            ModuleData::Export(decl) => Some(*decl),
+            _ => None,
         }
     }
 
-    pub fn get_impl(self, db: &'db dyn Database, path: ModulePath<'db>) -> ImplData<'db> {
+    pub fn get_impl(self, db: &'db dyn Db, path: ModulePath<'db>) -> ImplDecl<'db> {
         self.impls(db).get(&path).unwrap().clone()
     }
 
-    pub fn get_impls(self, db: &'db dyn Database, path: ModulePath<'db>) -> Vec<ImplData<'db>> {
-        self.impl_map(db).get(&path).unwrap().clone()
+    pub fn get_impls(self, db: &'db dyn Db, path: ModulePath<'db>) -> Vec<ImplDecl<'db>> {
+        let impl_ = self.get_impl(db, path);
+        self.impl_map(db).get(&&impl_).unwrap().clone()
     }
 }
 #[derive(Debug, Clone)]

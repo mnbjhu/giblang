@@ -1,17 +1,18 @@
 use salsa::Database;
 
-use crate::check::state::CheckState;
+use crate::{check::state::CheckState, db::input::Db};
 
 use super::{FuncTy, Ty};
 
 impl<'db> Ty<'db> {
-    pub fn get_name(&self, db: &'db dyn Database, state: &CheckState) -> String {
+    pub fn get_name(&self, db: &'db dyn Db, state: &CheckState) -> String {
         match self {
             Ty::Any => "Any".to_string(),
             Ty::Unknown => "Unknown".to_string(),
             Ty::Named { name, args } => {
                 let decl = state.project.get_decl(db, *name);
-                let name = decl.name(db);
+                // TODO: check unwrap
+                let name = decl.unwrap().name(db);
                 if args.is_empty() {
                     name.to_string()
                 } else {

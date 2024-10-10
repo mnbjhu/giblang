@@ -5,9 +5,9 @@ use crate::{
         err::{is_not_instance::IsNotInstance, CheckError},
         state::CheckState,
     },
-    db::modules::ModulePath,
+    db::{input::Db, modules::ModulePath},
     parser::common::variance::Variance,
-    project::ImplData,
+    project::ImplDecl,
     ty::Ty,
     util::Span,
 };
@@ -17,7 +17,7 @@ use super::{FuncTy, Generic};
 impl<'db> Ty<'db> {
     pub fn expect_is_instance_of(
         &self,
-        db: &'db dyn Database,
+        db: &'db dyn Db,
         other: &Ty<'db>,
         state: &mut CheckState<'_, 'db>,
         explicit: bool,
@@ -105,7 +105,7 @@ impl<'db> Ty<'db> {
 
     fn imply_named_sub_ty(
         &self,
-        db: &'db dyn Database,
+        db: &'db dyn Db,
         sub_ty: ModulePath<'db>,
         state: &mut CheckState<'_, 'db>,
     ) -> Option<Ty<'db>> {
@@ -123,11 +123,11 @@ impl<'db> Ty<'db> {
 }
 
 fn path_to_sub_ty<'db>(
-    db: &'db dyn Database,
+    db: &'db dyn Db,
     name: ModulePath<'db>,
     sub_ty: ModulePath<'db>,
     state: &mut CheckState<'_, 'db>,
-) -> Option<Vec<ImplData<'db>>> {
+) -> Option<Vec<ImplDecl<'db>>> {
     if name == sub_ty {
         return Some(Vec::new());
     }
@@ -148,7 +148,7 @@ fn path_to_sub_ty<'db>(
 }
 
 fn expect_named_is_instance_of_named<'db>(
-    db: &'db dyn Database,
+    db: &'db dyn Db,
     first: &Ty<'db>,
     second: &Ty<'db>,
     state: &mut CheckState<'_, 'db>,
@@ -167,7 +167,8 @@ fn expect_named_is_instance_of_named<'db>(
             args: implied_args, ..
         }) = first.imply_named_sub_ty(db, *other_name, state)
         {
-            let decl = state.project.get_decl(db, *name);
+            // TODO: Check this unwrap
+            let decl = state.project.get_decl(db, *name).unwrap();
             let generics = decl.generics(db);
             for ((g, arg), other) in generics.iter().zip(implied_args).zip(other_args) {
                 let variance = g.variance;

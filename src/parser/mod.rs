@@ -1,14 +1,12 @@
 use std::vec;
 
-use crate::{
-    db::{
-        err::{Diagnostic, Level},
-        input::{Db, SourceFile},
-    },
-    project::file_data::FileData,
+use crate::db::{
+    err::{Diagnostic, Level},
+    input::{Db, SourceFile},
 };
 use chumsky::{error::Rich, input::Input, primitive::just, IterParser, Parser};
 use salsa::Accumulator;
+use top::impl_::Impl;
 use tracing::info;
 
 use crate::{
@@ -31,12 +29,27 @@ pub mod top;
 pub type File = Vec<Spanned<Top>>;
 
 #[salsa::tracked]
+pub struct FileData<'db> {
+    #[return_ref]
+    pub tops: Vec<TopData<'db>>,
+
+    #[return_ref]
+    pub impls: Vec<ImplData<'db>>,
+}
+
+#[salsa::tracked]
 pub struct TopData<'db> {
     #[id]
     #[interned]
     pub name: String,
     #[return_ref]
     pub data: Top,
+}
+
+#[salsa::tracked]
+pub struct ImplData<'db> {
+    #[return_ref]
+    pub data: Impl,
 }
 
 #[must_use]

@@ -1,12 +1,4 @@
-use std::collections::HashMap;
-
-use crate::{
-    check::err::{impl_type::ImplTypeMismatch, ResolveError},
-    db::input::Db,
-    parser::top::Top,
-    project::{decl::Decl, ImplData},
-    ty::Ty,
-};
+use crate::{parser::top::Top, project::decl::Decl};
 
 use super::state::ResolveState;
 
@@ -20,45 +12,18 @@ pub mod struct_body;
 pub mod trait_;
 
 impl Top {
-    pub fn resolve(
-        &self,
-        db: &dyn Db,
-        state: &mut ResolveState,
-        decls: &mut HashMap<u32, Decl>,
-        impls: &mut HashMap<u32, ImplData>,
-        impl_map: &mut HashMap<u32, Vec<u32>>,
-    ) {
+    pub fn resolve<'db>(&self, state: &mut ResolveState<'db>) -> Option<Decl<'db>> {
         if let Top::Use(use_) = self {
-            state.import(db, use_);
+            state.import(use_);
+            None
         } else {
-            let id = self.get_id().unwrap();
-            let decl = match self {
-                Top::Func(f) => f.resolve(state),
-                Top::Struct(s) => s.resolve(state),
-                Top::Enum(e) => e.resolve(state, decls),
-                Top::Trait(t) => t.resolve(state, decls),
-                Top::Impl(i) => {
-                    let id = i.id;
-                    let resolved = i.resolve(state, decls);
-                    if let Ty::Named { name, .. } = &resolved.from {
-                        if let Some(existing) = impl_map.get_mut(name) {
-                            existing.push(id);
-                        } else {
-                            impl_map.insert(*name, vec![id]);
-                        }
-                    } else {
-                        state.error(ResolveError::ImplTypeMismatch(ImplTypeMismatch {
-                            found: resolved.from.kind(),
-                            file: state.get_file(),
-                            span: i.trait_.1,
-                        }));
-                    };
-                    impls.insert(id, resolved);
-                    return;
-                }
-                Top::Use(_) => todo!(),
-            };
-            decls.insert(id, decl);
+            match self {
+                Top::Func(f) => Some(f.resolve(state)),
+                Top::Struct(s) => Some(s.resolve(state)),
+                Top::Enum(e) => Some(e.resolve(state)),
+                Top::Trait(t) => Some(t.resolve(state)),
+                _ => None,
+            }
         }
     }
 }

@@ -9,15 +9,16 @@ use crate::{
         modules::ModulePath,
     },
     parser::{common::variance::Variance, expr::qualified_name::SpannedQualifiedName, parse_file},
-    project::{name::QualifiedName, Project},
+    project::Project,
     ty::{Generic, Ty},
     util::{Span, Spanned},
 };
 
 pub struct ResolveState<'db> {
+    pub db: &'db dyn Db,
     imports: HashMap<String, ModulePath<'db>>,
     generics: Vec<HashMap<String, Generic<'db>>>,
-    file_data: SourceFile,
+    pub file_data: SourceFile,
     pub project: Project<'db>,
 }
 
@@ -38,18 +39,18 @@ impl<'db> ResolveState<'db> {
         project: Project<'db>,
     ) -> ResolveState<'db> {
         let mut state = ResolveState {
+            db,
             imports: HashMap::new(),
             generics: vec![],
             file_data,
             project,
         };
-        let mut path = file_data.module_path(db);
+        let mut path = file_data.module_path(db).name(db).clone();
         for top in parse_file(db, file_data).tops(db) {
-            if let Some(name) = top.get_name() {
-                path.push(name.to_string());
-                state.add_import(name.to_string(), path.clone());
-                path.pop();
-            }
+            let name = top.data(db).get_name().unwrap();
+            path.push(name.to_string());
+            state.add_import(name.to_string(), ModulePath::new(db, path.clone()));
+            path.pop();
         }
         state
     }
@@ -66,47 +67,27 @@ impl<'db> ResolveState<'db> {
         self.generics.pop();
     }
 
-    pub fn error(&mut self, db: &'db dyn Db, error: Error) {
-        error.accumulate(db)
+    pub fn error(&mut self, error: CheckError) {
+        Error { inner: error }.accumulate(self.db)
     }
 
-    pub fn get_decl_with_error(&mut self, path: &SpannedQualifiedName) -> Option<ModulePath> {
-        let name = path[0].0.clone();
-        let res = if let Some(import) = self.imports.get(&name) {
-            let module = self.project.root.get_module(import)?;
-            module.get_with_error(&path[1..], self.file_data.end)
-        } else {
-            self.project.get_path_with_error(path, self.file_data.end)
-        };
-        match res {
-            Ok(decl) => Some(decl),
-            Err(e) => {
-                self.error(ResolveError::Unresolved(e));
-                None
-            }
-        }
-    }
-
-    pub fn get_decl_without_error(&self, path: &[Spanned<String>]) -> Option<ModulePath> {
-        let name = path.first()?;
+    pub fn get_decl(&self, path: &[Spanned<String>]) -> ModulePath<'db> {
+        let name = path.first().unwrap();
         if let Some(import) = self.imports.get(&name.0) {
-            let module = self
-                .project
-                .root
-                .get_module(import)
-                .expect("There should only be valid paths at this point??");
-            module.get_without_error(&path[1..])
+            let mut new = import.name(self.db).clone();
+            new.extend(path[1..].iter().map(|(n, _)| n.to_string()));
+            ModulePath::new(self.db, new)
         } else {
-            self.project.get_path_without_error(path)
+            ModulePath::new(self.db, path.iter().map(|(n, _)| n.to_string()).collect())
         }
     }
 
-    pub fn import(&mut self, db: &'db dyn Db, use_: &SpannedQualifiedName) {
-        if self.get_decl_with_error(use_).is_some() {
-            let path = use_.iter().map(|(name, _)| name.to_string()).collect();
-            self.imports
-                .insert(use_.last().unwrap().0.clone(), ModulePath::new(db, path));
-        }
+    pub fn import(&mut self, use_: &SpannedQualifiedName) {
+        let path = use_.iter().map(|(name, _)| name.to_string()).collect();
+        self.imports.insert(
+            use_.last().unwrap().0.clone(),
+            ModulePath::new(self.db, path),
+        );
     }
 
     pub fn insert_generic(&mut self, name: String, ty: Generic<'db>) {
@@ -120,10 +101,6 @@ impl<'db> ResolveState<'db> {
             }
         }
         None
-    }
-
-    pub fn get_file(&self) -> u32 {
-        self.file_data.end
     }
 }
 

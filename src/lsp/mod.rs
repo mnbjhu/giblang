@@ -14,12 +14,12 @@ use async_lsp::router::Router;
 use async_lsp::server::LifecycleLayer;
 use async_lsp::tracing::TracingLayer;
 use async_lsp::ClientSocket;
-use salsa::{AsDynDatabase, Setter};
+use salsa::{AsDynDatabase, Setter as _};
 use tower::ServiceBuilder;
 use tracing::{info, Level};
 
 use crate::db::err::Diagnostic;
-use crate::db::input::SourceDatabase;
+use crate::db::input::{Db, SourceDatabase};
 use crate::parser::{self};
 use crate::range::span_to_range_str;
 
@@ -46,16 +46,20 @@ pub async fn main_loop() {
             }
         });
 
-        let db = LazyInputDatabase::new();
+        let db = SourceDatabase::default();
         let mut router = Router::new(ServerState {
             client: client.clone(),
             counter: 0,
             db,
         });
         router
-            .request::<request::Initialize, _>(|_, params| async move {
-                eprintln!("Initialize with {params:?}");
-                Ok(capabilities::capabilities())
+            .request::<request::Initialize, _>(|st, params| {
+                let root = params.root_path.clone().unwrap();
+                st.db.init(root);
+                async move {
+                    eprintln!("Initialize with {params:?}");
+                    Ok(capabilities::capabilities())
+                }
             })
             // .request::<request::SemanticTokensFullRequest, _>(|st, _| {
             //     let file = st.file.unwrap();
@@ -112,14 +116,14 @@ pub async fn main_loop() {
             .notification::<notification::DidChangeConfiguration>(|_, _| ControlFlow::Continue(()))
             .notification::<notification::DidOpenTextDocument>(|st, msg| {
                 let path = msg.text_document.uri.clone().to_file_path().unwrap();
-                st.db.input(path);
+                st.db.input(&path);
                 st.report_diags(msg.text_document.uri);
                 ControlFlow::Continue(())
             })
             .notification::<notification::DidChangeTextDocument>(|st, msg| {
                 let path = msg.text_document.uri.clone().to_file_path().unwrap();
-                let file = st.db.input(path);
-                file.set_contents(st.db.as_dyn_database_mut())
+                let file = st.db.input(&path);
+                file.set_text(st.db.as_dyn_database_mut())
                     .to(msg.content_changes[0].text.clone());
                 st.report_diags(msg.text_document.uri);
                 ControlFlow::Continue(())
@@ -167,13 +171,13 @@ pub async fn main_loop() {
 }
 
 impl ServerState {
-    fn report_diags(&self, url: Url) {
+    fn report_diags(&mut self, url: Url) {
         let path = url.to_file_path().unwrap();
-        let file = self.db.input(path);
+        let file = self.db.input(&path);
         let diags = parser::parse_file::accumulated::<Diagnostic>(&self.db, file);
         let mut diagnostics = Vec::new();
         for diag in diags {
-            let range = span_to_range_str(diag.span.into(), file.contents(&self.db));
+            let range = span_to_range_str(diag.span.into(), file.text(&self.db));
             diagnostics.push(async_lsp::lsp_types::Diagnostic {
                 range,
                 severity: Some(DiagnosticSeverity::ERROR),

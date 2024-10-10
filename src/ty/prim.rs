@@ -1,8 +1,6 @@
 use std::fmt::Display;
 
-use salsa::Database;
-
-use crate::db::modules::ModulePath;
+use crate::db::{input::Db, modules::ModulePath};
 
 use super::Ty;
 
@@ -16,35 +14,35 @@ pub enum PrimTy {
 }
 
 impl<'db> Ty<'db> {
-    pub fn string(db: &'db dyn Database) -> Self {
+    pub fn string(db: &'db dyn Db) -> Self {
         Ty::Named {
             name: ModulePath::new(db, vec!["String".to_string()]),
             args: Vec::new(),
         }
     }
 
-    pub fn int(db: &'db dyn Database) -> Self {
+    pub fn int(db: &'db dyn Db) -> Self {
         Ty::Named {
             name: ModulePath::new(db, vec!["Int".to_string()]),
             args: Vec::new(),
         }
     }
 
-    pub fn bool(db: &'db dyn Database) -> Self {
+    pub fn bool(db: &'db dyn Db) -> Self {
         Ty::Named {
             name: ModulePath::new(db, vec!["Bool".to_string()]),
             args: Vec::new(),
         }
     }
 
-    pub fn float(db: &'db dyn Database) -> Self {
+    pub fn float(db: &'db dyn Db) -> Self {
         Ty::Named {
             name: ModulePath::new(db, vec!["Float".to_string()]),
             args: Vec::new(),
         }
     }
 
-    pub fn char(db: &'db dyn Database) -> Self {
+    pub fn char(db: &'db dyn Db) -> Self {
         Ty::Named {
             name: ModulePath::new(db, vec!["Char".to_string()]),
             args: Vec::new(),
@@ -53,7 +51,7 @@ impl<'db> Ty<'db> {
 }
 
 impl<'db> Ty<'db> {
-    pub fn from_prim(prim: PrimTy, db: &'db dyn Database) -> Self {
+    pub fn from_prim(prim: PrimTy, db: &'db dyn Db) -> Self {
         match prim {
             PrimTy::String => Ty::string(db),
             PrimTy::Bool => Ty::bool(db),
@@ -78,7 +76,7 @@ impl Display for PrimTy {
 
 #[cfg(test)]
 mod tests {
-    use crate::ty::{prim::PrimTy, Ty};
+    use crate::ty::prim::PrimTy;
 
     #[test]
     fn test_display() {

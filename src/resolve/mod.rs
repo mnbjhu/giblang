@@ -1,8 +1,14 @@
 use std::collections::HashMap;
 
+use salsa::Database;
+
 use crate::{
-    check::err::ResolveError,
-    project::{decl::Decl, file_data::FileData, ImplData, Project},
+    db::{
+        input::{Db, SourceFile},
+        modules::{Module, ModuleData},
+    },
+    parser::parse_file,
+    project::Project,
 };
 
 use self::state::ResolveState;
@@ -10,21 +16,24 @@ use self::state::ResolveState;
 mod common;
 pub mod state;
 mod top;
-
-pub fn resolve_file(
-    file_data: &FileData,
-    decls: &mut HashMap<u32, Decl>,
-    impls: &mut HashMap<u32, ImplData>,
-    impl_map: &mut HashMap<u32, Vec<u32>>,
-    project: &Project,
-) -> Vec<ResolveError> {
-    let mut state = ResolveState::from_file(file_data, project);
-    for (item, _) in &file_data.ast {
-        state.enter_scope();
-        item.resolve(&mut state, decls, impls, impl_map);
-        state.exit_scope();
-    }
-    state.errors
+pub fn resolve_file<'db>(db: &'db dyn Db, file: SourceFile, project: Project<'db>) -> Module<'db> {
+    let mut state = ResolveState::from_file(db, file, project);
+    let decls = parse_file(db, file)
+        .tops(db)
+        .iter()
+        .filter_map(|item| {
+            state.enter_scope();
+            let found = item.data(db).resolve(&mut state);
+            state.exit_scope();
+            found
+        })
+        .map(|decl| {
+            let name = decl.name(db);
+            let export = ModuleData::Export(decl);
+            Module::new(db, name, export)
+        })
+        .collect();
+    Module::new(db, file.name(db).to_string(), ModuleData::Package(decls))
 }
 
 // #[cfg(test)]

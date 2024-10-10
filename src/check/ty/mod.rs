@@ -2,6 +2,7 @@ use salsa::Database;
 
 use crate::{
     check::state::CheckState,
+    db::input::Db,
     parser::common::type_::Type,
     ty::{FuncTy, Generic, Ty},
     util::Span,
@@ -9,7 +10,7 @@ use crate::{
 pub mod named;
 
 impl Type {
-    pub fn check(&self, state: &mut CheckState) -> Ty {
+    pub fn check<'db>(&self, state: &mut CheckState<'_, 'db>) -> Ty<'db> {
         match &self {
             Type::Named(named) => named.check(state),
             Type::Tuple(tup) => {
@@ -46,16 +47,15 @@ impl Type {
 
     pub fn expect_is_bound_by<'db>(
         &self,
-        db: &'db dyn Database,
         bound: &Generic<'db>,
         state: &mut CheckState<'_, 'db>,
         span: Span,
-    ) -> Ty {
+    ) -> Ty<'db> {
         let ty = self.check(state);
         if let Ty::TypeVar { id } = ty {
             state.type_state.add_bound(id, bound.clone());
         } else {
-            ty.expect_is_instance_of(db, &bound.super_, state, false, span);
+            ty.expect_is_instance_of(state.db, &bound.super_, state, false, span);
         }
         ty
     }
