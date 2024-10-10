@@ -1,26 +1,16 @@
 use std::collections::HashMap;
 
-use ariadne::Source;
-use glob::glob;
+use decl::Decl;
 use salsa::Database;
 
 use crate::{
-    check::{
-        err::{unresolved::Unresolved, CheckError, ResolveError},
-        state::CheckState,
-    },
     db::{
         input::Vfs,
-        modules::{Module, ModulePath},
+        modules::{Module, ModuleData, ModulePath},
     },
-    parser::parse_file,
-    project::{file_data::FileData, module::Node, util::path_from_filename},
-    resolve::resolve_file,
-    ty::{prim::PrimTy, Generic, Ty},
-    util::Spanned,
+    parser::ImplData,
+    ty::{Generic, Ty},
 };
-
-use self::decl::Decl;
 
 pub mod decl;
 pub mod file_data;
@@ -33,6 +23,7 @@ pub mod util;
 pub struct Project<'db> {
     decls: Module<'db>,
     impls: HashMap<ModulePath<'db>, ImplData<'db>>,
+    impl_map: HashMap<ModulePath<'db>, Vec<ImplData<'db>>>,
 }
 
 #[salsa::tracked]
@@ -42,7 +33,7 @@ pub struct ImplData<'db> {
     pub from_ty: Ty<'db>,
     #[id]
     pub to_ty: Ty<'db>,
-    pub functions: Vec<u32>,
+    pub functions: Vec<ModulePath<'db>>,
 }
 
 // #[cfg(test)]
@@ -52,195 +43,28 @@ pub struct ImplData<'db> {
 // }
 //
 
-#[salsa::tracked]
-pub fn parse_project<'db>(db: &'db dyn Database, fs: Vfs) -> Project<'db> {}
-
 impl<'db> Project<'db> {
-    #[allow(clippy::missing_panics_doc)]
-    pub fn insert_file(&mut self, file_path: String, text: String) {
-        let ast = parse_file(
-            &text,
-            &file_path,
-            &Source::from(text.clone()),
-            &mut self.counter,
-        );
-        let mut path = path_from_filename(&file_path);
-        for item in &ast {
-            if let Some(name) = item.0.get_name() {
-                let id = item.0.get_id().unwrap();
-                if item.0.is_parent() {
-                    self.parents.push(id);
-                }
-                self.root.insert(&path, id, name);
-                for (child_name, id) in &item.0.children() {
-                    path.push(name.to_string());
-                    self.root.insert(&path, *id, child_name);
-                    path.pop();
-                }
-            }
-        }
-        let file_data = FileData {
-            end: self.counter,
-            ast,
-            text,
-            name: file_path,
-        };
-        self.files.push(file_data);
-    }
-
-    #[must_use]
-    pub fn get_file(&self, for_id: u32) -> Option<&FileData> {
-        self.files.iter().find(|f| f.end >= for_id)
-    }
-
-    #[must_use]
-    pub fn get_parent(&self, db: &dyn Database, for_id: ModulePath) -> Option<ModulePath> {
-        self.parents.iter().find(|&&id| id > for_id).copied()
-    }
-
-    pub fn insert_decl(&mut self, id: u32, decl: Decl) {
-        self.decls.insert(id, decl);
-    }
-
-    #[cfg(test)]
-    #[must_use]
-    pub fn get_path(&self, path: &[&str]) -> Option<u32> {
-        self.root.get_path(path)
-    }
-
-    /// # Errors
-    ///
-    /// This function will return an error if no path is found.
-    pub fn get_path_with_error(
-        &self,
-        path: &[Spanned<String>],
-        file: u32,
-    ) -> Result<u32, Unresolved> {
-        self.root.get_with_error(path, file)
-    }
-
-    #[must_use]
-    pub fn get_path_without_error(&self, path: &[Spanned<String>]) -> Option<u32> {
-        self.root.get_without_error(path)
-    }
-
-    #[must_use]
-    pub fn init_pwd() -> Project {
-        let mut project = Project::new();
-        for file in glob("**/*.gib").unwrap() {
-            let file = file.unwrap();
-            let text = std::fs::read_to_string(&file).unwrap();
-            project.insert_file(file.to_str().unwrap().to_string(), text);
-        }
-        project
-    }
-
-    #[must_use]
-    pub fn get_decl(&self, id: u32) -> &Decl {
-        self.decls
-            .get(&id)
-            .unwrap_or_else(|| panic!("Failed to resolve decl with id {id}"))
-    }
-
-    #[must_use]
-    pub fn get_impls(&self, for_decl: ModulePath) -> Vec<&ImplData> {
-        let impl_ids = self.impl_map.get(&for_decl).cloned().unwrap_or_default();
-        let mut impls = vec![];
-        for id in &impl_ids {
-            impls.push(self.impls.get(id).expect("Think these should be valid"));
-        }
-        impls
-    }
-
-    pub fn resolve(&mut self) -> Vec<ResolveError> {
-        let mut decls = HashMap::new();
-        let mut impls = HashMap::new();
-        let mut impl_map = HashMap::new();
-        let mut errors = vec![];
-        self.files.iter().for_each(|file| {
-            let err = resolve_file(file, &mut decls, &mut impls, &mut impl_map, self);
-            errors.extend(err);
-        });
-        self.decls.extend(decls);
-        self.impls = impls;
-        self.impl_map = impl_map;
-        errors
-    }
-
-    #[must_use]
-    pub fn check(&self) -> Vec<CheckError> {
-        let mut errors = vec![];
-        for file in &self.files {
-            let mut state = CheckState::from_file(file, self);
-            for item in &file.ast {
-                item.0.check(self, &mut state);
-            }
-            errors.extend(state.errors);
-        }
-        errors
-    }
-
-    pub fn check_with_errors(&self) {
-        for file in &self.files {
-            let mut state = CheckState::from_file(file, self);
-            for item in &file.ast {
-                item.0.check(self, &mut state);
-            }
-            state.resolve_type_vars();
-            for err in &state.errors {
-                state.print_error(err);
-            }
+    pub fn get_decl(self, db: &'db dyn Database, path: ModulePath<'db>) -> Decl<'db> {
+        let module = self.decls(db).get_path(db, path).unwrap();
+        match module.content(db) {
+            ModuleData::Export(decl) => *decl,
+            _ => unreachable!(),
         }
     }
 
-    // #[must_use]
-    // pub fn new() -> Project<'db> {
-    //     let mut decls = HashMap::new();
-    //     decls.insert(1, Decl::Prim(PrimTy::String));
-    //     decls.insert(2, Decl::Prim(PrimTy::Int));
-    //     decls.insert(3, Decl::Prim(PrimTy::Bool));
-    //     decls.insert(4, Decl::Prim(PrimTy::Float));
-    //     decls.insert(5, Decl::Prim(PrimTy::Char));
-    //
-    //     let mut root = Node::module("root".to_string());
-    //     root.insert(&[], 1, "String");
-    //     root.insert(&[], 2, "Int");
-    //     root.insert(&[], 3, "Bool");
-    //     root.insert(&[], 4, "Float");
-    //     root.insert(&[], 5, "Char");
-    //     Project {
-    //         root,
-    //         files: vec![],
-    //         parents: vec![],
-    //         decls,
-    //         impls: HashMap::new(),
-    //         impl_map: HashMap::new(),
-    //         counter: 6,
-    //     }
-    // }
-
-    #[must_use]
-    pub fn get_counter(&self) -> u32 {
-        self.counter
+    pub fn get_impl(self, db: &'db dyn Database, path: ModulePath<'db>) -> ImplData<'db> {
+        self.impls(db).get(&path).unwrap().clone()
     }
 
-    #[must_use]
-    pub fn get_impl(&self, id: &u32) -> &ImplData {
-        self.impls.get(id).expect("Invalid impl id")
+    pub fn get_impls(self, db: &'db dyn Database, path: ModulePath<'db>) -> Vec<ImplData<'db>> {
+        self.impl_map(db).get(&path).unwrap().clone()
     }
 }
-
 #[derive(Debug, Clone)]
-pub struct TypeVar {
-    pub id: u32,
-    pub generic: Generic,
-    pub ty: Option<Ty>,
-}
-
-impl Default for Project {
-    fn default() -> Self {
-        Self::new()
-    }
+pub struct TypeVar<'db> {
+    pub id: ModulePath<'db>,
+    pub generic: Generic<'db>,
+    pub ty: Option<Ty<'db>>,
 }
 
 // #[cfg(test)]

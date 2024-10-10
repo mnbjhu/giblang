@@ -23,6 +23,13 @@ pub struct ModulePath<'db> {
     pub name: Vec<String>,
 }
 
+impl<'db> ModulePath<'db> {
+    pub fn get_parent(self, db: &'db dyn Database) -> ModulePath<'db> {
+        let path = self.name(db);
+        ModulePath::new(db, path[0..path.len() - 1].to_vec())
+    }
+}
+
 #[salsa::tracked]
 impl<'db> Module<'db> {
     #[salsa::tracked]

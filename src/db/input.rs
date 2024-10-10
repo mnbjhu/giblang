@@ -6,15 +6,30 @@ use salsa::{Database, Setter, Update};
 
 use crate::util::Span;
 
+use super::modules::ModulePath;
+
 #[derive(Clone, Default)]
 #[salsa::db]
 pub struct SourceDatabase {
     storage: salsa::Storage<Self>,
+    root: String,
+}
+
+#[salsa::db]
+pub trait Db: salsa::Database {
+    fn root(&self) -> String;
 }
 
 #[salsa::db]
 impl salsa::Database for SourceDatabase {
     fn salsa_event(&self, _: &dyn Fn() -> salsa::Event) {}
+}
+
+#[salsa::db]
+impl Db for SourceDatabase {
+    fn root(&self) -> String {
+        self.root.to_string()
+    }
 }
 
 #[salsa::accumulator]
@@ -41,6 +56,15 @@ pub struct SourceFile {
 
     #[return_ref]
     pub text: String,
+
+    #[interned]
+    pub module: Vec<String>,
+}
+
+impl SourceFile {
+    pub fn module_path<'db>(&self, db: &'db dyn Db) -> ModulePath<'db> {
+        ModulePath::new(db, self.module(db))
+    }
 }
 
 #[salsa::input]
@@ -58,7 +82,7 @@ pub enum VfsInner {
 
 #[salsa::tracked]
 impl Vfs {
-    pub fn from_path(db: &mut dyn Database, path: &str) -> Vfs {
+    pub fn from_path(db: &mut dyn Db, path: &str) -> Vfs {
         let module = Vfs::new(db, "root".to_string(), VfsInner::Dir(vec![]));
         for file in glob(path).unwrap() {
             let file = file.unwrap();
@@ -115,7 +139,18 @@ impl Vfs {
 }
 
 impl SourceFile {
-    pub fn open(db: &dyn Database, path: PathBuf) -> Self {
+    pub fn open(db: &dyn Db, path: PathBuf) -> Self {
+        let module = path
+            .to_string_lossy()
+            .as_ref()
+            .strip_prefix(db.root().as_str())
+            .unwrap()
+            .strip_suffix(".gib")
+            .unwrap()
+            .split('/')
+            .map(str::to_string)
+            .collect::<Vec<_>>();
+
         let name = path
             .file_name()
             .unwrap()
@@ -125,6 +160,6 @@ impl SourceFile {
             .unwrap()
             .to_string();
         let text = read_to_string(path.clone()).unwrap();
-        SourceFile::new(db, name, path, text)
+        SourceFile::new(db, name, path, text, module)
     }
 }

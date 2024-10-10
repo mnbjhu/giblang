@@ -1,30 +1,26 @@
 use ariadne::{Color, Source};
 
-use crate::{check::state::CheckState, ty::Ty, util::Span};
+use crate::{
+    db::input::{Db, SourceFile},
+    util::Span,
+};
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct IsNotInstance {
-    pub found: Ty,
-    pub expected: Ty,
+    pub found: String,
+    pub expected: String,
     pub span: Span,
-    pub file: u32,
+    pub file: SourceFile,
 }
 
 impl IsNotInstance {
-    pub fn print(&self, state: &CheckState) {
-        let file_data = state
-            .project
-            .get_file(self.file)
-            .unwrap_or_else(|| panic!("No file found for id {}", self.file));
-        let source = Source::from(file_data.text.clone());
-        let name = &file_data.name;
+    pub fn print(&self, db: &dyn Db) {
+        let source = Source::from(self.file.text(db).clone());
+        let path = self.file.path(db);
+        let name = path.to_str().unwrap();
 
         let err = Color::Red;
-        let msg = format!(
-            "Expected {} but found {}",
-            self.expected.get_name(state),
-            self.found.get_name(state),
-        );
+        let msg = format!("Expected {} but found {}", self.expected, self.found,);
 
         let mut builder = ariadne::Report::build(ariadne::ReportKind::Error, name, self.span.start)
             .with_message(msg.clone())

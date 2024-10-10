@@ -1,12 +1,14 @@
 use std::vec;
 
-use crate::db::{
-    err::{Diagnostic, Level},
-    lazy::{Db, File as SourceFile},
+use crate::{
+    db::{
+        err::{Diagnostic, Level},
+        input::{Db, SourceFile},
+    },
+    project::file_data::FileData,
 };
 use chumsky::{error::Rich, input::Input, primitive::just, IterParser, Parser};
 use salsa::Accumulator;
-use top::impl_::Impl;
 use tracing::info;
 
 use crate::{
@@ -29,27 +31,12 @@ pub mod top;
 pub type File = Vec<Spanned<Top>>;
 
 #[salsa::tracked]
-pub struct FileData<'db> {
-    #[return_ref]
-    pub tops: Vec<TopData<'db>>,
-
-    #[return_ref]
-    pub impls: Vec<ImplData<'db>>,
-}
-
-#[salsa::tracked]
 pub struct TopData<'db> {
     #[id]
     #[interned]
     pub name: String,
     #[return_ref]
     pub data: Top,
-}
-
-#[salsa::tracked]
-pub struct ImplData<'db> {
-    #[return_ref]
-    pub data: Impl,
 }
 
 #[must_use]
@@ -84,7 +71,7 @@ pub fn file_parser<'tokens, 'src: 'tokens>() -> AstParser!(File) {
 #[salsa::tracked]
 pub fn parse_file<'db>(db: &'db dyn Db, file: SourceFile) -> FileData<'db> {
     info!("Parsing file: {:?}", file.path(db));
-    let text = file.contents(db);
+    let text = file.text(db);
     let (tokens, errors) = lexer().parse(text).into_output_errors();
     let len = text.len();
     let mut found = vec![];

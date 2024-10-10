@@ -19,14 +19,14 @@ use tower::ServiceBuilder;
 use tracing::{info, Level};
 
 use crate::db::err::Diagnostic;
-use crate::db::lazy::{Db, LazyInputDatabase};
+use crate::db::input::SourceDatabase;
 use crate::parser::{self};
 use crate::range::span_to_range_str;
 
 struct ServerState {
     client: ClientSocket,
     counter: i32,
-    db: LazyInputDatabase,
+    db: SourceDatabase,
 }
 
 struct TickEvent;

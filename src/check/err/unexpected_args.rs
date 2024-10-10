@@ -1,24 +1,24 @@
 use ariadne::{Color, Source};
 
-use crate::{check::state::CheckState, ty::FuncTy, util::Span};
+use crate::{
+    db::input::{Db, SourceFile},
+    util::Span,
+};
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct UnexpectedArgs {
     pub span: Span,
-    pub file: u32,
-    pub func: FuncTy,
+    pub file: SourceFile,
+    pub func: String,
     pub expected: usize,
     pub found: usize,
 }
 
 impl UnexpectedArgs {
-    pub fn print(&self, state: &CheckState) {
-        let file_data = state
-            .project
-            .get_file(self.file)
-            .unwrap_or_else(|| panic!("No file found for id {}", self.file));
-        let source = Source::from(file_data.text.clone());
-        let name = &file_data.name;
+    pub fn print(&self, db: &dyn Db) {
+        let source = Source::from(self.file.text(db).clone());
+        let path = self.file.path(db);
+        let name = path.to_str().unwrap();
 
         let err = Color::Red;
         let msg = format!(

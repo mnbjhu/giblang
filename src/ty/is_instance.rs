@@ -7,6 +7,7 @@ use crate::{
     },
     db::modules::ModulePath,
     parser::common::variance::Variance,
+    project::ImplData,
     ty::Ty,
     util::Span,
 };
@@ -17,8 +18,8 @@ impl<'db> Ty<'db> {
     pub fn expect_is_instance_of(
         &self,
         db: &'db dyn Database,
-        other: &Ty,
-        state: &mut CheckState,
+        other: &Ty<'db>,
+        state: &mut CheckState<'_, 'db>,
         explicit: bool,
         span: Span,
     ) -> bool {
@@ -94,21 +95,25 @@ impl<'db> Ty<'db> {
         if !res {
             state.error(CheckError::IsNotInstance(IsNotInstance {
                 span,
-                found: self.clone(),
-                expected: other.clone(),
-                file: state.file_data.end,
+                found: self.get_name(db, state),
+                expected: other.get_name(db, state),
+                file: state.file_data,
             }));
         }
         res
     }
 
-    fn imply_named_sub_ty(&self, sub_ty: ModulePath, state: &mut CheckState) -> Option<Ty> {
+    fn imply_named_sub_ty(
+        &self,
+        db: &'db dyn Database,
+        sub_ty: ModulePath<'db>,
+        state: &mut CheckState<'_, 'db>,
+    ) -> Option<Ty<'db>> {
         if let Ty::Named { name, .. } = self {
-            let path = path_to_sub_ty(*name, sub_ty, state)?;
+            let path = path_to_sub_ty(db, *name, sub_ty, state)?;
             let mut ty = self.clone();
-            for id in path {
-                let impl_ = state.project.get_impl(&id);
-                ty = impl_.map(&ty);
+            for impl_ in path {
+                ty = impl_.map(db, &ty);
             }
             Some(ty)
         } else {
@@ -117,35 +122,36 @@ impl<'db> Ty<'db> {
     }
 }
 
-fn path_to_sub_ty(
-    name: ModulePath,
-    sub_ty: ModulePath,
-    state: &mut CheckState,
-) -> Option<Vec<u32>> {
+fn path_to_sub_ty<'db>(
+    db: &'db dyn Database,
+    name: ModulePath<'db>,
+    sub_ty: ModulePath<'db>,
+    state: &mut CheckState<'_, 'db>,
+) -> Option<Vec<ImplData<'db>>> {
     if name == sub_ty {
         return Some(Vec::new());
     }
     let (id, mut path) = state
         .project
-        .get_impls(name)
-        .iter()
+        .get_impls(db, name)
+        .into_iter()
         .map(|i| {
-            if let Ty::Named { name, .. } = &i.to {
-                (i.id, name)
+            if let Ty::Named { name, .. } = i.to_ty(db) {
+                (i, name)
             } else {
                 unreachable!()
             }
         })
-        .find_map(|(id, n)| path_to_sub_ty(*n, sub_ty, state).map(|p| (id, p)))?;
+        .find_map(|(id, n)| path_to_sub_ty(db, n, sub_ty, state).map(|p| (id, p)))?;
     path.insert(0, id);
     Some(path)
 }
 
 fn expect_named_is_instance_of_named<'db>(
     db: &'db dyn Database,
-    first: &Ty,
-    second: &Ty,
-    state: &mut CheckState,
+    first: &Ty<'db>,
+    second: &Ty<'db>,
+    state: &mut CheckState<'_, 'db>,
     explicit: bool,
     span: Span,
 ) -> bool {
@@ -159,9 +165,9 @@ fn expect_named_is_instance_of_named<'db>(
     {
         if let Some(Ty::Named {
             args: implied_args, ..
-        }) = first.imply_named_sub_ty(*other_name, state)
+        }) = first.imply_named_sub_ty(db, *other_name, state)
         {
-            let decl = state.project.get_decl(*name);
+            let decl = state.project.get_decl(db, *name);
             let generics = decl.generics(db);
             for ((g, arg), other) in generics.iter().zip(implied_args).zip(other_args) {
                 let variance = g.variance;

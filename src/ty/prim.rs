@@ -6,7 +6,7 @@ use crate::db::modules::ModulePath;
 
 use super::Ty;
 
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Debug, Copy)]
 pub enum PrimTy {
     String,
     Bool,

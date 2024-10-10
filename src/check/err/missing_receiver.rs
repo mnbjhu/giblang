@@ -1,27 +1,27 @@
 use ariadne::{Color, Source};
 
-use crate::{check::state::CheckState, ty::Ty, util::Span};
+use crate::{
+    db::input::{Db, SourceFile},
+    util::Span,
+};
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct MissingReceiver {
-    pub expected: Ty,
+    pub expected: String,
     pub span: Span,
-    pub file: u32,
+    pub file: SourceFile,
 }
 
 impl MissingReceiver {
-    pub fn print(&self, state: &CheckState) {
-        let file_data = state
-            .project
-            .get_file(self.file)
-            .unwrap_or_else(|| panic!("No file found for id {}", self.file));
-        let source = Source::from(file_data.text.clone());
-        let name = &file_data.name;
+    pub fn print(&self, db: &dyn Db) {
+        let source = Source::from(self.file.text(db).clone());
+        let path = self.file.path(db);
+        let name = path.to_str().unwrap();
 
         let err = Color::Red;
         let msg = format!(
             "Expected function to have a receiver of type {} but found no receiver",
-            self.expected.get_name(state),
+            self.expected,
         );
 
         let mut builder = ariadne::Report::build(ariadne::ReportKind::Error, name, self.span.start)

@@ -1,4 +1,4 @@
-use crate::{check::err::unresolved::Unresolved, util::Spanned};
+use crate::{check::err::unresolved::Unresolved, db::input::SourceFile, util::Spanned};
 
 pub struct Node {
     name: String,
@@ -43,7 +43,11 @@ impl Node {
         }
     }
 
-    pub fn get_with_error(&self, path: &[Spanned<String>], file: u32) -> Result<u32, Unresolved> {
+    pub fn get_with_error(
+        &self,
+        path: &[Spanned<String>],
+        file: SourceFile,
+    ) -> Result<u32, Unresolved> {
         if path.is_empty() {
             Ok(self.id)
         } else if let Some(child) = self.children.iter().find(|c| c.name == path[0].0) {

@@ -1,24 +1,26 @@
 use ariadne::{Color, Source};
 
-use crate::{project::Project, util::Span};
+use crate::{
+    db::input::{Db, SourceFile},
+    util::Span,
+};
 
+#[derive(Clone, Debug)]
 pub struct ImplTypeMismatch {
     pub found: String,
     pub span: Span,
-    pub file: u32,
+    pub file: SourceFile,
 }
 
 impl ImplTypeMismatch {
-    pub fn print(&self, project: &Project) {
+    pub fn print(&self, db: &dyn Db) {
         let message = format!(
             "Expected type to be a named type but found `{}`",
             self.found
         );
-        let file_data = project
-            .get_file(self.file)
-            .unwrap_or_else(|| panic!("No file found for id {}", self.file));
-        let source = Source::from(file_data.text.clone());
-        let name = &file_data.name;
+        let source = Source::from(self.file.text(db).clone());
+        let path = self.file.path(db);
+        let name = path.to_str().unwrap();
 
         let err = Color::Red;
 

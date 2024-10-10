@@ -1,7 +1,7 @@
 use crate::{parser::common::type_::NamedType, resolve::state::ResolveState, ty::Ty};
 
 impl NamedType {
-    pub fn resolve(&self, state: &mut ResolveState) -> Ty {
+    pub fn resolve<'db>(&self, state: &mut ResolveState<'db>) -> Ty<'db> {
         if self.name.len() == 1 {
             if self.name[0].0 == "Any" {
                 return Ty::Any;

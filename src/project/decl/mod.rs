@@ -4,7 +4,7 @@ use crate::{
     check::state::CheckState,
     db::modules::ModulePath,
     ty::{prim::PrimTy, FuncTy, Generic, Ty},
-    util::{Span, Spanned},
+    util::Span,
 };
 
 use self::struct_::StructDecl;
@@ -65,10 +65,10 @@ impl<'db> Decl<'db> {
     }
 
     pub fn get_ty(
-        self,
+        &'db self,
         db: &'db dyn Database,
         id: ModulePath<'db>,
-        state: &mut CheckState,
+        state: &mut CheckState<'_, 'db>,
     ) -> Ty<'db> {
         match self.kind(db) {
             DeclKind::Trait { .. } => todo!(),
@@ -90,22 +90,19 @@ impl<'db> Decl<'db> {
                     ret: Box::new(ret.clone()),
                 })
             }
-            DeclKind::Prim(p) => Ty::Meta(Box::new(p.into())),
+            DeclKind::Prim(p) => Ty::Meta(Box::new(Ty::from_prim(*p, db))),
         }
     }
 
     fn get_named_ty(
         &self,
         db: &'db dyn Database,
-        state: &mut CheckState,
+        state: &mut CheckState<'_, 'db>,
         id: ModulePath<'db>,
     ) -> Ty {
         if let DeclKind::Member { .. } = &self.kind(db) {
-            let parent = state
-                .project
-                .get_parent(id)
-                .expect("Member decls should have a parent");
-            let parent_decl = state.project.get_decl(parent);
+            let parent = id.get_parent(db);
+            let parent_decl = state.project.get_decl(db, id);
             Ty::Named {
                 name: parent,
                 args: parent_decl

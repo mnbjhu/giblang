@@ -10,7 +10,7 @@ impl<'db> Ty<'db> {
             Ty::Any => "Any".to_string(),
             Ty::Unknown => "Unknown".to_string(),
             Ty::Named { name, args } => {
-                let decl = state.project.get_decl(*name);
+                let decl = state.project.get_decl(db, *name);
                 let name = decl.name(db);
                 if args.is_empty() {
                     name.to_string()

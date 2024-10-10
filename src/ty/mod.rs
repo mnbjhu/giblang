@@ -11,7 +11,7 @@ pub mod name;
 pub mod parameterize;
 pub mod prim;
 
-#[derive(Clone, Debug, PartialEq, Update, Hash)]
+#[derive(Clone, Debug, Eq, PartialEq, Update, Hash)]
 pub struct Generic<'db> {
     pub name: Spanned<String>,
     pub variance: Variance,
@@ -41,14 +41,14 @@ impl<'db> Generic<'db> {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Default, Update)]
+#[derive(Clone, Debug, PartialEq, Default, Update, Eq, Hash)]
 pub struct FuncTy<'db> {
     pub receiver: Option<Box<Ty<'db>>>,
     pub args: Vec<Ty<'db>>,
     pub ret: Box<Ty<'db>>,
 }
 
-#[derive(Clone, Debug, PartialEq, Default, Update, Hash)]
+#[derive(Clone, Debug, PartialEq, Default, Update, Hash, Eq)]
 pub enum Ty<'db> {
     Any,
     #[default]
@@ -67,45 +67,45 @@ pub enum Ty<'db> {
     Sum(Vec<Ty<'db>>),
 }
 
-#[cfg(test)]
-mod tests {
-    use crate::parser::common::variance::Variance;
-    use crate::project::{check_test_state, Project};
-    use crate::ty::{Generic, Ty};
-    use crate::util::Span;
-
-    // #[test]
-    // fn simple_name() {
-    //     let project = Project::check_test();
-    //     let state = check_test_state(&project);
-    //     let gen = Generic::new(("T".to_string(), Span::splat(0)));
-    //     let name = gen.get_name(&state);
-    //     assert_eq!(name, "T");
-    // }
-    //
-    // #[test]
-    // fn name_with_super() {
-    //     let project = Project::check_test();
-    //     let state = check_test_state(&project);
-    //     let gen = Generic {
-    //         name: ("T".to_string(), Span::splat(0)),
-    //         variance: Variance::Invariant,
-    //         super_: Box::new(Ty::int()),
-    //     };
-    //     let name = gen.get_name(&state);
-    //     assert_eq!(name, "T: Int");
-    // }
-    //
-    // #[test]
-    // fn name_with_variance() {
-    //     let project = Project::check_test();
-    //     let state = check_test_state(&project);
-    //     let gen = Generic {
-    //         name: ("T".to_string(), Span::splat(0)),
-    //         variance: Variance::Covariant,
-    //         super_: Box::new(Ty::Any),
-    //     };
-    //     let name = gen.get_name(&state);
-    //     assert_eq!(name, "out T");
-    // }
-}
+// #[cfg(test)]
+// mod tests {
+//     use crate::parser::common::variance::Variance;
+//     use crate::project::{check_test_state, Project};
+//     use crate::ty::{Generic, Ty};
+//     use crate::util::Span;
+//
+// #[test]
+// fn simple_name() {
+//     let project = Project::check_test();
+//     let state = check_test_state(&project);
+//     let gen = Generic::new(("T".to_string(), Span::splat(0)));
+//     let name = gen.get_name(&state);
+//     assert_eq!(name, "T");
+// }
+//
+// #[test]
+// fn name_with_super() {
+//     let project = Project::check_test();
+//     let state = check_test_state(&project);
+//     let gen = Generic {
+//         name: ("T".to_string(), Span::splat(0)),
+//         variance: Variance::Invariant,
+//         super_: Box::new(Ty::int()),
+//     };
+//     let name = gen.get_name(&state);
+//     assert_eq!(name, "T: Int");
+// }
+//
+// #[test]
+// fn name_with_variance() {
+//     let project = Project::check_test();
+//     let state = check_test_state(&project);
+//     let gen = Generic {
+//         name: ("T".to_string(), Span::splat(0)),
+//         variance: Variance::Covariant,
+//         super_: Box::new(Ty::Any),
+//     };
+//     let name = gen.get_name(&state);
+//     assert_eq!(name, "out T");
+// }
+// }

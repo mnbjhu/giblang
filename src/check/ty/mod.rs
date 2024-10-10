@@ -1,3 +1,5 @@
+use salsa::Database;
+
 use crate::{
     check::state::CheckState,
     parser::common::type_::Type,
@@ -42,12 +44,18 @@ impl Type {
         }
     }
 
-    pub fn expect_is_bound_by(&self, bound: &Generic, state: &mut CheckState, span: Span) -> Ty {
+    pub fn expect_is_bound_by<'db>(
+        &self,
+        db: &'db dyn Database,
+        bound: &Generic<'db>,
+        state: &mut CheckState<'_, 'db>,
+        span: Span,
+    ) -> Ty {
         let ty = self.check(state);
         if let Ty::TypeVar { id } = ty {
             state.type_state.add_bound(id, bound.clone());
         } else {
-            ty.expect_is_instance_of(&bound.super_, state, false, span);
+            ty.expect_is_instance_of(db, &bound.super_, state, false, span);
         }
         ty
     }

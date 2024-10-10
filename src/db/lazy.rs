@@ -56,69 +56,69 @@ use super::input::Vfs;
 // ANCHOR_END: main
 
 // ANCHOR: db
-#[salsa::input]
-pub struct File {
-    pub path: PathBuf,
-    #[return_ref]
-    pub contents: String,
-}
-
-#[salsa::db]
-pub trait Db: salsa::Database {
-    fn input(&self, path: PathBuf) -> File;
-}
-
-#[salsa::db]
-pub struct LazyInputDatabase {
-    storage: Storage<Self>,
-    logs: Mutex<Vec<String>>,
-    files: DashMap<PathBuf, File>,
-    module: Option<Vfs>,
-}
-
-impl Default for LazyInputDatabase {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl LazyInputDatabase {
-    #[must_use]
-    pub fn new() -> Self {
-        Self {
-            storage: Storage::default(),
-            logs: Mutex::default(),
-            files: DashMap::new(),
-            module: None,
-        }
-    }
-}
-
-#[salsa::db]
-impl salsa::Database for LazyInputDatabase {
-    fn salsa_event(&self, event: &dyn Fn() -> salsa::Event) {
-        // don't log boring events
-        let event = event();
-        if let salsa::EventKind::WillExecute { .. } = event.kind {
-            self.logs.lock().unwrap().push(format!("{event:?}"));
-        }
-    }
-}
-
-#[salsa::db]
-impl Db for LazyInputDatabase {
-    fn input(&self, path: PathBuf) -> File {
-        let path = path.canonicalize().unwrap();
-        match self.files.entry(path.clone()) {
-            // If the file already exists in our cache then just return it.
-            Entry::Occupied(entry) => *entry.get(),
-            // If we haven't read this file yet set up the watch, read the
-            // contents, store it in the cache, and return it.
-            Entry::Vacant(entry) => {
-                let contents = std::fs::read_to_string(&path).unwrap();
-                let file = File::new(self, path, contents);
-                *entry.insert(file)
-            }
-        }
-    }
-}
+// #[salsa::input]
+// pub struct File {
+//     pub path: PathBuf,
+//     #[return_ref]
+//     pub contents: String,
+// }
+//
+// #[salsa::db]
+// pub trait Db: salsa::Database {
+//     fn input(&self, path: PathBuf) -> File;
+// }
+//
+// #[salsa::db]
+// pub struct LazyInputDatabase {
+//     storage: Storage<Self>,
+//     logs: Mutex<Vec<String>>,
+//     files: DashMap<PathBuf, File>,
+//     module: Option<Vfs>,
+// }
+//
+// impl Default for LazyInputDatabase {
+//     fn default() -> Self {
+//         Self::new()
+//     }
+// }
+//
+// impl LazyInputDatabase {
+//     #[must_use]
+//     pub fn new() -> Self {
+//         Self {
+//             storage: Storage::default(),
+//             logs: Mutex::default(),
+//             files: DashMap::new(),
+//             module: None,
+//         }
+//     }
+// }
+//
+// #[salsa::db]
+// impl salsa::Database for LazyInputDatabase {
+//     fn salsa_event(&self, event: &dyn Fn() -> salsa::Event) {
+//         // don't log boring events
+//         let event = event();
+//         if let salsa::EventKind::WillExecute { .. } = event.kind {
+//             self.logs.lock().unwrap().push(format!("{event:?}"));
+//         }
+//     }
+// }
+//
+// #[salsa::db]
+// impl Db for LazyInputDatabase {
+//     fn input(&self, path: PathBuf) -> File {
+//         let path = path.canonicalize().unwrap();
+//         match self.files.entry(path.clone()) {
+//             // If the file already exists in our cache then just return it.
+//             Entry::Occupied(entry) => *entry.get(),
+//             // If we haven't read this file yet set up the watch, read the
+//             // contents, store it in the cache, and return it.
+//             Entry::Vacant(entry) => {
+//                 let contents = std::fs::read_to_string(&path).unwrap();
+//                 let file = File::new(self, path, contents);
+//                 *entry.insert(file)
+//             }
+//         }
+//     }
+// }
