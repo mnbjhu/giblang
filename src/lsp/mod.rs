@@ -177,6 +177,8 @@ pub async fn main_loop() {
 impl ServerState {
     fn report_diags(&mut self) {
         let project = self.db.vfs.unwrap();
+        let vfs = resolve_vfs(&self.db, project);
+        info!("Resolved VFS: {vfs:#?}", vfs = vfs);
         let diags = resolve_vfs::accumulated::<Diagnostic>(&self.db, project);
         let mut project_diags = HashMap::<_, Vec<_>>::new();
         for path in project.paths(&self.db) {
@@ -207,6 +209,11 @@ impl ServerState {
                     data: None,
                 });
             }
+            info!(
+                "Reporting diagnostics for {path}: {found:#?}",
+                path = path.display(),
+                found = found
+            );
             self.client
                 .notify::<notification::PublishDiagnostics>(PublishDiagnosticsParams {
                     uri: Url::parse(format!("file://{}", path.display()).as_str()).unwrap(),

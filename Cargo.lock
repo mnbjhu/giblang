@@ -893,6 +893,7 @@ checksum = "f3cb5ba0dc43242ce17de99c180e96db90b235b8a9fdc9543c96d2209116bd9f"
 [[package]]
 name = "salsa"
 version = "0.18.0"
+source = "git+https://github.com/mnbjhu/salsa?branch=input_change_cause_panic#b7cd2684623f9e7b7bcb592fb56fed9884f96532"
 dependencies = [
  "append-only-vec",
  "arc-swap",
@@ -912,10 +913,12 @@ dependencies = [
 [[package]]
 name = "salsa-macro-rules"
 version = "0.1.0"
+source = "git+https://github.com/mnbjhu/salsa?branch=input_change_cause_panic#b7cd2684623f9e7b7bcb592fb56fed9884f96532"
 
 [[package]]
 name = "salsa-macros"
 version = "0.18.0"
+source = "git+https://github.com/mnbjhu/salsa?branch=input_change_cause_panic#b7cd2684623f9e7b7bcb592fb56fed9884f96532"
 dependencies = [
  "heck",
  "proc-macro2",

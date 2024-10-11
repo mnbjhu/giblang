@@ -23,9 +23,10 @@ pub struct SourceDatabase {
 
 impl SourceDatabase {
     pub fn init(&mut self, root: String) {
-        let vfs = Vfs::from_path(self, &root);
-        self.vfs = Some(vfs);
+        info!("Initializing database with root {}", root);
         self.root = root;
+        let vfs = Vfs::from_path(self);
+        self.vfs = Some(vfs);
     }
 }
 
@@ -46,7 +47,7 @@ impl Db for SourceDatabase {
         self.root.to_string()
     }
     fn input(&mut self, path: &Path) -> SourceFile {
-        let module_path = get_module_path(self, path);
+        let mut module_path = get_module_path(self, path);
         let file = self
             .vfs
             .unwrap()
@@ -121,16 +122,6 @@ pub enum VfsInner {
     Dir(Vec<Vfs>),
 }
 
-#[must_use]
-pub fn module_from_path(path: &Path) -> Vec<&str> {
-    path.to_str()
-        .unwrap()
-        .strip_suffix(".gib")
-        .unwrap()
-        .split('/')
-        .collect()
-}
-
 #[salsa::tracked]
 impl Vfs {
     #[salsa::tracked]
@@ -141,9 +132,9 @@ impl Vfs {
         }
     }
 
-    pub fn from_path(db: &mut dyn Db, path: &str) -> Vfs {
+    pub fn from_path(db: &mut dyn Db) -> Vfs {
         let module = Vfs::new(db, "root".to_string(), VfsInner::Dir(vec![]));
-        let pattern = format!("{path}/**/*.gib");
+        let pattern = format!("{path}/**/*.gib", path = db.root());
         info!("Searching for files in {}", pattern);
         for file in glob(&pattern).unwrap() {
             let file = file.unwrap();
@@ -152,8 +143,7 @@ impl Vfs {
             }
             info!("Found file: {}", file.to_string_lossy());
             let src = SourceFile::open(db, file.clone());
-            let mut mod_path = get_module_path(db, &file);
-            mod_path.pop().unwrap();
+            let mod_path = get_module_path(db, &file);
             module.insert_path(db.as_dyn_database_mut(), &mod_path, src);
         }
         module
@@ -178,8 +168,10 @@ impl Vfs {
     }
 
     pub fn insert_path(&self, db: &mut dyn Database, path: &[String], src: SourceFile) {
+        info!("Inserting file at path {:?}", path);
         let mut module: Vfs = *self;
         for seg in path {
+            info!("Found module {:?}", module.name(db));
             if let Some(exising) = module.get(db, seg) {
                 module = *exising;
             } else {
@@ -188,6 +180,7 @@ impl Vfs {
                 module = new;
             }
         }
+        info!("Inserting file into module {:?}", module.name(db));
         module.set_inner(db).to(VfsInner::File(src));
     }
 
@@ -228,7 +221,8 @@ pub fn get_path_name(path: &Path) -> String {
 
 #[must_use]
 pub fn get_module_path(db: &dyn Db, path: &Path) -> Vec<String> {
-    path.to_string_lossy()
+    let res = path
+        .to_string_lossy()
         .as_ref()
         .strip_prefix(&db.root())
         .unwrap()
@@ -238,7 +232,14 @@ pub fn get_module_path(db: &dyn Db, path: &Path) -> Vec<String> {
         .unwrap()
         .split('/')
         .map(str::to_string)
-        .collect()
+        .collect();
+    info!(
+        "Got module path {:?} for {:?} using root '{}'",
+        res,
+        path,
+        db.root()
+    );
+    res
 }
 
 impl SourceFile {
@@ -247,5 +248,39 @@ impl SourceFile {
         let name = get_path_name(&path);
         let text = read_to_string(path.clone()).unwrap();
         SourceFile::new(db, name, path, text, module)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_get_path_name() {
+        let path = Path::new("src/db/input.gib");
+        let name = get_path_name(path);
+        assert_eq!(name, "input");
+    }
+
+    #[test]
+    fn test_get_module_path() {
+        let db = SourceDatabase {
+            root: "src".to_string(),
+            ..Default::default()
+        };
+        let path = Path::new("src/db/input.gib");
+        let module = get_module_path(&db, path);
+        assert_eq!(module, vec!["db".to_string(), "input".to_string()]);
+    }
+
+    #[test]
+    fn example() {
+        let db = SourceDatabase {
+            root: "/home/james/projects/another-giblang-impl".to_string(),
+            ..Default::default()
+        };
+        let path = Path::new("/home/james/projects/another-giblang-impl/gib_mod/another.gib");
+        let module = get_module_path(&db, path);
+        assert_eq!(module, vec!["gib_mod".to_string(), "another".to_string()]);
     }
 }

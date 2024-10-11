@@ -14,15 +14,7 @@ enum Result[R, E] {
 }
 
 struct Box[T](T)
-
 fn test(thing: String) {
-
-
-
-
-
-
-
 }
 fn main() {
   let test2: Option[String] = Option::Some(123)
