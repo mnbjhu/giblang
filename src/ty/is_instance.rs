@@ -1,4 +1,3 @@
-use salsa::Database;
 
 use crate::{
     check::{

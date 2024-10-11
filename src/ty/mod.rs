@@ -1,4 +1,4 @@
-use salsa::{Database, Update};
+use salsa::Update;
 
 use crate::{
     check::state::CheckState,

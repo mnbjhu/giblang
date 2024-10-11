@@ -44,7 +44,7 @@ impl<'db> Module<'db> {
         for name in path.name(db) {
             match current.content(db) {
                 ModuleData::Package(modules) => {
-                    current = modules.iter().find(|m| m.name(db) == *name).cloned()?;
+                    current = modules.iter().find(|m| m.name(db) == *name).copied()?;
                 }
                 ModuleData::Export(_) => return None,
             }

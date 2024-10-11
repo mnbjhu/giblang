@@ -7,7 +7,6 @@ use crate::{
         input::Db,
         modules::{Module, ModuleData, ModulePath},
     },
-    parser::ImplData,
     ty::{Generic, Ty},
 };
 
@@ -52,12 +51,12 @@ impl<'db> Project<'db> {
     }
 
     pub fn get_impl(self, db: &'db dyn Db, path: ModulePath<'db>) -> ImplDecl<'db> {
-        self.impls(db).get(&path).unwrap().clone()
+        *self.impls(db).get(&path).unwrap()
     }
 
     pub fn get_impls(self, db: &'db dyn Db, path: ModulePath<'db>) -> Vec<ImplDecl<'db>> {
         let impl_ = self.get_impl(db, path);
-        self.impl_map(db).get(&&impl_).unwrap().clone()
+        self.impl_map(db).get(&impl_).unwrap().clone()
     }
 }
 #[derive(Debug, Clone)]

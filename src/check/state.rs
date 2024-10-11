@@ -9,9 +9,9 @@ use crate::{
         modules::ModulePath,
     },
     parser::{expr::qualified_name::SpannedQualifiedName, parse_file},
-    project::{decl::Decl, name::QualifiedName, Project},
+    project::{name::QualifiedName, Project},
     ty::{Generic, Ty},
-    util::{Span, Spanned},
+    util::Span,
 };
 
 use super::{
@@ -191,7 +191,7 @@ impl<'ty, 'db: 'ty> CheckState<'ty, 'db> {
             };
         }
         for err in errs {
-            self.error(err)
+            self.error(err);
         }
     }
 

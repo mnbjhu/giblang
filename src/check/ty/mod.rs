@@ -1,8 +1,6 @@
-use salsa::Database;
 
 use crate::{
     check::state::CheckState,
-    db::input::Db,
     parser::common::type_::Type,
     ty::{FuncTy, Generic, Ty},
     util::Span,

@@ -2,7 +2,7 @@ use core::panic;
 use std::{fs::read_to_string, path::PathBuf, vec};
 
 use glob::glob;
-use salsa::{AsDynDatabase, Database, Setter, Storage, Update};
+use salsa::{AsDynDatabase, Database, Setter, Update};
 
 use crate::util::Span;
 
@@ -53,8 +53,8 @@ impl Db for SourceDatabase {
                 self.as_dyn_database(),
                 get_path_name(path),
                 path.clone(),
-                "".to_string(),
-                module_path.iter().map(|s| s.to_string()).collect(),
+                String::new(),
+                module_path.iter().map(|s| (*s).to_string()).collect(),
             );
             self.vfs
                 .unwrap()
@@ -116,7 +116,7 @@ pub enum VfsInner {
     Dir(Vec<Vfs>),
 }
 
-pub fn module_from_path<'path>(path: &'path PathBuf) -> Vec<&'path str> {
+#[must_use] pub fn module_from_path(path: &PathBuf) -> Vec<&str> {
     path.to_str()
         .unwrap()
         .strip_suffix(".gib")
@@ -161,10 +161,10 @@ impl Vfs {
         let mut module: Vfs = *self;
         for seg in path {
             if let Some(exising) = module.get(db, seg) {
-                module = exising.clone();
+                module = *exising;
             } else {
                 let new = Vfs::new(db, (*seg).to_string(), VfsInner::Dir(vec![]));
-                module.insert(db, new.clone());
+                module.insert(db, new);
                 module = new;
             }
         }
@@ -203,7 +203,7 @@ impl Vfs {
 
     pub fn insert<'module, 'db: 'module>(&'module mut self, db: &'db mut dyn Database, mod_: Vfs) {
         let new = if let VfsInner::Dir(dir) = self.inner(db) {
-            let mut new = dir.to_vec();
+            let mut new = dir.clone();
             new.push(mod_);
             new
         } else {
@@ -213,7 +213,7 @@ impl Vfs {
     }
 }
 
-pub fn get_path_name(path: &PathBuf) -> String {
+#[must_use] pub fn get_path_name(path: &PathBuf) -> String {
     path.file_name()
         .unwrap()
         .to_str()
