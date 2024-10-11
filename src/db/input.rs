@@ -7,6 +7,7 @@ use std::{
 
 use glob::glob;
 use salsa::{AsDynDatabase, Database, Setter, Update};
+use tracing::info;
 
 use crate::util::Span;
 
@@ -45,7 +46,7 @@ impl Db for SourceDatabase {
         self.root.to_string()
     }
     fn input(&mut self, path: &Path) -> SourceFile {
-        let module_path = module_from_path(path);
+        let module_path = get_module_path(self, path);
         let file = self
             .vfs
             .unwrap()
@@ -143,26 +144,22 @@ impl Vfs {
     pub fn from_path(db: &mut dyn Db, path: &str) -> Vfs {
         let module = Vfs::new(db, "root".to_string(), VfsInner::Dir(vec![]));
         let pattern = format!("{path}/**/*.gib");
+        info!("Searching for files in {}", pattern);
         for file in glob(&pattern).unwrap() {
             let file = file.unwrap();
             if file.is_dir() {
                 continue;
             }
+            info!("Found file: {}", file.to_string_lossy());
             let src = SourceFile::open(db, file.clone());
-            let mut mod_path = file
-                .to_str()
-                .unwrap()
-                .strip_suffix(".gib")
-                .unwrap()
-                .split('/')
-                .collect::<Vec<&str>>();
+            let mut mod_path = get_module_path(db, &file);
             mod_path.pop().unwrap();
             module.insert_path(db.as_dyn_database_mut(), &mod_path, src);
         }
         module
     }
 
-    pub fn get_file(&self, db: &mut dyn Database, path: &[&str]) -> Option<SourceFile> {
+    pub fn get_file(&self, db: &mut dyn Database, path: &[String]) -> Option<SourceFile> {
         let mut module: Vfs = *self;
         for seg in path {
             if let Some(exising) = module.get(db, seg) {
@@ -180,7 +177,7 @@ impl Vfs {
         }
     }
 
-    pub fn insert_path(&self, db: &mut dyn Database, path: &[&str], src: SourceFile) {
+    pub fn insert_path(&self, db: &mut dyn Database, path: &[String], src: SourceFile) {
         let mut module: Vfs = *self;
         for seg in path {
             if let Some(exising) = module.get(db, seg) {
@@ -202,7 +199,7 @@ impl Vfs {
         if let VfsInner::Dir(dir) = self.inner(db) {
             dir.iter().find(|mod_| mod_.name(db) == name)
         } else {
-            panic!("Get dir called on file")
+            panic!("Get dir called on file {} '{}'", self.name(db), name)
         }
     }
 
@@ -229,18 +226,24 @@ pub fn get_path_name(path: &Path) -> String {
         .to_string()
 }
 
+#[must_use]
+pub fn get_module_path(db: &dyn Db, path: &Path) -> Vec<String> {
+    path.to_string_lossy()
+        .as_ref()
+        .strip_prefix(&db.root())
+        .unwrap()
+        .strip_prefix('/')
+        .unwrap()
+        .strip_suffix(".gib")
+        .unwrap()
+        .split('/')
+        .map(str::to_string)
+        .collect()
+}
+
 impl SourceFile {
     pub fn open(db: &dyn Db, path: PathBuf) -> Self {
-        let module = path
-            .to_string_lossy()
-            .as_ref()
-            .strip_prefix(db.root().as_str())
-            .unwrap()
-            .strip_suffix(".gib")
-            .unwrap_or_else(|| panic!("Path doesn't end with .gib '{}'", path.to_string_lossy()))
-            .split('/')
-            .map(str::to_string)
-            .collect::<Vec<_>>();
+        let module = get_module_path(db, &path);
         let name = get_path_name(&path);
         let text = read_to_string(path.clone()).unwrap();
         SourceFile::new(db, name, path, text, module)
