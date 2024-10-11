@@ -13,7 +13,6 @@ use crate::{
 pub mod decl;
 pub mod file_data;
 pub mod inst;
-mod module;
 pub mod name;
 pub mod util;
 
@@ -46,7 +45,7 @@ impl<'db> Project<'db> {
         let module = self.decls(db).get_path(db, path)?;
         match module.content(db) {
             ModuleData::Export(decl) => Some(*decl),
-            _ => None,
+            ModuleData::Package(_) => None,
         }
     }
 

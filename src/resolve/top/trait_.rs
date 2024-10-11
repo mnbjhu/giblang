@@ -1,5 +1,3 @@
-use chumsky::container::Container;
-
 use crate::{
     db::modules::ModulePath, parser::top::trait_::Trait, project::decl::DeclKind,
     resolve::state::ResolveState, ty::Ty,

@@ -95,7 +95,7 @@ impl<'db> Decl<'db> {
     }
 
     fn get_named_ty(
-        &self,
+        self,
         db: &'db dyn Db,
         state: &mut CheckState<'_, 'db>,
         id: ModulePath<'db>,

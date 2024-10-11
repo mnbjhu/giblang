@@ -1,5 +1,9 @@
 use core::panic;
-use std::{fs::read_to_string, path::PathBuf, vec};
+use std::{
+    fs::read_to_string,
+    path::{Path, PathBuf},
+    vec,
+};
 
 use glob::glob;
 use salsa::{AsDynDatabase, Database, Setter, Update};
@@ -27,7 +31,7 @@ impl SourceDatabase {
 #[salsa::db]
 pub trait Db: salsa::Database {
     fn root(&self) -> String;
-    fn input(&mut self, path: &PathBuf) -> SourceFile;
+    fn input(&mut self, path: &Path) -> SourceFile;
 }
 
 #[salsa::db]
@@ -40,7 +44,7 @@ impl Db for SourceDatabase {
     fn root(&self) -> String {
         self.root.to_string()
     }
-    fn input(&mut self, path: &PathBuf) -> SourceFile {
+    fn input(&mut self, path: &Path) -> SourceFile {
         let module_path = module_from_path(path);
         let file = self
             .vfs
@@ -52,7 +56,7 @@ impl Db for SourceDatabase {
             let src = SourceFile::new(
                 self.as_dyn_database(),
                 get_path_name(path),
-                path.clone(),
+                path.to_path_buf(),
                 String::new(),
                 module_path.iter().map(|s| (*s).to_string()).collect(),
             );
@@ -116,7 +120,8 @@ pub enum VfsInner {
     Dir(Vec<Vfs>),
 }
 
-#[must_use] pub fn module_from_path(path: &PathBuf) -> Vec<&str> {
+#[must_use]
+pub fn module_from_path(path: &Path) -> Vec<&str> {
     path.to_str()
         .unwrap()
         .strip_suffix(".gib")
@@ -213,7 +218,8 @@ impl Vfs {
     }
 }
 
-#[must_use] pub fn get_path_name(path: &PathBuf) -> String {
+#[must_use]
+pub fn get_path_name(path: &Path) -> String {
     path.file_name()
         .unwrap()
         .to_str()
