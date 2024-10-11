@@ -1,23 +1,22 @@
-use std::collections::HashMap;
-
-use salsa::Database;
-
 use crate::{
     db::{
-        input::{Db, SourceFile},
+        input::{Db, SourceFile, Vfs, VfsInner},
         modules::{Module, ModuleData},
     },
     parser::parse_file,
-    project::Project,
 };
+use tracing::info;
 
 use self::state::ResolveState;
 
 mod common;
 pub mod state;
 mod top;
-pub fn resolve_file<'db>(db: &'db dyn Db, file: SourceFile, project: Project<'db>) -> Module<'db> {
-    let mut state = ResolveState::from_file(db, file, project);
+
+#[salsa::tracked]
+pub fn resolve_file<'db>(db: &'db dyn Db, file: SourceFile) -> Module<'db> {
+    info!("Resolving file {}", file.name(db));
+    let mut state = ResolveState::from_file(db, file);
     let decls = parse_file(db, file)
         .tops(db)
         .iter()
@@ -34,6 +33,22 @@ pub fn resolve_file<'db>(db: &'db dyn Db, file: SourceFile, project: Project<'db
         })
         .collect();
     Module::new(db, file.name(db).to_string(), ModuleData::Package(decls))
+}
+
+#[salsa::tracked]
+pub fn resolve_vfs<'db>(db: &'db dyn Db, vfs: Vfs) -> Module<'db> {
+    info!("Resolving VFS {}", vfs.name(db));
+    match vfs.inner(db) {
+        VfsInner::File(file) => resolve_file(db, *file),
+        VfsInner::Dir(files) => {
+            let mut modules = Vec::new();
+            for file in files {
+                let module = resolve_vfs(db, *file);
+                modules.push(module);
+            }
+            Module::new(db, "root".to_string(), ModuleData::Package(modules))
+        }
+    }
 }
 
 // #[cfg(test)]

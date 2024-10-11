@@ -9,7 +9,6 @@ use crate::{
         modules::ModulePath,
     },
     parser::{common::variance::Variance, expr::qualified_name::SpannedQualifiedName, parse_file},
-    project::Project,
     ty::{Generic, Ty},
     util::{Span, Spanned},
 };
@@ -19,7 +18,6 @@ pub struct ResolveState<'db> {
     imports: HashMap<String, ModulePath<'db>>,
     generics: Vec<HashMap<String, Generic<'db>>>,
     pub file_data: SourceFile,
-    pub project: Project<'db>,
 }
 
 impl<'db> ResolveState<'db> {
@@ -33,17 +31,12 @@ impl<'db> ResolveState<'db> {
             },
         );
     }
-    pub fn from_file(
-        db: &'db dyn Db,
-        file_data: SourceFile,
-        project: Project<'db>,
-    ) -> ResolveState<'db> {
+    pub fn from_file(db: &'db dyn Db, file_data: SourceFile) -> ResolveState<'db> {
         let mut state = ResolveState {
             db,
             imports: HashMap::new(),
             generics: vec![],
             file_data,
-            project,
         };
         let mut path = file_data.module_path(db).name(db).clone();
         for top in parse_file(db, file_data).tops(db) {
@@ -68,7 +61,7 @@ impl<'db> ResolveState<'db> {
     }
 
     pub fn error(&mut self, error: CheckError) {
-        Error { inner: error }.accumulate(self.db)
+        Error { inner: error }.accumulate(self.db);
     }
 
     pub fn get_decl(&self, path: &[Spanned<String>]) -> ModulePath<'db> {

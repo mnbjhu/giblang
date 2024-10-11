@@ -1,8 +1,10 @@
 mod capabilities;
 mod semantic_tokens;
 
+use std::collections::HashMap;
 use std::ops::ControlFlow;
 use std::time::Duration;
+use std::vec;
 
 use async_lsp::client_monitor::ClientProcessMonitorLayer;
 use async_lsp::concurrency::ConcurrencyLayer;
@@ -20,8 +22,8 @@ use tracing::{info, Level};
 
 use crate::db::err::Diagnostic;
 use crate::db::input::{Db, SourceDatabase};
-use crate::parser::{self};
 use crate::range::span_to_range_str;
+use crate::resolve::resolve_vfs;
 
 struct ServerState {
     client: ClientSocket,
@@ -117,7 +119,9 @@ pub async fn main_loop() {
             .notification::<notification::DidOpenTextDocument>(|st, msg| {
                 let path = msg.text_document.uri.clone().to_file_path().unwrap();
                 st.db.input(&path);
-                st.report_diags(msg.text_document.uri);
+                let vfs = st.db.vfs.unwrap();
+                resolve_vfs(&st.db, vfs);
+                st.report_diags();
                 ControlFlow::Continue(())
             })
             .notification::<notification::DidChangeTextDocument>(|st, msg| {
@@ -125,12 +129,12 @@ pub async fn main_loop() {
                 let file = st.db.input(&path);
                 file.set_text(st.db.as_dyn_database_mut())
                     .to(msg.content_changes[0].text.clone());
-                st.report_diags(msg.text_document.uri);
+                st.report_diags();
                 ControlFlow::Continue(())
             })
             .notification::<notification::DidCloseTextDocument>(|_, _| ControlFlow::Continue(()))
             .notification::<notification::DidSaveTextDocument>(|st, msg| {
-                st.report_diags(msg.text_document.uri);
+                st.report_diags();
                 info!("Saving 123");
                 ControlFlow::Continue(())
             })
@@ -171,31 +175,45 @@ pub async fn main_loop() {
 }
 
 impl ServerState {
-    fn report_diags(&mut self, url: Url) {
-        let path = url.to_file_path().unwrap();
-        let file = self.db.input(&path);
-        let diags = parser::parse_file::accumulated::<Diagnostic>(&self.db, file);
-        let mut diagnostics = Vec::new();
-        for diag in diags {
-            let range = span_to_range_str(diag.span.into(), file.text(&self.db));
-            diagnostics.push(async_lsp::lsp_types::Diagnostic {
-                range,
-                severity: Some(DiagnosticSeverity::ERROR),
-                code: None,
-                code_description: None,
-                source: None,
-                message: diag.message.clone(),
-                related_information: None,
-                tags: None,
-                data: None,
-            });
+    fn report_diags(&mut self) {
+        let project = self.db.vfs.unwrap();
+        let diags = resolve_vfs::accumulated::<Diagnostic>(&self.db, project);
+        let mut project_diags = HashMap::<_, Vec<_>>::new();
+        for path in project.paths(&self.db) {
+            project_diags.insert(path.clone(), vec![]);
         }
-        self.client
-            .notify::<notification::PublishDiagnostics>(PublishDiagnosticsParams {
-                uri: url,
-                diagnostics,
-                version: None,
-            })
-            .unwrap();
+        for diag in &diags {
+            if let Some(existing) = project_diags.get_mut(&diag.path) {
+                existing.push(diag.clone());
+            } else {
+                project_diags.insert(diag.path.clone(), vec![diag.clone()]);
+            }
+        }
+        for (path, diags) in &project_diags {
+            let file = self.db.input(path);
+            let text = file.text(&self.db);
+            let mut found = vec![];
+            for diag in diags {
+                let range = span_to_range_str(diag.span.into(), text);
+                found.push(async_lsp::lsp_types::Diagnostic {
+                    range,
+                    severity: Some(DiagnosticSeverity::ERROR),
+                    code: None,
+                    code_description: None,
+                    source: None,
+                    message: diag.message.clone(),
+                    related_information: None,
+                    tags: None,
+                    data: None,
+                });
+            }
+            self.client
+                .notify::<notification::PublishDiagnostics>(PublishDiagnosticsParams {
+                    uri: Url::parse(format!("file://{}", path.display()).as_str()).unwrap(),
+                    diagnostics: found,
+                    version: None,
+                })
+                .unwrap();
+        }
     }
 }

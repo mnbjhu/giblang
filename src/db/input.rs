@@ -13,7 +13,7 @@ use super::modules::ModulePath;
 pub struct SourceDatabase {
     storage: salsa::Storage<Self>,
     root: String,
-    vfs: Option<Vfs>,
+    pub vfs: Option<Vfs>,
 }
 
 impl SourceDatabase {
@@ -127,9 +127,18 @@ pub fn module_from_path<'path>(path: &'path PathBuf) -> Vec<&'path str> {
 
 #[salsa::tracked]
 impl Vfs {
+    #[salsa::tracked]
+    pub fn paths(self, db: &dyn Db) -> Vec<PathBuf> {
+        match self.inner(db) {
+            VfsInner::Dir(dir) => dir.iter().flat_map(|m| m.paths(db)).collect(),
+            VfsInner::File(file) => vec![file.path(db)],
+        }
+    }
+
     pub fn from_path(db: &mut dyn Db, path: &str) -> Vfs {
         let module = Vfs::new(db, "root".to_string(), VfsInner::Dir(vec![]));
-        for file in glob(path).unwrap() {
+        let pattern = format!("{path}/**/*.gib");
+        for file in glob(&pattern).unwrap() {
             let file = file.unwrap();
             if file.is_dir() {
                 continue;
@@ -149,7 +158,7 @@ impl Vfs {
     }
 
     pub fn get_file(&self, db: &mut dyn Database, path: &[&str]) -> Option<SourceFile> {
-        let mut module: Vfs = self.clone();
+        let mut module: Vfs = *self;
         for seg in path {
             if let Some(exising) = module.get(db, seg) {
                 module = exising.clone();
@@ -167,13 +176,13 @@ impl Vfs {
     }
 
     pub fn insert_path(&self, db: &mut dyn Database, path: &[&str], src: SourceFile) {
-        let mut module: Vfs = self.clone();
+        let mut module: Vfs = *self;
         for seg in path {
             if let Some(exising) = module.get(db, seg) {
-                module = exising.clone();
+                module = *exising;
             } else {
                 let new = Vfs::new(db, (*seg).to_string(), VfsInner::Dir(vec![]));
-                module.insert(db, new.clone());
+                module.insert(db, new);
                 module = new;
             }
         }
