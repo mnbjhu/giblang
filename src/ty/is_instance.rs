@@ -1,4 +1,3 @@
-
 use crate::{
     check::{
         err::{is_not_instance::IsNotInstance, CheckError},
@@ -16,7 +15,6 @@ use super::{FuncTy, Generic};
 impl<'db> Ty<'db> {
     pub fn expect_is_instance_of(
         &self,
-        db: &'db dyn Db,
         other: &Ty<'db>,
         state: &mut CheckState<'_, 'db>,
         explicit: bool,
@@ -45,26 +43,26 @@ impl<'db> Ty<'db> {
             }
             (_, Ty::Any) => true,
             (Ty::Named { .. }, Ty::Named { .. }) => {
-                expect_named_is_instance_of_named(db, self, other, state, explicit, span)
+                expect_named_is_instance_of_named(self, other, state, explicit, span)
             }
             (_, Ty::Sum(tys)) => tys
                 .iter()
-                .all(|other| self.expect_is_instance_of(db, other, state, explicit, span)),
+                .all(|other| self.expect_is_instance_of(other, state, explicit, span)),
             // TODO: Fix or remove
             (Ty::Sum(tys), _) => tys
                 .iter()
-                .any(|ty| ty.expect_is_instance_of(db, other, state, explicit, span)),
+                .any(|ty| ty.expect_is_instance_of(other, state, explicit, span)),
             (Ty::Tuple(v), Ty::Tuple(other)) => {
                 v.len() == other.len()
                     && v.iter()
                         .zip(other)
-                        .all(|(s, o)| s.expect_is_instance_of(db, o, state, explicit, span))
+                        .all(|(s, o)| s.expect_is_instance_of(o, state, explicit, span))
             }
             (Ty::Generic(Generic { super_, .. }), _) => {
-                super_.expect_is_instance_of(db, other, state, explicit, span)
+                super_.expect_is_instance_of(other, state, explicit, span)
             }
             (_, Ty::Generic(Generic { super_, .. })) => {
-                self.expect_is_instance_of(db, super_, state, explicit, span)
+                self.expect_is_instance_of(super_, state, explicit, span)
             }
             (
                 Ty::Function(FuncTy {
@@ -80,13 +78,13 @@ impl<'db> Ty<'db> {
             ) => {
                 args.len() == other_args.len()
                     && args.iter().zip(other_args).all(|(first, second)| {
-                        second.expect_is_instance_of(db, first, state, explicit, span)
+                        second.expect_is_instance_of(first, state, explicit, span)
                     })
-                    && ret.expect_is_instance_of(db, other_ret, state, explicit, span)
+                    && ret.expect_is_instance_of(other_ret, state, explicit, span)
                     && receiver.as_ref().map_or(true, |r| {
-                        other_receiver.as_ref().map_or(false, |o| {
-                            o.expect_is_instance_of(db, r, state, explicit, span)
-                        })
+                        other_receiver
+                            .as_ref()
+                            .map_or(false, |o| o.expect_is_instance_of(r, state, explicit, span))
                     })
             }
             _ => false,
@@ -94,8 +92,8 @@ impl<'db> Ty<'db> {
         if !res {
             state.error(CheckError::IsNotInstance(IsNotInstance {
                 span,
-                found: self.get_name(db, state),
-                expected: other.get_name(db, state),
+                found: self.get_name(state),
+                expected: other.get_name(state),
                 file: state.file_data,
             }));
         }
@@ -104,15 +102,14 @@ impl<'db> Ty<'db> {
 
     fn imply_named_sub_ty(
         &self,
-        db: &'db dyn Db,
         sub_ty: ModulePath<'db>,
         state: &mut CheckState<'_, 'db>,
     ) -> Option<Ty<'db>> {
         if let Ty::Named { name, .. } = self {
-            let path = path_to_sub_ty(db, *name, sub_ty, state)?;
+            let path = path_to_sub_ty(*name, sub_ty, state)?;
             let mut ty = self.clone();
             for impl_ in path {
-                ty = impl_.map(db, &ty);
+                ty = impl_.map(state.db, &ty);
             }
             Some(ty)
         } else {
@@ -122,7 +119,6 @@ impl<'db> Ty<'db> {
 }
 
 fn path_to_sub_ty<'db>(
-    db: &'db dyn Db,
     name: ModulePath<'db>,
     sub_ty: ModulePath<'db>,
     state: &mut CheckState<'_, 'db>,
@@ -132,22 +128,21 @@ fn path_to_sub_ty<'db>(
     }
     let (id, mut path) = state
         .project
-        .get_impls(db, name)
+        .get_impls(state.db, name)
         .into_iter()
         .map(|i| {
-            if let Ty::Named { name, .. } = i.to_ty(db) {
+            if let Ty::Named { name, .. } = i.to_ty(state.db) {
                 (i, name)
             } else {
                 unreachable!()
             }
         })
-        .find_map(|(id, n)| path_to_sub_ty(db, n, sub_ty, state).map(|p| (id, p)))?;
+        .find_map(|(id, n)| path_to_sub_ty(n, sub_ty, state).map(|p| (id, p)))?;
     path.insert(0, id);
     Some(path)
 }
 
 fn expect_named_is_instance_of_named<'db>(
-    db: &'db dyn Db,
     first: &Ty<'db>,
     second: &Ty<'db>,
     state: &mut CheckState<'_, 'db>,
@@ -164,23 +159,23 @@ fn expect_named_is_instance_of_named<'db>(
     {
         if let Some(Ty::Named {
             args: implied_args, ..
-        }) = first.imply_named_sub_ty(db, *other_name, state)
+        }) = first.imply_named_sub_ty(*other_name, state)
         {
             // TODO: Check this unwrap
-            let decl = state.project.get_decl(db, *name).unwrap();
-            let generics = decl.generics(db);
+            let decl = state.project.get_decl(state.db, *name).unwrap();
+            let generics = decl.generics(state.db);
             for ((g, arg), other) in generics.iter().zip(implied_args).zip(other_args) {
                 let variance = g.variance;
                 match variance {
                     Variance::Invariant => {
-                        arg.expect_is_instance_of(db, other, state, explicit, span);
-                        other.expect_is_instance_of(db, &arg, state, explicit, span);
+                        arg.expect_is_instance_of(other, state, explicit, span);
+                        other.expect_is_instance_of(&arg, state, explicit, span);
                     }
                     Variance::Covariant => {
-                        arg.expect_is_instance_of(db, other, state, explicit, span);
+                        arg.expect_is_instance_of(other, state, explicit, span);
                     }
                     Variance::Contravariant => {
-                        other.expect_is_instance_of(db, &arg, state, explicit, span);
+                        other.expect_is_instance_of(&arg, state, explicit, span);
                     }
                 }
             }

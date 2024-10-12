@@ -2,11 +2,12 @@ use core::panic;
 use std::{
     fs::read_to_string,
     path::{Path, PathBuf},
+    str::FromStr,
     vec,
 };
 
 use glob::glob;
-use salsa::{AsDynDatabase, Database, Setter, Update};
+use salsa::{AsDynDatabase, Setter, Update};
 use tracing::info;
 
 use crate::util::Span;
@@ -47,11 +48,8 @@ impl Db for SourceDatabase {
         self.root.to_string()
     }
     fn input(&mut self, path: &Path) -> SourceFile {
-        let mut module_path = get_module_path(self, path);
-        let file = self
-            .vfs
-            .unwrap()
-            .get_file(self.as_dyn_database_mut(), &module_path);
+        let module_path = get_module_path(self, path);
+        let file = self.vfs.unwrap().get_file(self, &module_path);
         if let Some(existing) = file {
             existing
         } else {
@@ -62,13 +60,8 @@ impl Db for SourceDatabase {
                 String::new(),
                 module_path.iter().map(|s| (*s).to_string()).collect(),
             );
-            self.vfs
-                .unwrap()
-                .insert_path(self.as_dyn_database_mut(), &module_path, src);
-            let file = self
-                .vfs
-                .unwrap()
-                .get_file(self.as_dyn_database_mut(), &module_path);
+            self.vfs.unwrap().insert_path(self, &module_path, src);
+            let file = self.vfs.unwrap().get_file(self, &module_path);
             file.unwrap()
         }
     }
@@ -133,9 +126,28 @@ impl Vfs {
     }
 
     pub fn from_path(db: &mut dyn Db) -> Vfs {
-        let module = Vfs::new(db, "root".to_string(), VfsInner::Dir(vec![]));
+        let std = Vfs::new(
+            db,
+            "std".to_string(),
+            VfsInner::File(SourceFile::new(
+                db,
+                "std".to_string(),
+                PathBuf::from_str(&format!("{root}/std.gib", root = db.root())).unwrap(),
+                r"
+                struct Int
+                struct Float
+                struct Bool
+                struct String
+                struct Any
+                "
+                .to_string(),
+                vec!["std".to_string()],
+            )),
+        );
+        let module = Vfs::new(db, "root".to_string(), VfsInner::Dir(vec![std]));
         let pattern = format!("{path}/**/*.gib", path = db.root());
         info!("Searching for files in {}", pattern);
+
         for file in glob(&pattern).unwrap() {
             let file = file.unwrap();
             if file.is_dir() {
@@ -144,12 +156,12 @@ impl Vfs {
             info!("Found file: {}", file.to_string_lossy());
             let src = SourceFile::open(db, file.clone());
             let mod_path = get_module_path(db, &file);
-            module.insert_path(db.as_dyn_database_mut(), &mod_path, src);
+            module.insert_path(db, &mod_path, src);
         }
         module
     }
 
-    pub fn get_file(&self, db: &mut dyn Database, path: &[String]) -> Option<SourceFile> {
+    pub fn get_file(&self, db: &mut dyn Db, path: &[String]) -> Option<SourceFile> {
         let mut module: Vfs = *self;
         for seg in path {
             if let Some(exising) = module.get(db, seg) {
@@ -167,7 +179,7 @@ impl Vfs {
         }
     }
 
-    pub fn insert_path(&self, db: &mut dyn Database, path: &[String], src: SourceFile) {
+    pub fn insert_path(&self, db: &mut dyn Db, path: &[String], src: SourceFile) {
         info!("Inserting file at path {:?}", path);
         let mut module: Vfs = *self;
         for seg in path {
@@ -186,7 +198,7 @@ impl Vfs {
 
     pub fn get<'module, 'db: 'module>(
         &'module self,
-        db: &'db dyn Database,
+        db: &'db dyn Db,
         name: &str,
     ) -> Option<&'module Vfs> {
         if let VfsInner::Dir(dir) = self.inner(db) {
@@ -196,7 +208,7 @@ impl Vfs {
         }
     }
 
-    pub fn insert<'module, 'db: 'module>(&'module mut self, db: &'db mut dyn Database, mod_: Vfs) {
+    pub fn insert<'module, 'db: 'module>(&'module mut self, db: &'db mut dyn Db, mod_: Vfs) {
         let new = if let VfsInner::Dir(dir) = self.inner(db) {
             let mut new = dir.clone();
             new.push(mod_);

@@ -1,50 +1,37 @@
-
-use crate::{check::state::CheckState, db::input::Db};
+use crate::check::state::CheckState;
 
 use super::{FuncTy, Ty};
 
 impl<'db> Ty<'db> {
-    pub fn get_name(&self, db: &'db dyn Db, state: &CheckState) -> String {
+    pub fn get_name(&self, state: &CheckState) -> String {
         match self {
             Ty::Any => "Any".to_string(),
             Ty::Unknown => "Unknown".to_string(),
             Ty::Named { name, args } => {
-                let decl = state.project.get_decl(db, *name);
+                let decl = state.project.get_decl(state.db, *name);
                 // TODO: check unwrap
-                let name = decl.unwrap().name(db);
+                if decl.is_none() {
+                    return "{err}".to_string();
+                }
+                let name = decl.unwrap().name(state.db);
                 if args.is_empty() {
                     name.to_string()
                 } else {
                     let args = args
                         .iter()
-                        .map(|arg| arg.get_name(db, state))
+                        .map(|arg| arg.get_name(state))
                         .collect::<Vec<_>>()
                         .join(", ");
                     format!("{name}[{args}]")
                 }
             }
-            Ty::Generic(g) => g.get_name(db, state),
+            Ty::Generic(g) => g.get_name(state.db, state),
             Ty::Meta(_) => todo!(),
-            Ty::Function(FuncTy {
-                receiver,
-                args,
-                ret,
-            }) => {
-                let receiver = receiver
-                    .as_ref()
-                    .map_or(String::new(), |r| r.get_name(db, state));
-                let args = args
-                    .iter()
-                    .map(|arg| arg.get_name(db, state))
-                    .collect::<Vec<_>>()
-                    .join(", ");
-                let ret = ret.get_name(db, state);
-                format!("{receiver}({args}) -> {ret}")
-            }
+            Ty::Function(func) => func.get_name(state),
             Ty::Tuple(tys) => {
                 let tys = tys
                     .iter()
-                    .map(|ty| ty.get_name(db, state))
+                    .map(|ty| ty.get_name(state))
                     .collect::<Vec<_>>()
                     .join(", ");
                 format!("({tys})")
@@ -52,14 +39,18 @@ impl<'db> Ty<'db> {
             Ty::Sum(tys) => {
                 let tys = tys
                     .iter()
-                    .map(|ty| ty.get_name(db, state))
+                    .map(|ty| ty.get_name(state))
                     .collect::<Vec<_>>()
                     .join(" + ");
                 format!("({tys})")
             }
             Ty::TypeVar { id } => {
-                let var = state.get_resolved_type_var(*id);
-                var.get_name(db, state)
+                let var = state.try_get_resolved_type_var(*id);
+                if let Some(var) = var {
+                    var.get_name(state)
+                } else {
+                    "{unknown}".to_string()
+                }
             }
         }
     }
@@ -80,6 +71,23 @@ impl<'db> Ty<'db> {
             Ty::Tuple(_) => "Tuple".to_string(),
             Ty::Sum(_) => "Sum".to_string(),
         }
+    }
+}
+
+impl<'db> FuncTy<'db> {
+    pub fn get_name(&self, state: &CheckState) -> String {
+        let receiver = self
+            .receiver
+            .as_ref()
+            .map_or(String::new(), |r| r.get_name(state));
+        let args = self
+            .args
+            .iter()
+            .map(|arg| arg.get_name(state))
+            .collect::<Vec<_>>()
+            .join(", ");
+        let ret = self.ret.get_name(state);
+        format!("{receiver}({args}) -> {ret}")
     }
 }
 

@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::{check::state::CheckState, parser::expr::qualified_name::SpannedQualifiedName, ty::Ty};
 
-pub fn check_ident(state: &mut CheckState, path: &SpannedQualifiedName) -> Ty {
+pub fn check_ident<'db>(state: &mut CheckState<'_, 'db>, path: &SpannedQualifiedName) -> Ty<'db> {
     if path.len() == 1 {
         if let Some(ty) = state.get_variable(&path[0].0) {
             return ty.clone();
@@ -11,14 +11,21 @@ pub fn check_ident(state: &mut CheckState, path: &SpannedQualifiedName) -> Ty {
         }
     }
     if let Some(decl_id) = state.get_decl_with_error(path) {
-        let decl = state.project.get_decl(decl_id);
+        let decl = state
+            .project
+            .get_decl(state.db, decl_id)
+            .unwrap_or_else(|| panic!("Decl not found: {decl_id:?}"));
         decl.get_ty(decl_id, state).inst(&mut HashMap::new(), state)
     } else {
         Ty::Unknown
     }
 }
 
-pub fn check_ident_is(state: &mut CheckState<'_>, ident: &SpannedQualifiedName, expected: &Ty) {
+pub fn check_ident_is<'db>(
+    state: &mut CheckState<'_, 'db>,
+    ident: &SpannedQualifiedName,
+    expected: &Ty<'db>,
+) {
     let actual = check_ident(state, ident);
     let span = ident.last().unwrap().1;
     actual.expect_is_instance_of(expected, state, false, span);

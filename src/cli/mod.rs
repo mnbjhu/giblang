@@ -1,10 +1,16 @@
 pub mod build;
 pub mod exports;
+pub mod file_tree;
+pub mod module_tree;
 pub mod parse;
 
 use build::build;
 use exports::exports;
+use file_tree::file_tree;
+use module_tree::module_tree;
 use parse::parse;
+
+use crate::lsp::main_loop;
 
 #[derive(Debug, clap::Parser)]
 pub enum Command {
@@ -19,14 +25,26 @@ pub enum Command {
 
     /// Shows a tree of the exports
     Exports,
+
+    /// Start the language server
+    Lsp,
+
+    /// Show the included files
+    FileTree,
+
+    /// Show the module tree
+    ModuleTree,
 }
 
 impl Command {
-    pub fn run(&self) {
+    pub async fn run(&self) {
         match self {
             Command::Parse { path } => parse(path),
             Command::Exports => exports(),
             Command::Build => build(),
+            Command::Lsp => main_loop().await,
+            Command::FileTree => file_tree(),
+            Command::ModuleTree => module_tree(),
         }
     }
 }

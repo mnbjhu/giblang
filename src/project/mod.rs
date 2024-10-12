@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use decl::Decl;
+use tracing::info;
 
 use crate::{
     db::{
@@ -19,8 +20,7 @@ pub mod util;
 #[salsa::tracked]
 pub struct Project<'db> {
     pub decls: Module<'db>,
-    pub impls: HashMap<ModulePath<'db>, ImplDecl<'db>>,
-    pub impl_map: HashMap<ImplDecl<'db>, Vec<ImplDecl<'db>>>,
+    pub impl_map: HashMap<ModulePath<'db>, Vec<ImplDecl<'db>>>,
 }
 
 #[salsa::tracked]
@@ -43,19 +43,15 @@ pub struct ImplDecl<'db> {
 impl<'db> Project<'db> {
     pub fn get_decl(self, db: &'db dyn Db, path: ModulePath<'db>) -> Option<Decl<'db>> {
         let module = self.decls(db).get_path(db, path)?;
+        info!("Getting decl for {:?}", path);
         match module.content(db) {
             ModuleData::Export(decl) => Some(*decl),
             ModuleData::Package(_) => None,
         }
     }
 
-    pub fn get_impl(self, db: &'db dyn Db, path: ModulePath<'db>) -> ImplDecl<'db> {
-        *self.impls(db).get(&path).unwrap()
-    }
-
     pub fn get_impls(self, db: &'db dyn Db, path: ModulePath<'db>) -> Vec<ImplDecl<'db>> {
-        let impl_ = self.get_impl(db, path);
-        self.impl_map(db).get(&impl_).unwrap().clone()
+        self.impl_map(db).get(&path).cloned().unwrap_or_default()
     }
 }
 #[derive(Debug, Clone)]

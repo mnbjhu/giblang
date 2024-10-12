@@ -1,9 +1,14 @@
 use ariadne::{Color, Source};
 
 use crate::{
-    db::input::{Db, SourceFile},
-    util::Spanned,
+    db::{
+        err::{Diagnostic, Level},
+        input::{Db, SourceFile},
+    },
+    util::{FromWithDb, Spanned},
 };
+
+use super::IntoWithDb;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Unresolved {
@@ -32,5 +37,31 @@ impl Unresolved {
 
         let report = builder.finish();
         report.print((name, source)).unwrap();
+    }
+
+    pub fn message(&self) -> String {
+        format!("Unresolved name `{}`", self.name.0)
+    }
+}
+
+impl FromWithDb<Unresolved> for Diagnostic {
+    fn from_with_db(db: &dyn Db, err: Unresolved) -> Self {
+        Self {
+            message: err.message(),
+            span: err.name.1,
+            level: Level::Error,
+            path: err.file.path(db),
+        }
+    }
+}
+
+impl IntoWithDb<Diagnostic> for Unresolved {
+    fn into_with_db(self, db: &dyn Db) -> Diagnostic {
+        Diagnostic {
+            message: self.message(),
+            span: self.name.1,
+            level: Level::Error,
+            path: self.file.path(db),
+        }
     }
 }

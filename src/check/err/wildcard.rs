@@ -1,9 +1,14 @@
 use ariadne::{Color, Source};
 
 use crate::{
-    db::input::{Db, SourceFile},
-    util::Span,
+    db::{
+        err::{Diagnostic, Level},
+        input::{Db, SourceFile},
+    },
+    util::{FromWithDb, Span},
 };
+
+use super::IntoWithDb;
 
 #[derive(Clone, Debug)]
 pub struct UnexpectedWildcard {
@@ -31,5 +36,27 @@ impl UnexpectedWildcard {
 
         let report = builder.finish();
         report.print((name, source)).unwrap();
+    }
+}
+
+impl FromWithDb<UnexpectedWildcard> for Diagnostic {
+    fn from_with_db(db: &dyn Db, err: UnexpectedWildcard) -> Self {
+        Self {
+            message: "Unexpected wildcard".to_string(),
+            span: err.span,
+            level: Level::Error,
+            path: err.file.path(db),
+        }
+    }
+}
+
+impl IntoWithDb<Diagnostic> for UnexpectedWildcard {
+    fn into_with_db(self, db: &dyn Db) -> Diagnostic {
+        Diagnostic {
+            message: "Unexpected Wildcard".to_string(),
+            span: self.span,
+            level: Level::Error,
+            path: self.file.path(db),
+        }
     }
 }

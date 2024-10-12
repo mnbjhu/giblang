@@ -7,7 +7,7 @@ use wildcard::UnexpectedWildcard;
 
 use crate::{
     check::err::{simple::Simple, unresolved::Unresolved},
-    db::input::Db,
+    db::{err::Diagnostic, input::Db},
 };
 
 pub mod impl_type;
@@ -47,6 +47,24 @@ impl CheckError {
             CheckError::MissingReceiver(err) => err.print(db),
             CheckError::UnexpectedWildcard(err) => err.print(db),
             CheckError::ImplTypeMismatch(err) => err.print(db),
+        }
+    }
+}
+pub trait IntoWithDb<T> {
+    fn into_with_db(self, db: &dyn Db) -> T;
+}
+
+impl IntoWithDb<Diagnostic> for Error {
+    fn into_with_db(self, db: &dyn Db) -> Diagnostic {
+        match self.inner {
+            CheckError::Simple(err) => err.into_with_db(db),
+            CheckError::Unresolved(err) => err.into_with_db(db),
+            CheckError::IsNotInstance(err) => err.into_with_db(db),
+            CheckError::UnboundTypeVar(err) => err.into_with_db(db),
+            CheckError::UnexpectedArgs(err) => err.into_with_db(db),
+            CheckError::MissingReceiver(err) => err.into_with_db(db),
+            CheckError::UnexpectedWildcard(err) => err.into_with_db(db),
+            CheckError::ImplTypeMismatch(err) => err.into_with_db(db),
         }
     }
 }

@@ -1,5 +1,5 @@
 use crate::{
-    check::CheckState,
+    check::state::CheckState,
     parser::top::{struct_body::StructBody, struct_field::StructField},
 };
 

@@ -1,9 +1,14 @@
 use ariadne::{Color, Source};
 
 use crate::{
-    db::input::{Db, SourceFile},
-    util::Span,
+    db::{
+        err::{Diagnostic, Level},
+        input::{Db, SourceFile},
+    },
+    util::{FromWithDb, Span},
 };
+
+use super::IntoWithDb;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct MissingReceiver {
@@ -36,5 +41,34 @@ impl MissingReceiver {
 
         let report = builder.finish();
         report.print((name, source)).unwrap();
+    }
+
+    pub fn message(&self) -> String {
+        format!(
+            "Expected function to have a receiver of type {} but found no receiver",
+            self.expected,
+        )
+    }
+}
+
+impl FromWithDb<MissingReceiver> for Diagnostic {
+    fn from_with_db(db: &dyn Db, t: MissingReceiver) -> Self {
+        Self {
+            message: t.message(),
+            span: t.span,
+            level: Level::Error,
+            path: t.file.path(db),
+        }
+    }
+}
+
+impl IntoWithDb<Diagnostic> for MissingReceiver {
+    fn into_with_db(self, db: &dyn Db) -> Diagnostic {
+        Diagnostic {
+            message: self.message(),
+            span: self.span,
+            level: Level::Error,
+            path: self.file.path(db),
+        }
     }
 }

@@ -1,9 +1,14 @@
 use ariadne::{Color, Source};
 
 use crate::{
-    db::input::{Db, SourceFile},
+    db::{
+        err::{Diagnostic, Level},
+        input::{Db, SourceFile},
+    },
     util::Span,
 };
+
+use super::IntoWithDb;
 
 #[derive(Clone, Debug)]
 pub struct ImplTypeMismatch {
@@ -14,10 +19,7 @@ pub struct ImplTypeMismatch {
 
 impl ImplTypeMismatch {
     pub fn print(&self, db: &dyn Db) {
-        let message = format!(
-            "Expected type to be a named type but found `{}`",
-            self.found
-        );
+        let message = self.message();
         let source = Source::from(self.file.text(db).clone());
         let path = self.file.path(db);
         let name = path.to_str().unwrap();
@@ -36,5 +38,23 @@ impl ImplTypeMismatch {
 
         let report = builder.finish();
         report.print((name, source)).unwrap();
+    }
+
+    pub fn message(&self) -> String {
+        format!(
+            "Expected type to be a named type but found `{}`",
+            self.found
+        )
+    }
+}
+
+impl IntoWithDb<Diagnostic> for ImplTypeMismatch {
+    fn into_with_db(self, db: &dyn Db) -> Diagnostic {
+        Diagnostic {
+            message: self.message(),
+            span: self.span,
+            level: Level::Error,
+            path: self.file.path(db),
+        }
     }
 }

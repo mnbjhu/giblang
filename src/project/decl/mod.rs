@@ -2,7 +2,11 @@ use salsa::Update;
 
 use crate::{
     check::state::CheckState,
-    db::{input::Db, modules::ModulePath},
+    db::{
+        input::Db,
+        modules::{Module, ModulePath},
+    },
+    parser::expr::qualified_name::SpannedQualifiedName,
     ty::{prim::PrimTy, FuncTy, Generic, Ty},
     util::Span,
 };
@@ -29,11 +33,11 @@ pub enum DeclKind<'db> {
     },
     Trait {
         generics: Vec<Generic<'db>>,
-        body: Vec<Decl<'db>>,
+        body: Vec<Module<'db>>,
     },
     Enum {
         generics: Vec<Generic<'db>>,
-        variants: Vec<Decl<'db>>,
+        variants: Vec<Module<'db>>,
     },
     Member {
         body: StructDecl<'db>,
@@ -64,17 +68,23 @@ impl<'db> Decl<'db> {
         }
     }
 
-    pub fn get_ty(
-        &'db self,
-        db: &'db dyn Db,
-        id: ModulePath<'db>,
-        state: &mut CheckState<'_, 'db>,
-    ) -> Ty<'db> {
+    #[must_use]
+    #[salsa::tracked]
+    pub fn get(self, db: &'db dyn Db, name: String) -> Option<Module<'db>> {
         match self.kind(db) {
-            DeclKind::Trait { .. } => todo!(),
-            DeclKind::Enum { .. } => todo!(),
+            DeclKind::Enum { variants, .. } => {
+                variants.iter().find(|v| v.name(db) == name).copied()
+            }
+            DeclKind::Trait { body, .. } => body.iter().find(|m| m.name(db) == name).copied(),
+            _ => None,
+        }
+    }
+
+    pub fn get_ty(&self, id: ModulePath<'db>, state: &mut CheckState<'_, 'db>) -> Ty<'db> {
+        match self.kind(state.db) {
+            DeclKind::Trait { .. } | DeclKind::Enum { .. } => Ty::Unknown,
             DeclKind::Member { body, .. } | DeclKind::Struct { body, .. } => {
-                let self_ty = self.get_named_ty(db, state, id);
+                let self_ty = self.get_named_ty(state, id);
                 body.get_constructor_ty(self_ty)
             }
             DeclKind::Function {
@@ -90,19 +100,14 @@ impl<'db> Decl<'db> {
                     ret: Box::new(ret.clone()),
                 })
             }
-            DeclKind::Prim(p) => Ty::Meta(Box::new(Ty::from_prim(*p, db))),
+            DeclKind::Prim(p) => Ty::Meta(Box::new(Ty::from_prim(*p, state.db))),
         }
     }
 
-    fn get_named_ty(
-        self,
-        db: &'db dyn Db,
-        state: &mut CheckState<'_, 'db>,
-        id: ModulePath<'db>,
-    ) -> Ty<'db> {
-        if let DeclKind::Member { .. } = &self.kind(db) {
-            let parent = id.get_parent(db);
-            let parent_decl = state.project.get_decl(db, id);
+    fn get_named_ty(self, state: &mut CheckState<'_, 'db>, id: ModulePath<'db>) -> Ty<'db> {
+        if let DeclKind::Member { .. } = &self.kind(state.db) {
+            let parent = id.get_parent(state.db);
+            let parent_decl = state.project.get_decl(state.db, parent);
             if parent_decl.is_none() {
                 return Ty::Unknown;
             }
@@ -110,7 +115,7 @@ impl<'db> Decl<'db> {
             Ty::Named {
                 name: parent,
                 args: parent_decl
-                    .generics(db)
+                    .generics(state.db)
                     .iter()
                     .cloned()
                     .map(Ty::Generic)
@@ -119,7 +124,12 @@ impl<'db> Decl<'db> {
         } else {
             Ty::Named {
                 name: id,
-                args: self.generics(db).iter().cloned().map(Ty::Generic).collect(),
+                args: self
+                    .generics(state.db)
+                    .iter()
+                    .cloned()
+                    .map(Ty::Generic)
+                    .collect(),
             }
         }
     }

@@ -20,6 +20,7 @@ use salsa::{AsDynDatabase, Setter as _};
 use tower::ServiceBuilder;
 use tracing::{info, Level};
 
+use crate::check::check_project;
 use crate::db::err::Diagnostic;
 use crate::db::input::{Db, SourceDatabase};
 use crate::range::span_to_range_str;
@@ -177,9 +178,7 @@ pub async fn main_loop() {
 impl ServerState {
     fn report_diags(&mut self) {
         let project = self.db.vfs.unwrap();
-        let vfs = resolve_vfs(&self.db, project);
-        info!("Resolved VFS: {vfs:#?}", vfs = vfs);
-        let diags = resolve_vfs::accumulated::<Diagnostic>(&self.db, project);
+        let diags = check_project::accumulated::<Diagnostic>(&self.db, project);
         let mut project_diags = HashMap::<_, Vec<_>>::new();
         for path in project.paths(&self.db) {
             project_diags.insert(path.clone(), vec![]);

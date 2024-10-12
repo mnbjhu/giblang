@@ -1,10 +1,8 @@
-// use db::lazy::watch_test;
-// use cli::Command;
-
-use lsp::main_loop;
+use clap::Parser as _;
+use cli::Command;
 
 mod check;
-// mod cli;
+mod cli;
 pub mod db;
 mod lexer;
 pub mod lsp;
@@ -17,7 +15,5 @@ mod util;
 
 #[tokio::main]
 async fn main() {
-    main_loop().await;
-    // watch_test();
-    // Command::parse().run();
+    Command::parse().run().await;
 }

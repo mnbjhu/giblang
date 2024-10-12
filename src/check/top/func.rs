@@ -1,7 +1,7 @@
-use crate::{check::CheckState, parser::top::func::Func};
+use crate::{check::state::CheckState, parser::top::func::Func};
 
 impl Func {
-    pub fn check<'proj>(&'proj self, state: &mut CheckState<'proj>) {
+    pub fn check<'db>(&'db self, state: &mut CheckState<'_, 'db>) {
         self.generics.check(state);
         if let Some(rec) = &self.receiver {
             rec.0.check(state);

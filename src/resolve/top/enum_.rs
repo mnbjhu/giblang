@@ -1,4 +1,5 @@
 use crate::{
+    db::modules::{Module, ModuleData},
     parser::top::enum_::Enum,
     project::decl::{Decl, DeclKind},
     resolve::state::ResolveState,
@@ -10,7 +11,11 @@ impl Enum {
         let mut variants = vec![];
         for m in &self.members {
             let decl = m.0.resolve(state);
-            variants.push(decl);
+            variants.push(Module::new(
+                state.db,
+                decl.name(state.db),
+                ModuleData::Export(decl),
+            ));
         }
         let kind = DeclKind::Enum { generics, variants };
         Decl::new(state.db, self.name.0.clone(), self.name.1, kind)

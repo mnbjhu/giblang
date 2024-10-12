@@ -1,3 +1,7 @@
+use gib_mod::another::Test
+use std::String
+use std::Int
+
 fn simple[T](thing: T): Option[T]{
 
 }
@@ -14,10 +18,22 @@ enum Result[R, E] {
 }
 
 struct Box[T](T)
-fn test(thing: String) {
+
+fn test(thing: Test) {
 }
+fn println(thing: String) {
+}
+
 fn main() {
-  let test2: Option[String] = Option::Some(123)
-  test()
-  Hello
+  let test = ""
+  let test2: Option[_] = Option::None
+  match test2 {
+    Option::Some(value) => {
+      println(value)
+    },
+    Option::None => {
+      println("None")
+    }
+  }
+  gib_mod::another::Test("Hello")
 }

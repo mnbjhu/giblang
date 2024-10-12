@@ -6,7 +6,7 @@ use crate::{
     check::err::{simple::Simple, CheckError},
     db::{
         input::{Db, SourceFile},
-        modules::ModulePath,
+        modules::{ModuleData, ModulePath},
     },
     parser::{expr::qualified_name::SpannedQualifiedName, parse_file},
     project::{name::QualifiedName, Project},
@@ -15,18 +15,19 @@ use crate::{
 };
 
 use super::{
-    err::{unresolved_type_var::UnboundTypeVar, Error},
+    err::{unresolved_type_var::UnboundTypeVar, Error, IntoWithDb},
     type_state::{MaybeTypeVar, TypeState, TypeVarUsage},
 };
 
 pub struct CheckState<'ty, 'db: 'ty> {
     pub db: &'db dyn Db,
-    imports: HashMap<String, QualifiedName>,
+    imports: HashMap<String, ModulePath<'db>>,
     generics: Vec<HashMap<String, Generic<'db>>>,
     variables: Vec<HashMap<String, Ty<'db>>>,
     pub file_data: SourceFile,
     pub project: Project<'db>,
     pub type_state: TypeState<'ty, 'db>,
+    pub path: Vec<String>,
 }
 
 impl<'ty, 'db: 'ty> CheckState<'ty, 'db> {
@@ -43,6 +44,7 @@ impl<'ty, 'db: 'ty> CheckState<'ty, 'db> {
             file_data,
             project,
             type_state: TypeState::default(),
+            path: file_data.module_path(db).name(db).clone(),
         };
         let mut path = file_data.module_path(db).name(db).clone();
         for top in parse_file(db, file_data).tops(db) {
@@ -54,7 +56,7 @@ impl<'ty, 'db: 'ty> CheckState<'ty, 'db> {
     }
 
     pub fn add_import(&mut self, name: String, path: QualifiedName) {
-        self.imports.insert(name, path);
+        self.imports.insert(name, ModulePath::new(self.db, path));
     }
 
     pub fn enter_scope(&mut self) {
@@ -76,20 +78,46 @@ impl<'ty, 'db: 'ty> CheckState<'ty, 'db> {
     }
 
     pub fn error(&mut self, error: CheckError) {
-        Error { inner: error }.accumulate(self.db);
+        Error { inner: error }
+            .into_with_db(self.db)
+            .accumulate(self.db);
     }
 
     pub fn get_decl_with_error(&mut self, path: &SpannedQualifiedName) -> Option<ModulePath<'db>> {
-        if self
-            .project
-            .decls(self.db)
-            .get_path_with_error(self.db, path.clone(), self.file_data)
-            .is_some()
+        if let Some(import) = self.imports.get(&path[0].0) {
+            let module = self
+                .project
+                .decls(self.db)
+                .get_path(self.db, *import)
+                .unwrap();
+            if module
+                .get_path_with_error(self.db, path[1..].to_vec(), self.file_data)
+                .is_some()
+            {
+                let mut new = import.name(self.db).clone();
+                new.extend(path[1..].iter().map(|(n, _)| n.to_string()));
+                Some(ModulePath::new(self.db, new))
+            } else {
+                None
+            }
+        } else if let Some(found) =
+            self.project
+                .decls(self.db)
+                .get_path_with_error(self.db, path.clone(), self.file_data)
         {
-            Some(ModulePath::new(
-                self.db,
-                path.iter().map(|(n, _)| n.to_string()).collect(),
-            ))
+            if let ModuleData::Export(_) = found.content(self.db) {
+                Some(ModulePath::new(
+                    self.db,
+                    path.iter().map(|(n, _)| n.to_string()).collect(),
+                ))
+            } else {
+                self.error(CheckError::Simple(Simple {
+                    message: "Expected export".to_string(),
+                    span: path.last().unwrap().1,
+                    file: self.file_data,
+                }));
+                None
+            }
         } else {
             None
         }
@@ -115,7 +143,7 @@ impl<'ty, 'db: 'ty> CheckState<'ty, 'db> {
         if self.get_decl_with_error(use_).is_some() {
             self.imports.insert(
                 use_.last().unwrap().0.clone(),
-                use_.iter().map(|(name, _)| name.clone()).collect(),
+                ModulePath::new(self.db, use_.iter().map(|(name, _)| name.clone()).collect()),
             );
         }
     }
@@ -147,7 +175,6 @@ impl<'ty, 'db: 'ty> CheckState<'ty, 'db> {
     }
 
     pub fn resolve_type_vars(&mut self) {
-        let mut errs = vec![];
         let deferred = self
             .type_state
             .vars
@@ -156,14 +183,16 @@ impl<'ty, 'db: 'ty> CheckState<'ty, 'db> {
                 if let MaybeTypeVar::Data(data) = var {
                     data.resolve();
                     if data.resolved.is_none() || matches!(data.resolved, Some(Ty::Unknown)) {
-                        errs.push(CheckError::UnboundTypeVar(UnboundTypeVar {
+                        UnboundTypeVar {
                             file: self.file_data,
                             span: data.span,
                             name: data
                                 .bounds
                                 .first()
                                 .map_or("_".to_string(), |g| g.name.0.to_string()),
-                        }));
+                        }
+                        .into_with_db(self.db)
+                        .accumulate(self.db);
                         None
                     } else {
                         Some(data)
@@ -181,17 +210,14 @@ impl<'ty, 'db: 'ty> CheckState<'ty, 'db> {
 
         for (var, usage) in deferred {
             match usage {
-                TypeVarUsage::VarIsTy(ty) => var
-                    .unwrap()
-                    .expect_is_instance_of(self.db, &ty.0, self, false, ty.1),
+                TypeVarUsage::VarIsTy(ty) => {
+                    var.unwrap().expect_is_instance_of(&ty.0, self, false, ty.1)
+                }
                 TypeVarUsage::TyIsVar(ty) => {
-                    ty.0.expect_is_instance_of(self.db, &var.unwrap(), self, false, ty.1)
+                    ty.0.expect_is_instance_of(&var.unwrap(), self, false, ty.1)
                 }
                 _ => todo!("Check if needed"),
             };
-        }
-        for err in errs {
-            self.error(err);
         }
     }
 
@@ -201,6 +227,16 @@ impl<'ty, 'db: 'ty> CheckState<'ty, 'db> {
             .resolved
             .clone()
             .expect("Type var should be resolved")
+    }
+
+    pub fn try_get_resolved_type_var(&self, id: u32) -> Option<Ty> {
+        self.type_state.get_type_var(id).resolved.clone()
+    }
+
+    pub fn local_id(&self, name: String) -> ModulePath<'db> {
+        let mut path = self.path.clone();
+        path.push(name);
+        ModulePath::new(self.db, path)
     }
 }
 

@@ -1,6 +1,9 @@
 use crate::{
-    db::modules::ModulePath, parser::top::trait_::Trait, project::decl::DeclKind,
-    resolve::state::ResolveState, ty::Ty,
+    db::modules::{Module, ModuleData, ModulePath},
+    parser::top::trait_::Trait,
+    project::decl::DeclKind,
+    resolve::state::ResolveState,
+    ty::Ty,
 };
 
 use super::Decl;
@@ -22,7 +25,11 @@ impl Trait {
         for func in &self.body {
             state.enter_scope();
             let decl = func.0.resolve(state);
-            body.push(decl);
+            body.push(Module::new(
+                state.db,
+                decl.name(state.db),
+                ModuleData::Export(decl),
+            ));
             state.exit_scope();
         }
         let kind = DeclKind::Trait { generics, body };

@@ -37,7 +37,7 @@ impl<'db> Generic<'db> {
                 "{}{}: {}",
                 self.variance,
                 self.name.0,
-                self.super_.get_name(db, state)
+                self.super_.get_name(state)
             )
         }
     }

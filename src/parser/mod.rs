@@ -3,8 +3,10 @@ use std::vec;
 use crate::db::{
     err::{Diagnostic, Level},
     input::{Db, SourceFile},
+    modules::ModulePath,
 };
 use chumsky::{error::Rich, input::Input, primitive::just, IterParser, Parser};
+use expr::qualified_name::SpannedQualifiedName;
 use salsa::Accumulator;
 use top::impl_::Impl;
 use tracing::info;
@@ -30,6 +32,9 @@ pub type File = Vec<Spanned<Top>>;
 
 #[salsa::tracked]
 pub struct FileData<'db> {
+    #[return_ref]
+    pub imports: Vec<SpannedQualifiedName>,
+
     #[return_ref]
     pub tops: Vec<TopData<'db>>,
 
@@ -116,6 +121,17 @@ pub fn parse_file<'db>(db: &'db dyn Db, file: SourceFile) -> FileData<'db> {
     }
     FileData::new(
         db,
+        found
+            .iter()
+            .filter_map(|(top, _)| {
+                if let Top::Use(path) = top {
+                    Some(path)
+                } else {
+                    None
+                }
+            })
+            .cloned()
+            .collect(),
         found
             .iter()
             .filter_map(|(top, _)| {

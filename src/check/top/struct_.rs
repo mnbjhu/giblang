@@ -1,4 +1,4 @@
-use crate::{check::CheckState, parser::top::struct_::Struct};
+use crate::{check::state::CheckState, parser::top::struct_::Struct};
 
 impl Struct {
     pub fn check(&self, state: &mut CheckState) {

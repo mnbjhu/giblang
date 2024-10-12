@@ -4,15 +4,8 @@ use ariadne::{Color, Fmt, Source};
 use ariadne::{ColorGenerator, Label, Report, ReportKind};
 use chumsky::error::Rich;
 
-use crate::project::Project;
-
 pub fn build() {
-    let mut project = Project::init_pwd();
-    let errors = project.resolve();
-    for error in &errors {
-        project.print_resolve_error(error);
-    }
-    project.check_with_errors();
+    todo!()
 }
 
 pub fn print_error<T: Display>(error: &Rich<'_, T>, source: Source, name: &str, code: &str) {

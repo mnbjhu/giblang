@@ -17,7 +17,11 @@ mod top;
 pub fn resolve_file<'db>(db: &'db dyn Db, file: SourceFile) -> Module<'db> {
     info!("Resolving file {}", file.name(db));
     let mut state = ResolveState::from_file(db, file);
-    let decls = parse_file(db, file)
+    let ast = parse_file(db, file);
+    for import in ast.imports(db) {
+        state.import(import);
+    }
+    let decls = ast
         .tops(db)
         .iter()
         .filter_map(|item| {
@@ -46,7 +50,7 @@ pub fn resolve_vfs<'db>(db: &'db dyn Db, vfs: Vfs) -> Module<'db> {
                 let module = resolve_vfs(db, *file);
                 modules.push(module);
             }
-            Module::new(db, "root".to_string(), ModuleData::Package(modules))
+            Module::new(db, vfs.name(db), ModuleData::Package(modules))
         }
     }
 }

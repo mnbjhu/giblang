@@ -13,17 +13,12 @@ pub mod trait_;
 
 impl Top {
     pub fn resolve<'db>(&self, state: &mut ResolveState<'db>) -> Option<Decl<'db>> {
-        if let Top::Use(use_) = self {
-            state.import(use_);
-            None
-        } else {
-            match self {
-                Top::Func(f) => Some(f.resolve(state)),
-                Top::Struct(s) => Some(s.resolve(state)),
-                Top::Enum(e) => Some(e.resolve(state)),
-                Top::Trait(t) => Some(t.resolve(state)),
-                _ => None,
-            }
+        match self {
+            Top::Func(f) => Some(f.resolve(state)),
+            Top::Struct(s) => Some(s.resolve(state)),
+            Top::Enum(e) => Some(e.resolve(state)),
+            Top::Trait(t) => Some(t.resolve(state)),
+            _ => None,
         }
     }
 }
