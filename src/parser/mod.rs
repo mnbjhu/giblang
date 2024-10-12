@@ -3,7 +3,6 @@ use std::vec;
 use crate::db::{
     err::{Diagnostic, Level},
     input::{Db, SourceFile},
-    modules::ModulePath,
 };
 use chumsky::{error::Rich, input::Input, primitive::just, IterParser, Parser};
 use expr::qualified_name::SpannedQualifiedName;

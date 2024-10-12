@@ -3,7 +3,7 @@ use crate::{
         err::{is_not_instance::IsNotInstance, CheckError},
         state::CheckState,
     },
-    db::{input::Db, modules::ModulePath},
+    db::modules::ModulePath,
     parser::common::variance::Variance,
     project::ImplDecl,
     ty::Ty,

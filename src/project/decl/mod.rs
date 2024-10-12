@@ -6,7 +6,6 @@ use crate::{
         input::Db,
         modules::{Module, ModulePath},
     },
-    parser::expr::qualified_name::SpannedQualifiedName,
     ty::{prim::PrimTy, FuncTy, Generic, Ty},
     util::Span,
 };

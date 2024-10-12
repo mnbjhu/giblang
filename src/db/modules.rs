@@ -2,7 +2,7 @@ use salsa::{Accumulator, Update};
 use tracing::info;
 
 use crate::{
-    check::err::{unresolved::Unresolved, CheckError, Error, IntoWithDb},
+    check::err::{unresolved::Unresolved, IntoWithDb},
     parser::expr::qualified_name::SpannedQualifiedName,
     project::decl::Decl,
 };
