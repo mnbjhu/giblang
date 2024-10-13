@@ -9,6 +9,10 @@ impl AstItem for LetStatement {
     where
         Self: Sized,
     {
+        if self.value.1.contains_offset(offset) {
+            return self.value.0.at_offset(state, offset);
+        }
+        self.check(state);
         if self.pattern.1.contains_offset(offset) {
             return self.pattern.0.at_offset(state, offset);
         }
@@ -16,9 +20,6 @@ impl AstItem for LetStatement {
             if ty.1.contains_offset(offset) {
                 return ty.0.at_offset(state, offset);
             }
-        }
-        if self.value.1.contains_offset(offset) {
-            return self.value.0.at_offset(state, offset);
         }
         self
     }

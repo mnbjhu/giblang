@@ -26,18 +26,12 @@ fn println(thing: String) {
 }
 
 fn main() {
-  let test = ""
+  let test: _ = ""
+  let another = println(test)
+  another
   let my_enum = gib_mod::another::MyEnum::Second("Hello")
-  let test2: Option[_] = Option::None
+  let test2 = Option::Some(123)
   test2
-  match test2 {
-    Option::Some(value) => {
-      println(value)
-    },
-    Option::None => {
-      println("None")
-    }
-  }
   gib_mod::another::Test("Hello")
   let test = Option::Some("Hello")
   test

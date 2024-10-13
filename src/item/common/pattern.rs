@@ -68,6 +68,21 @@ impl AstItem for Pattern {
             }
         }
     }
+
+    fn hover<'db>(
+        &self,
+        state: &mut CheckState<'_, 'db>,
+        offset: usize,
+        type_vars: &std::collections::HashMap<u32, crate::ty::Ty<'db>>,
+    ) -> Option<String> {
+        if let Pattern::Name(name) = self {
+            state
+                .get_variable(&name.0)
+                .map(|ty| ty.ty.get_name_with_types(state, type_vars))
+        } else {
+            None
+        }
+    }
 }
 
 impl AstItem for StructFieldPattern {
