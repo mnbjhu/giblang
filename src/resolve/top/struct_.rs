@@ -6,7 +6,7 @@ impl Struct {
     pub fn resolve<'db>(&self, state: &mut ResolveState<'db>) -> Decl<'db> {
         let generics = self.generics.0.resolve(state);
         let name = self.name.clone();
-        let body = self.body.resolve(state);
+        let body = self.body.0.resolve(state);
         let kind = DeclKind::Struct { generics, body };
         Decl::new(state.db, name.0, name.1, kind)
     }

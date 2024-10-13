@@ -4,10 +4,10 @@ use crate::{check::state::CheckState, parser::expr::qualified_name::SpannedQuali
 
 pub fn check_ident<'db>(state: &mut CheckState<'_, 'db>, path: &SpannedQualifiedName) -> Ty<'db> {
     if path.len() == 1 {
-        if let Some(ty) = state.get_variable(&path[0].0) {
-            return ty.clone();
-        } else if let Some(generic) = state.get_generic(&path[0].0) {
-            return Ty::Meta(Box::new(Ty::Generic(generic.clone())));
+        if let Some(var) = state.get_variable(&path[0].0) {
+            return var.ty;
+        } else if let Some(generic) = state.get_generic(&path[0].0).cloned() {
+            return Ty::Meta(Box::new(Ty::Generic(generic)));
         }
     }
     if let Some(decl_id) = state.get_decl_with_error(path) {

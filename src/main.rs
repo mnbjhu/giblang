@@ -4,6 +4,7 @@ use cli::Command;
 mod check;
 mod cli;
 pub mod db;
+pub mod item;
 mod lexer;
 pub mod lsp;
 pub mod parser;

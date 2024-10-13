@@ -27,6 +27,7 @@ module.exports = grammar({
       "true",
       "false",
       "match",
+      "use",
     ),
 
     punctuation: $ => choice(

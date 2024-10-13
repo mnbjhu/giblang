@@ -1,7 +1,7 @@
 use crate::{
     db::{
-        input::{Db, SourceFile, Vfs, VfsInner},
-        modules::{Module, ModuleData},
+        input::{get_module_path, Db, SourceFile, Vfs, VfsInner},
+        modules::{Module, ModuleData, ModulePath},
     },
     parser::parse_file,
 };
@@ -26,14 +26,14 @@ pub fn resolve_file<'db>(db: &'db dyn Db, file: SourceFile) -> Module<'db> {
         .iter()
         .filter_map(|item| {
             state.enter_scope();
-            let found = item.data(db).resolve(&mut state);
+            let found = item.data(db).resolve(&mut state)?;
+            state.path.push(found.name(db));
+            let name = found.name(db);
+            let export = ModuleData::Export(found);
+            let mod_ = Module::new(db, name, export);
             state.exit_scope();
-            found
-        })
-        .map(|decl| {
-            let name = decl.name(db);
-            let export = ModuleData::Export(decl);
-            Module::new(db, name, export)
+            state.path.pop();
+            Some(mod_)
         })
         .collect();
     Module::new(db, file.name(db).to_string(), ModuleData::Package(decls))

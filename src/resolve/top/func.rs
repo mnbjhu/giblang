@@ -8,7 +8,7 @@ use crate::{
 impl Func {
     pub fn resolve<'db>(&self, state: &mut ResolveState<'db>) -> Decl<'db> {
         let name = self.name.clone();
-        let generics = self.generics.resolve(state);
+        let generics = self.generics.0.resolve(state);
         let receiver = self.receiver.as_ref().map(|(rec, _)| rec.resolve(state));
         let args = self.args.iter().map(|arg| arg.0.resolve(state)).collect();
         let ret = self

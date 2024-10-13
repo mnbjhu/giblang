@@ -17,7 +17,7 @@ pub struct Func {
     pub receiver: Option<Spanned<Type>>,
     pub name: Spanned<String>,
     pub args: Vec<Spanned<FunctionArg>>,
-    pub generics: GenericArgs,
+    pub generics: Spanned<GenericArgs>,
     pub ret: Option<Spanned<Type>>,
     pub body: Option<Vec<Spanned<Stmt>>>,
 }
@@ -35,7 +35,7 @@ pub fn func_parser<'tokens, 'src: 'tokens>(stmt: AstParser!(Stmt)) -> AstParser!
     just(kw!(fn))
         .ignore_then(receiver)
         .then(spanned_ident_parser())
-        .then(generic_args_parser())
+        .then(generic_args_parser().map_with(|g, e| (g, e.span())))
         .then(function_args_parser())
         .then(ret)
         .then(code_block_parser(stmt).or_not())

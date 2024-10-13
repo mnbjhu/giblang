@@ -1,7 +1,8 @@
 use async_lsp::lsp_types::{
-    HoverProviderCapability, InitializeResult, OneOf, SemanticTokenType, SemanticTokensFullOptions,
-    SemanticTokensLegend, SemanticTokensOptions, SemanticTokensServerCapabilities,
-    ServerCapabilities, TextDocumentSyncCapability, TextDocumentSyncKind,
+    CompletionOptions, HoverProviderCapability, InitializeResult, OneOf, SemanticTokenType,
+    SemanticTokensFullOptions, SemanticTokensLegend, SemanticTokensOptions,
+    SemanticTokensServerCapabilities, ServerCapabilities, TextDocumentSyncCapability,
+    TextDocumentSyncKind,
 };
 
 pub fn capabilities() -> InitializeResult {
@@ -36,6 +37,10 @@ pub fn capabilities() -> InitializeResult {
                     ..Default::default()
                 }),
             ),
+            completion_provider: Some(CompletionOptions {
+                trigger_characters: Some(vec!["/[a-zA-Z_]/".to_string()]),
+                ..Default::default()
+            }),
             ..ServerCapabilities::default()
         },
         server_info: None,

@@ -6,8 +6,8 @@ impl NamedType {
             if self.name[0].0 == "Any" {
                 return Ty::Any;
             }
-            if let Some(generic) = state.get_generic(&self.name[0].0) {
-                return Ty::Generic(generic.clone());
+            if let Some(generic) = state.get_generic(&self.name[0].0).cloned() {
+                return Ty::Generic(generic);
             }
         };
         if let Some(decl_id) = state.get_decl_with_error(&self.name) {

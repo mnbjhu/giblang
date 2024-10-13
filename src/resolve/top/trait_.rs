@@ -1,3 +1,5 @@
+use chumsky::container::Container;
+
 use crate::{
     db::modules::{Module, ModuleData, ModulePath},
     parser::top::trait_::Trait,
@@ -10,7 +12,7 @@ use super::Decl;
 
 impl Trait {
     pub fn resolve<'db>(&self, state: &mut ResolveState<'db>) -> Decl<'db> {
-        let generics = self.generics.resolve(state);
+        let generics = self.generics.0.resolve(state);
         let mut self_path = state.file_data.module_path(state.db).name(state.db).clone();
         self_path.push(self.name.0.to_string());
         state.add_self_ty(
@@ -23,6 +25,7 @@ impl Trait {
         let name = self.name.clone();
         let mut body = Vec::new();
         for func in &self.body {
+            state.path.push(func.0.name.0.clone());
             state.enter_scope();
             let decl = func.0.resolve(state);
             body.push(Module::new(

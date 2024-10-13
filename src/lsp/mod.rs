@@ -9,7 +9,8 @@ use std::vec;
 use async_lsp::client_monitor::ClientProcessMonitorLayer;
 use async_lsp::concurrency::ConcurrencyLayer;
 use async_lsp::lsp_types::{
-    notification, request, DiagnosticSeverity, PublishDiagnosticsParams, Url,
+    notification, request, CompletionParams, CompletionResponse, DiagnosticSeverity, Hover,
+    HoverContents, HoverParams, MarkedString, PublishDiagnosticsParams, Url,
 };
 use async_lsp::panic::CatchUnwindLayer;
 use async_lsp::router::Router;
@@ -17,13 +18,16 @@ use async_lsp::server::LifecycleLayer;
 use async_lsp::tracing::TracingLayer;
 use async_lsp::ClientSocket;
 use salsa::{AsDynDatabase, Setter as _};
+use semantic_tokens::get_semantic_tokens;
 use tower::ServiceBuilder;
 use tracing::{info, Level};
 
-use crate::check::check_project;
+use crate::check::state::CheckState;
+use crate::check::{check_file, check_project, resolve_project};
 use crate::db::err::Diagnostic;
 use crate::db::input::{Db, SourceDatabase};
-use crate::range::span_to_range_str;
+use crate::parser::parse_file;
+use crate::range::{position_to_offset, span_to_range_str};
 use crate::resolve::resolve_vfs;
 
 struct ServerState {
@@ -64,38 +68,28 @@ pub async fn main_loop() {
                     Ok(capabilities::capabilities())
                 }
             })
-            // .request::<request::SemanticTokensFullRequest, _>(|st, _| {
-            //     let file = st.file.unwrap();
-            //     let db = st.db.clone();
-            //     async move {
-            //         let data = parse_file(&db, file);
-            //         let tokens = get_semantic_tokens(data.tokens(&db), file.text(&db));
-            //         if let Some(tokens) = tokens {
-            //             Ok(Some(SemanticTokensResult::Tokens(tokens)))
-            //         } else {
-            //             Ok(None)
-            //         }
-            //     }
-            // })
-            // .request::<request::HoverRequest, _>(|st, _| {
-            //     let client = st.client.clone();
-            //     let counter = st.counter;
-            //     async move {
-            //         tokio::time::sleep(Duration::from_secs(1)).await;
-            //         client
-            //             .notify::<notification::ShowMessage>(ShowMessageParams {
-            //                 typ: MessageType::INFO,
-            //                 message: "Hello LSP".into(),
-            //             })
-            //             .unwrap();
-            //         Ok(Some(Hover {
-            //             contents: HoverContents::Scalar(MarkedString::String(format!(
-            //                 "I am a hover text {counter}!"
-            //             ))),
-            //             range: None,
-            //         }))
-            //     }
-            // })
+            .request::<request::SemanticTokensFullRequest, _>(|st, msg| {
+                let mut db = st.db.clone();
+                async move {
+                    let file = db.input(&msg.text_document.uri.to_file_path().unwrap());
+                    let project = resolve_project(&db, db.vfs.unwrap());
+                    let file_data = parse_file(&db, file);
+                    let mut state = CheckState::from_file(&db, file, project);
+                    state.should_error = false;
+                    let names = file_data.semantic_tokens(&db, &mut state);
+                    Ok(Some(async_lsp::lsp_types::SemanticTokensResult::Tokens(
+                        get_semantic_tokens(names, file.text(&db)).unwrap_or_default(),
+                    )))
+                }
+            })
+            .request::<request::HoverRequest, _>(|st, msg| {
+                let db = st.db.clone();
+                async move { Ok(get_hover(db, &msg)) }
+            })
+            .request::<request::Completion, _>(|st, msg| {
+                let db = st.db.clone();
+                async move { Ok(get_completions(db, &msg)) }
+            })
             // .request::<request::GotoDefinition, _>(|_, _| async move {
             //     unimplemented!("Not yet implemented!")
             // })
@@ -175,6 +169,47 @@ pub async fn main_loop() {
     server.run_buffered(stdin, stdout).await.unwrap();
 }
 
+fn get_hover(mut db: SourceDatabase, msg: &HoverParams) -> Option<Hover> {
+    let file = db.input(
+        &msg.text_document_position_params
+            .text_document
+            .uri
+            .to_file_path()
+            .unwrap(),
+    );
+    let offset = position_to_offset(msg.text_document_position_params.position, file.text(&db));
+    let project = resolve_project(&db, db.vfs.unwrap());
+    let ast = parse_file(&db, file);
+    let type_vars = check_file(&db, file, project);
+    let mut state = CheckState::from_file(&db, file, project);
+    state.should_error = false;
+    let found = ast.at_offset(&db, &mut state, offset);
+    if let Some(hover) = found?.hover(&mut state, offset, &type_vars) {
+        return Some(Hover {
+            contents: HoverContents::Scalar(MarkedString::String(hover)),
+            range: None,
+        });
+    }
+    None
+}
+
+fn get_completions(mut db: SourceDatabase, msg: &CompletionParams) -> Option<CompletionResponse> {
+    let file = db.input(
+        &msg.text_document_position
+            .text_document
+            .uri
+            .to_file_path()
+            .unwrap(),
+    );
+    let offset = position_to_offset(msg.text_document_position.position, file.text(&db));
+    let project = resolve_project(&db, db.vfs.unwrap());
+    let ast = parse_file(&db, file);
+    let mut state = CheckState::from_file(&db, file, project);
+    state.should_error = false;
+    let found = ast.at_offset(&db, &mut state, offset);
+    let completions = found?.completions(&mut state, offset);
+    Some(CompletionResponse::Array(completions))
+}
 impl ServerState {
     fn report_diags(&mut self) {
         let project = self.db.vfs.unwrap();

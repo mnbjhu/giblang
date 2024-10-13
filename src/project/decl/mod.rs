@@ -1,7 +1,7 @@
-use salsa::Update;
+use salsa::{Database, Update};
 
 use crate::{
-    check::state::CheckState,
+    check::{state::CheckState, TokenKind},
     db::{
         input::Db,
         modules::{Module, ModulePath},
@@ -22,6 +22,19 @@ pub struct Decl<'db> {
     pub span: Span,
     #[return_ref]
     pub kind: DeclKind<'db>,
+}
+
+impl<'db> Decl<'db> {
+    pub fn get_kind(&self, db: &'db dyn Db) -> TokenKind {
+        match &self.kind(db) {
+            DeclKind::Struct { .. } => TokenKind::Struct,
+            DeclKind::Trait { .. } => TokenKind::Trait,
+            DeclKind::Enum { .. } => TokenKind::Enum,
+            DeclKind::Function { .. } => TokenKind::Func,
+            DeclKind::Member { .. } => TokenKind::Member,
+            DeclKind::Prim(_) => TokenKind::Struct,
+        }
+    }
 }
 
 #[derive(Update, Debug, Clone, PartialEq)]

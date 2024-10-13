@@ -14,7 +14,7 @@ use super::struct_body::{struct_body_parser, StructBody};
 pub struct Struct {
     pub name: Spanned<String>,
     pub generics: Spanned<GenericArgs>,
-    pub body: StructBody,
+    pub body: Spanned<StructBody>,
 }
 
 #[must_use]
@@ -24,7 +24,7 @@ pub fn struct_parser<'tokens, 'src: 'tokens>() -> AstParser!(Struct) {
     just(kw!(struct))
         .ignore_then(name)
         .then(generics)
-        .then(struct_body_parser())
+        .then(struct_body_parser().map_with(|b, s| (b, s.span())))
         .map(|((name, generics), body)| Struct {
             name,
             generics,

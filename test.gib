@@ -2,7 +2,7 @@ use gib_mod::another::Test
 use std::String
 use std::Int
 
-fn simple[T](thing: T): Option[T]{
+fn simple[T](thing: T, some: String): Option[T]{
 
 }
 
@@ -22,11 +22,14 @@ struct Box[T](T)
 fn test(thing: Test) {
 }
 fn println(thing: String) {
+  thing
 }
 
 fn main() {
   let test = ""
+  let my_enum = gib_mod::another::MyEnum::Second("Hello")
   let test2: Option[_] = Option::None
+  test2
   match test2 {
     Option::Some(value) => {
       println(value)
@@ -36,4 +39,20 @@ fn main() {
     }
   }
   gib_mod::another::Test("Hello")
+  let test = Option::Some("Hello")
+  test
+}
+
+
+struct Test {
+  name: String
+}
+
+fn test3(thing: Int) {
+  thing
+}
+
+struct New[T] {
+  test: T,
+  test2: String,
 }

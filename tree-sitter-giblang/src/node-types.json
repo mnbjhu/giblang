@@ -182,6 +182,10 @@
     "named": false
   },
   {
+    "type": "use",
+    "named": false
+  },
+  {
     "type": "whitespace",
     "named": true
   },

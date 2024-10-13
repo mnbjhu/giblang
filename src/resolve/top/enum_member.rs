@@ -7,7 +7,7 @@ use crate::{
 impl EnumMember {
     pub fn resolve<'db>(&self, state: &mut ResolveState<'db>) -> Decl<'db> {
         let kind = DeclKind::Member {
-            body: self.body.resolve(state),
+            body: self.body.0.resolve(state),
         };
         let name = self.name.clone();
         Decl::new(state.db, name.0, name.1, kind)

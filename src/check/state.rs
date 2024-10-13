@@ -6,12 +6,12 @@ use crate::{
     check::err::{simple::Simple, CheckError},
     db::{
         input::{Db, SourceFile},
-        modules::{ModuleData, ModulePath},
+        modules::{Module, ModuleData, ModulePath},
     },
     parser::{expr::qualified_name::SpannedQualifiedName, parse_file},
     project::{name::QualifiedName, Project},
     ty::{Generic, Ty},
-    util::Span,
+    util::{Span, Spanned},
 };
 
 use super::{
@@ -19,15 +19,22 @@ use super::{
     type_state::{MaybeTypeVar, TypeState, TypeVarUsage},
 };
 
+#[derive(Debug, Clone)]
+pub struct VarDecl<'db> {
+    pub ty: Ty<'db>,
+    pub is_param: bool,
+}
+
 pub struct CheckState<'ty, 'db: 'ty> {
     pub db: &'db dyn Db,
     imports: HashMap<String, ModulePath<'db>>,
     generics: Vec<HashMap<String, Generic<'db>>>,
-    variables: Vec<HashMap<String, Ty<'db>>>,
+    variables: Vec<HashMap<String, VarDecl<'db>>>,
     pub file_data: SourceFile,
     pub project: Project<'db>,
     pub type_state: TypeState<'ty, 'db>,
     pub path: Vec<String>,
+    pub should_error: bool,
 }
 
 impl<'ty, 'db: 'ty> CheckState<'ty, 'db> {
@@ -45,6 +52,7 @@ impl<'ty, 'db: 'ty> CheckState<'ty, 'db> {
             project,
             type_state: TypeState::default(),
             path: file_data.module_path(db).name(db).clone(),
+            should_error: true,
         };
         let mut path = file_data.module_path(db).name(db).clone();
         for top in parse_file(db, file_data).tops(db) {
@@ -53,6 +61,22 @@ impl<'ty, 'db: 'ty> CheckState<'ty, 'db> {
             path.pop();
         }
         state
+    }
+
+    pub fn get_type_vars(&self) -> HashMap<u32, Ty<'db>> {
+        let mut res = HashMap::new();
+        for id in self.type_state.vars.keys() {
+            res.insert(*id, self.get_resolved_type_var(*id));
+        }
+        res
+    }
+
+    pub fn with_type_vars(&mut self, types: HashMap<u32, Ty<'db>>) {
+        for (id, ty) in types {
+            self.type_state.new_type_var(Span::splat(0));
+            let var = self.type_state.get_type_var_mut(id);
+            var.resolved = Some(ty);
+        }
     }
 
     pub fn add_import(&mut self, name: String, path: QualifiedName) {
@@ -78,20 +102,40 @@ impl<'ty, 'db: 'ty> CheckState<'ty, 'db> {
     }
 
     pub fn error(&mut self, error: CheckError) {
-        Error { inner: error }
-            .into_with_db(self.db)
-            .accumulate(self.db);
+        if self.should_error {
+            Error { inner: error }
+                .into_with_db(self.db)
+                .accumulate(self.db);
+        }
     }
 
-    pub fn get_decl_with_error(&mut self, path: &SpannedQualifiedName) -> Option<ModulePath<'db>> {
-        if let Some(import) = self.imports.get(&path[0].0) {
+    pub fn get_module_with_error(&mut self, path: &[Spanned<String>]) -> Option<Module<'db>> {
+        if let Some(import) = self.imports.get(&path[0].0).copied() {
             let module = self
                 .project
                 .decls(self.db)
-                .get_path(self.db, *import)
+                .get_path(self.db, import)
+                .unwrap();
+            module.get_path_with_state(self, &path[1..], self.file_data, self.should_error)
+        } else {
+            self.project.decls(self.db).get_path_with_state(
+                self,
+                path,
+                self.file_data,
+                self.should_error,
+            )
+        }
+    }
+
+    pub fn get_decl_with_error(&mut self, path: &[Spanned<String>]) -> Option<ModulePath<'db>> {
+        if let Some(import) = self.imports.get(&path[0].0).copied() {
+            let module = self
+                .project
+                .decls(self.db)
+                .get_path(self.db, import)
                 .unwrap();
             if module
-                .get_path_with_error(self.db, path[1..].to_vec(), self.file_data)
+                .get_path_with_state(self, &path[1..], self.file_data, self.should_error)
                 .is_some()
             {
                 let mut new = import.name(self.db).clone();
@@ -100,11 +144,12 @@ impl<'ty, 'db: 'ty> CheckState<'ty, 'db> {
             } else {
                 None
             }
-        } else if let Some(found) =
-            self.project
-                .decls(self.db)
-                .get_path_with_error(self.db, path.clone(), self.file_data)
-        {
+        } else if let Some(found) = self.project.decls(self.db).get_path_with_state(
+            self,
+            path,
+            self.file_data,
+            self.should_error,
+        ) {
             if let ModuleData::Export(_) = found.content(self.db) {
                 Some(ModulePath::new(
                     self.db,
@@ -152,8 +197,12 @@ impl<'ty, 'db: 'ty> CheckState<'ty, 'db> {
         self.generics.last_mut().unwrap().insert(name, ty);
     }
 
-    pub fn insert_variable(&mut self, name: String, ty: Ty<'db>) {
-        self.variables.last_mut().unwrap().insert(name, ty);
+    pub fn insert_variable(&mut self, name: String, ty: Ty<'db>, param: bool) {
+        let var = VarDecl {
+            ty,
+            is_param: param,
+        };
+        self.variables.last_mut().unwrap().insert(name, var);
     }
 
     pub fn get_generic(&self, name: &str) -> Option<&Generic<'db>> {
@@ -165,10 +214,10 @@ impl<'ty, 'db: 'ty> CheckState<'ty, 'db> {
         None
     }
 
-    pub fn get_variable(&self, name: &str) -> Option<&Ty<'db>> {
+    pub fn get_variable(&self, name: &str) -> Option<VarDecl<'db>> {
         for variables in self.variables.iter().rev() {
             if let Some(v) = variables.get(name) {
-                return Some(v);
+                return Some(v.clone());
             }
         }
         None
@@ -221,7 +270,7 @@ impl<'ty, 'db: 'ty> CheckState<'ty, 'db> {
         }
     }
 
-    pub fn get_resolved_type_var(&self, id: u32) -> Ty {
+    pub fn get_resolved_type_var(&self, id: u32) -> Ty<'db> {
         self.type_state
             .get_type_var(id)
             .resolved
@@ -237,6 +286,30 @@ impl<'ty, 'db: 'ty> CheckState<'ty, 'db> {
         let mut path = self.path.clone();
         path.push(name);
         ModulePath::new(self.db, path)
+    }
+
+    pub fn get_variables(&self) -> HashMap<String, VarDecl<'db>> {
+        let mut vars = HashMap::new();
+        for scope in &self.variables {
+            for (name, var) in scope {
+                vars.insert(name.clone(), var.clone());
+            }
+        }
+        vars
+    }
+
+    pub fn get_generics(&self) -> HashMap<String, Generic<'db>> {
+        let mut vars = HashMap::new();
+        for scope in &self.generics {
+            for (name, var) in scope {
+                vars.insert(name.clone(), var.clone());
+            }
+        }
+        vars
+    }
+
+    pub fn get_imports<'st>(&'st self) -> &'st HashMap<String, ModulePath<'db>> {
+        &self.imports
     }
 }
 

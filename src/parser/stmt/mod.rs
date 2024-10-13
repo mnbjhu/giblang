@@ -50,7 +50,10 @@ mod tests {
             stmt_parser(),
             "let x = 42",
             Stmt::Let(LetStatement {
-                pattern: (Pattern::Name("x".to_string()), (4..5).into()),
+                pattern: (
+                    Pattern::Name(("x".to_string(), (4..5).into())),
+                    (4..5).into()
+                ),
                 ty: None,
                 value: (Expr::Literal(42.into()), (8..10).into())
             })

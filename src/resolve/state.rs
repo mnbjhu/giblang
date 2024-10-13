@@ -18,6 +18,7 @@ pub struct ResolveState<'db> {
     imports: HashMap<String, ModulePath<'db>>,
     generics: Vec<HashMap<String, Generic<'db>>>,
     pub file_data: SourceFile,
+    pub path: Vec<String>,
 }
 
 impl<'db> ResolveState<'db> {
@@ -37,6 +38,7 @@ impl<'db> ResolveState<'db> {
             imports: HashMap::new(),
             generics: vec![],
             file_data,
+            path: file_data.module_path(db).name(db).clone(),
         };
         let mut path = file_data.module_path(db).name(db).clone();
         for top in parse_file(db, file_data).tops(db) {

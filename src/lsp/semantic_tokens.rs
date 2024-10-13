@@ -1,10 +1,11 @@
-use async_lsp::lsp_types::{SemanticToken, SemanticTokens};
-use chumsky::span::SimpleSpan;
+use async_lsp::lsp_types::SemanticToken as LspSemanticToken;
+use async_lsp::lsp_types::SemanticTokens;
 
-use crate::lexer::{literal::Literal, token::Token};
+use crate::check::{SemanticToken, TokenKind};
 
 #[allow(dead_code, clippy::cast_possible_truncation)]
-pub fn get_semantic_tokens(tokens: Vec<(Token, SimpleSpan)>, text: &str) -> Option<SemanticTokens> {
+pub fn get_semantic_tokens(mut tokens: Vec<SemanticToken>, text: &str) -> Option<SemanticTokens> {
+    tokens.sort_by(|s, o| s.span.start.cmp(&o.span.start));
     let found = {
         let mut found = Vec::new();
         let mut tokens = tokens.into_iter();
@@ -12,18 +13,23 @@ pub fn get_semantic_tokens(tokens: Vec<(Token, SimpleSpan)>, text: &str) -> Opti
         let mut last_line: u32 = 0;
         let mut last_char: u32 = 0;
         for (index, char) in text.chars().enumerate() {
-            if current.1.start == index {
-                let ty = match current.0 {
-                    Token::Keyword(_) => Some(0),
-                    Token::Literal(Literal::String(_)) => Some(3),
-                    Token::Literal(Literal::Int(_)) => Some(4),
-                    _ => None,
+            if current.span.start == index {
+                let ty = match current.kind {
+                    TokenKind::Var => Some(1),
+                    TokenKind::Func => Some(2),
+                    TokenKind::Param => Some(7),
+                    TokenKind::Struct => Some(9),
+                    TokenKind::Enum => Some(10),
+                    TokenKind::Member => Some(11),
+                    TokenKind::Trait => Some(12),
+                    TokenKind::Module => Some(13),
+                    TokenKind::Generic => Some(6),
                 };
                 if let Some(ty) = ty {
-                    found.push(SemanticToken {
+                    found.push(LspSemanticToken {
                         delta_line: last_line,
                         delta_start: last_char,
-                        length: current.1.end.saturating_sub(current.1.start) as u32,
+                        length: current.span.end.saturating_sub(current.span.start) as u32,
                         token_type: ty,
                         token_modifiers_bitset: 0,
                     });

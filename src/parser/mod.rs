@@ -48,6 +48,7 @@ pub struct TopData<'db> {
     pub name: String,
     #[return_ref]
     pub data: Top,
+    pub span: Span,
 }
 
 #[salsa::tracked]
@@ -133,9 +134,10 @@ pub fn parse_file<'db>(db: &'db dyn Db, file: SourceFile) -> FileData<'db> {
             .collect(),
         found
             .iter()
-            .filter_map(|(top, _)| {
-                top.get_name()
-                    .map(|name| TopData::new(db, name.to_string(), top.clone()))
+            .filter_map(|top| {
+                top.0
+                    .get_name()
+                    .map(|name| TopData::new(db, name.to_string(), top.0.clone(), top.1))
             })
             .collect(),
         vec![],

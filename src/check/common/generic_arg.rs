@@ -12,10 +12,12 @@ impl GenericArg {
             Ty::Any
         };
 
-        Ty::Generic(Generic {
+        let generic = Generic {
             name: self.name.clone(),
             variance: self.variance,
             super_: Box::new(super_),
-        })
+        };
+        state.insert_generic(self.name.0.to_string(), generic.clone());
+        Ty::Generic(generic)
     }
 }

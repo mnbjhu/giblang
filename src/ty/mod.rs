@@ -29,7 +29,7 @@ impl<'db> Generic<'db> {
         }
     }
 
-    pub fn get_name(&self, db: &'db dyn Db, state: &CheckState) -> String {
+    pub fn get_name(&self, state: &CheckState) -> String {
         if let Ty::Any = self.super_.as_ref() {
             format!("{}{}", self.variance, self.name.0)
         } else {

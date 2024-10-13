@@ -14,7 +14,7 @@ use super::{
 
 #[derive(Clone, PartialEq, Debug, Eq)]
 pub enum Pattern {
-    Name(String),
+    Name(Spanned<String>),
     Struct {
         name: SpannedQualifiedName,
         fields: Vec<Spanned<StructFieldPattern>>,
@@ -40,7 +40,7 @@ impl Pattern {
 
 #[derive(Clone, PartialEq, Debug, Eq)]
 pub enum StructFieldPattern {
-    Implied(String),
+    Implied(Spanned<String>),
     Explicit {
         field: Spanned<String>,
         pattern: Spanned<Pattern>,
@@ -50,7 +50,7 @@ pub enum StructFieldPattern {
 pub fn struct_field_pattern_parser<'tokens, 'src: 'tokens>(
     pattern: AstParser!(Pattern),
 ) -> AstParser!(StructFieldPattern) {
-    let implied = ident_parser().map(StructFieldPattern::Implied);
+    let implied = spanned_ident_parser().map(StructFieldPattern::Implied);
 
     let explicit = spanned_ident_parser()
         .then_ignore(just(punct(':')))
@@ -61,7 +61,7 @@ pub fn struct_field_pattern_parser<'tokens, 'src: 'tokens>(
 }
 
 pub fn pattern_parser<'tokens, 'src: 'tokens>() -> AstParser!(Pattern) {
-    let name = ident_parser().map(Pattern::Name);
+    let name = spanned_ident_parser().map(Pattern::Name);
     let sep = just(punct(':')).then(just(punct(':')));
     let unit = spanned_ident_parser()
         .separated_by(sep)

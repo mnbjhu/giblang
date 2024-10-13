@@ -20,7 +20,7 @@ use super::func::{func_parser, Func};
 #[derive(Debug, PartialEq, Clone, Eq)]
 pub struct Trait {
     pub name: Spanned<String>,
-    pub generics: GenericArgs,
+    pub generics: Spanned<GenericArgs>,
     pub body: Vec<Spanned<Func>>,
 }
 
@@ -37,7 +37,7 @@ pub fn trait_parser<'tokens, 'src: 'tokens>(stmt: AstParser!(Stmt)) -> AstParser
         .map(std::option::Option::unwrap_or_default);
     just(kw!(trait))
         .ignore_then(spanned_ident_parser())
-        .then(generic_args_parser())
+        .then(generic_args_parser().map_with(|g, e| (g, e.span())))
         .then(body)
         .map(|((name, generics), body)| Trait {
             name,

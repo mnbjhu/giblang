@@ -1,1 +1,13 @@
-struct Test(std::String)
+use std::String
+use std::Int
+
+struct Test(String)
+
+enum MyEnum {
+  First,
+  Second(String),
+  Third {
+    something: String,
+    my_num: Int,
+  }
+}

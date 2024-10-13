@@ -7,7 +7,7 @@ use crate::{
 
 impl<'db> Trait {
     pub fn check(&'db self, state: &mut CheckState<'_, 'db>) {
-        let args = self.generics.check(state);
+        let args = self.generics.0.check(state);
         let id = state.local_id(self.name.0.to_string());
         state.add_self_ty(Ty::Named { name: id, args }, self.name.1);
         for func in &self.body {

@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::check::state::CheckState;
 
 use super::{FuncTy, Ty};
@@ -25,7 +27,7 @@ impl<'db> Ty<'db> {
                     format!("{name}[{args}]")
                 }
             }
-            Ty::Generic(g) => g.get_name(state.db, state),
+            Ty::Generic(g) => g.get_name(state),
             Ty::Meta(_) => todo!(),
             Ty::Function(func) => func.get_name(state),
             Ty::Tuple(tys) => {
@@ -48,6 +50,61 @@ impl<'db> Ty<'db> {
                 let var = state.try_get_resolved_type_var(*id);
                 if let Some(var) = var {
                     var.get_name(state)
+                } else {
+                    "{unknown}".to_string()
+                }
+            }
+        }
+    }
+
+    pub fn get_name_with_types(
+        &self,
+        state: &mut CheckState<'_, 'db>,
+        type_vars: &HashMap<u32, Ty<'db>>,
+    ) -> String {
+        match self {
+            Ty::Any => "Any".to_string(),
+            Ty::Unknown => "Unknown".to_string(),
+            Ty::Named { name, args } => {
+                let decl = state.project.get_decl(state.db, *name);
+                // TODO: check unwrap
+                if decl.is_none() {
+                    return "{err}".to_string();
+                }
+                let name = decl.unwrap().name(state.db);
+                if args.is_empty() {
+                    name.to_string()
+                } else {
+                    let args = args
+                        .iter()
+                        .map(|arg| arg.get_name(state))
+                        .collect::<Vec<_>>()
+                        .join(", ");
+                    format!("{name}[{args}]")
+                }
+            }
+            Ty::Generic(g) => g.get_name(state),
+            Ty::Meta(_) => todo!(),
+            Ty::Function(func) => func.get_name(state),
+            Ty::Tuple(tys) => {
+                let tys = tys
+                    .iter()
+                    .map(|ty| ty.get_name(state))
+                    .collect::<Vec<_>>()
+                    .join(", ");
+                format!("({tys})")
+            }
+            Ty::Sum(tys) => {
+                let tys = tys
+                    .iter()
+                    .map(|ty| ty.get_name(state))
+                    .collect::<Vec<_>>()
+                    .join(" + ");
+                format!("({tys})")
+            }
+            Ty::TypeVar { id } => {
+                if let Some(ty) = type_vars.get(id) {
+                    ty.get_name(state)
                 } else {
                     "{unknown}".to_string()
                 }

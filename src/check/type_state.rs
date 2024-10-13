@@ -48,7 +48,7 @@ impl<'ty, 'db: 'ty> TypeState<'ty, 'db> {
         ret
     }
 
-    pub fn get_type_var(&self, id: u32) -> &TypeVarData {
+    pub fn get_type_var(&self, id: u32) -> &TypeVarData<'ty, 'db> {
         let data_pointer = self.get_data_pointer(id);
         let maybe = self
             .vars
@@ -61,7 +61,7 @@ impl<'ty, 'db: 'ty> TypeState<'ty, 'db> {
         }
     }
 
-    fn get_type_var_mut(&mut self, id: u32) -> &mut TypeVarData<'ty, 'db> {
+    pub fn get_type_var_mut(&mut self, id: u32) -> &mut TypeVarData<'ty, 'db> {
         let data_pointer = self.get_data_pointer(id);
         let maybe = self
             .vars
