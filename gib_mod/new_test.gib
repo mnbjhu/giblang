@@ -15,5 +15,5 @@ struct Test {
 }
 
 fn test() {
-  let Test { name } = Test("Hello")
+  let Test { name: some_name } = Test("Hello")
 }
