@@ -1,5 +1,5 @@
 use crate::{
-    check::state::CheckState,
+    check::{state::CheckState, SemanticToken, TokenKind},
     item::{common::type_::ContainsOffset, AstItem},
     parser::top::trait_::Trait,
 };
@@ -20,15 +20,12 @@ impl AstItem for Trait {
         self
     }
 
-    fn tokens(
-        &self,
-        state: &mut crate::check::state::CheckState,
-        tokens: &mut Vec<crate::check::SemanticToken>,
-    ) {
+    fn tokens(&self, state: &mut CheckState, tokens: &mut Vec<SemanticToken>) {
+        tokens.push(SemanticToken {
+            span: self.name.1,
+            kind: TokenKind::Trait,
+        });
         self.generics.0.tokens(state, tokens);
-        for arg in &self.body {
-            arg.0.tokens(state, tokens);
-        }
         for func in &self.body {
             func.0.tokens(state, tokens);
         }

@@ -2,7 +2,7 @@ use crate::{parser::top::impl_::Impl, project::ImplDecl, resolve::state::Resolve
 
 impl Impl {
     pub fn resolve<'db>(&self, state: &mut ResolveState<'db>) -> ImplDecl<'db> {
-        let generics = self.generics.resolve(state);
+        let generics = self.generics.0.resolve(state);
         let to = self.trait_.0.resolve(state);
         let from = self.for_.0.resolve(state);
         state.add_self_ty(from.clone(), self.for_.1);

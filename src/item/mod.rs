@@ -6,7 +6,7 @@ use salsa::Database;
 
 use crate::{
     check::{state::CheckState, SemanticToken},
-    parser::FileData,
+    parser::{top::Top, Ast},
     ty::Ty,
 };
 
@@ -39,7 +39,7 @@ pub trait AstItem: Debug {
     }
 }
 
-impl<'db> FileData<'db> {
+impl<'db> Ast<'db> {
     pub fn at_offset<'ty, 'me, 'state>(
         &'me self,
         db: &'db dyn Database,
@@ -49,13 +49,12 @@ impl<'db> FileData<'db> {
     where
         Self: Sized,
     {
-        for import in self.imports(db) {
-            state.import(import);
-        }
-        for item in self.tops(db) {
-            let span = item.span(db);
+        for (item, span) in self.tops(db) {
             if span.contains_offset(offset) {
-                return Some(item.data(db).at_offset(state, offset));
+                return Some(item.at_offset(state, offset));
+            }
+            if let Top::Use(u) = item {
+                state.import(u);
             }
         }
         None
@@ -70,12 +69,8 @@ impl<'db> FileData<'db> {
         Self: Sized,
     {
         let mut tokens = vec![];
-        for import in self.imports(db) {
-            import.tokens(state, &mut tokens);
-            state.import(import);
-        }
         for item in self.tops(db) {
-            item.data(db).tokens(state, &mut tokens);
+            item.0.tokens(state, &mut tokens);
         }
         tokens
     }

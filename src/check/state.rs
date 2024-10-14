@@ -55,10 +55,13 @@ impl<'ty, 'db: 'ty> CheckState<'ty, 'db> {
             should_error: true,
         };
         let mut path = file_data.module_path(db).name(db).clone();
-        for top in parse_file(db, file_data).tops(db) {
-            path.push(top.name(db));
-            state.add_import(top.name(db), path.clone());
-            path.pop();
+        let tops = parse_file(db, file_data).tops(db);
+        for top in tops {
+            if let Some(name) = top.0.get_name() {
+                path.push(name.to_string());
+                state.add_import(name.to_string(), path.clone());
+                path.pop();
+            }
         }
         state
     }

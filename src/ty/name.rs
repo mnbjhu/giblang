@@ -77,7 +77,7 @@ impl<'db> Ty<'db> {
                 } else {
                     let args = args
                         .iter()
-                        .map(|arg| arg.get_name(state))
+                        .map(|arg| arg.get_name_with_types(state, type_vars))
                         .collect::<Vec<_>>()
                         .join(", ");
                     format!("{name}[{args}]")
@@ -89,7 +89,7 @@ impl<'db> Ty<'db> {
             Ty::Tuple(tys) => {
                 let tys = tys
                     .iter()
-                    .map(|ty| ty.get_name(state))
+                    .map(|ty| ty.get_name_with_types(state, type_vars))
                     .collect::<Vec<_>>()
                     .join(", ");
                 format!("({tys})")
@@ -97,7 +97,7 @@ impl<'db> Ty<'db> {
             Ty::Sum(tys) => {
                 let tys = tys
                     .iter()
-                    .map(|ty| ty.get_name(state))
+                    .map(|ty| ty.get_name_with_types(state, type_vars))
                     .collect::<Vec<_>>()
                     .join(" + ");
                 format!("({tys})")
@@ -106,7 +106,7 @@ impl<'db> Ty<'db> {
                 if let Some(ty) = type_vars.get(id) {
                     ty.get_name(state)
                 } else {
-                    "{unknown}".to_string()
+                    format!("{{unknown:{id}}}")
                 }
             }
         }

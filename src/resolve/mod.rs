@@ -18,15 +18,12 @@ pub fn resolve_file<'db>(db: &'db dyn Db, file: SourceFile) -> Module<'db> {
     info!("Resolving file {}", file.name(db));
     let mut state = ResolveState::from_file(db, file);
     let ast = parse_file(db, file);
-    for import in ast.imports(db) {
-        state.import(import);
-    }
     let decls = ast
         .tops(db)
         .iter()
         .filter_map(|item| {
             state.enter_scope();
-            let found = item.data(db).resolve(&mut state)?;
+            let found = item.0.resolve(&mut state)?;
             state.path.push(found.name(db));
             let name = found.name(db);
             let export = ModuleData::Export(found);

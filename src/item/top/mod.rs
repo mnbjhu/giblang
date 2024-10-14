@@ -40,7 +40,10 @@ impl AstItem for Top {
             Top::Enum(e) => e.tokens(state, tokens),
             Top::Trait(t) => t.tokens(state, tokens),
             Top::Impl(i) => i.tokens(state, tokens),
-            Top::Use(u) => u.tokens(state, tokens),
+            Top::Use(u) => {
+                u.tokens(state, tokens);
+                state.import(u);
+            }
         }
         state.exit_scope();
     }

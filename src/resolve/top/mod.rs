@@ -18,6 +18,10 @@ impl Top {
             Top::Struct(s) => Some(s.resolve(state)),
             Top::Enum(e) => Some(e.resolve(state)),
             Top::Trait(t) => Some(t.resolve(state)),
+            Top::Use(u) => {
+                state.import(u);
+                None
+            }
             _ => None,
         }
     }

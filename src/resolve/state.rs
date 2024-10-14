@@ -42,10 +42,11 @@ impl<'db> ResolveState<'db> {
         };
         let mut path = file_data.module_path(db).name(db).clone();
         for top in parse_file(db, file_data).tops(db) {
-            let name = top.data(db).get_name().unwrap();
-            path.push(name.to_string());
-            state.add_import(name.to_string(), ModulePath::new(db, path.clone()));
-            path.pop();
+            if let Some(name) = top.0.get_name() {
+                path.push(name.to_string());
+                state.add_import(name.to_string(), ModulePath::new(db, path.clone()));
+                path.pop();
+            }
         }
         state
     }

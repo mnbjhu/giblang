@@ -1,5 +1,8 @@
 use crate::{
-    check::state::CheckState,
+    check::{
+        err::{is_not_instance::IsNotInstance, CheckError},
+        state::CheckState,
+    },
     parser::expr::Expr,
     ty::Ty,
     util::{Span, Spanned},
@@ -35,7 +38,12 @@ pub fn check_tuple_is<'db>(
             );
         }
     } else {
-        check_tuple(tuple, state);
-        todo!("TODO: Add expected a tuple error");
+        let found = check_tuple(tuple, state);
+        state.error(CheckError::IsNotInstance(IsNotInstance {
+            expected: expected.get_name(state),
+            found: found.get_name(state),
+            span,
+            file: state.file_data,
+        }));
     }
 }

@@ -6,6 +6,11 @@ fn simple[T](thing: T, some: String): Option[T]{
 
 }
 
+struct Vec[T] { }
+
+fn Vec[T].push[T](thing: T) {
+}
+
 
 enum Option[T] {
   Some(T),
@@ -21,17 +26,25 @@ struct Box[T](T)
 
 fn test(thing: Test) {
 }
+
 fn println(thing: String) {
   thing
 }
 
+fn thingy(x: Option[String]) {
+
+}
+
 fn main() {
-  let test: _ = ""
-  let another = println(test)
-  another
+  let test = Option::None
+  let test2 = Option::Some("Hello")
+  let x = test3
+  let thing = match test {
+    Option::Some(x) => x,
+    Option::None => 123,
+  }
   let my_enum = gib_mod::another::MyEnum::Second("Hello")
   let test2 = Option::Some(123)
-  test2
   gib_mod::another::Test("Hello")
   let test = Option::Some("Hello")
   test
@@ -50,3 +63,4 @@ struct New[T] {
   test: T,
   test2: String,
 }
+

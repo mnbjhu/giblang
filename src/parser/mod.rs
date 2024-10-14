@@ -30,31 +30,9 @@ pub mod top;
 pub type File = Vec<Spanned<Top>>;
 
 #[salsa::tracked]
-pub struct FileData<'db> {
+pub struct Ast<'db> {
     #[return_ref]
-    pub imports: Vec<SpannedQualifiedName>,
-
-    #[return_ref]
-    pub tops: Vec<TopData<'db>>,
-
-    #[return_ref]
-    pub impls: Vec<ImplData<'db>>,
-}
-
-#[salsa::tracked]
-pub struct TopData<'db> {
-    #[id]
-    #[interned]
-    pub name: String,
-    #[return_ref]
-    pub data: Top,
-    pub span: Span,
-}
-
-#[salsa::tracked]
-pub struct ImplData<'db> {
-    #[return_ref]
-    pub data: Impl,
+    pub tops: Vec<Spanned<Top>>,
 }
 
 #[must_use]
@@ -87,7 +65,7 @@ pub fn file_parser<'tokens, 'src: 'tokens>() -> AstParser!(File) {
 }
 
 #[salsa::tracked]
-pub fn parse_file<'db>(db: &'db dyn Db, file: SourceFile) -> FileData<'db> {
+pub fn parse_file<'db>(db: &'db dyn Db, file: SourceFile) -> Ast<'db> {
     info!("Parsing file: {:?}", file.path(db));
     let text = file.text(db);
     let (tokens, errors) = lexer().parse(text).into_output_errors();
@@ -119,29 +97,7 @@ pub fn parse_file<'db>(db: &'db dyn Db, file: SourceFile) -> FileData<'db> {
             found = ast;
         }
     }
-    FileData::new(
-        db,
-        found
-            .iter()
-            .filter_map(|(top, _)| {
-                if let Top::Use(path) = top {
-                    Some(path)
-                } else {
-                    None
-                }
-            })
-            .cloned()
-            .collect(),
-        found
-            .iter()
-            .filter_map(|top| {
-                top.0
-                    .get_name()
-                    .map(|name| TopData::new(db, name.to_string(), top.0.clone(), top.1))
-            })
-            .collect(),
-        vec![],
-    )
+    Ast::new(db, found)
 }
 
 #[macro_export]

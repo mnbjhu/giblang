@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use salsa::Update;
+use tracing::info;
 
 use crate::{
     db::input::{Db, SourceFile, Vfs, VfsInner},
@@ -54,11 +55,8 @@ pub fn check_file<'db>(
 ) -> HashMap<u32, Ty<'db>> {
     let mut state = state::CheckState::from_file(db, file, project);
     let ast = parse_file(db, file);
-    for import in ast.imports(db) {
-        state.import(import);
-    }
     for top in ast.tops(db) {
-        top.data(db).check(project, &mut state);
+        top.0.check(project, &mut state);
     }
     state.resolve_type_vars();
     state.get_type_vars()

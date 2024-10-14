@@ -19,7 +19,7 @@ use super::func::{func_parser, Func};
 
 #[derive(Debug, PartialEq, Clone, Eq)]
 pub struct Impl {
-    pub generics: GenericArgs,
+    pub generics: Spanned<GenericArgs>,
     pub trait_: Spanned<NamedType>,
     pub for_: Spanned<NamedType>,
     pub body: Vec<Spanned<Func>>,
@@ -43,7 +43,7 @@ pub fn impl_parser<'tokens, 'src: 'tokens>(stmt: AstParser!(Stmt)) -> AstParser!
         .map(std::option::Option::unwrap_or_default);
 
     just(kw!(impl))
-        .ignore_then(generic_args_parser())
+        .ignore_then(generic_args_parser().map_with(|g, e| (g, e.span())))
         .then(trait_)
         .then(for_)
         .then(body)

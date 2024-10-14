@@ -19,10 +19,10 @@ impl<'db> Pattern {
         if let Some(decl_id) = decl_id {
             let decl = state.project.get_decl(state.db, decl_id).unwrap();
             let kind = decl.kind(state.db);
-            if let DeclKind::Member { body, .. } | DeclKind::Struct { body, .. } = kind {
+            if let DeclKind::Member { body } | DeclKind::Struct { body, .. } = kind {
                 if let Ty::Named {
                     name: expected_name,
-                    ..
+                    args,
                 } = &ty
                 {
                     let ty_decl_id = if let DeclKind::Member { .. } = kind {
@@ -49,10 +49,20 @@ impl<'db> Pattern {
                         );
                         return;
                     }
+                    let parent_decl = state.project.get_decl(state.db, *expected_name).unwrap();
+                    let generics = parent_decl
+                        .generics(state.db)
+                        .iter()
+                        .zip(args)
+                        .map(|(gen, arg)| (gen.name.0.clone(), arg.clone()))
+                        .collect::<HashMap<_, _>>();
 
                     match (self, body) {
                         (Pattern::Struct { name, fields }, StructDecl::Fields(expected)) => {
-                            let expected = expected.iter().cloned().collect::<HashMap<_, _>>();
+                            let expected = expected
+                                .iter()
+                                .map(|(field, ty)| (field.clone(), ty.parameterize(&generics)))
+                                .collect::<HashMap<_, _>>();
                             for field in fields {
                                 field.0.check(state, &expected, name[0].1);
                             }
@@ -60,7 +70,7 @@ impl<'db> Pattern {
                         (Pattern::UnitStruct(_), StructDecl::None) => {}
                         (Pattern::TupleStruct { fields, .. }, StructDecl::Tuple(tys)) => {
                             for (field, ty) in fields.iter().zip(tys) {
-                                field.0.check(state, ty.clone());
+                                field.0.check(state, ty.parameterize(&generics));
                             }
                         }
                         (Pattern::Name(_), _) => unreachable!(),

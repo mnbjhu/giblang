@@ -5,6 +5,8 @@ use crate::{
     ty::{FuncTy, Ty},
 };
 
+use super::decl::DeclKind;
+
 impl<'db> Ty<'db> {
     pub fn inst(&self, ids: &mut HashMap<String, u32>, state: &mut CheckState<'_, 'db>) -> Ty<'db> {
         match self {

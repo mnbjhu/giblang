@@ -15,10 +15,14 @@ impl AstItem for Match {
         if self.expr.1.contains_offset(offset) {
             return self.expr.0.at_offset(state, offset);
         }
+        let ty = self.expr.0.check(state);
         for branch in &self.arms {
+            state.enter_scope();
+            branch.0.pattern.0.check(state, ty.clone());
             if branch.1.contains_offset(offset) {
                 return branch.0.at_offset(state, offset);
             }
+            state.exit_scope();
         }
         self
     }

@@ -1,0 +1,11 @@
+use std::String
+use std::Int
+
+trait ToString {
+  fn string(): String
+}
+
+impl ToString for Int {
+  fn string(): String {
+  }
+}
