@@ -32,6 +32,7 @@ pub enum TokenKind {
     Func,
     Member,
     Trait,
+    Property,
 }
 
 pub struct SemanticToken {

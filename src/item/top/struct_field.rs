@@ -1,5 +1,3 @@
-use chumsky::container::Container;
-
 use crate::{
     check::{state::CheckState, SemanticToken, TokenKind},
     item::{common::type_::ContainsOffset, AstItem},
@@ -24,7 +22,7 @@ impl AstItem for StructField {
     fn tokens(&self, state: &mut CheckState, tokens: &mut Vec<SemanticToken>) {
         tokens.push(SemanticToken {
             span: self.name.1,
-            kind: TokenKind::Param,
+            kind: TokenKind::Property,
         });
         self.ty.0.tokens(state, tokens);
     }

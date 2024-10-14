@@ -111,13 +111,13 @@ impl AstItem for StructFieldPattern {
             StructFieldPattern::Implied(name) => {
                 tokens.push(SemanticToken {
                     span: name.1,
-                    kind: TokenKind::Param,
+                    kind: TokenKind::Property,
                 });
             }
             StructFieldPattern::Explicit { field, pattern } => {
                 tokens.push(SemanticToken {
                     span: field.1,
-                    kind: TokenKind::Param,
+                    kind: TokenKind::Property,
                 });
                 pattern.0.tokens(state, tokens);
             }

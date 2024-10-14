@@ -1,13 +1,27 @@
 use std::String
 use std::Int
+use std::println
 
 struct Test(String)
 
 enum MyEnum {
   First,
-  Second(String),
+  Second(Int),
   Third {
     something: String,
     my_num: Int,
   }
+}
+
+fn Int.to_string(): String {
+}
+
+fn enum_test() {
+  let my_enum = MyEnum::Second(123)
+  match my_enum {
+    MyEnum::First => "Hello",
+    MyEnum::Second(x) => x.to_string(),
+    MyEnum::Third { something, my_num } => something,
+  }
+  println("Hello")
 }

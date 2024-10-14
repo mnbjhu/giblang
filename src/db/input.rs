@@ -139,6 +139,22 @@ impl Vfs {
                 struct Bool
                 struct String
                 struct Any
+
+                fn print(text: String)
+                fn println(text: String)
+
+                struct Vec[T]
+                fn Vec[T].push[T](thing: T)
+
+                enum Option[T] {
+                    Some(T),
+                    None
+                }
+
+                enum Result[R, E] {
+                    Ok(R),
+                    Err(E),
+                }
                 "
                 .to_string(),
                 vec!["std".to_string()],

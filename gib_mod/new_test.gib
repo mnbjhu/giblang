@@ -9,3 +9,11 @@ impl ToString for Int {
   fn string(): String {
   }
 }
+
+struct Test {
+  name: String
+}
+
+fn test() {
+  let Test { name } = Test("Hello")
+}

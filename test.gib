@@ -6,11 +6,11 @@ fn simple[T](thing: T, some: String): Option[T]{
 
 }
 
-struct Vec[T] { }
+fn print(text: String)
+fn println(text: String)
 
-fn Vec[T].push[T](thing: T) {
-}
-
+struct Vec[T]
+fn Vec[T].push[T](thing: T)
 
 enum Option[T] {
   Some(T),
@@ -27,9 +27,6 @@ struct Box[T](T)
 fn test(thing: Test) {
 }
 
-fn println(thing: String) {
-  thing
-}
 
 fn thingy(x: Option[String]) {
 

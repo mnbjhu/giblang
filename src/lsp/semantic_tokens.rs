@@ -18,6 +18,7 @@ pub fn get_semantic_tokens(mut tokens: Vec<SemanticToken>, text: &str) -> Option
                     TokenKind::Var => Some(1),
                     TokenKind::Func => Some(2),
                     TokenKind::Param => Some(7),
+                    TokenKind::Property => Some(8),
                     TokenKind::Struct => Some(9),
                     TokenKind::Enum => Some(10),
                     TokenKind::Member => Some(11),
