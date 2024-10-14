@@ -1,7 +1,3 @@
-
-
-
-
 // ANCHOR: main
 // pub fn watch_test() -> ! {
 //     // Create the channel to receive file change events.
