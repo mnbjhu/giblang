@@ -1,12 +1,14 @@
 pub mod build;
 pub mod exports;
 pub mod file_tree;
+pub mod lex;
 pub mod module_tree;
 pub mod parse;
 
 use build::build;
 use exports::exports;
 use file_tree::file_tree;
+use lex::lex;
 use module_tree::module_tree;
 use parse::parse;
 
@@ -14,6 +16,12 @@ use crate::lsp::main_loop;
 
 #[derive(Debug, clap::Parser)]
 pub enum Command {
+    /// Lex the tokens for a file
+    Lex {
+        /// The path to the source file
+        path: String,
+    },
+
     /// Parses a source file
     Parse {
         /// The path to the source file
@@ -45,6 +53,7 @@ impl Command {
             Command::Lsp => main_loop().await,
             Command::FileTree => file_tree(),
             Command::ModuleTree => module_tree(),
+            Command::Lex { path } => lex(path),
         }
     }
 }

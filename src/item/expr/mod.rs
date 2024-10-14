@@ -43,6 +43,7 @@ impl AstItem for Expr {
                 }
                 self
             }
+            Expr::Error => &Expr::Error,
         }
     }
 
@@ -64,6 +65,7 @@ impl AstItem for Expr {
                     expr.0.tokens(state, tokens);
                 }
             }
+            Expr::Error => {}
         }
     }
 }

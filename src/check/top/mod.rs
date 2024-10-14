@@ -1,6 +1,4 @@
-use tracing::info;
-
-use crate::{parser::top::Top, project::Project};
+use crate::parser::top::Top;
 
 use super::state::CheckState;
 
@@ -13,7 +11,7 @@ pub mod struct_body;
 pub mod trait_;
 
 impl<'db> Top {
-    pub fn check(&'db self, project: Project<'db>, state: &mut CheckState<'_, 'db>) {
+    pub fn check(&'db self, state: &mut CheckState<'_, 'db>) {
         state.enter_scope();
         match self {
             Top::Use(u) => state.import(u),

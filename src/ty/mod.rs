@@ -1,9 +1,7 @@
 use salsa::Update;
 
 use crate::{
-    check::state::CheckState,
-    db::{input::Db, modules::ModulePath},
-    parser::common::variance::Variance,
+    check::state::CheckState, db::modules::ModulePath, parser::common::variance::Variance,
     util::Spanned,
 };
 

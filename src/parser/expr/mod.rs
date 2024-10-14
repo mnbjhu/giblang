@@ -42,6 +42,7 @@ pub enum Expr {
     Match(Match),
     Tuple(Vec<Spanned<Expr>>),
     IfElse(IfElse),
+    Error,
 }
 
 pub fn expr_parser<'tokens, 'src: 'tokens>(stmt: AstParser!(Stmt)) -> AstParser!(Expr) {

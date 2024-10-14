@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 
 use salsa::Update;
-use tracing::info;
 
 use crate::{
     db::input::{Db, SourceFile, Vfs, VfsInner},
@@ -57,7 +56,7 @@ pub fn check_file<'db>(
     let mut state = state::CheckState::from_file(db, file, project);
     let ast = parse_file(db, file);
     for top in ast.tops(db) {
-        top.0.check(project, &mut state);
+        top.0.check(&mut state);
     }
     state.resolve_type_vars();
     state.get_type_vars()

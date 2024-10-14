@@ -1,30 +1,20 @@
 use gib_mod::another::Test
+
 use std::String
 use std::Int
 
-fn simple[T](thing: T, some: String): Option[T]{
+use std::println
+use std::print
 
-}
+use std::Option
+use std::Result
 
-fn print(text: String)
-fn println(text: String)
-
-struct Vec[T]
-fn Vec[T].push[T](thing: T)
-
-enum Option[T] {
-  Some(T),
-  None
-}
-
-enum Result[R, E] {
-  Ok(R),
-  Err(E),
-}
+fn simple[T](thing: T, some: String): Option[T]{ }
 
 struct Box[T](T)
 
 fn test(thing: Test) {
+  let a = 123
 }
 
 
@@ -40,7 +30,7 @@ fn main() {
     Option::Some(x) => x,
     Option::None => 123,
   }
-  let my_enum = gib_mod::another::MyEnum::Second("Hello")
+  let my_enum = gib_mod::another::MyEnum::Second(123)
   let test2 = Option::Some(123)
   gib_mod::another::Test("Hello")
   let test = Option::Some("Hello")
@@ -56,8 +46,4 @@ fn test3(thing: Int) {
   thing
 }
 
-struct New[T] {
-  test: T,
-  test2: String,
-}
-
+struct New[T] { test: T, test2: String }

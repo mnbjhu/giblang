@@ -62,10 +62,7 @@ pub fn lexer<'src>(
 
     let whitespace = one_of(" \t").repeated();
 
-    let newline = text::newline()
-        .repeated()
-        .at_least(1)
-        .map(|()| Token::Newline);
+    let newline = just('\n').repeated().at_least(1).map(|()| Token::Newline);
 
     choice((newline, ident, char, float, int, string, op, punct))
         .map_with(|t, e| (t, e.span()))

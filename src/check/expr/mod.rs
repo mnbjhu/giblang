@@ -30,6 +30,7 @@ impl<'db> Expr {
             // TODO: Handle if else expr types
             Expr::IfElse(_) => todo!(),
             Expr::MemberCall(member) => member.check(state),
+            Expr::Error => Ty::Unknown,
         }
     }
 
@@ -48,6 +49,7 @@ impl<'db> Expr {
             Expr::Tuple(v) => check_tuple_is(state, expected, v, span),
             Expr::IfElse(_) => todo!(),
             Expr::MemberCall(member) => member.expected_instance_of(expected, state, span),
+            Expr::Error => {}
         }
     }
 }

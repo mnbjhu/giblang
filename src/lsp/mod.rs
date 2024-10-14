@@ -9,8 +9,9 @@ use std::vec;
 use async_lsp::client_monitor::ClientProcessMonitorLayer;
 use async_lsp::concurrency::ConcurrencyLayer;
 use async_lsp::lsp_types::{
-    notification, request, CompletionParams, CompletionResponse, DiagnosticSeverity, Hover,
-    HoverContents, HoverParams, MarkedString, PublishDiagnosticsParams, Url,
+    notification, request, CompletionItem, CompletionItemKind, CompletionParams,
+    CompletionResponse, DiagnosticSeverity, Hover, HoverContents, HoverParams, MarkedString,
+    PublishDiagnosticsParams, Url,
 };
 use async_lsp::panic::CatchUnwindLayer;
 use async_lsp::router::Router;
@@ -26,7 +27,8 @@ use crate::check::state::CheckState;
 use crate::check::{check_file, check_project, resolve_project};
 use crate::db::err::Diagnostic;
 use crate::db::input::{Db, SourceDatabase};
-use crate::parser::parse_file;
+use crate::item::common::type_::ContainsOffset as _;
+use crate::parser::{parse_file, ExpectedKeyword};
 use crate::range::{position_to_offset, span_to_range_str};
 use crate::resolve::resolve_vfs;
 
@@ -128,9 +130,8 @@ pub async fn main_loop() {
                 ControlFlow::Continue(())
             })
             .notification::<notification::DidCloseTextDocument>(|_, _| ControlFlow::Continue(()))
-            .notification::<notification::DidSaveTextDocument>(|st, msg| {
+            .notification::<notification::DidSaveTextDocument>(|st, _| {
                 st.report_diags();
-                info!("Saving 123");
                 ControlFlow::Continue(())
             })
             .event::<TickEvent>(|st, _| {
@@ -204,10 +205,23 @@ fn get_completions(mut db: SourceDatabase, msg: &CompletionParams) -> Option<Com
     let offset = position_to_offset(msg.text_document_position.position, file.text(&db));
     let project = resolve_project(&db, db.vfs.unwrap());
     let ast = parse_file(&db, file);
+    let kw_completions: Vec<ExpectedKeyword> =
+        parse_file::accumulated::<ExpectedKeyword>(&db, file);
+    info!("Found keywords: {kw_completions:#?}");
     let mut state = CheckState::from_file(&db, file, project);
     state.should_error = false;
     let found = ast.at_offset(&db, &mut state, offset);
-    let completions = found?.completions(&mut state, offset);
+    let mut completions = found?.completions(&mut state, offset);
+    info!("Found completions: {kw_completions:#?}");
+    for ExpectedKeyword { kw, span } in &kw_completions {
+        if span.contains_offset(offset) {
+            completions.push(CompletionItem {
+                label: kw.to_string(),
+                kind: Some(CompletionItemKind::KEYWORD),
+                ..Default::default()
+            });
+        }
+    }
     Some(CompletionResponse::Array(completions))
 }
 impl ServerState {

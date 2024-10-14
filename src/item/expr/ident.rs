@@ -104,7 +104,7 @@ impl AstItem for SpannedQualifiedName {
         }
     }
 
-    fn completions(&self, state: &mut CheckState, offset: usize) -> Vec<CompletionItem> {
+    fn completions(&self, state: &mut CheckState, _: usize) -> Vec<CompletionItem> {
         let mut completions = vec![];
         if self.len() == 1 {
             for (name, var) in state.get_variables() {
