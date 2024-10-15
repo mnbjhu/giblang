@@ -55,6 +55,7 @@ impl IntoWithDb<Diagnostic> for UnboundTypeVar {
             span: self.span,
             level: Level::Error,
             path: self.file.path(db),
+            file: self.file,
         }
     }
 }

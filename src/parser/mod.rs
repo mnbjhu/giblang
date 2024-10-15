@@ -133,6 +133,7 @@ pub fn parse_file<'db>(db: &'db dyn Db, file: SourceFile) -> Ast<'db> {
             span: *error.span(),
             level: Level::Error,
             path: file.path(db),
+            file,
         }
         .accumulate(db);
     }
@@ -157,6 +158,7 @@ pub fn parse_file<'db>(db: &'db dyn Db, file: SourceFile) -> Ast<'db> {
                 span: *error.span(),
                 level: Level::Error,
                 path: file.path(db),
+                file,
             }
             .accumulate(db);
         }

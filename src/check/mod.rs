@@ -3,10 +3,13 @@ use std::collections::HashMap;
 use salsa::Update;
 
 use crate::{
-    db::input::{Db, SourceFile, Vfs, VfsInner},
+    db::{
+        input::{Db, SourceFile, Vfs, VfsInner},
+        modules::ModulePath,
+    },
     parser::parse_file,
-    project::Project,
-    resolve::resolve_vfs,
+    project::{ImplDecl, Project},
+    resolve::{resolve_impls_vfs, resolve_vfs},
     ty::Ty,
     util::Span,
 };
@@ -42,8 +45,20 @@ pub struct SemanticToken {
 #[salsa::tracked]
 pub fn resolve_project<'db>(db: &'db dyn Db, vfs: Vfs) -> Project<'db> {
     let decls = resolve_vfs(db, vfs);
-    // TODO: Implement impls
-    let impl_map = HashMap::new();
+    let impls = resolve_impls_vfs(db, vfs);
+    let mut impl_map = HashMap::<ModulePath, Vec<ImplDecl>>::new();
+    for impl_ in impls {
+        let name = if let Ty::Named { name, .. } = impl_.from_ty(db) {
+            name
+        } else {
+            panic!("Impls must be named types")
+        };
+        if let Some(existing) = impl_map.get_mut(&name) {
+            existing.push(impl_);
+        } else {
+            impl_map.insert(name, vec![impl_]);
+        }
+    }
     Project::new(db, decls, impl_map)
 }
 

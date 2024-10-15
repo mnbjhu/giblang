@@ -5,6 +5,8 @@ pub mod lex;
 pub mod module_tree;
 pub mod parse;
 
+use std::path::PathBuf;
+
 use build::build;
 use exports::exports;
 use file_tree::file_tree;
@@ -25,7 +27,7 @@ pub enum Command {
     /// Parses a source file
     Parse {
         /// The path to the source file
-        path: String,
+        path: PathBuf,
     },
 
     /// Parses a source file

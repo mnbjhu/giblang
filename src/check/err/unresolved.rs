@@ -51,6 +51,7 @@ impl IntoWithDb<Diagnostic> for Unresolved {
             span: self.name.1,
             level: Level::Error,
             path: self.file.path(db),
+            file: self.file,
         }
     }
 }

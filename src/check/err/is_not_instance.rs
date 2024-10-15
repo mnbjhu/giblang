@@ -53,6 +53,7 @@ impl IntoWithDb<Diagnostic> for IsNotInstance {
             span: self.span,
             level: Level::Error,
             path: self.file.path(db),
+            file: self.file,
         }
     }
 }

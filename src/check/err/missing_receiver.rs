@@ -58,6 +58,7 @@ impl IntoWithDb<Diagnostic> for MissingReceiver {
             span: self.span,
             level: Level::Error,
             path: self.file.path(db),
+            file: self.file,
         }
     }
 }

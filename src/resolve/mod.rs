@@ -3,7 +3,8 @@ use crate::{
         input::{Db, SourceFile, Vfs, VfsInner},
         modules::{Module, ModuleData},
     },
-    parser::parse_file,
+    parser::{parse_file, top::Top},
+    project::ImplDecl,
 };
 use tracing::info;
 
@@ -37,6 +38,28 @@ pub fn resolve_file<'db>(db: &'db dyn Db, file: SourceFile) -> Module<'db> {
 }
 
 #[salsa::tracked]
+pub fn resolve_impls<'db>(db: &'db dyn Db, file: SourceFile) -> Vec<ImplDecl<'db>> {
+    let mut state = ResolveState::from_file(db, file);
+    let ast = parse_file(db, file);
+    ast.tops(db)
+        .iter()
+        .filter_map(|item| {
+            if let Top::Use(u) = &item.0 {
+                state.import(u);
+            }
+            if let Top::Impl(impl_) = &item.0 {
+                state.enter_scope();
+                let impl_ = impl_.resolve(&mut state);
+                state.exit_scope();
+                Some(impl_)
+            } else {
+                None
+            }
+        })
+        .collect()
+}
+
+#[salsa::tracked]
 pub fn resolve_vfs<'db>(db: &'db dyn Db, vfs: Vfs) -> Module<'db> {
     info!("Resolving VFS {}", vfs.name(db));
     match vfs.inner(db) {
@@ -48,6 +71,21 @@ pub fn resolve_vfs<'db>(db: &'db dyn Db, vfs: Vfs) -> Module<'db> {
                 modules.push(module);
             }
             Module::new(db, vfs.name(db), ModuleData::Package(modules))
+        }
+    }
+}
+
+#[salsa::tracked]
+pub fn resolve_impls_vfs<'db>(db: &'db dyn Db, vfs: Vfs) -> Vec<ImplDecl<'db>> {
+    match vfs.inner(db) {
+        VfsInner::File(file) => resolve_impls(db, *file),
+        VfsInner::Dir(files) => {
+            let mut impls = Vec::new();
+            for file in files {
+                let file_impls = resolve_impls_vfs(db, *file);
+                impls.extend(file_impls);
+            }
+            impls
         }
     }
 }
