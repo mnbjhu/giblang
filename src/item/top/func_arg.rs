@@ -26,12 +26,7 @@ impl AstItem for FunctionArg {
         self.ty.0.tokens(state, tokens);
     }
 
-    fn hover<'db>(
-        &self,
-        state: &mut CheckState,
-        _: usize,
-        type_vars: &HashMap<u32, Ty<'db>>,
-    ) -> Option<String> {
+    fn hover(&self, state: &mut CheckState, _: usize, _: &HashMap<u32, Ty<'_>>) -> Option<String> {
         let ty = self.ty.0.check(state);
         Some(format!("{}: {}", self.name.0, ty.get_name(state)))
     }

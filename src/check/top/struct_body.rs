@@ -13,7 +13,7 @@ impl StructBody {
                 }
             }
             StructBody::Fields(fields) => {
-                for (StructField { name, ty }, _) in fields {
+                for (StructField { ty, .. }, _) in fields {
                     ty.0.check(state);
                 }
             }

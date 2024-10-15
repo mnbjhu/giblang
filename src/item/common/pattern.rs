@@ -72,7 +72,7 @@ impl AstItem for Pattern {
     fn hover<'db>(
         &self,
         state: &mut CheckState<'_, 'db>,
-        offset: usize,
+        _: usize,
         type_vars: &std::collections::HashMap<u32, crate::ty::Ty<'db>>,
     ) -> Option<String> {
         if let Pattern::Name(name) = self {

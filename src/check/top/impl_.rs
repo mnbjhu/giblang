@@ -1,4 +1,4 @@
-use crate::{check::state::CheckState, parser::top::impl_::Impl, ty::Ty};
+use crate::{check::state::CheckState, parser::top::impl_::Impl};
 
 impl<'db> Impl {
     pub fn check(&'db self, state: &mut CheckState<'_, 'db>) {

@@ -5,7 +5,7 @@ use crate::{
         err::{Diagnostic, Level},
         input::{Db, SourceFile},
     },
-    util::{FromWithDb, Span},
+    util::Span,
 };
 
 use super::IntoWithDb;
@@ -47,17 +47,6 @@ impl UnexpectedArgs {
             "Expected {} arguments but found {}",
             self.expected, self.found,
         )
-    }
-}
-
-impl FromWithDb<UnexpectedArgs> for Diagnostic {
-    fn from_with_db(db: &dyn Db, err: UnexpectedArgs) -> Self {
-        Self {
-            message: err.message(),
-            span: err.span,
-            level: Level::Error,
-            path: err.file.path(db),
-        }
     }
 }
 

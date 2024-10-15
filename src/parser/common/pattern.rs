@@ -8,7 +8,7 @@ use crate::{
 };
 
 use super::{
-    ident::{ident_parser, spanned_ident_parser},
+    ident::spanned_ident_parser,
     optional_newline::optional_newline,
 };
 

@@ -8,7 +8,7 @@ pub fn lex(path: &str) {
     let source = std::fs::read_to_string(path).unwrap();
     let (tokens, errors) = lexer().parse(&source).into_output_errors();
     for error in errors {
-        let report = build_lex_report("input", error);
+        let report = build_lex_report("input", &error);
         report
             .print(("input", Source::from(&source)))
             .expect("failed to print report");
@@ -31,8 +31,7 @@ pub fn lex(path: &str) {
             let span: Range<usize> = span.into();
             if span.start > cursor {
                 let s = &source[cursor..span.start];
-                print!("{}", s);
-                cursor = span.start;
+                print!("{s}");
             }
             let s = &source[span.clone()];
             let color = match token {
@@ -60,7 +59,7 @@ pub fn lex(path: &str) {
 
 pub fn build_lex_report<'a>(
     filename: &'a str,
-    from: Rich<'a, char>,
+    from: &Rich<'a, char>,
 ) -> ariadne::Report<'a, (&'a str, std::ops::Range<usize>)> {
     let error = Color::Fixed(1);
     Report::build(ReportKind::Error, filename, from.span().start)

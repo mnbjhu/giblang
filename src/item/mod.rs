@@ -16,25 +16,25 @@ pub mod stmt;
 pub mod top;
 
 pub trait AstItem: Debug {
-    fn at_offset<'me>(&'me self, state: &mut CheckState, offset: usize) -> &'me dyn AstItem
+    fn at_offset<'me>(&'me self, _state: &mut CheckState, _offset: usize) -> &'me dyn AstItem
     where
         Self: Sized,
     {
         todo!()
     }
 
-    fn tokens(&self, state: &mut CheckState, tokens: &mut Vec<SemanticToken>) {}
+    fn tokens(&self, _state: &mut CheckState, _tokens: &mut Vec<SemanticToken>) {}
 
     fn hover<'db>(
         &self,
-        state: &mut CheckState<'_, 'db>,
-        offset: usize,
-        type_vars: &HashMap<u32, Ty<'db>>,
+        _state: &mut CheckState<'_, 'db>,
+        _offset: usize,
+        _type_vars: &HashMap<u32, Ty<'db>>,
     ) -> Option<String> {
         None
     }
 
-    fn completions(&self, state: &mut CheckState, offset: usize) -> Vec<CompletionItem> {
+    fn completions(&self, _state: &mut CheckState, _offset: usize) -> Vec<CompletionItem> {
         vec![]
     }
 }

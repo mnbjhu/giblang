@@ -1,10 +1,6 @@
 use chumsky::span::SimpleSpan;
 
-use crate::{db::input::Db, lexer::token::Token};
-
-pub trait FromWithDb<T> {
-    fn from_with_db(db: &dyn Db, t: T) -> Self;
-}
+use crate::lexer::token::Token;
 
 pub type Span = SimpleSpan;
 

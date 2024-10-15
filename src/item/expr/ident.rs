@@ -92,7 +92,8 @@ impl AstItem for SpannedQualifiedName {
         if index < 0 {
             return None;
         }
-        let path = &self[..=(found as usize)];
+        #[allow(clippy::cast_sign_loss)]
+        let path = &self[..=found as usize];
         let mod_ = state.get_module_with_error(path);
         if let Some(mod_) = mod_ {
             match mod_.content(state.db) {

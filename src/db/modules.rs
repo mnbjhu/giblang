@@ -137,7 +137,6 @@ impl<'db> Module<'db> {
             Some(self)
         } else if let Some(found) = self.get(state.db, path[0].0.to_string()) {
             current.push(path[0].0.to_string());
-            let id = ModulePath::new(state.db, current.clone());
             found.get_path_with_state_inner(state, &path[1..], file, current, should_error)
         } else {
             if should_error {

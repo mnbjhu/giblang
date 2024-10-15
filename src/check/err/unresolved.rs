@@ -5,7 +5,7 @@ use crate::{
         err::{Diagnostic, Level},
         input::{Db, SourceFile},
     },
-    util::{FromWithDb, Spanned},
+    util::Spanned,
 };
 
 use super::IntoWithDb;
@@ -41,17 +41,6 @@ impl Unresolved {
 
     pub fn message(&self) -> String {
         format!("Unresolved name `{}`", self.name.0)
-    }
-}
-
-impl FromWithDb<Unresolved> for Diagnostic {
-    fn from_with_db(db: &dyn Db, err: Unresolved) -> Self {
-        Self {
-            message: err.message(),
-            span: err.name.1,
-            level: Level::Error,
-            path: err.file.path(db),
-        }
     }
 }
 

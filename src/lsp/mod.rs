@@ -1,17 +1,17 @@
 mod capabilities;
+mod diagnostics;
 mod semantic_tokens;
 
-use std::collections::HashMap;
+use std::future::Future;
 use std::ops::ControlFlow;
 use std::time::Duration;
-use std::vec;
 
 use async_lsp::client_monitor::ClientProcessMonitorLayer;
 use async_lsp::concurrency::ConcurrencyLayer;
 use async_lsp::lsp_types::{
     notification, request, CompletionItem, CompletionItemKind, CompletionParams,
-    CompletionResponse, DiagnosticSeverity, Hover, HoverContents, HoverParams, MarkedString,
-    PublishDiagnosticsParams, Url,
+    CompletionResponse, DidChangeTextDocumentParams, DidOpenTextDocumentParams, Hover,
+    HoverContents, HoverParams, MarkedString,
 };
 use async_lsp::panic::CatchUnwindLayer;
 use async_lsp::router::Router;
@@ -24,12 +24,11 @@ use tower::ServiceBuilder;
 use tracing::{info, Level};
 
 use crate::check::state::CheckState;
-use crate::check::{check_file, check_project, resolve_project};
-use crate::db::err::Diagnostic;
+use crate::check::{check_file, resolve_project};
 use crate::db::input::{Db, SourceDatabase};
 use crate::item::common::type_::ContainsOffset as _;
 use crate::parser::{parse_file, ExpectedKeyword};
-use crate::range::{position_to_offset, span_to_range_str};
+use crate::range::position_to_offset;
 use crate::resolve::resolve_vfs;
 
 struct ServerState {
@@ -62,28 +61,8 @@ pub async fn main_loop() {
             db,
         });
         router
-            .request::<request::Initialize, _>(|st, params| {
-                let root = params.root_path.clone().unwrap();
-                st.db.init(root);
-                async move {
-                    eprintln!("Initialize with {params:?}");
-                    Ok(capabilities::capabilities())
-                }
-            })
-            .request::<request::SemanticTokensFullRequest, _>(|st, msg| {
-                let mut db = st.db.clone();
-                async move {
-                    let file = db.input(&msg.text_document.uri.to_file_path().unwrap());
-                    let project = resolve_project(&db, db.vfs.unwrap());
-                    let file_data = parse_file(&db, file);
-                    let mut state = CheckState::from_file(&db, file, project);
-                    state.should_error = false;
-                    let names = file_data.semantic_tokens(&db, &mut state);
-                    Ok(Some(async_lsp::lsp_types::SemanticTokensResult::Tokens(
-                        get_semantic_tokens(names, file.text(&db)).unwrap_or_default(),
-                    )))
-                }
-            })
+            .request::<request::Initialize, _>(initialize)
+            .request::<request::SemanticTokensFullRequest, _>(semantic_tokens_full)
             .request::<request::HoverRequest, _>(|st, msg| {
                 let db = st.db.clone();
                 async move { Ok(get_hover(db, &msg)) }
@@ -92,43 +71,10 @@ pub async fn main_loop() {
                 let db = st.db.clone();
                 async move { Ok(get_completions(db, &msg)) }
             })
-            // .request::<request::GotoDefinition, _>(|_, _| async move {
-            //     unimplemented!("Not yet implemented!")
-            // })
-            // .request::<request::DocumentSymbolRequest, _>(|st, _| {
-            //     let file = st.file.unwrap();
-            //     let db = st.db.clone();
-            //     let client = st.client.clone();
-            //     async move {
-            //         let ast = parse_file(&db, file);
-            //         let response = crate::parser::document_symbols(&db, file, ast);
-            //         client
-            //             .notify::<notification::ShowMessage>(ShowMessageParams {
-            //                 typ: MessageType::INFO,
-            //                 message: format!("{response:#?}"),
-            //             })
-            //             .unwrap();
-            //         Ok(Some(response))
-            //     }
-            // })
             .notification::<notification::Initialized>(|_, _| ControlFlow::Continue(()))
             .notification::<notification::DidChangeConfiguration>(|_, _| ControlFlow::Continue(()))
-            .notification::<notification::DidOpenTextDocument>(|st, msg| {
-                let path = msg.text_document.uri.clone().to_file_path().unwrap();
-                st.db.input(&path);
-                let vfs = st.db.vfs.unwrap();
-                resolve_vfs(&st.db, vfs);
-                st.report_diags();
-                ControlFlow::Continue(())
-            })
-            .notification::<notification::DidChangeTextDocument>(|st, msg| {
-                let path = msg.text_document.uri.clone().to_file_path().unwrap();
-                let file = st.db.input(&path);
-                file.set_text(st.db.as_dyn_database_mut())
-                    .to(msg.content_changes[0].text.clone());
-                st.report_diags();
-                ControlFlow::Continue(())
-            })
+            .notification::<notification::DidOpenTextDocument>(did_open)
+            .notification::<notification::DidChangeTextDocument>(did_change)
             .notification::<notification::DidCloseTextDocument>(|_, _| ControlFlow::Continue(()))
             .notification::<notification::DidSaveTextDocument>(|st, _| {
                 st.report_diags();
@@ -168,6 +114,65 @@ pub async fn main_loop() {
     );
 
     server.run_buffered(stdin, stdout).await.unwrap();
+}
+#[allow(clippy::needless_pass_by_value)]
+fn did_change(
+    st: &mut ServerState,
+    msg: DidChangeTextDocumentParams,
+) -> ControlFlow<Result<(), async_lsp::Error>> {
+    let path = msg.text_document.uri.clone().to_file_path().unwrap();
+    let file = st.db.input(&path);
+    file.set_text(st.db.as_dyn_database_mut())
+        .to(msg.content_changes[0].text.clone());
+    st.report_diags();
+    ControlFlow::Continue(())
+}
+
+#[allow(clippy::needless_pass_by_value)]
+fn did_open(
+    st: &mut ServerState,
+    msg: DidOpenTextDocumentParams,
+) -> ControlFlow<Result<(), async_lsp::Error>> {
+    let path = msg.text_document.uri.clone().to_file_path().unwrap();
+    st.db.input(&path);
+    let vfs = st.db.vfs.unwrap();
+    resolve_vfs(&st.db, vfs);
+    st.report_diags();
+    ControlFlow::Continue(())
+}
+
+fn semantic_tokens_full(
+    st: &mut ServerState,
+    msg: async_lsp::lsp_types::SemanticTokensParams,
+) -> impl Future<
+    Output = Result<Option<async_lsp::lsp_types::SemanticTokensResult>, async_lsp::ResponseError>,
+> {
+    let mut db = st.db.clone();
+    async move {
+        let file = db.input(&msg.text_document.uri.to_file_path().unwrap());
+        let project = resolve_project(&db, db.vfs.unwrap());
+        let file_data = parse_file(&db, file);
+        let mut state = CheckState::from_file(&db, file, project);
+        state.should_error = false;
+        let names = file_data.semantic_tokens(&db, &mut state);
+        Ok(Some(async_lsp::lsp_types::SemanticTokensResult::Tokens(
+            get_semantic_tokens(names, file.text(&db)).unwrap_or_default(),
+        )))
+    }
+}
+
+fn initialize(
+    st: &mut ServerState,
+    params: async_lsp::lsp_types::InitializeParams,
+) -> impl Future<Output = Result<async_lsp::lsp_types::InitializeResult, async_lsp::ResponseError>>
+{
+    #[allow(deprecated)]
+    let root = params.root_path.clone().unwrap();
+    st.db.init(root);
+    async move {
+        eprintln!("Initialize with {params:?}");
+        Ok(capabilities::capabilities())
+    }
 }
 
 fn get_hover(mut db: SourceDatabase, msg: &HoverParams) -> Option<Hover> {
@@ -223,52 +228,4 @@ fn get_completions(mut db: SourceDatabase, msg: &CompletionParams) -> Option<Com
         }
     }
     Some(CompletionResponse::Array(completions))
-}
-impl ServerState {
-    fn report_diags(&mut self) {
-        let project = self.db.vfs.unwrap();
-        let diags = check_project::accumulated::<Diagnostic>(&self.db, project);
-        let mut project_diags = HashMap::<_, Vec<_>>::new();
-        for path in project.paths(&self.db) {
-            project_diags.insert(path.clone(), vec![]);
-        }
-        for diag in &diags {
-            if let Some(existing) = project_diags.get_mut(&diag.path) {
-                existing.push(diag.clone());
-            } else {
-                project_diags.insert(diag.path.clone(), vec![diag.clone()]);
-            }
-        }
-        for (path, diags) in &project_diags {
-            let file = self.db.input(path);
-            let text = file.text(&self.db);
-            let mut found = vec![];
-            for diag in diags {
-                let range = span_to_range_str(diag.span.into(), text);
-                found.push(async_lsp::lsp_types::Diagnostic {
-                    range,
-                    severity: Some(DiagnosticSeverity::ERROR),
-                    code: None,
-                    code_description: None,
-                    source: None,
-                    message: diag.message.clone(),
-                    related_information: None,
-                    tags: None,
-                    data: None,
-                });
-            }
-            info!(
-                "Reporting diagnostics for {path}: {found:#?}",
-                path = path.display(),
-                found = found
-            );
-            self.client
-                .notify::<notification::PublishDiagnostics>(PublishDiagnosticsParams {
-                    uri: Url::parse(format!("file://{}", path.display()).as_str()).unwrap(),
-                    diagnostics: found,
-                    version: None,
-                })
-                .unwrap();
-        }
-    }
 }

@@ -5,7 +5,7 @@ use crate::{
         err::{Diagnostic, Level},
         input::{Db, SourceFile},
     },
-    util::{FromWithDb, Span},
+    util::Span,
 };
 
 use super::IntoWithDb;
@@ -37,17 +37,6 @@ impl Simple {
 
         let report = builder.finish();
         report.print((name, source)).unwrap();
-    }
-}
-
-impl FromWithDb<Simple> for Diagnostic {
-    fn from_with_db(db: &dyn Db, err: Simple) -> Self {
-        Self {
-            message: err.message,
-            span: err.span,
-            level: Level::Error,
-            path: err.file.path(db),
-        }
     }
 }
 

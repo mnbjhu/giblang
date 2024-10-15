@@ -68,12 +68,7 @@ impl AstItem for Func {
         }
     }
 
-    fn hover<'db>(
-        &self,
-        state: &mut CheckState,
-        _: usize,
-        type_vars: &HashMap<u32, Ty<'db>>,
-    ) -> Option<String> {
+    fn hover(&self, _: &mut CheckState, _: usize, _: &HashMap<u32, Ty<'_>>) -> Option<String> {
         Some(format!("Function {}", self.name.0))
     }
 }

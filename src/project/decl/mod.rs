@@ -1,4 +1,4 @@
-use salsa::{Database, Update};
+use salsa::Update;
 
 use crate::{
     check::{state::CheckState, TokenKind},
@@ -27,12 +27,11 @@ pub struct Decl<'db> {
 impl<'db> Decl<'db> {
     pub fn get_kind(&self, db: &'db dyn Db) -> TokenKind {
         match &self.kind(db) {
-            DeclKind::Struct { .. } => TokenKind::Struct,
             DeclKind::Trait { .. } => TokenKind::Trait,
             DeclKind::Enum { .. } => TokenKind::Enum,
             DeclKind::Function { .. } => TokenKind::Func,
             DeclKind::Member { .. } => TokenKind::Member,
-            DeclKind::Prim(_) => TokenKind::Struct,
+            DeclKind::Prim(_) | DeclKind::Struct { .. } => TokenKind::Struct,
         }
     }
 }

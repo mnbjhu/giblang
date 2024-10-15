@@ -1,11 +1,9 @@
-use crate::{item::AstItem, lexer::literal::Literal};
+use std::collections::HashMap;
+
+use crate::{check::state::CheckState, item::AstItem, lexer::literal::Literal};
 
 impl AstItem for Literal {
-    fn at_offset<'me>(
-        &'me self,
-        _state: &mut crate::check::state::CheckState,
-        _offset: usize,
-    ) -> &'me dyn AstItem
+    fn at_offset<'me>(&'me self, _state: &mut CheckState, _offset: usize) -> &'me dyn AstItem
     where
         Self: Sized,
     {
@@ -14,9 +12,9 @@ impl AstItem for Literal {
 
     fn hover<'db>(
         &self,
-        state: &mut crate::check::state::CheckState<'_, 'db>,
-        offset: usize,
-        type_vars: &std::collections::HashMap<u32, crate::ty::Ty<'db>>,
+        _: &mut CheckState<'_, 'db>,
+        _: usize,
+        _: &HashMap<u32, crate::ty::Ty<'db>>,
     ) -> Option<String> {
         let name = match self {
             Literal::Int(_) => "Int",

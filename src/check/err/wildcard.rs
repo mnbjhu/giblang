@@ -5,7 +5,7 @@ use crate::{
         err::{Diagnostic, Level},
         input::{Db, SourceFile},
     },
-    util::{FromWithDb, Span},
+    util::Span,
 };
 
 use super::IntoWithDb;
@@ -36,17 +36,6 @@ impl UnexpectedWildcard {
 
         let report = builder.finish();
         report.print((name, source)).unwrap();
-    }
-}
-
-impl FromWithDb<UnexpectedWildcard> for Diagnostic {
-    fn from_with_db(db: &dyn Db, err: UnexpectedWildcard) -> Self {
-        Self {
-            message: "Unexpected wildcard".to_string(),
-            span: err.span,
-            level: Level::Error,
-            path: err.file.path(db),
-        }
     }
 }
 

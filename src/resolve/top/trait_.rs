@@ -1,5 +1,3 @@
-use chumsky::container::Container;
-
 use crate::{
     db::modules::{Module, ModuleData, ModulePath},
     parser::top::trait_::Trait,

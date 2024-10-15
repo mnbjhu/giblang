@@ -83,6 +83,7 @@ pub struct ExpectedKeyword {
     pub span: Span,
 }
 
+#[must_use]
 pub fn top_recovery<'tokens, 'src: 'tokens>() -> AstParser!(Unit) {
     let braces = nested_delimiters(
         Token::Punct('{'),

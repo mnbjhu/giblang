@@ -1,7 +1,7 @@
 use crate::{
     db::{
-        input::{get_module_path, Db, SourceFile, Vfs, VfsInner},
-        modules::{Module, ModuleData, ModulePath},
+        input::{Db, SourceFile, Vfs, VfsInner},
+        modules::{Module, ModuleData},
     },
     parser::parse_file,
 };

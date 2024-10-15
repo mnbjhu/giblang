@@ -22,7 +22,7 @@ impl Top {
                 state.import(u);
                 None
             }
-            _ => None,
+            Top::Impl(_) => None,
         }
     }
 }

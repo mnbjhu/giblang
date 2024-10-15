@@ -5,7 +5,7 @@ use crate::{
         err::{Diagnostic, Level},
         input::{Db, SourceFile},
     },
-    util::{FromWithDb, Span},
+    util::Span,
 };
 
 use super::IntoWithDb;
@@ -48,17 +48,6 @@ impl MissingReceiver {
             "Expected function to have a receiver of type {} but found no receiver",
             self.expected,
         )
-    }
-}
-
-impl FromWithDb<MissingReceiver> for Diagnostic {
-    fn from_with_db(db: &dyn Db, t: MissingReceiver) -> Self {
-        Self {
-            message: t.message(),
-            span: t.span,
-            level: Level::Error,
-            path: t.file.path(db),
-        }
     }
 }
 

@@ -5,7 +5,7 @@ use crate::{
         err::{Diagnostic, Level},
         input::{Db, SourceFile},
     },
-    util::{FromWithDb, Span},
+    util::Span,
 };
 
 use super::IntoWithDb;
@@ -45,17 +45,6 @@ impl UnboundTypeVar {
             "Cannot imply type for type generic parameter '{}'",
             self.name
         )
-    }
-}
-
-impl FromWithDb<UnboundTypeVar> for Diagnostic {
-    fn from_with_db(db: &dyn Db, err: UnboundTypeVar) -> Self {
-        Self {
-            message: err.message(),
-            span: err.span,
-            level: Level::Error,
-            path: err.file.path(db),
-        }
     }
 }
 

@@ -1,4 +1,4 @@
-use std::{collections::HashMap, hash::Hash};
+use std::collections::HashMap;
 
 use crate::{
     check::{state::CheckState, SemanticToken, TokenKind},
@@ -18,12 +18,7 @@ impl AstItem for Enum {
         self
     }
 
-    fn hover<'db>(
-        &self,
-        state: &mut CheckState,
-        offset: usize,
-        type_vars: &HashMap<u32, Ty<'db>>,
-    ) -> Option<String> {
+    fn hover(&self, _: &mut CheckState, _: usize, _: &HashMap<u32, Ty<'_>>) -> Option<String> {
         Some(format!("Enum {}", self.name.0))
     }
 

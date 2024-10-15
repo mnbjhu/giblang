@@ -5,7 +5,7 @@ use crate::{
         err::{Diagnostic, Level},
         input::{Db, SourceFile},
     },
-    util::{FromWithDb, Span},
+    util::Span,
 };
 
 use super::IntoWithDb;
@@ -43,16 +43,6 @@ impl IsNotInstance {
 
     pub fn message(&self) -> String {
         format!("Expected {} but found {}", self.expected, self.found)
-    }
-}
-impl FromWithDb<IsNotInstance> for Diagnostic {
-    fn from_with_db(db: &dyn Db, err: IsNotInstance) -> Self {
-        Self {
-            message: err.message(),
-            span: err.span,
-            level: Level::Error,
-            path: err.file.path(db),
-        }
     }
 }
 
