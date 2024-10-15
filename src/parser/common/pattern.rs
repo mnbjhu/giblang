@@ -7,10 +7,7 @@ use crate::{
     AstParser,
 };
 
-use super::{
-    ident::spanned_ident_parser,
-    optional_newline::optional_newline,
-};
+use super::{ident::spanned_ident_parser, optional_newline::optional_newline};
 
 #[derive(Clone, PartialEq, Debug, Eq)]
 pub enum Pattern {
