@@ -44,7 +44,7 @@ pub struct SemanticToken {
 
 #[salsa::tracked]
 pub fn resolve_project<'db>(db: &'db dyn Db, vfs: Vfs) -> Project<'db> {
-    let decls = resolve_vfs(db, vfs);
+    let decls = resolve_vfs(db, vfs, ModulePath::new(db, Vec::new()));
     let impls = resolve_impls_vfs(db, vfs);
     let mut impl_map = HashMap::<ModulePath, Vec<ImplDecl>>::new();
     for impl_ in impls {

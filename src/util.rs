@@ -20,10 +20,3 @@ macro_rules! AstParser {
         > + Clone + 'tokens
     };
 }
-trait R {}
-trait P {}
-trait S {}
-
-impl<T: P> R for T {}
-impl<T: S> P for T {}
-impl<T: R> S for T {}

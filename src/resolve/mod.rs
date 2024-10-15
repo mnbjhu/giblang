@@ -1,7 +1,7 @@
 use crate::{
     db::{
         input::{Db, SourceFile, Vfs, VfsInner},
-        modules::{Module, ModuleData},
+        modules::{Module, ModuleData, ModulePath},
     },
     parser::{parse_file, top::Top},
     project::ImplDecl,
@@ -28,13 +28,18 @@ pub fn resolve_file<'db>(db: &'db dyn Db, file: SourceFile) -> Module<'db> {
             state.path.push(found.name(db));
             let name = found.name(db);
             let export = ModuleData::Export(found);
-            let mod_ = Module::new(db, name, export);
+            let mod_ = Module::new(db, name, export, ModulePath::new(db, state.path.clone()));
             state.exit_scope();
             state.path.pop();
             Some(mod_)
         })
         .collect();
-    Module::new(db, file.name(db).to_string(), ModuleData::Package(decls))
+    Module::new(
+        db,
+        file.name(db).to_string(),
+        ModuleData::Package(decls),
+        ModulePath::new(db, state.path.clone()),
+    )
 }
 
 #[salsa::tracked]
@@ -60,17 +65,25 @@ pub fn resolve_impls<'db>(db: &'db dyn Db, file: SourceFile) -> Vec<ImplDecl<'db
 }
 
 #[salsa::tracked]
-pub fn resolve_vfs<'db>(db: &'db dyn Db, vfs: Vfs) -> Module<'db> {
+pub fn resolve_vfs<'db>(db: &'db dyn Db, vfs: Vfs, path: ModulePath<'db>) -> Module<'db> {
     info!("Resolving VFS {}", vfs.name(db));
     match vfs.inner(db) {
         VfsInner::File(file) => resolve_file(db, *file),
         VfsInner::Dir(files) => {
             let mut modules = Vec::new();
+            let mut path = path.name(db).clone();
             for file in files {
-                let module = resolve_vfs(db, *file);
+                path.push(file.name(db));
+                let module = resolve_vfs(db, *file, ModulePath::new(db, path.clone()));
+                path.pop();
                 modules.push(module);
             }
-            Module::new(db, vfs.name(db), ModuleData::Package(modules))
+            Module::new(
+                db,
+                vfs.name(db),
+                ModuleData::Package(modules),
+                ModulePath::new(db, path),
+            )
         }
     }
 }

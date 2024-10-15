@@ -1,6 +1,10 @@
+use async_lsp::lsp_types::DocumentSymbol;
+
 use crate::{
     check::{state::CheckState, SemanticToken},
+    db::input::{Db, SourceFile},
     parser::top::Top,
+    util::Span,
 };
 
 use super::AstItem;
@@ -46,5 +50,24 @@ impl AstItem for Top {
             }
         }
         state.exit_scope();
+    }
+}
+
+impl Top {
+    pub fn document_symbol(&self, state: &mut CheckState, span: Span) -> Option<DocumentSymbol> {
+        state.enter_scope();
+        let found = match self {
+            Top::Func(f) => Some(f.document_symbol(state, span)),
+            Top::Struct(s) => Some(s.document_symbol(state, span)),
+            Top::Enum(e) => Some(e.document_symbol(state, span)),
+            Top::Trait(t) => Some(t.document_symbol(state, span)),
+            Top::Impl(i) => Some(i.document_symbol(state, span)),
+            Top::Use(u) => {
+                state.import(u);
+                None
+            }
+        };
+        state.exit_scope();
+        found
     }
 }

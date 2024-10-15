@@ -14,14 +14,15 @@ enum MyEnum {
 }
 
 fn Int.to_string(): String {
+  "TODO"
 }
 
-fn enum_test() {
+fn enum_test(): String {
   let my_enum = MyEnum::Second(123)
+
   match my_enum {
     MyEnum::First => "Hello",
     MyEnum::Second(x) => x.to_string(),
     MyEnum::Third { something, my_num } => something,
   }
-  println("Hello")
 }

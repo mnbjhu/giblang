@@ -1,7 +1,10 @@
+use std::collections::HashMap;
+
 use crate::{
     check::{state::CheckState, SemanticToken, TokenKind},
     item::{common::type_::ContainsOffset, AstItem},
     parser::top::struct_field::StructField,
+    ty::Ty,
 };
 
 impl AstItem for StructField {
@@ -25,5 +28,19 @@ impl AstItem for StructField {
             kind: TokenKind::Property,
         });
         self.ty.0.tokens(state, tokens);
+    }
+
+    fn hover<'db>(
+        &self,
+        state: &mut CheckState<'_, 'db>,
+        _: usize,
+        type_vars: &HashMap<u32, Ty<'db>>,
+    ) -> Option<String> {
+        let ty = self.ty.0.check(state);
+        Some(format!(
+            "{}: {}",
+            self.name.0,
+            ty.get_name_with_types(state, type_vars)
+        ))
     }
 }

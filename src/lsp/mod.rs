@@ -1,5 +1,6 @@
 mod capabilities;
 mod diagnostics;
+mod document_symbols;
 mod semantic_tokens;
 
 use std::future::Future;
@@ -71,6 +72,7 @@ pub async fn main_loop() {
                 let db = st.db.clone();
                 async move { Ok(get_completions(db, &msg)) }
             })
+            .request::<request::DocumentSymbolRequest, _>(document_symbols::get_document_symbols)
             .notification::<notification::Initialized>(|_, _| ControlFlow::Continue(()))
             .notification::<notification::DidChangeConfiguration>(|_, _| ControlFlow::Continue(()))
             .notification::<notification::DidOpenTextDocument>(did_open)
@@ -135,8 +137,6 @@ fn did_open(
 ) -> ControlFlow<Result<(), async_lsp::Error>> {
     let path = msg.text_document.uri.clone().to_file_path().unwrap();
     st.db.input(&path);
-    let vfs = st.db.vfs.unwrap();
-    resolve_vfs(&st.db, vfs);
     st.report_diags();
     ControlFlow::Continue(())
 }

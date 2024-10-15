@@ -1,7 +1,11 @@
+use async_lsp::lsp_types::{DocumentSymbol, SymbolKind};
+
 use crate::{
     check::{state::CheckState, SemanticToken, TokenKind},
     item::{common::type_::ContainsOffset, AstItem},
-    parser::top::enum_member::EnumMember,
+    parser::top::{enum_member::EnumMember, struct_::Struct},
+    range::span_to_range_str,
+    util::Span,
 };
 
 impl AstItem for EnumMember {
@@ -26,5 +30,22 @@ impl AstItem for EnumMember {
             kind: TokenKind::Member,
         });
         self.body.0.tokens(state, tokens);
+    }
+}
+impl EnumMember {
+    pub fn document_symbol(&self, state: &mut CheckState, span: Span) -> DocumentSymbol {
+        let txt = state.file_data.text(state.db);
+        let range = span_to_range_str(span.into(), txt);
+        let selection_range = span_to_range_str(self.name.1.into(), txt);
+        DocumentSymbol {
+            name: self.name.0.clone(),
+            detail: Some("member".to_string()),
+            kind: SymbolKind::ENUM_MEMBER,
+            range,
+            selection_range,
+            children: Some(self.body.0.document_symbols(state)),
+            tags: None,
+            deprecated: None,
+        }
     }
 }

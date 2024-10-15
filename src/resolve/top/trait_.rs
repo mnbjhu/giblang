@@ -25,12 +25,15 @@ impl Trait {
         for func in &self.body {
             state.path.push(func.0.name.0.clone());
             state.enter_scope();
+            state.path.push(func.0.name.0.clone());
             let decl = func.0.resolve(state);
             body.push(Module::new(
                 state.db,
                 decl.name(state.db),
                 ModuleData::Export(decl),
+                ModulePath::new(state.db, state.path.clone()),
             ));
+            state.path.pop();
             state.exit_scope();
         }
         let kind = DeclKind::Trait { generics, body };

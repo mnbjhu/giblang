@@ -1,10 +1,10 @@
 use crate::{
+    check::resolve_project,
     db::{
         input::{Db, SourceDatabase},
         modules::{Module, ModuleData},
     },
     project::decl::DeclKind,
-    resolve::resolve_vfs,
 };
 
 pub fn module_tree() {
@@ -15,8 +15,8 @@ pub fn module_tree() {
         .to_string();
     let mut db = SourceDatabase::default();
     db.init(pwd);
-    let module = resolve_vfs(&db, db.vfs.unwrap());
-    module.tree(&db, 0);
+    let project = resolve_project(&db, db.vfs.unwrap());
+    project.decls(&db).tree(&db, 0);
 }
 
 impl<'db> Module<'db> {

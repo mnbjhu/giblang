@@ -9,7 +9,10 @@ use std::print
 use std::Option
 use std::Result
 
-fn simple[T](thing: T, some: String): Option[T]{ }
+fn simple[T](thing: T, some: String): Option[T]{
+  let res = Option::None
+  res
+}
 
 struct Box[T](T)
 

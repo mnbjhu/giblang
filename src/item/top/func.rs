@@ -1,10 +1,14 @@
 use std::collections::HashMap;
 
+use async_lsp::lsp_types::{DocumentSymbol, SymbolKind};
+
 use crate::{
     check::{state::CheckState, SemanticToken, TokenKind},
     item::{common::type_::ContainsOffset, AstItem},
     parser::top::func::Func,
+    range::span_to_range_str,
     ty::Ty,
+    util::Span,
 };
 
 impl AstItem for Func {
@@ -70,5 +74,24 @@ impl AstItem for Func {
 
     fn hover(&self, _: &mut CheckState, _: usize, _: &HashMap<u32, Ty<'_>>) -> Option<String> {
         Some(format!("Function {}", self.name.0))
+    }
+}
+
+impl Func {
+    pub fn document_symbol(&self, state: &mut CheckState, span: Span) -> DocumentSymbol {
+        let txt = state.file_data.text(state.db);
+        let range = span_to_range_str(span.into(), txt);
+        let selection_range = span_to_range_str(self.name.1.into(), txt);
+        self.generics.0.check(state);
+        DocumentSymbol {
+            name: self.name.0.clone(),
+            detail: Some("function".to_string()),
+            kind: SymbolKind::FUNCTION,
+            range,
+            selection_range,
+            children: None,
+            tags: None,
+            deprecated: None,
+        }
     }
 }

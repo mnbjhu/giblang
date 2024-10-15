@@ -1,6 +1,11 @@
+use async_lsp::lsp_types::{DocumentSymbol, SymbolKind};
+
 use crate::{
+    check::state::CheckState,
     item::{common::type_::ContainsOffset, AstItem},
     parser::top::impl_::Impl,
+    range::span_to_range_str,
+    util::Span,
 };
 
 impl AstItem for Impl {
@@ -43,5 +48,31 @@ impl AstItem for Impl {
             }
         }
         self
+    }
+}
+
+impl Impl {
+    pub fn document_symbol(&self, state: &mut CheckState, span: Span) -> DocumentSymbol {
+        let txt = state.file_data.text(state.db);
+        let range = span_to_range_str(span.into(), txt);
+        let selection_range = span_to_range_str(self.for_.1.into(), txt);
+        let mut symbols = Vec::new();
+        self.generics.0.check(state);
+        let trait_ = self.trait_.0.check(state).get_name(state);
+        let for_ = self.for_.0.check(state).get_name(state);
+        let name = format!("impl {} for {}", trait_, for_);
+        for (func, span) in &self.body {
+            symbols.push(func.document_symbol(state, *span));
+        }
+        DocumentSymbol {
+            name,
+            detail: None,
+            kind: SymbolKind::CLASS,
+            range,
+            selection_range,
+            children: Some(symbols),
+            tags: None,
+            deprecated: None,
+        }
     }
 }

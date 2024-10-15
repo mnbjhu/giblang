@@ -20,6 +20,8 @@ pub struct Module<'db> {
 
     #[return_ref]
     pub content: ModuleData<'db>,
+
+    pub path: ModulePath<'db>,
 }
 
 #[derive(Update, Clone, Debug)]

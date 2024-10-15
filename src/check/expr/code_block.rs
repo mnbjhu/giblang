@@ -18,6 +18,7 @@ pub fn check_code_block_is<'db>(
 ) {
     if block.is_empty() {
         Ty::unit().expect_is_instance_of(expected, state, false, span);
+        return;
     }
     state.enter_scope();
     for (stmt, _) in &block[0..block.len() - 1] {

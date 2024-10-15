@@ -12,4 +12,5 @@ fn test2() {
   123
 }
 
-struct Test
+struct Test {
+}

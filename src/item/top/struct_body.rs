@@ -1,7 +1,12 @@
+use async_lsp::lsp_types::DocumentSymbol;
+
 use crate::{
     check::{state::CheckState, SemanticToken},
+    db::input::{Db, SourceFile},
     item::{common::type_::ContainsOffset, AstItem},
     parser::top::struct_body::StructBody,
+    range::span_to_range_str,
+    util::{Span, Spanned},
 };
 
 impl AstItem for StructBody {
@@ -48,5 +53,52 @@ impl AstItem for StructBody {
                 }
             }
         }
+    }
+}
+
+impl StructBody {
+    pub fn document_symbols(&self, state: &mut CheckState) -> Vec<DocumentSymbol> {
+        let txt = state.file_data.text(state.db);
+        let mut symbols = Vec::new();
+        match self {
+            StructBody::None => {}
+            StructBody::Tuple(fields) => {
+                for (field, span) in fields {
+                    let range = span_to_range_str((*span).into(), txt);
+                    let selection_range = span_to_range_str((*span).into(), txt);
+                    let field = field.check(state).get_name(state);
+                    symbols.push(DocumentSymbol {
+                        name: field,
+                        detail: None,
+                        kind: async_lsp::lsp_types::SymbolKind::FIELD,
+                        range,
+                        selection_range,
+                        children: None,
+                        tags: None,
+                        deprecated: None,
+                    });
+                }
+            }
+            StructBody::Fields(fields) => {
+                for (field, span) in fields {
+                    let range = span_to_range_str((*span).into(), txt);
+                    let selection_range = span_to_range_str((*span).into(), txt);
+
+                    let ty = field.ty.0.check(state).get_name(state);
+                    let name = format!("{}: {}", field.name.0, ty);
+                    symbols.push(DocumentSymbol {
+                        name,
+                        detail: None,
+                        kind: async_lsp::lsp_types::SymbolKind::FIELD,
+                        range,
+                        selection_range,
+                        children: None,
+                        tags: None,
+                        deprecated: None,
+                    });
+                }
+            }
+        }
+        symbols
     }
 }
