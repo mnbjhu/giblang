@@ -6,11 +6,14 @@ use salsa::Database;
 
 use crate::{
     check::{state::CheckState, SemanticToken},
+    db::input::SourceFile,
     parser::{top::Top, Ast},
     ty::Ty,
+    util::Span,
 };
 
 pub mod common;
+pub mod definitions;
 pub mod expr;
 pub mod stmt;
 pub mod top;
@@ -31,6 +34,14 @@ pub trait AstItem: Debug {
         _offset: usize,
         _type_vars: &HashMap<u32, Ty<'db>>,
     ) -> Option<String> {
+        None
+    }
+
+    fn goto_def<'db>(
+        &self,
+        _state: &mut CheckState<'_, 'db>,
+        _offset: usize,
+    ) -> Option<(SourceFile, Span)> {
         None
     }
 

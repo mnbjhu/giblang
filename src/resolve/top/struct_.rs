@@ -1,4 +1,7 @@
-use crate::{parser::top::struct_::Struct, project::decl::DeclKind, resolve::state::ResolveState};
+use crate::{
+    db::modules::ModulePath, parser::top::struct_::Struct, project::decl::DeclKind,
+    resolve::state::ResolveState,
+};
 
 use super::Decl;
 
@@ -8,7 +11,14 @@ impl Struct {
         let name = self.name.clone();
         let body = self.body.0.resolve(state);
         let kind = DeclKind::Struct { generics, body };
-        Decl::new(state.db, name.0, name.1, kind)
+        Decl::new(
+            state.db,
+            name.0,
+            name.1,
+            kind,
+            state.file_data,
+            state.module_path(),
+        )
     }
 }
 

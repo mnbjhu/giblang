@@ -21,8 +21,10 @@ use super::{
 
 #[derive(Debug, Clone)]
 pub struct VarDecl<'db> {
+    pub name: String,
     pub ty: Ty<'db>,
     pub is_param: bool,
+    pub span: Span,
 }
 
 pub struct CheckState<'ty, 'db: 'ty> {
@@ -200,10 +202,12 @@ impl<'ty, 'db: 'ty> CheckState<'ty, 'db> {
         self.generics.last_mut().unwrap().insert(name, ty);
     }
 
-    pub fn insert_variable(&mut self, name: String, ty: Ty<'db>, param: bool) {
+    pub fn insert_variable(&mut self, name: String, ty: Ty<'db>, param: bool, span: Span) {
         let var = VarDecl {
+            name: name.clone(),
             ty,
             is_param: param,
+            span,
         };
         self.variables.last_mut().unwrap().insert(name, var);
     }

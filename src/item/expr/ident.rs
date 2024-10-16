@@ -4,12 +4,16 @@ use async_lsp::lsp_types::{CompletionItem, CompletionItemKind};
 use tracing::info;
 
 use crate::{
-    check::{state::CheckState, SemanticToken, TokenKind},
-    db::modules::ModuleData,
-    item::AstItem,
+    check::{
+        state::{CheckState, VarDecl},
+        SemanticToken, TokenKind,
+    },
+    db::modules::{Module, ModuleData, ModulePath},
+    item::{common::type_::ContainsOffset, AstItem},
     parser::expr::qualified_name::SpannedQualifiedName,
-    project::decl::DeclKind,
-    ty::Ty,
+    project::decl::{Decl, DeclKind},
+    ty::{Generic, Ty},
+    util::Spanned,
 };
 
 impl AstItem for SpannedQualifiedName {
@@ -67,41 +71,17 @@ impl AstItem for SpannedQualifiedName {
         offset: usize,
         type_vars: &HashMap<u32, Ty<'db>>,
     ) -> Option<String> {
-        if self.len() == 1 {
-            let name = &self[0];
-            if let Some(var) = state.get_variable(&name.0) {
-                return Some(format!(
-                    "{}: {}",
-                    name.0,
-                    var.ty.get_name_with_types(state, type_vars)
-                ));
-            }
-            if let Some(gen) = state.get_generic(&name.0) {
-                return Some(gen.get_name(state));
-            }
-        }
-        let mut index: i32 = 0;
-        let mut found = -1;
-        for segment in self {
-            if segment.1.start <= offset && offset <= segment.1.end {
-                found = index;
-                break;
-            }
-            index += 1;
-        }
-        if index < 0 {
-            return None;
-        }
-        #[allow(clippy::cast_sign_loss)]
-        let path = &self[..=found as usize];
-        let mod_ = state.get_module_with_error(path);
-        if let Some(mod_) = mod_ {
-            match mod_.content(state.db) {
-                ModuleData::Package(_) => Some(format!("Package: {}", mod_.name(state.db))),
-                ModuleData::Export(e) => Some(e.name(state.db)),
-            }
-        } else {
-            None
+        let index = self
+            .iter()
+            .position(|(name, span)| span.contains_offset(offset))?;
+        let path = &self[..index + 1];
+        let found = state.get_ident_def(path);
+        match found {
+            IdentDef::Variable(var) => Some(var.hover(state, type_vars)),
+            IdentDef::Generic(g) => Some(g.hover(state)),
+            IdentDef::Decl(decl) => Some(decl.hover(state, type_vars)),
+            IdentDef::Pkg(_) => todo!(),
+            IdentDef::Unknown => None,
         }
     }
 
@@ -148,5 +128,54 @@ impl AstItem for SpannedQualifiedName {
             }
         }
         completions
+    }
+    fn goto_def<'db>(
+        &self,
+        state: &mut CheckState<'_, 'db>,
+        offset: usize,
+    ) -> Option<(crate::db::input::SourceFile, crate::util::Span)> {
+        let index = self
+            .iter()
+            .position(|(name, span)| span.start <= offset && offset <= span.end)?;
+        let path = &self[..index + 1];
+        let found = state.get_ident_def(path);
+        match found {
+            IdentDef::Variable(var) => Some((state.file_data, var.span)),
+            IdentDef::Generic(g) => Some((state.file_data, g.name.1)),
+            IdentDef::Decl(decl) => Some((decl.file(state.db), decl.span(state.db))),
+            IdentDef::Pkg(_) => todo!(),
+            IdentDef::Unknown => None,
+        }
+    }
+}
+
+pub enum IdentDef<'db> {
+    Variable(VarDecl<'db>),
+    Generic(Generic<'db>),
+    Decl(Decl<'db>),
+    Pkg(Module<'db>),
+    Unknown,
+}
+
+impl<'db> CheckState<'_, 'db> {
+    pub fn get_ident_def(&mut self, ident: &[Spanned<String>]) -> IdentDef<'db> {
+        if ident.len() == 1 {
+            let name = &ident[0];
+            if let Some(var) = self.get_variable(&name.0) {
+                return IdentDef::Variable(var);
+            }
+            if let Some(gen) = self.get_generic(&name.0) {
+                return IdentDef::Generic(gen.clone());
+            }
+        }
+        let mod_ = self.get_module_with_error(ident);
+        if let Some(mod_) = mod_ {
+            match mod_.content(self.db) {
+                ModuleData::Package(_) => IdentDef::Pkg(mod_),
+                ModuleData::Export(e) => IdentDef::Decl(*e),
+            }
+        } else {
+            IdentDef::Unknown
+        }
     }
 }

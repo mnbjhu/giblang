@@ -13,7 +13,11 @@ pub mod trait_;
 
 impl Top {
     pub fn resolve<'db>(&self, state: &mut ResolveState<'db>) -> Option<Decl<'db>> {
-        match self {
+        let name = self.get_name();
+        if let Some(name) = name {
+            state.path.push(name.to_string());
+        }
+        let res = match self {
             Top::Func(f) => Some(f.resolve(state)),
             Top::Struct(s) => Some(s.resolve(state)),
             Top::Enum(e) => Some(e.resolve(state)),
@@ -23,7 +27,11 @@ impl Top {
                 None
             }
             Top::Impl(_) => None,
+        };
+        if name.is_some() {
+            state.path.pop();
         }
+        res
     }
 }
 

@@ -1,4 +1,5 @@
 mod capabilities;
+mod definition;
 mod diagnostics;
 mod document_symbols;
 mod semantic_tokens;
@@ -11,8 +12,9 @@ use async_lsp::client_monitor::ClientProcessMonitorLayer;
 use async_lsp::concurrency::ConcurrencyLayer;
 use async_lsp::lsp_types::{
     notification, request, CompletionItem, CompletionItemKind, CompletionParams,
-    CompletionResponse, DidChangeTextDocumentParams, DidOpenTextDocumentParams, Hover,
-    HoverContents, HoverParams, MarkedString,
+    CompletionResponse, DidChangeTextDocumentParams, DidOpenTextDocumentParams,
+    GotoDefinitionParams, GotoDefinitionResponse, Hover, HoverContents, HoverParams, Location,
+    MarkedString, Url,
 };
 use async_lsp::panic::CatchUnwindLayer;
 use async_lsp::router::Router;
@@ -29,7 +31,7 @@ use crate::check::{check_file, resolve_project};
 use crate::db::input::{Db, SourceDatabase};
 use crate::item::common::type_::ContainsOffset as _;
 use crate::parser::{parse_file, ExpectedKeyword};
-use crate::range::position_to_offset;
+use crate::range::{position_to_offset, span_to_range_str};
 use crate::resolve::resolve_vfs;
 
 struct ServerState {
@@ -72,6 +74,7 @@ pub async fn main_loop() {
                 let db = st.db.clone();
                 async move { Ok(get_completions(db, &msg)) }
             })
+            .request::<request::GotoDefinition, _>(definition::goto_definition)
             .request::<request::DocumentSymbolRequest, _>(document_symbols::get_document_symbols)
             .notification::<notification::Initialized>(|_, _| ControlFlow::Continue(()))
             .notification::<notification::DidChangeConfiguration>(|_, _| ControlFlow::Continue(()))

@@ -1,4 +1,7 @@
+use chumsky::container::Container;
+
 use crate::{
+    db::modules::ModulePath,
     parser::top::func::Func,
     project::decl::{Decl, DeclKind},
     resolve::state::ResolveState,
@@ -21,6 +24,13 @@ impl Func {
             args,
             ret,
         };
-        Decl::new(state.db, name.0, name.1, kind)
+        Decl::new(
+            state.db,
+            name.0,
+            name.1,
+            kind,
+            state.file_data,
+            state.module_path(),
+        )
     }
 }

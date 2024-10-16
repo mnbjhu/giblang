@@ -98,6 +98,10 @@ impl<'db> ResolveState<'db> {
         }
         None
     }
+
+    pub fn module_path(&self) -> ModulePath<'db> {
+        ModulePath::new(self.db, self.path.clone())
+    }
 }
 
 // #[cfg(test)]

@@ -3,7 +3,7 @@ use salsa::Update;
 use crate::{
     check::{state::CheckState, TokenKind},
     db::{
-        input::Db,
+        input::{Db, SourceFile},
         modules::{Module, ModulePath},
     },
     ty::{prim::PrimTy, FuncTy, Generic, Ty},
@@ -22,6 +22,8 @@ pub struct Decl<'db> {
     pub span: Span,
     #[return_ref]
     pub kind: DeclKind<'db>,
+    pub file: SourceFile,
+    pub path: ModulePath<'db>,
 }
 
 impl<'db> Decl<'db> {

@@ -11,7 +11,7 @@ use crate::{
 impl<'db> Pattern {
     pub fn check(&self, state: &mut CheckState<'_, 'db>, ty: Ty<'db>) {
         if let Pattern::Name(name) = self {
-            state.insert_variable(name.0.to_string(), ty, false);
+            state.insert_variable(name.0.to_string(), ty, false, name.1);
             return;
         }
         let name = self.name();
@@ -99,7 +99,7 @@ impl<'db> StructFieldPattern {
         match self {
             StructFieldPattern::Implied(name) => {
                 if let Some(ty) = fields.get(&name.0) {
-                    state.insert_variable(name.0.to_string(), ty.clone(), false);
+                    state.insert_variable(name.0.to_string(), ty.clone(), false, name.1);
                 } else {
                     state.simple_error(&format!("Field '{}' not found", name.0), span);
                 }
