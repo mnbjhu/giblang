@@ -3,7 +3,7 @@ use async_lsp::lsp_types::{DocumentSymbol, SymbolKind};
 use crate::{
     check::{state::CheckState, SemanticToken, TokenKind},
     item::{common::type_::ContainsOffset, AstItem},
-    parser::top::{enum_member::EnumMember, struct_::Struct},
+    parser::top::enum_member::EnumMember,
     range::span_to_range_str,
     util::Span,
 };

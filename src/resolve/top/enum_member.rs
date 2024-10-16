@@ -1,5 +1,4 @@
 use crate::{
-    db::modules::ModulePath,
     parser::top::enum_member::EnumMember,
     project::decl::{Decl, DeclKind},
     resolve::state::ResolveState,

@@ -4,12 +4,9 @@ use crate::{
         err::Diagnostic,
         input::{Db, SourceDatabase},
     },
-    lexer::parser::lexer,
-    parser::{file_parser, parse_file},
-    util::Span,
+    parser::parse_file,
 };
-use ariadne::{Color, Fmt, Source};
-use chumsky::{input::Input, Parser};
+use chumsky::Parser;
 use salsa::Setter;
 use std::{fs, path::Path};
 

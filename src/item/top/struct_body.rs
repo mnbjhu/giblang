@@ -2,11 +2,9 @@ use async_lsp::lsp_types::DocumentSymbol;
 
 use crate::{
     check::{state::CheckState, SemanticToken},
-    db::input::{Db, SourceFile},
     item::{common::type_::ContainsOffset, AstItem},
     parser::top::struct_body::StructBody,
     range::span_to_range_str,
-    util::{Span, Spanned},
 };
 
 impl AstItem for StructBody {

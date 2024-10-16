@@ -1,12 +1,10 @@
-use std::fmt::Display;
 
-use ariadne::{Color, Fmt, Source};
+use ariadne::Source;
 use ariadne::{ColorGenerator, Label, Report, ReportKind};
-use chumsky::error::Rich;
 
 use crate::check::check_project;
 use crate::db::err::Diagnostic;
-use crate::db::input::{Db, SourceDatabase, Vfs};
+use crate::db::input::{Db, SourceDatabase};
 
 pub fn build() {
     let pwd = std::env::current_dir().unwrap();

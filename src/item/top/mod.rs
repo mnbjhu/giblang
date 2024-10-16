@@ -2,9 +2,7 @@ use async_lsp::lsp_types::DocumentSymbol;
 
 use crate::{
     check::{state::CheckState, SemanticToken},
-    db::input::{Db, SourceFile},
     parser::top::Top,
-    project::decl::Decl,
     util::Span,
 };
 

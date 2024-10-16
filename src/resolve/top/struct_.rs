@@ -1,5 +1,5 @@
 use crate::{
-    db::modules::ModulePath, parser::top::struct_::Struct, project::decl::DeclKind,
+    parser::top::struct_::Struct, project::decl::DeclKind,
     resolve::state::ResolveState,
 };
 
