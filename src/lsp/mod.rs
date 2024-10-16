@@ -29,8 +29,7 @@ use crate::check::state::CheckState;
 use crate::check::{check_file, resolve_project};
 use crate::db::err::Diagnostic;
 use crate::db::input::{Db, SourceDatabase};
-use crate::item::common::type_::ContainsOffset as _;
-use crate::parser::{parse_file, ExpectedKeyword};
+use crate::parser::parse_file;
 use crate::range::position_to_offset;
 
 struct ServerState {

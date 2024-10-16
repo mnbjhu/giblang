@@ -18,7 +18,6 @@ use chumsky::{
     IterParser, Parser,
 };
 use salsa::Accumulator;
-use tracing::info;
 
 use crate::{
     lexer::{parser::lexer, token::newline},
