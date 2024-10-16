@@ -48,9 +48,7 @@ pub fn resolve_project<'db>(db: &'db dyn Db, vfs: Vfs) -> Project<'db> {
     let impls = resolve_impls_vfs(db, vfs);
     let mut impl_map = HashMap::<ModulePath, Vec<ImplDecl>>::new();
     for impl_ in impls {
-        let name = if let Ty::Named { name, .. } = impl_.from_ty(db) {
-            name
-        } else {
+        let Ty::Named { name, .. } = impl_.from_ty(db) else {
             panic!("Impls must be named types")
         };
         if let Some(existing) = impl_map.get_mut(&name) {

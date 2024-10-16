@@ -12,8 +12,8 @@ use async_lsp::client_monitor::ClientProcessMonitorLayer;
 use async_lsp::concurrency::ConcurrencyLayer;
 use async_lsp::lsp_types::{
     notification, request, CompletionItem, CompletionItemKind, CompletionParams,
-    CompletionResponse, DidChangeTextDocumentParams, DidOpenTextDocumentParams, Hover, HoverContents, HoverParams,
-    MarkedString,
+    CompletionResponse, DidChangeTextDocumentParams, DidOpenTextDocumentParams, Hover,
+    HoverContents, HoverParams, MarkedString,
 };
 use async_lsp::panic::CatchUnwindLayer;
 use async_lsp::router::Router;

@@ -6,7 +6,6 @@ use crate::{
     },
     parser::parse_file,
 };
-use chumsky::Parser;
 use salsa::Setter;
 use std::{fs, path::Path};
 

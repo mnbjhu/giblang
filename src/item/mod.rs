@@ -16,6 +16,7 @@ pub mod common;
 pub mod definitions;
 pub mod expr;
 pub mod stmt;
+#[allow(deprecated)]
 pub mod top;
 
 pub trait AstItem: Debug {
