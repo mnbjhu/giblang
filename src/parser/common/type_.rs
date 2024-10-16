@@ -35,7 +35,7 @@ pub struct NamedType {
 }
 
 pub fn type_parser<'tokens, 'src: 'tokens>() -> AstParser!(Type) {
-    let arrow = just(punct('-')).then(just(punct('>'))).ignored();
+    let arrow = just(op!(->)).padded_by(optional_newline());
     let widlcard = just(op!(_)).map_with(|_, e| e.span()).map(Type::Wildcard);
     recursive(|ty| {
         let named = named_parser(ty.clone());

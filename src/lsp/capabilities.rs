@@ -38,7 +38,7 @@ pub fn capabilities() -> InitializeResult {
                 }),
             ),
             completion_provider: Some(CompletionOptions {
-                trigger_characters: Some(vec!["/[a-zA-Z_]/".to_string()]),
+                trigger_characters: Some(vec![":".to_string()]),
                 ..Default::default()
             }),
             ..ServerCapabilities::default()

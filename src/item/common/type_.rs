@@ -15,7 +15,7 @@ impl AstItem for Type {
             Type::Sum(tys) | Type::Tuple(tys) => {
                 for (ty, span) in tys {
                     if span.contains_offset(offset) {
-                        return ty;
+                        return ty.at_offset(state, offset);
                     }
                 }
             }
@@ -26,17 +26,17 @@ impl AstItem for Type {
             } => {
                 if let Some(receiver) = receiver {
                     if receiver.1.contains_offset(offset) {
-                        return &receiver.0;
+                        return receiver.0.at_offset(state, offset);
                     }
                 }
                 for (ty, span) in args {
                     if span.contains_offset(offset) {
-                        return ty;
+                        return ty.at_offset(state, offset);
                     }
                 }
                 let (ret_ty, ret_span) = ret.as_ref();
                 if ret_span.contains_offset(offset) {
-                    return ret_ty;
+                    return ret_ty.at_offset(state, offset);
                 }
             }
             Type::Wildcard(_) => {}

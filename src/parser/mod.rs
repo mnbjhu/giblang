@@ -184,3 +184,20 @@ macro_rules! assert_parse_eq {
     };
     () => {};
 }
+
+#[macro_export]
+macro_rules! assert_parse_eq_with_errors {
+    ($parser:expr, $input:expr, $expected:expr) => {
+        #[allow(unused_imports)]
+        use chumsky::input::Input as _;
+        #[allow(unused_imports)]
+        use chumsky::Parser as _;
+        let tokens = $crate::lexer::parser::lexer().parse($input).unwrap();
+        let eoi = $crate::util::Span::splat($input.len());
+        let input = tokens.spanned(eoi);
+        let (actual, errors) = $parser.parse(input).into_output_errors();
+        assert!(!errors.is_empty(), "Expected errors, found none");
+        assert_eq!(actual.unwrap(), $expected);
+    };
+    () => {};
+}

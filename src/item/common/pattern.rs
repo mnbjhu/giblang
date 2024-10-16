@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::{
     check::{state::CheckState, SemanticToken, TokenKind},
     item::AstItem,
@@ -73,7 +75,7 @@ impl AstItem for Pattern {
         &self,
         state: &mut CheckState<'_, 'db>,
         _: usize,
-        type_vars: &std::collections::HashMap<u32, crate::ty::Ty<'db>>,
+        type_vars: &HashMap<u32, crate::ty::Ty<'db>>,
     ) -> Option<String> {
         if let Pattern::Name(name) = self {
             state
@@ -128,7 +130,7 @@ impl AstItem for StructFieldPattern {
         &self,
         state: &mut CheckState<'_, 'db>,
         offset: usize,
-        type_vars: &std::collections::HashMap<u32, crate::ty::Ty<'db>>,
+        type_vars: &HashMap<u32, crate::ty::Ty<'db>>,
     ) -> Option<String> {
         match self {
             StructFieldPattern::Implied(name) => state

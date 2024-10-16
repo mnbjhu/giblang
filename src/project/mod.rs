@@ -54,6 +54,7 @@ impl<'db> Project<'db> {
         self.impl_map(db).get(&path).cloned().unwrap_or_default()
     }
 }
+
 #[derive(Debug, Clone)]
 pub struct TypeVar<'db> {
     pub id: ModulePath<'db>,

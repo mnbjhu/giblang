@@ -1,3 +1,5 @@
+use async_lsp::lsp_types::CompletionItem;
+
 use crate::{
     check::state::CheckState,
     ty::{Generic, Ty},
@@ -10,5 +12,12 @@ impl Generic<'_> {
         } else {
             format!("{}: {}", self.name.0, self.super_.get_name(state))
         }
+    }
+    pub fn completions(&self, state: &mut CheckState) -> Vec<CompletionItem> {
+        vec![CompletionItem {
+            label: self.name.0.clone(),
+            detail: Some(self.hover(state)),
+            ..Default::default()
+        }]
     }
 }

@@ -13,7 +13,7 @@ impl AstItem for NamedType {
     {
         for (arg, span) in &self.args {
             if span.contains_offset(offset) {
-                return arg;
+                return arg.at_offset(state, offset);
             }
         }
         self.name.at_offset(state, offset)

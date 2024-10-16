@@ -17,7 +17,12 @@ impl Func {
         }
         if let Some(ret) = &self.ret {
             let expected = ret.0.check(state);
-            check_code_block_is(state, &expected, self.body.as_ref().unwrap(), self.name.1);
+            check_code_block_is(
+                state,
+                &expected,
+                self.body.as_ref().unwrap_or(&vec![]),
+                self.name.1,
+            );
         } else if let Some(body) = &self.body {
             check_code_block(state, body);
         }

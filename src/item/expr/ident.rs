@@ -1,14 +1,13 @@
 use std::collections::HashMap;
 
 use async_lsp::lsp_types::{CompletionItem, CompletionItemKind};
-use tracing::info;
 
 use crate::{
     check::{
         state::{CheckState, VarDecl},
         SemanticToken, TokenKind,
     },
-    db::modules::{Module, ModuleData, ModulePath},
+    db::modules::{Module, ModuleData},
     item::{common::type_::ContainsOffset, AstItem},
     parser::expr::qualified_name::SpannedQualifiedName,
     project::decl::{Decl, DeclKind},
@@ -49,7 +48,6 @@ impl AstItem for SpannedQualifiedName {
             }
         }
         for i in 1..=self.len() {
-            info!("Checking {:?}", &self[..i]);
             let found = state.get_module_with_error(&self[..i]);
             if found.is_none() {
                 return;
@@ -73,71 +71,47 @@ impl AstItem for SpannedQualifiedName {
     ) -> Option<String> {
         let index = self
             .iter()
-            .position(|(name, span)| span.contains_offset(offset))?;
-        let path = &self[..index + 1];
+            .position(|(_, span)| span.contains_offset(offset))?;
+        let path = &self[..=index];
         let found = state.get_ident_def(path);
         match found {
             IdentDef::Variable(var) => Some(var.hover(state, type_vars)),
             IdentDef::Generic(g) => Some(g.hover(state)),
-            IdentDef::Decl(decl) => Some(decl.hover(state, type_vars)),
+            IdentDef::Decl(decl) => Some(decl.hover(state)),
             IdentDef::Pkg(_) => todo!(),
             IdentDef::Unknown => None,
         }
     }
 
-    fn completions(&self, state: &mut CheckState, _: usize) -> Vec<CompletionItem> {
+    fn completions(&self, state: &mut CheckState, offset: usize) -> Vec<CompletionItem> {
         let mut completions = vec![];
         if self.len() == 1 {
-            for (name, var) in state.get_variables() {
-                completions.push(CompletionItem {
-                    label: name.clone(),
-                    kind: Some(CompletionItemKind::VARIABLE),
-                    detail: Some(var.ty.get_name(state)),
-                    ..Default::default()
-                });
+            get_ident_completions(state, &mut completions);
+        } else {
+            let index = self
+                .iter()
+                .position(|(_, span)| span.contains_offset(offset));
+            if index.is_none() {
+                return vec![];
             }
-            for (name, var) in state.get_generics() {
-                completions.push(CompletionItem {
-                    label: name.clone(),
-                    kind: Some(CompletionItemKind::TYPE_PARAMETER),
-                    detail: Some(var.get_name(state)),
-                    ..Default::default()
-                });
-            }
-            for (name, import) in state.get_imports() {
-                let module = state.project.decls(state.db).get_path(state.db, *import);
-                if let Some(module) = module {
-                    let kind = match module.content(state.db) {
-                        ModuleData::Package(_) => CompletionItemKind::METHOD,
-                        ModuleData::Export(e) => match e.kind(state.db) {
-                            DeclKind::Struct { .. } => CompletionItemKind::STRUCT,
-                            DeclKind::Enum { .. } => CompletionItemKind::ENUM,
-                            DeclKind::Trait { .. } => CompletionItemKind::INTERFACE,
-                            DeclKind::Function { .. } => CompletionItemKind::FUNCTION,
-                            DeclKind::Member { .. } => CompletionItemKind::ENUM_MEMBER,
-                            DeclKind::Prim(_) => todo!(),
-                        },
-                    };
-                    completions.push(CompletionItem {
-                        label: name.clone(),
-                        kind: Some(kind),
-                        detail: Some(import.name(state.db).join("::")),
-                        ..Default::default()
-                    });
-                };
+            let parent = &self[..index.unwrap()];
+            let found = state.get_module_with_error(parent);
+            if let Some(found) = found {
+                return found.get_static_access_completions(state);
             }
         }
         completions
     }
-    fn goto_def<'db>(
+
+    fn goto_def(
         &self,
-        state: &mut CheckState<'_, 'db>,
+        state: &mut CheckState<'_, '_>,
         offset: usize,
     ) -> Option<(crate::db::input::SourceFile, crate::util::Span)> {
         let index = self
             .iter()
-            .position(|(name, span)| span.start <= offset && offset <= span.end)?;
-        let path = &self[..index + 1];
+            .position(|(_, span)| span.start <= offset && offset <= span.end)?;
+        let path = &self[..=index];
         let found = state.get_ident_def(path);
         match found {
             IdentDef::Variable(var) => Some((state.file_data, var.span)),
@@ -149,12 +123,81 @@ impl AstItem for SpannedQualifiedName {
     }
 }
 
+fn get_ident_completions(state: &mut CheckState, completions: &mut Vec<CompletionItem>) {
+    for (name, var) in state.get_variables() {
+        completions.push(CompletionItem {
+            label: name.clone(),
+            kind: Some(CompletionItemKind::VARIABLE),
+            detail: Some(var.ty.get_name(state)),
+            ..Default::default()
+        });
+    }
+    for (name, var) in state.get_generics() {
+        completions.push(CompletionItem {
+            label: name.clone(),
+            kind: Some(CompletionItemKind::TYPE_PARAMETER),
+            detail: Some(var.get_name(state)),
+            ..Default::default()
+        });
+    }
+    for (name, import) in state.get_imports() {
+        let module = state.project.decls(state.db).get_path(state.db, *import);
+        if let Some(module) = module {
+            let found = module.completions(state);
+            for mut item in found {
+                item.label = name.to_string();
+                completions.push(item.clone());
+            }
+        };
+    }
+    completions.extend(
+        state
+            .project
+            .decls(state.db)
+            .get_static_access_completions(state),
+    );
+}
+
 pub enum IdentDef<'db> {
     Variable(VarDecl<'db>),
     Generic(Generic<'db>),
     Decl(Decl<'db>),
     Pkg(Module<'db>),
     Unknown,
+}
+
+impl<'db> IdentDef<'db> {
+    pub fn completions(&self, state: &mut CheckState) -> Vec<CompletionItem> {
+        match self {
+            IdentDef::Variable(var) => vec![CompletionItem {
+                label: var.name.clone(),
+                kind: Some(CompletionItemKind::VARIABLE),
+                detail: Some(var.ty.get_name(state)),
+                ..Default::default()
+            }],
+            IdentDef::Generic(g) => vec![CompletionItem {
+                label: g.name.0.clone(),
+                kind: Some(CompletionItemKind::TYPE_PARAMETER),
+                detail: Some(g.get_name(state)),
+                ..Default::default()
+            }],
+            IdentDef::Decl(decl) => vec![CompletionItem {
+                label: decl.name(state.db),
+                kind: Some(match decl.kind(state.db) {
+                    DeclKind::Struct { .. } => CompletionItemKind::STRUCT,
+                    DeclKind::Enum { .. } => CompletionItemKind::ENUM,
+                    DeclKind::Trait { .. } => CompletionItemKind::INTERFACE,
+                    DeclKind::Function { .. } => CompletionItemKind::FUNCTION,
+                    DeclKind::Member { .. } => CompletionItemKind::ENUM_MEMBER,
+                    DeclKind::Prim(_) => todo!(),
+                }),
+                detail: Some(decl.path(state.db).name(state.db).join("::")),
+                ..Default::default()
+            }],
+            IdentDef::Pkg(_) => todo!(),
+            IdentDef::Unknown => vec![],
+        }
+    }
 }
 
 impl<'db> CheckState<'_, 'db> {

@@ -1,6 +1,9 @@
 use std::collections::HashMap;
 
-use crate::{check::state::CheckState, parser::expr::qualified_name::SpannedQualifiedName, ty::Ty};
+use crate::{
+    check::state::CheckState, db::modules::ModuleData,
+    parser::expr::qualified_name::SpannedQualifiedName, ty::Ty,
+};
 
 pub fn check_ident<'db>(state: &mut CheckState<'_, 'db>, path: &SpannedQualifiedName) -> Ty<'db> {
     if path.len() == 1 {
@@ -10,12 +13,14 @@ pub fn check_ident<'db>(state: &mut CheckState<'_, 'db>, path: &SpannedQualified
             return Ty::Meta(Box::new(Ty::Generic(generic)));
         }
     }
-    if let Some(decl_id) = state.get_decl_with_error(path) {
-        let decl = state
-            .project
-            .get_decl(state.db, decl_id)
-            .unwrap_or_else(|| panic!("Decl not found: {decl_id:?}"));
-        decl.get_ty(decl_id, state).inst(&mut HashMap::new(), state)
+
+    if let Some(module) = state.get_module_with_error(path) {
+        match module.content(state.db) {
+            ModuleData::Package(_) => Ty::unit(),
+            ModuleData::Export(decl) => decl
+                .get_ty(module.path(state.db), state)
+                .inst(&mut HashMap::new(), state),
+        }
     } else {
         Ty::Unknown
     }

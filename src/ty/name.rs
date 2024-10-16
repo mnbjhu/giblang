@@ -59,7 +59,7 @@ impl<'db> Ty<'db> {
 
     pub fn get_name_with_types(
         &self,
-        state: &mut CheckState<'_, 'db>,
+        state: &CheckState<'_, 'db>,
         type_vars: &HashMap<u32, Ty<'db>>,
     ) -> String {
         match self {
@@ -85,7 +85,7 @@ impl<'db> Ty<'db> {
             }
             Ty::Generic(g) => g.get_name(state),
             Ty::Meta(_) => todo!(),
-            Ty::Function(func) => func.get_name(state),
+            Ty::Function(func) => func.get_name_with_types(state, type_vars),
             Ty::Tuple(tys) => {
                 let tys = tys
                     .iter()
@@ -133,10 +133,6 @@ impl<'db> Ty<'db> {
 
 impl<'db> FuncTy<'db> {
     pub fn get_name(&self, state: &CheckState) -> String {
-        let receiver = self
-            .receiver
-            .as_ref()
-            .map_or(String::new(), |r| r.get_name(state));
         let args = self
             .args
             .iter()
@@ -144,7 +140,30 @@ impl<'db> FuncTy<'db> {
             .collect::<Vec<_>>()
             .join(", ");
         let ret = self.ret.get_name(state);
-        format!("{receiver}({args}) -> {ret}")
+        if let Some(receiver) = &self.receiver {
+            let receiver = receiver.get_name(state);
+            format!("{receiver}.({args}) -> {ret}")
+        } else {
+            format!("({args}) -> {ret}")
+        }
+    }
+    pub fn get_name_with_types(
+        &self,
+        state: &CheckState,
+        type_vars: &HashMap<u32, Ty<'db>>,
+    ) -> String {
+        let receiver = self
+            .receiver
+            .as_ref()
+            .map_or(String::new(), |r| r.get_name_with_types(state, type_vars));
+        let args = self
+            .args
+            .iter()
+            .map(|arg| arg.get_name_with_types(state, type_vars))
+            .collect::<Vec<_>>()
+            .join(", ");
+        let ret = self.ret.get_name_with_types(state, type_vars);
+        format!("{receiver}.({args}) -> {ret}")
     }
 }
 

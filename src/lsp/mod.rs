@@ -210,6 +210,7 @@ fn get_completions(mut db: SourceDatabase, msg: &CompletionParams) -> Option<Com
             .to_file_path()
             .unwrap(),
     );
+    info!("Trigger Char {:?}", msg.context);
     let offset = position_to_offset(msg.text_document_position.position, file.text(&db));
     let project = resolve_project(&db, db.vfs.unwrap());
     let ast = parse_file(&db, file);

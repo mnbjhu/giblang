@@ -116,11 +116,7 @@ impl<'ty, 'db: 'ty> CheckState<'ty, 'db> {
 
     pub fn get_module_with_error(&mut self, path: &[Spanned<String>]) -> Option<Module<'db>> {
         if let Some(import) = self.imports.get(&path[0].0).copied() {
-            let module = self
-                .project
-                .decls(self.db)
-                .get_path(self.db, import)
-                .unwrap();
+            let module = self.project.decls(self.db).get_path(self.db, import)?;
             module.get_path_with_state(self, &path[1..], self.file_data, self.should_error)
         } else {
             self.project.decls(self.db).get_path_with_state(
@@ -190,7 +186,7 @@ impl<'ty, 'db: 'ty> CheckState<'ty, 'db> {
     }
 
     pub fn import(&mut self, use_: &SpannedQualifiedName) {
-        if self.get_decl_with_error(use_).is_some() {
+        if self.get_module_with_error(use_).is_some() {
             self.imports.insert(
                 use_.last().unwrap().0.clone(),
                 ModulePath::new(self.db, use_.iter().map(|(name, _)| name.clone()).collect()),

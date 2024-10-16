@@ -1,5 +1,3 @@
-use gib_mod::another::Test
-
 use std::String
 use std::Int
 
@@ -9,15 +7,23 @@ use std::print
 use std::Option
 use std::Result
 
+
+trait Test {
+  fn test(): String {
+    "Hello"
+  }
+}
+
 fn simple[T](thing: T, some: String): Option[T]{
   let res = Option::None
   res
 }
 
+
 struct Box[T](T)
 
 fn test(thing: Test) {
-  let a = 123
+  let other = 123
 }
 
 
@@ -26,27 +32,24 @@ fn thingy(x: Option[String]) {
 }
 
 fn main() {
-  let test = Option::None
+  let test: Option[String] = Option::Some("")
+  let tuple: (Int, String) -> String = 1
   let test2 = Option::Some("Hello")
   let x = test3
   let thing = match test {
     Option::Some(x) => x,
-    Option::None => 123,
+    Option::None => "String",
   }
   let my_enum = gib_mod::another::MyEnum::Second(123)
   let test2 = Option::Some(123)
   gib_mod::another::Test("Hello")
   let test = Option::Some("Hello")
+  test2
   test
 }
 
 
-struct Test {
-  name: String
-}
-
 fn test3(thing: Int) {
-  thing
 }
 
 struct New[T] { test: T, test2: String }
