@@ -1,4 +1,4 @@
-use async_lsp::lsp_types::CompletionItem;
+use async_lsp::lsp_types::{CompletionItem, CompletionItemKind};
 
 use crate::{
     check::state::CheckState,
@@ -17,6 +17,7 @@ impl Generic<'_> {
         vec![CompletionItem {
             label: self.name.0.clone(),
             detail: Some(self.hover(state)),
+            kind: Some(CompletionItemKind::TYPE_PARAMETER),
             ..Default::default()
         }]
     }

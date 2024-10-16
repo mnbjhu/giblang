@@ -1,7 +1,6 @@
 use std::future::Future;
 
 use async_lsp::lsp_types::DocumentSymbolResponse;
-use tracing::info;
 
 use crate::{
     check::{resolve_project, state::CheckState},
@@ -28,7 +27,6 @@ pub fn get_document_symbols(
             .iter()
             .filter_map(|(top, span)| top.document_symbol(&mut state, *span))
             .collect::<Vec<_>>();
-        info!("Found symbols: {symbols:#?}");
         Ok(Some(async_lsp::lsp_types::DocumentSymbolResponse::Nested(
             symbols,
         )))

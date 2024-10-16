@@ -56,6 +56,7 @@ impl IntoWithDb<Diagnostic> for UnboundTypeVar {
             level: Level::Error,
             path: self.file.path(db),
             file: self.file,
+            expected: vec![],
         }
     }
 }

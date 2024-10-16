@@ -7,7 +7,6 @@ use std::print
 use std::Option
 use std::Result
 
-
 trait Test {
   fn test(): String {
     "Hello"
@@ -48,6 +47,7 @@ fn main() {
   test
 }
 
+fn
 
 fn test3(thing: Int) {
 }

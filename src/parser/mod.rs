@@ -77,7 +77,6 @@ pub fn file_parser<'tokens, 'src: 'tokens>() -> AstParser!(File) {
 
 type Unit = ();
 
-#[salsa::accumulator]
 pub struct ExpectedKeyword {
     pub kw: Keyword,
     pub span: Span,
@@ -122,7 +121,6 @@ pub fn top_recovery<'tokens, 'src: 'tokens>() -> AstParser!(Unit) {
 
 #[salsa::tracked]
 pub fn parse_file<'db>(db: &'db dyn Db, file: SourceFile) -> Ast<'db> {
-    info!("Parsing file: {:?}", file.path(db));
     let text = file.text(db);
     let (tokens, errors) = lexer().parse(text).into_output_errors();
     let len = text.len();
@@ -134,6 +132,7 @@ pub fn parse_file<'db>(db: &'db dyn Db, file: SourceFile) -> Ast<'db> {
             level: Level::Error,
             path: file.path(db),
             file,
+            expected: vec![],
         }
         .accumulate(db);
     }
@@ -142,15 +141,11 @@ pub fn parse_file<'db>(db: &'db dyn Db, file: SourceFile) -> Ast<'db> {
         let input = tokens.spanned(eoi);
         let (ast, errors) = file_parser().parse(input).into_output_errors();
         for error in errors {
-            let mut expected = error.expected();
-            while let Some(RichPattern::Token(tok)) = expected.next() {
+            let mut expected_iter = error.expected();
+            let mut expected = vec![];
+            while let Some(RichPattern::Token(tok)) = expected_iter.next() {
                 if let Token::Keyword(kw) = tok.clone().into_inner() {
-                    info!("Expected keyword: {:?}", kw);
-                    ExpectedKeyword {
-                        kw,
-                        span: *error.span(),
-                    }
-                    .accumulate(db);
+                    expected.push(kw);
                 }
             }
             Diagnostic {
@@ -159,6 +154,7 @@ pub fn parse_file<'db>(db: &'db dyn Db, file: SourceFile) -> Ast<'db> {
                 level: Level::Error,
                 path: file.path(db),
                 file,
+                expected,
             }
             .accumulate(db);
         }

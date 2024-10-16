@@ -47,6 +47,7 @@ impl IntoWithDb<Diagnostic> for UnexpectedWildcard {
             level: Level::Error,
             path: self.file.path(db),
             file: self.file,
+            expected: vec![],
         }
     }
 }

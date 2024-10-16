@@ -1,5 +1,4 @@
 use salsa::{Accumulator, Update};
-use tracing::info;
 
 use crate::{
     check::{
@@ -39,7 +38,6 @@ pub struct ModulePath<'db> {
 impl<'db> ModulePath<'db> {
     #[must_use]
     pub fn get_parent(self, db: &'db dyn Db) -> ModulePath<'db> {
-        info!("'get_parent' for {:?}", self.name(db));
         let path = self.name(db);
         ModulePath::new(db, path[0..path.len() - 1].to_vec())
     }
@@ -48,7 +46,6 @@ impl<'db> ModulePath<'db> {
 #[salsa::tracked]
 impl<'db> Module<'db> {
     pub fn get(self, db: &'db dyn Db, name: String) -> Option<Module<'db>> {
-        info!("'get' for {:?}", name);
         match self.content(db) {
             ModuleData::Package(modules) => modules.iter().find(|m| m.name(db) == name).copied(),
             ModuleData::Export(export) => export.get(db, name),
@@ -57,14 +54,8 @@ impl<'db> Module<'db> {
 
     #[salsa::tracked]
     pub fn get_path(self, db: &'db dyn Db, path: ModulePath<'db>) -> Option<Module<'db>> {
-        info!("'get_path' for {:?}", path);
         let mut current = self;
         for name in path.name(db) {
-            info!(
-                "'get_path' found {:?} with inner {:?}",
-                path.name(db),
-                current.content(db)
-            );
             match current.content(db) {
                 ModuleData::Package(modules) => {
                     current = modules.iter().find(|m| m.name(db) == *name).copied()?;

@@ -8,7 +8,6 @@ use std::{
 
 use glob::glob;
 use salsa::{AsDynDatabase, Setter, Update};
-use tracing::info;
 
 use crate::util::Span;
 
@@ -24,7 +23,6 @@ pub struct SourceDatabase {
 
 impl SourceDatabase {
     pub fn init(&mut self, root: String) {
-        info!("Initializing database with root {}", root);
         self.root = root;
         let vfs = Vfs::from_path(self);
         self.vfs = Some(vfs);
@@ -162,14 +160,12 @@ impl Vfs {
         );
         let module = Vfs::new(db, "root".to_string(), VfsInner::Dir(vec![std]));
         let pattern = format!("{path}/**/*.gib", path = db.root());
-        info!("Searching for files in {}", pattern);
 
         for file in glob(&pattern).unwrap() {
             let file = file.unwrap();
             if file.is_dir() {
                 continue;
             }
-            info!("Found file: {}", file.to_string_lossy());
             let src = SourceFile::open(db, file.clone());
             let mod_path = get_module_path(db, &file);
             module.insert_path(db, &mod_path, src);
@@ -196,10 +192,8 @@ impl Vfs {
     }
 
     pub fn insert_path(&self, db: &mut dyn Db, path: &[String], src: SourceFile) {
-        info!("Inserting file at path {:?}", path);
         let mut module: Vfs = *self;
         for seg in path {
-            info!("Found module {:?}", module.name(db));
             if let Some(exising) = module.get(db, seg) {
                 module = *exising;
             } else {
@@ -208,7 +202,6 @@ impl Vfs {
                 module = new;
             }
         }
-        info!("Inserting file into module {:?}", module.name(db));
         module.set_inner(db).to(VfsInner::File(src));
     }
 
@@ -261,12 +254,6 @@ pub fn get_module_path(db: &dyn Db, path: &Path) -> Vec<String> {
         .split('/')
         .map(str::to_string)
         .collect();
-    info!(
-        "Got module path {:?} for {:?} using root '{}'",
-        res,
-        path,
-        db.root()
-    );
     res
 }
 

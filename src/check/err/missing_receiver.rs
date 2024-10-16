@@ -59,6 +59,7 @@ impl IntoWithDb<Diagnostic> for MissingReceiver {
             level: Level::Error,
             path: self.file.path(db),
             file: self.file,
+            expected: vec![],
         }
     }
 }

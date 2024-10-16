@@ -48,6 +48,7 @@ impl IntoWithDb<Diagnostic> for Simple {
             level: Level::Error,
             path: self.file.path(db),
             file: self.file,
+            expected: vec![],
         }
     }
 }

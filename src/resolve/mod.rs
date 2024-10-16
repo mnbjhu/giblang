@@ -6,7 +6,6 @@ use crate::{
     parser::{parse_file, top::Top},
     project::ImplDecl,
 };
-use tracing::info;
 
 use self::state::ResolveState;
 
@@ -16,7 +15,6 @@ mod top;
 
 #[salsa::tracked]
 pub fn resolve_file<'db>(db: &'db dyn Db, file: SourceFile) -> Module<'db> {
-    info!("Resolving file {}", file.name(db));
     let mut state = ResolveState::from_file(db, file);
     let ast = parse_file(db, file);
     let decls = ast
@@ -66,7 +64,6 @@ pub fn resolve_impls<'db>(db: &'db dyn Db, file: SourceFile) -> Vec<ImplDecl<'db
 
 #[salsa::tracked]
 pub fn resolve_vfs<'db>(db: &'db dyn Db, vfs: Vfs, path: ModulePath<'db>) -> Module<'db> {
-    info!("Resolving VFS {}", vfs.name(db));
     match vfs.inner(db) {
         VfsInner::File(file) => resolve_file(db, *file),
         VfsInner::Dir(files) => {

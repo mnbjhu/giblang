@@ -23,10 +23,11 @@ use async_lsp::ClientSocket;
 use salsa::{AsDynDatabase, Setter as _};
 use semantic_tokens::get_semantic_tokens;
 use tower::ServiceBuilder;
-use tracing::{info, Level};
+use tracing::Level;
 
 use crate::check::state::CheckState;
 use crate::check::{check_file, resolve_project};
+use crate::db::err::Diagnostic;
 use crate::db::input::{Db, SourceDatabase};
 use crate::item::common::type_::ContainsOffset as _;
 use crate::parser::{parse_file, ExpectedKeyword};
@@ -208,26 +209,23 @@ fn get_completions(mut db: SourceDatabase, msg: &CompletionParams) -> Option<Com
             .to_file_path()
             .unwrap(),
     );
-    info!("Trigger Char {:?}", msg.context);
     let offset = position_to_offset(msg.text_document_position.position, file.text(&db));
-    let project = resolve_project(&db, db.vfs.unwrap());
     let ast = parse_file(&db, file);
-    let kw_completions: Vec<ExpectedKeyword> =
-        parse_file::accumulated::<ExpectedKeyword>(&db, file);
-    info!("Found keywords: {kw_completions:#?}");
+    let diags = parse_file::accumulated::<Diagnostic>(&db, file);
+    let kw_completions = diags
+        .iter()
+        .flat_map(|d| d.expected.clone())
+        .map(|kw| CompletionItem {
+            label: kw.to_string(),
+            detail: Some("Keyword".to_string()),
+            kind: Some(CompletionItemKind::KEYWORD),
+            ..Default::default()
+        });
+    let project = resolve_project(&db, db.vfs.unwrap());
     let mut state = CheckState::from_file(&db, file, project);
     state.should_error = false;
     let found = ast.at_offset(&db, &mut state, offset);
     let mut completions = found?.completions(&mut state, offset);
-    info!("Found completions: {kw_completions:#?}");
-    for ExpectedKeyword { kw, span } in &kw_completions {
-        if span.contains_offset(offset) {
-            completions.push(CompletionItem {
-                label: kw.to_string(),
-                kind: Some(CompletionItemKind::KEYWORD),
-                ..Default::default()
-            });
-        }
-    }
+    completions.extend(kw_completions);
     Some(CompletionResponse::Array(completions))
 }

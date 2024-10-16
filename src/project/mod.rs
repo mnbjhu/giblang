@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 
 use decl::Decl;
-use tracing::info;
 
 use crate::{
     db::{
@@ -43,7 +42,6 @@ pub struct ImplDecl<'db> {
 impl<'db> Project<'db> {
     pub fn get_decl(self, db: &'db dyn Db, path: ModulePath<'db>) -> Option<Decl<'db>> {
         let module = self.decls(db).get_path(db, path)?;
-        info!("Getting decl for {:?}", path);
         match module.content(db) {
             ModuleData::Export(decl) => Some(*decl),
             ModuleData::Package(_) => None,
