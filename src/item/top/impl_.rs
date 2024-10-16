@@ -60,7 +60,7 @@ impl Impl {
         self.generics.0.check(state);
         let trait_ = self.trait_.0.check(state).get_name(state);
         let for_ = self.for_.0.check(state).get_name(state);
-        let name = format!("impl {} for {}", trait_, for_);
+        let name = format!("impl {trait_} for {for_}");
         for (func, span) in &self.body {
             symbols.push(func.document_symbol(state, *span));
         }

@@ -37,9 +37,9 @@ pub trait AstItem: Debug {
         None
     }
 
-    fn goto_def<'db>(
+    fn goto_def(
         &self,
-        _state: &mut CheckState<'_, 'db>,
+        _state: &mut CheckState<'_, '_>,
         _offset: usize,
     ) -> Option<(SourceFile, Span)> {
         None
