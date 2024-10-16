@@ -1,4 +1,3 @@
-
 use ariadne::Source;
 use ariadne::{ColorGenerator, Label, Report, ReportKind};
 

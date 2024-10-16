@@ -1,4 +1,3 @@
-
 use crate::{
     parser::top::func::Func,
     project::decl::{Decl, DeclKind},
