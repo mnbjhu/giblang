@@ -30,4 +30,18 @@ impl AstItem for FunctionArg {
         let ty = self.ty.0.check(state);
         Some(format!("{}: {}", self.name.0, ty.get_name(state)))
     }
+
+    fn pretty<'b, D, A>(&'b self, allocator: &'b D) -> pretty::DocBuilder<'b, D, A>
+    where
+        Self: Sized,
+        D: pretty::DocAllocator<'b, A>,
+        D::Doc: Clone,
+        A: Clone,
+    {
+        allocator
+            .text(&self.name.0)
+            .append(":")
+            .append(allocator.space())
+            .append(self.ty.0.pretty(allocator))
+    }
 }

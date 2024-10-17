@@ -50,6 +50,26 @@ impl AstItem for Top {
         }
         state.exit_scope();
     }
+
+    fn pretty<'b, D, A>(&'b self, allocator: &'b D) -> pretty::DocBuilder<'b, D, A>
+    where
+        Self: Sized,
+        D: pretty::DocAllocator<'b, A>,
+        D::Doc: Clone,
+        A: Clone,
+    {
+        match self {
+            Top::Struct(s) => s.pretty(allocator),
+            Top::Func(f) => f.pretty(allocator),
+            Top::Enum(e) => e.pretty(allocator),
+            Top::Trait(t) => t.pretty(allocator),
+            Top::Impl(i) => i.pretty(allocator),
+            Top::Use(u) => allocator
+                .text("use")
+                .append(allocator.space())
+                .append(u.pretty(allocator)),
+        }
+    }
 }
 
 impl Top {

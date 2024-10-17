@@ -37,6 +37,7 @@ pub fn capabilities() -> InitializeResult {
                     ..Default::default()
                 }),
             ),
+            document_formatting_provider: Some(OneOf::Left(true)),
             completion_provider: Some(CompletionOptions {
                 trigger_characters: Some(vec![":".to_string()]),
                 ..Default::default()

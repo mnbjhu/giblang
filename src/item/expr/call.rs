@@ -1,6 +1,9 @@
 use crate::{
     check::{state::CheckState, SemanticToken},
-    item::{common::type_::ContainsOffset, AstItem},
+    item::{
+        common::{generics::brackets, type_::ContainsOffset},
+        AstItem,
+    },
     parser::expr::call::Call,
 };
 
@@ -25,5 +28,18 @@ impl AstItem for Call {
         for arg in &self.args {
             arg.0.tokens(state, tokens);
         }
+    }
+
+    fn pretty<'b, D, A>(&'b self, allocator: &'b D) -> pretty::DocBuilder<'b, D, A>
+    where
+        Self: Sized,
+        D: pretty::DocAllocator<'b, A>,
+        D::Doc: Clone,
+        A: Clone,
+    {
+        self.name
+            .0
+            .pretty(allocator)
+            .append(brackets(allocator, "(", ")", &self.args))
     }
 }

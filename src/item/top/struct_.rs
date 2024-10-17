@@ -31,6 +31,21 @@ impl AstItem for Struct {
         self.generics.0.tokens(state, tokens);
         self.body.0.tokens(state, tokens);
     }
+
+    fn pretty<'b, D, A>(&'b self, allocator: &'b D) -> pretty::DocBuilder<'b, D, A>
+    where
+        Self: Sized,
+        D: pretty::DocAllocator<'b, A>,
+        D::Doc: Clone,
+        A: Clone,
+    {
+        allocator
+            .text("struct")
+            .append(allocator.space())
+            .append(self.name.0.clone())
+            .append(self.generics.0.pretty(allocator))
+            .append(self.body.0.pretty(allocator))
+    }
 }
 
 impl Struct {

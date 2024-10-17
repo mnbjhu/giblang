@@ -23,4 +23,17 @@ impl AstItem for Stmt {
             Stmt::Let(l) => l.tokens(state, tokens),
         }
     }
+
+    fn pretty<'b, D, A>(&'b self, allocator: &'b D) -> pretty::DocBuilder<'b, D, A>
+    where
+        Self: Sized,
+        D: pretty::DocAllocator<'b, A>,
+        D::Doc: Clone,
+        A: Clone,
+    {
+        match self {
+            Stmt::Expr(e) => e.pretty(allocator),
+            Stmt::Let(l) => l.pretty(allocator),
+        }
+    }
 }

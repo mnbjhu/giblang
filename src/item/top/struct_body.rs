@@ -2,7 +2,13 @@ use async_lsp::lsp_types::DocumentSymbol;
 
 use crate::{
     check::{state::CheckState, SemanticToken},
-    item::{common::type_::ContainsOffset, AstItem},
+    item::{
+        common::{
+            generics::{braces, brackets},
+            type_::ContainsOffset,
+        },
+        AstItem,
+    },
     parser::top::struct_body::StructBody,
     range::span_to_range_str,
 };
@@ -50,6 +56,20 @@ impl AstItem for StructBody {
                     field.tokens(state, tokens);
                 }
             }
+        }
+    }
+
+    fn pretty<'b, D, A>(&'b self, allocator: &'b D) -> pretty::DocBuilder<'b, D, A>
+    where
+        Self: Sized,
+        D: pretty::DocAllocator<'b, A>,
+        D::Doc: Clone,
+        A: Clone,
+    {
+        match self {
+            StructBody::None => allocator.nil(),
+            StructBody::Tuple(tys) => brackets(allocator, "(", ")", &tys),
+            StructBody::Fields(fields) => braces(allocator, &fields),
         }
     }
 }

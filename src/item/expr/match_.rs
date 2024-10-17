@@ -1,5 +1,11 @@
 use crate::{
-    item::{common::type_::ContainsOffset as _, AstItem},
+    item::{
+        common::{
+            generics::{brackets, brackets_big},
+            type_::ContainsOffset as _,
+        },
+        AstItem,
+    },
     parser::expr::match_::Match,
 };
 
@@ -36,5 +42,20 @@ impl AstItem for Match {
         for arm in &self.arms {
             arm.0.tokens(state, tokens);
         }
+    }
+
+    fn pretty<'b, D, A>(&'b self, allocator: &'b D) -> pretty::DocBuilder<'b, D, A>
+    where
+        Self: Sized,
+        D: pretty::DocAllocator<'b, A>,
+        D::Doc: Clone,
+        A: Clone,
+    {
+        allocator
+            .text("match")
+            .append(allocator.space())
+            .append(self.expr.0.pretty(allocator))
+            .append(allocator.space())
+            .append(brackets_big(allocator, "{", "}", &self.arms))
     }
 }

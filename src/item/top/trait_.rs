@@ -8,6 +8,8 @@ use crate::{
     util::Span,
 };
 
+use super::impl_::pretty_trait_body;
+
 impl AstItem for Trait {
     fn at_offset<'me>(&'me self, state: &mut CheckState, offset: usize) -> &'me dyn AstItem
     where
@@ -33,6 +35,24 @@ impl AstItem for Trait {
         for func in &self.body {
             func.0.tokens(state, tokens);
         }
+    }
+    fn pretty<'b, D, A>(&'b self, allocator: &'b D) -> pretty::DocBuilder<'b, D, A>
+    where
+        Self: Sized,
+        D: pretty::DocAllocator<'b, A>,
+        D::Doc: Clone,
+        A: Clone,
+    {
+        allocator
+            .text("trait")
+            .append(allocator.space())
+            .append(self.name.0.clone())
+            .append(self.generics.0.pretty(allocator))
+            .append(allocator.space())
+            .append(pretty_trait_body(
+                allocator,
+                self.body.iter().map(|(func, _)| func.pretty(allocator)),
+            ))
     }
 }
 

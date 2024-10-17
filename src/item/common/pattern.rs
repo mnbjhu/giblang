@@ -6,7 +6,7 @@ use crate::{
     parser::common::pattern::{Pattern, StructFieldPattern},
 };
 
-use super::type_::ContainsOffset;
+use super::{generics::brackets, type_::ContainsOffset};
 
 impl AstItem for Pattern {
     fn at_offset<'me>(
@@ -85,6 +85,27 @@ impl AstItem for Pattern {
             None
         }
     }
+
+    fn pretty<'b, D, A>(&'b self, allocator: &'b D) -> pretty::DocBuilder<'b, D, A>
+    where
+        Self: Sized,
+        D: pretty::DocAllocator<'b, A>,
+        D::Doc: Clone,
+        A: Clone,
+    {
+        match self {
+            Pattern::Name(name) => allocator.text(&name.0),
+            Pattern::Struct { name, fields } => {
+                let content = brackets(allocator, "{", "}", fields);
+                name.pretty(allocator).append(content)
+            }
+            Pattern::UnitStruct(name) => name.pretty(allocator),
+            Pattern::TupleStruct { name, fields } => {
+                let content = brackets(allocator, "(", ")", fields);
+                name.pretty(allocator).append(content)
+            }
+        }
+    }
 }
 
 impl AstItem for StructFieldPattern {
@@ -145,6 +166,22 @@ impl AstItem for StructFieldPattern {
                     pattern.0.hover(state, offset, type_vars)
                 }
             }
+        }
+    }
+
+    fn pretty<'b, D, A>(&'b self, allocator: &'b D) -> pretty::DocBuilder<'b, D, A>
+    where
+        Self: Sized,
+        D: pretty::DocAllocator<'b, A>,
+        D::Doc: Clone,
+        A: Clone,
+    {
+        match self {
+            StructFieldPattern::Implied(name) => allocator.text(&name.0),
+            StructFieldPattern::Explicit { field, pattern } => allocator
+                .text(&field.0)
+                .append(": ")
+                .append(pattern.0.pretty(allocator)),
         }
     }
 }

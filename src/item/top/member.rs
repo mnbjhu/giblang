@@ -31,6 +31,19 @@ impl AstItem for EnumMember {
         });
         self.body.0.tokens(state, tokens);
     }
+
+    fn pretty<'b, D, A>(&'b self, allocator: &'b D) -> pretty::DocBuilder<'b, D, A>
+    where
+        Self: Sized,
+        D: pretty::DocAllocator<'b, A>,
+        D::Doc: Clone,
+        A: Clone,
+    {
+        allocator
+            .text(self.name.0.clone())
+            .append(allocator.space())
+            .append(self.body.0.pretty(allocator))
+    }
 }
 impl EnumMember {
     pub fn document_symbol(&self, state: &mut CheckState, span: Span) -> DocumentSymbol {

@@ -121,6 +121,18 @@ impl AstItem for SpannedQualifiedName {
             IdentDef::Unknown => None,
         }
     }
+
+    fn pretty<'b, D, A>(&'b self, allocator: &'b D) -> pretty::DocBuilder<'b, D, A>
+    where
+        Self: Sized,
+        D: pretty::DocAllocator<'b, A>,
+        D::Doc: Clone,
+        A: Clone,
+    {
+        let sep = allocator.text("::");
+        let parts = self.iter().map(|(name, _)| allocator.text(name));
+        allocator.intersperse(parts, sep)
+    }
 }
 
 fn get_ident_completions(state: &mut CheckState, completions: &mut Vec<CompletionItem>) {

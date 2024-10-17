@@ -4,7 +4,11 @@ use async_lsp::lsp_types::{DocumentSymbol, SymbolKind};
 
 use crate::{
     check::{state::CheckState, SemanticToken, TokenKind},
-    item::{common::type_::ContainsOffset, AstItem},
+    item::{
+        common::{generics::brackets, type_::ContainsOffset},
+        expr::pretty_codeblock,
+        AstItem,
+    },
     parser::top::func::Func,
     range::span_to_range_str,
     ty::Ty,
@@ -75,8 +79,41 @@ impl AstItem for Func {
     fn hover(&self, _: &mut CheckState, _: usize, _: &HashMap<u32, Ty<'_>>) -> Option<String> {
         Some(format!("Function {}", self.name.0))
     }
-}
 
+    fn pretty<'b, D, A>(&'b self, allocator: &'b D) -> pretty::DocBuilder<'b, D, A>
+    where
+        Self: Sized,
+        D: pretty::DocAllocator<'b, A>,
+        D::Doc: Clone,
+        A: Clone,
+    {
+        let rec = match &self.receiver {
+            Some(rec) => rec.0.pretty(allocator).append(allocator.text(".")),
+            None => allocator.nil(),
+        };
+        let ret = match &self.ret {
+            Some(ret) => allocator
+                .text(":")
+                .append(allocator.space())
+                .append(ret.0.pretty(allocator)),
+            None => allocator.nil(),
+        };
+
+        let body = match &self.body {
+            Some(body) => allocator.space().append(pretty_codeblock(allocator, body)),
+            None => allocator.nil(),
+        };
+        allocator
+            .text("fn")
+            .append(allocator.space())
+            .append(rec)
+            .append(self.name.0.clone())
+            .append(self.generics.0.pretty(allocator))
+            .append(brackets(allocator, "(", ")", &self.args))
+            .append(ret)
+            .append(body)
+    }
+}
 impl Func {
     pub fn document_symbol(&self, state: &mut CheckState, span: Span) -> DocumentSymbol {
         let txt = state.file_data.text(state.db);

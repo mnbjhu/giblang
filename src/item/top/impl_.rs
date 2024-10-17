@@ -49,6 +49,61 @@ impl AstItem for Impl {
         }
         self
     }
+
+    fn pretty<'b, D, A>(&'b self, allocator: &'b D) -> pretty::DocBuilder<'b, D, A>
+    where
+        Self: Sized,
+        D: pretty::DocAllocator<'b, A>,
+        D::Doc: Clone,
+        A: Clone,
+    {
+        allocator
+            .text("impl")
+            .append(self.generics.0.pretty(allocator))
+            .append(allocator.space())
+            .append(self.trait_.0.pretty(allocator))
+            .append(allocator.space())
+            .append("for")
+            .append(allocator.space())
+            .append(self.for_.0.pretty(allocator))
+            .append(allocator.space())
+            .append("{")
+            .append(
+                allocator
+                    .hardline()
+                    .append(allocator.intersperse(
+                        self.body.iter().map(|(func, _)| func.pretty(allocator)),
+                        allocator.hardline(),
+                    ))
+                    .nest(4),
+            )
+            .append(allocator.hardline())
+            .append("}")
+    }
+}
+
+pub fn pretty_trait_body<'b, D, A>(
+    allocator: &'b D,
+    items: impl Iterator<Item = pretty::DocBuilder<'b, D, A>>,
+) -> pretty::DocBuilder<'b, D, A>
+where
+    D: pretty::DocAllocator<'b, A>,
+    D::Doc: Clone,
+    A: Clone,
+{
+    let separator = allocator.hardline();
+    allocator
+        .text("{")
+        .append(
+            allocator
+                .line_()
+                .append(allocator.intersperse(items, separator))
+                .nest(4)
+                .group(),
+        )
+        .append(allocator.line_())
+        .append("}")
+        .group()
 }
 
 impl Impl {

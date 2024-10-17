@@ -4,7 +4,7 @@ use crate::{
     parser::common::type_::NamedType,
 };
 
-use super::type_::ContainsOffset;
+use super::{generics::brackets, type_::ContainsOffset};
 
 impl AstItem for NamedType {
     fn at_offset<'me>(&'me self, state: &mut CheckState, offset: usize) -> &'me dyn AstItem
@@ -24,5 +24,19 @@ impl AstItem for NamedType {
         for arg in &self.args {
             arg.0.tokens(state, tokens);
         }
+    }
+
+    fn pretty<'b, D, A>(&'b self, allocator: &'b D) -> pretty::DocBuilder<'b, D, A>
+    where
+        Self: Sized,
+        D: pretty::DocAllocator<'b, A>,
+        D::Doc: Clone,
+        A: Clone,
+    {
+        if self.args.is_empty() {
+            return self.name.pretty(allocator);
+        }
+        let args = brackets(allocator, "[", "]", &self.args);
+        self.name.pretty(allocator).append(args)
     }
 }

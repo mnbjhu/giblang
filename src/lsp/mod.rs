@@ -2,6 +2,7 @@ mod capabilities;
 mod definition;
 mod diagnostics;
 mod document_symbols;
+mod fmt;
 mod semantic_tokens;
 
 use std::future::Future;
@@ -32,10 +33,10 @@ use crate::db::input::{Db, SourceDatabase};
 use crate::parser::parse_file;
 use crate::range::position_to_offset;
 
-struct ServerState {
-    client: ClientSocket,
+pub struct ServerState {
+    pub client: ClientSocket,
     counter: i32,
-    db: SourceDatabase,
+    pub db: SourceDatabase,
 }
 
 struct TickEvent;
@@ -74,6 +75,7 @@ pub async fn main_loop() {
             })
             .request::<request::GotoDefinition, _>(definition::goto_definition)
             .request::<request::DocumentSymbolRequest, _>(document_symbols::get_document_symbols)
+            .request::<request::Formatting, _>(fmt::format)
             .notification::<notification::Initialized>(|_, _| ControlFlow::Continue(()))
             .notification::<notification::DidChangeConfiguration>(|_, _| ControlFlow::Continue(()))
             .notification::<notification::DidOpenTextDocument>(did_open)

@@ -4,7 +4,10 @@ use async_lsp::lsp_types::{DocumentSymbol, SymbolKind};
 
 use crate::{
     check::{state::CheckState, SemanticToken, TokenKind},
-    item::{common::type_::ContainsOffset, AstItem},
+    item::{
+        common::{generics::brackets, type_::ContainsOffset},
+        AstItem,
+    },
     parser::top::enum_::Enum,
     range::span_to_range_str,
     ty::Ty,
@@ -40,6 +43,23 @@ impl AstItem for Enum {
         for member in &self.members {
             member.0.tokens(state, tokens);
         }
+    }
+
+    fn pretty<'b, D, A>(&'b self, allocator: &'b D) -> pretty::DocBuilder<'b, D, A>
+    where
+        Self: Sized,
+        D: pretty::DocAllocator<'b, A>,
+        D::Doc: Clone,
+        A: Clone,
+    {
+        allocator
+            .text("enum")
+            .append(allocator.space())
+            .append(self.name.0.clone())
+            .append(allocator.space())
+            .append(self.generics.0.pretty(allocator))
+            .append(allocator.space())
+            .append(brackets(allocator, "{", "}", &self.members))
     }
 }
 

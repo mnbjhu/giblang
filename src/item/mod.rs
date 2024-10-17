@@ -2,14 +2,15 @@ use std::{collections::HashMap, fmt::Debug};
 
 use async_lsp::lsp_types::CompletionItem;
 use common::type_::ContainsOffset;
+use pretty::{DocAllocator, DocBuilder};
 use salsa::Database;
 
 use crate::{
     check::{state::CheckState, SemanticToken},
-    db::input::SourceFile,
+    db::input::{Db, SourceFile},
     parser::{top::Top, Ast},
     ty::Ty,
-    util::Span,
+    util::{Span, Spanned},
 };
 
 pub mod common;
@@ -49,6 +50,13 @@ pub trait AstItem: Debug {
     fn completions(&self, _state: &mut CheckState, _offset: usize) -> Vec<CompletionItem> {
         vec![]
     }
+
+    fn pretty<'b, D, A>(&'b self, allocator: &'b D) -> DocBuilder<'b, D, A>
+    where
+        Self: Sized,
+        D: DocAllocator<'b, A>,
+        D::Doc: Clone,
+        A: Clone;
 }
 
 impl<'db> Ast<'db> {
@@ -86,4 +94,22 @@ impl<'db> Ast<'db> {
         }
         tokens
     }
+}
+pub fn pretty_format<'b, 'db, D, A>(
+    ast: &'b Vec<Spanned<Top>>,
+    allocator: &'b D,
+) -> DocBuilder<'b, D, A>
+where
+    D: DocAllocator<'b, A>,
+    D::Doc: Clone,
+    A: Clone,
+{
+    let tops = ast.iter().map(|(item, _)| {
+        if let Top::Use(_) = item {
+            item.pretty(allocator)
+        } else {
+            allocator.hardline().append(item.pretty(allocator))
+        }
+    });
+    allocator.intersperse(tops, allocator.hardline())
 }
