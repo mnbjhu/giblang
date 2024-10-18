@@ -6,9 +6,7 @@ use std::Option
 use std::Result
 
 trait Test {
-    fn test(): String {
-        "Hello"
-    }
+    fn test(): String {}
     fn another()
 }
 
@@ -49,4 +47,4 @@ impl Test for New {
     fn another()
 }
 
-struct New[T] { test: T, test2: String, last: Int }
+struct New[T] { test: T, test2: String, test3: String }

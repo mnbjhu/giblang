@@ -8,10 +8,7 @@ use crate::{
     lexer::{
         literal::Literal,
         token::{punct, Token},
-    },
-    parser::expr::match_::{match_parser, Match},
-    util::Spanned,
-    AstParser,
+    }, op, parser::expr::match_::{match_parser, Match}, util::Spanned, AstParser
 };
 
 use self::{
@@ -31,6 +28,7 @@ pub mod match_;
 pub mod match_arm;
 pub mod member;
 pub mod qualified_name;
+pub mod op;
 
 #[derive(Clone, PartialEq, Debug, Eq)]
 pub enum Expr {
@@ -42,7 +40,29 @@ pub enum Expr {
     Match(Match),
     Tuple(Vec<Spanned<Expr>>),
     IfElse(IfElse),
+    Op{
+        lhs: Box<Expr>,
+        op: Op,
+        rhs: Box<Expr>,
+    },
     Error,
+}
+
+#[derive(Clone, PartialEq, Debug, Eq)]
+pub enum Op {
+    Add,
+    Sub,
+    Mul,
+    Div,
+    Mod,
+    And,
+    Or,
+    Eq,
+    Neq,
+    Lt,
+    Lte,
+    Gt,
+    Gte,
 }
 
 pub fn expr_parser<'tokens, 'src: 'tokens>(stmt: AstParser!(Stmt)) -> AstParser!(Expr) {
@@ -72,15 +92,26 @@ pub fn expr_parser<'tokens, 'src: 'tokens>(stmt: AstParser!(Stmt)) -> AstParser!
         .or(bracketed)
         .or(tuple);
 
-        let match_ =
-            match_parser(expr.clone(), match_arm::match_arm_parser(expr.clone())).map(Expr::Match);
 
         let call = call_parser(atom.clone(), expr.clone()).map(Expr::Call);
         let member = member_call_parser(atom.clone(), expr.clone()).map(Expr::MemberCall);
 
+        let atom = atom.or(call).or(member);
+
+        let sum = atom
+         .clone()
+         .foldl(just(op!(+)).ignore_then(atom.clone()).repeated(), |a, b| Expr::Op {
+             lhs: Box::new(a),
+             op: Op::Add,
+             rhs: Box::new(b),
+         });
+
+        let match_ =
+            match_parser(expr.clone(), match_arm::match_arm_parser(expr.clone())).map(Expr::Match);
+
         let if_else = if_else_parser(expr, stmt).map(Expr::IfElse);
 
-        choice((if_else, match_, block, member, call, atom))
+        choice((if_else, match_, block, sum, atom))
     })
 }
 

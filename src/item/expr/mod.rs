@@ -48,6 +48,7 @@ impl AstItem for Expr {
                 self
             }
             Expr::Error => &Expr::Error,
+            Expr::Op {..} => todo!(),
         }
     }
 
@@ -70,6 +71,7 @@ impl AstItem for Expr {
                 }
             }
             Expr::Error => {}
+            Expr::Op {..} => todo!(),
         }
     }
 
@@ -93,6 +95,7 @@ impl AstItem for Expr {
             }
             Expr::Tuple(exprs) => brackets(allocator, "(", ")", exprs),
             Expr::Error => panic!(),
+            Expr::Op {..} => todo!(),
         }
     }
 }
