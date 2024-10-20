@@ -21,7 +21,7 @@ pub mod stmt;
 pub mod top;
 
 pub trait AstItem: Debug {
-    fn at_offset<'me, 'db>(&'me self, _state: &mut CheckState<'_, 'db>, _offset: usize) -> &'me dyn AstItem
+    fn at_offset<'me>(&'me self, _state: &mut CheckState<'_, '_>, _offset: usize) -> &'me dyn AstItem
     where
         Self: Sized,
     {
@@ -94,7 +94,7 @@ impl<'db> Ast<'db> {
     }
 }
 pub fn pretty_format<'b, 'db, D, A>(
-    ast: &'b Vec<Spanned<Top>>,
+    ast: &'b [Spanned<Top>],
     allocator: &'b D,
 ) -> DocBuilder<'b, D, A>
 where

@@ -36,8 +36,8 @@ impl AstItem for Literal {
         match self {
             Literal::Int(i) => allocator.text(i),
             Literal::Float(f) => allocator.text(f),
-            Literal::String(s) => allocator.text(format!("\"{}\"", s)),
-            Literal::Char(c) => allocator.text(format!("'{}'", c)),
+            Literal::String(s) => allocator.text(format!("\"{s}\"")),
+            Literal::Char(c) => allocator.text(format!("'{c}'")),
             Literal::Bool(b) => {
                 if *b {
                     allocator.text("true")

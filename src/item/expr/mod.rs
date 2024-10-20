@@ -1,7 +1,7 @@
 use crate::{
     check::{state::CheckState, SemanticToken},
     parser::{expr::Expr, stmt::Stmt},
-    util::{Spanned},
+    util::Spanned,
 };
 
 use super::{
@@ -107,7 +107,7 @@ impl AstItem for Expr {
 
 pub fn pretty_codeblock<'b, D, A>(
     allocator: &'b D,
-    code_block: &'b Vec<Spanned<Stmt>>,
+    code_block: &'b [Spanned<Stmt>],
 ) -> pretty::DocBuilder<'b, D, A>
 where
     D: pretty::DocAllocator<'b, A>,

@@ -81,7 +81,9 @@ pub async fn main_loop() {
             .notification::<notification::DidOpenTextDocument>(did_open)
             .notification::<notification::DidChangeTextDocument>(did_change)
             .notification::<notification::DidCloseTextDocument>(|_, _| ControlFlow::Continue(()))
-            .notification::<notification::DidSaveTextDocument>(|st, _| {
+            .notification::<notification::DidSaveTextDocument>(|st, msg| {
+                let mut db = st.db.clone();
+                db.input(&msg.text_document.uri.to_file_path().unwrap());
                 st.report_diags();
                 ControlFlow::Continue(())
             })
@@ -139,7 +141,9 @@ fn did_open(
     msg: DidOpenTextDocumentParams,
 ) -> ControlFlow<Result<(), async_lsp::Error>> {
     let path = msg.text_document.uri.clone().to_file_path().unwrap();
-    st.db.input(&path);
+    let file = st.db.input(&path);
+    file.set_text(st.db.as_dyn_database_mut())
+        .to(msg.text_document.text);
     st.report_diags();
     ControlFlow::Continue(())
 }

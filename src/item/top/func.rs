@@ -87,7 +87,7 @@ impl AstItem for Func {
         D::Doc: Clone,
         A: Clone,
     {
-        let rec = match &self.receiver {
+        let receiver = match &self.receiver {
             Some(rec) => rec.0.pretty(allocator).append(allocator.text(".")),
             None => allocator.nil(),
         };
@@ -106,7 +106,7 @@ impl AstItem for Func {
         allocator
             .text("fn")
             .append(allocator.space())
-            .append(rec)
+            .append(receiver)
             .append(self.name.0.clone())
             .append(self.generics.0.pretty(allocator))
             .append(brackets(allocator, "(", ")", &self.args))

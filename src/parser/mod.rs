@@ -18,6 +18,7 @@ use chumsky::{
     IterParser, Parser,
 };
 use salsa::Accumulator;
+use tracing::info;
 
 use crate::{
     lexer::{parser::lexer, token::newline},
@@ -41,6 +42,7 @@ pub type File = Vec<Spanned<Top>>;
 pub struct Ast<'db> {
     #[return_ref]
     pub tops: Vec<Spanned<Top>>,
+    pub valid: bool,
 }
 
 #[must_use]
@@ -120,11 +122,15 @@ pub fn top_recovery<'tokens, 'src: 'tokens>() -> AstParser!(Unit) {
 
 #[salsa::tracked]
 pub fn parse_file<'db>(db: &'db dyn Db, file: SourceFile) -> Ast<'db> {
+    info!("Parsing file: {}", file.path(db).to_str().unwrap());
+    let mut valid = true;
     let text = file.text(db);
     let (tokens, errors) = lexer().parse(text).into_output_errors();
     let len = text.len();
     let mut found = vec![];
     for error in errors {
+        valid = false;
+        info!("Lexer error: {:?}", error);
         Diagnostic {
             message: error.reason().to_string(),
             span: *error.span(),
@@ -140,6 +146,8 @@ pub fn parse_file<'db>(db: &'db dyn Db, file: SourceFile) -> Ast<'db> {
         let input = tokens.spanned(eoi);
         let (ast, errors) = file_parser().parse(input).into_output_errors();
         for error in errors {
+            valid = false;
+            info!("Parser error: {:?}", error);
             let mut expected_iter = error.expected();
             let mut expected = vec![];
             while let Some(RichPattern::Token(tok)) = expected_iter.next() {
@@ -161,7 +169,7 @@ pub fn parse_file<'db>(db: &'db dyn Db, file: SourceFile) -> Ast<'db> {
             found = ast;
         }
     }
-    Ast::new(db, found)
+    Ast::new(db, found, valid)
 }
 
 #[macro_export]

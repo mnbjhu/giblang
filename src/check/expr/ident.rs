@@ -87,7 +87,7 @@ impl<'db> Module<'db> {
                 if let Some(self_ty) = self_ty {
                     let mut args = HashMap::new();
                     args.insert("Self".to_string(), self_ty);
-                    ty = ty.parameterize(&mut args);
+                    ty = ty.parameterize(&args);
                 }
                 ty.inst(&mut HashMap::new(), state, span)
             }
@@ -105,52 +105,3 @@ pub fn check_ident_is<'db>(
     actual.expect_is_instance_of(expected, state, false, span);
 }
 
-// fn get_body_ty<'module>(
-//     project: &'module Project,
-//     path: &[String],
-//     generics: &'module GenericArgs,
-//     body: &'module StructBody,
-//     name: Export<'module>,
-// ) -> Ty {
-//     let file = project.get_file(&path[..path.len() - 1]);
-//     let mut imp_state = CheckState::from_file(file);
-//     imp_state.import_all(&file.ast, project);
-//     // TODO: Check generics
-//     let generics = generics.check(project, &mut imp_state, false);
-//     let ret = match &body {
-//         StructBody::None => Ty::Named {
-//             name,
-//             args: generics.iter().map(|_| Ty::Unknown).collect(),
-//         },
-//         StructBody::Tuple(fields) => {
-//             let args = fields
-//                 .iter()
-//                 .map(|ty| ty.0.check(project, &mut imp_state, false))
-//                 .collect();
-//             Ty::Function {
-//                 receiver: None,
-//                 args,
-//                 ret: Box::new(Ty::Named {
-//                     name,
-//                     args: generics,
-//                 }),
-//             }
-//         }
-//         StructBody::Fields(fields) => {
-//             let args = fields
-//                 .iter()
-//                 .map(|ty| ty.0.ty.0.check(project, &mut imp_state, false))
-//                 .collect();
-//             Ty::Function {
-//                 receiver: None,
-//                 args,
-//                 ret: Box::new(Ty::Named {
-//                     name,
-//                     args: generics,
-//                 }),
-//             }
-//         }
-//     };
-//     ret
-// }
-//

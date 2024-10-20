@@ -64,7 +64,7 @@ impl Command {
             Command::FileTree => file_tree(),
             Command::ModuleTree => module_tree(),
             Command::Lex { path } => lex(path),
-            Command::Fmt { path } => fmt(&path),
+            Command::Fmt { path } => fmt(path),
         }
     }
 }

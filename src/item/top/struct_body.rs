@@ -68,8 +68,8 @@ impl AstItem for StructBody {
     {
         match self {
             StructBody::None => allocator.nil(),
-            StructBody::Tuple(tys) => brackets(allocator, "(", ")", &tys),
-            StructBody::Fields(fields) => braces(allocator, &fields),
+            StructBody::Tuple(tys) => brackets(allocator, "(", ")", tys),
+            StructBody::Fields(fields) => braces(allocator, fields),
         }
     }
 }

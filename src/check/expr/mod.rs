@@ -59,33 +59,3 @@ impl<'db> Expr {
         }
     }
 }
-
-// #[cfg(test)]
-// mod tests {
-//     use crate::check::state::CheckState;
-//     use crate::lexer::parser::lexer;
-//     use crate::parser::expr::expr_parser;
-//     use crate::parser::stmt::stmt_parser;
-//     use crate::ty::Ty;
-//     use crate::util::Span;
-//     use chumsky::input::Input;
-//     use chumsky::Parser;
-//
-//     pub fn parse_expr(state: &mut CheckState, expr: &str) -> Ty {
-//         let eoi = Span::splat(expr.len());
-//         let tokens = lexer().parse(expr).unwrap();
-//         let ty = expr_parser(stmt_parser())
-//             .parse(tokens.spanned(eoi))
-//             .unwrap();
-//         ty.check(state)
-//     }
-//
-//     pub fn parse_expr_with_expected(state: &mut CheckState, expected: &Ty, expr: &str) {
-//         let eoi = Span::splat(expr.len());
-//         let tokens = lexer().parse(expr).unwrap();
-//         let expr = expr_parser(stmt_parser())
-//             .parse(tokens.spanned(eoi))
-//             .unwrap();
-//         expr.expect_instance_of(expected, state, Span::splat(0));
-//     }
-// }
