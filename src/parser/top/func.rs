@@ -12,13 +12,12 @@ use crate::{parser::common::type_::Type, util::Spanned};
 
 use super::arg::{function_args_parser, FunctionArg};
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Eq)]
 pub struct Func {
-    pub id: u32,
     pub receiver: Option<Spanned<Type>>,
     pub name: Spanned<String>,
     pub args: Vec<Spanned<FunctionArg>>,
-    pub generics: GenericArgs,
+    pub generics: Spanned<GenericArgs>,
     pub ret: Option<Spanned<Type>>,
     pub body: Option<Vec<Spanned<Stmt>>>,
 }
@@ -36,21 +35,16 @@ pub fn func_parser<'tokens, 'src: 'tokens>(stmt: AstParser!(Stmt)) -> AstParser!
     just(kw!(fn))
         .ignore_then(receiver)
         .then(spanned_ident_parser())
-        .then(generic_args_parser())
+        .then(generic_args_parser().map_with(|g, e| (g, e.span())))
         .then(function_args_parser())
         .then(ret)
         .then(code_block_parser(stmt).or_not())
-        .map_with(|(((((receiver, name), generics), args), ret), body), e| {
-            let state: &mut u32 = e.state();
-            *state += 1;
-            Func {
-                receiver,
-                name,
-                args,
-                generics,
-                ret,
-                body,
-                id: *state,
-            }
+        .map(|(((((receiver, name), generics), args), ret), body)| Func {
+            receiver,
+            name,
+            args,
+            generics,
+            ret,
+            body,
         })
 }

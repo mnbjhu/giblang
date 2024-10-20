@@ -7,10 +7,8 @@ use wildcard::UnexpectedWildcard;
 
 use crate::{
     check::err::{simple::Simple, unresolved::Unresolved},
-    project::Project,
+    db::{err::Diagnostic, input::Db},
 };
-
-use super::state::CheckState;
 
 pub mod impl_type;
 pub mod is_not_instance;
@@ -21,7 +19,12 @@ pub mod unresolved;
 pub mod unresolved_type_var;
 pub mod wildcard;
 
-#[derive(Clone, Debug, PartialEq)]
+#[salsa::accumulator]
+pub struct Error {
+    pub inner: CheckError,
+}
+
+#[derive(Clone, Debug)]
 pub enum CheckError {
     Simple(Simple),
     Unresolved(Unresolved),
@@ -29,32 +32,39 @@ pub enum CheckError {
     UnboundTypeVar(UnboundTypeVar),
     UnexpectedArgs(UnexpectedArgs),
     MissingReceiver(MissingReceiver),
-}
-
-pub enum ResolveError {
-    Unresolved(Unresolved),
     UnexpectedWildcard(UnexpectedWildcard),
     ImplTypeMismatch(ImplTypeMismatch),
 }
-impl CheckState<'_> {
-    pub fn print_error(&self, error: &CheckError) {
-        match error {
-            CheckError::Simple(e) => e.print(self.project),
-            CheckError::Unresolved(e) => e.print(self.project),
-            CheckError::IsNotInstance(e) => e.print(self),
-            CheckError::UnboundTypeVar(e) => e.print(self),
-            CheckError::MissingReceiver(e) => e.print(self),
-            CheckError::UnexpectedArgs(e) => e.print(self),
+
+impl CheckError {
+    pub fn print(&self, db: &dyn Db) {
+        match self {
+            CheckError::Simple(err) => err.print(db),
+            CheckError::Unresolved(err) => err.print(db),
+            CheckError::IsNotInstance(err) => err.print(db),
+            CheckError::UnboundTypeVar(err) => err.print(db),
+            CheckError::UnexpectedArgs(err) => err.print(db),
+            CheckError::MissingReceiver(err) => err.print(db),
+            CheckError::UnexpectedWildcard(err) => err.print(db),
+            CheckError::ImplTypeMismatch(err) => err.print(db),
         }
     }
 }
+pub trait IntoWithDb<T> {
+    fn into_with_db(self, db: &dyn Db) -> T;
+}
 
-impl Project {
-    pub fn print_resolve_error(&self, error: &ResolveError) {
-        match error {
-            ResolveError::Unresolved(e) => e.print(self),
-            ResolveError::UnexpectedWildcard(e) => e.print(self),
-            ResolveError::ImplTypeMismatch(e) => e.print(self),
+impl IntoWithDb<Diagnostic> for Error {
+    fn into_with_db(self, db: &dyn Db) -> Diagnostic {
+        match self.inner {
+            CheckError::Simple(err) => err.into_with_db(db),
+            CheckError::Unresolved(err) => err.into_with_db(db),
+            CheckError::IsNotInstance(err) => err.into_with_db(db),
+            CheckError::UnboundTypeVar(err) => err.into_with_db(db),
+            CheckError::UnexpectedArgs(err) => err.into_with_db(db),
+            CheckError::MissingReceiver(err) => err.into_with_db(db),
+            CheckError::UnexpectedWildcard(err) => err.into_with_db(db),
+            CheckError::ImplTypeMismatch(err) => err.into_with_db(db),
         }
     }
 }

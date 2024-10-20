@@ -1,4 +1,4 @@
-use chumsky::{primitive::just, Parser};
+use chumsky::{primitive::just, recovery::via_parser, span::Span, Parser};
 
 use crate::{
     kw,
@@ -16,7 +16,7 @@ use crate::{
     AstParser,
 };
 
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Debug, Eq)]
 pub struct LetStatement {
     pub pattern: Spanned<Pattern>,
     pub ty: Option<Spanned<Type>>,
@@ -28,10 +28,23 @@ pub fn let_parser<'tokens, 'src: 'tokens>(expr: AstParser!(Expr)) -> AstParser!(
         .padded_by(optional_newline())
         .ignore_then(type_parser().map_with(|t, e| (t, e.span())))
         .or_not();
-    just(kw!(let))
+
+    let missing_expr = just(kw!(let))
+        .ignore_then(pattern_parser().map_with(|p, e| (p, e.span())))
+        .then(ty.clone())
+        .then_ignore(optional_newline().then(just(op!(=))).or_not())
+        .map_with(|(pattern, ty), e| LetStatement {
+            pattern,
+            ty,
+            value: (Expr::Error, Span::to_end(&e.span())),
+        });
+
+    let valid = just(kw!(let))
         .ignore_then(pattern_parser().map_with(|p, e| (p, e.span())))
         .then(ty)
-        .then_ignore(just(op!(=)))
+        .then_ignore(just(op!(=)).padded_by(optional_newline()))
         .then(expr.map_with(|e, s| (e, s.span())))
-        .map(|((pattern, ty), value)| LetStatement { pattern, ty, value })
+        .map(|((pattern, ty), value)| LetStatement { pattern, ty, value });
+
+    valid.recover_with(via_parser(missing_expr))
 }

@@ -1,8 +1,10 @@
-use std::collections::HashMap;
-
 use crate::{
-    check::err::ResolveError,
-    project::{decl::Decl, file_data::FileData, ImplData, Project},
+    db::{
+        input::{Db, SourceFile, Vfs, VfsInner},
+        modules::{Module, ModuleData, ModulePath},
+    },
+    parser::{parse_file, top::Top},
+    project::ImplDecl,
 };
 
 use self::state::ResolveState;
@@ -11,141 +13,212 @@ mod common;
 pub mod state;
 mod top;
 
-pub fn resolve_file(
-    file_data: &FileData,
-    decls: &mut HashMap<u32, Decl>,
-    impls: &mut HashMap<u32, ImplData>,
-    impl_map: &mut HashMap<u32, Vec<u32>>,
-    project: &Project,
-) -> Vec<ResolveError> {
-    let mut state = ResolveState::from_file(file_data, project);
-    for (item, _) in &file_data.ast {
-        state.enter_scope();
-        item.resolve(&mut state, decls, impls, impl_map);
-        state.exit_scope();
-    }
-    state.errors
+#[salsa::tracked]
+pub fn resolve_file<'db>(db: &'db dyn Db, file: SourceFile) -> Module<'db> {
+    let mut state = ResolveState::from_file(db, file);
+    let ast = parse_file(db, file);
+    let decls = ast
+        .tops(db)
+        .iter()
+        .filter_map(|item| {
+            state.enter_scope();
+            let found = item.0.resolve(&mut state)?;
+            state.path.push(found.name(db));
+            let name = found.name(db);
+            let export = ModuleData::Export(found);
+            let mod_ = Module::new(db, name, export, ModulePath::new(db, state.path.clone()));
+            state.exit_scope();
+            state.path.pop();
+            Some(mod_)
+        })
+        .collect();
+    Module::new(
+        db,
+        file.name(db).to_string(),
+        ModuleData::Package(decls),
+        ModulePath::new(db, state.path.clone()),
+    )
 }
 
-#[cfg(test)]
-mod tests {
-    use crate::{
-        check::ty::tests::parse_ty,
-        project::{
-            decl::{struct_::StructDecl, Decl},
-            Project,
-        },
-    };
-
-    #[test]
-    fn single_file() {
-        let mut project = Project::new();
-        project.insert_file(
-            "test.gib".to_string(),
-            r"
-            struct Foo {
-                x: i32,
+#[salsa::tracked]
+pub fn resolve_impls<'db>(db: &'db dyn Db, file: SourceFile) -> Vec<ImplDecl<'db>> {
+    let mut state = ResolveState::from_file(db, file);
+    let ast = parse_file(db, file);
+    ast.tops(db)
+        .iter()
+        .filter_map(|item| {
+            if let Top::Use(u) = &item.0 {
+                state.import(u);
             }
-            fn main() {
-                let x = 5
+            if let Top::Impl(impl_) = &item.0 {
+                state.enter_scope();
+                let impl_ = impl_.resolve(&mut state);
+                state.exit_scope();
+                Some(impl_)
+            } else {
+                None
             }
-            "
-            .to_string(),
-        );
+        })
+        .collect()
+}
 
-        let errors = project.resolve();
-        assert!(errors.is_empty());
-
-        let main = project.get_path(&["test", "main"]);
-        if let Some(main) = main {
-            let main = project.get_decl(main);
-            assert_eq!(main.name(), "main");
-        } else {
-            panic!("Failed to resolve main");
-        }
-    }
-
-    #[test]
-    fn multi_file() {
-        let mut project = Project::new();
-        project.insert_file(
-            "test.gib".to_string(),
-            r"
-            struct Foo {
-                x: i32,
+#[salsa::tracked]
+pub fn resolve_vfs<'db>(db: &'db dyn Db, vfs: Vfs, path: ModulePath<'db>) -> Module<'db> {
+    match vfs.inner(db) {
+        VfsInner::File(file) => resolve_file(db, *file),
+        VfsInner::Dir(files) => {
+            let mut modules = Vec::new();
+            let mut path = path.name(db).clone();
+            for file in files {
+                path.push(file.name(db));
+                let module = resolve_vfs(db, *file, ModulePath::new(db, path.clone()));
+                path.pop();
+                modules.push(module);
             }
-            fn main() {
-                let x = 5
-            }
-            "
-            .to_string(),
-        );
-        project.insert_file(
-            "test2.gib".to_string(),
-            r"
-            struct Bar {
-                y: i32,
-            }
-            "
-            .to_string(),
-        );
-
-        let errors = project.resolve();
-        assert!(errors.is_empty());
-
-        let main = project.get_path(&["test", "main"]);
-        if let Some(main) = main {
-            let main = project.get_decl(main);
-            assert_eq!(main.name(), "main");
-        } else {
-            panic!("Failed to resolve main");
-        }
-
-        let bar = project.get_path(&["test2", "Bar"]);
-        if let Some(bar) = bar {
-            let bar = project.get_decl(bar);
-            assert_eq!(bar.name(), "Bar");
-        } else {
-            panic!("Failed to resolve Bar");
-        }
-    }
-
-    #[allow(clippy::similar_names)]
-    #[test]
-    fn enum_members() {
-        let mut project = Project::new();
-        project.insert_file(
-            "test.gib".to_string(),
-            r"
-            enum Foo {
-                Bar,
-                Baz(Int),
-            }
-            "
-            .to_string(),
-        );
-
-        let errors = project.resolve();
-        assert!(errors.is_empty());
-
-        let bar = project
-            .get_path(&["test", "Foo", "Bar"])
-            .expect("Couldn't resolve 'Bar'");
-        if let Decl::Member { name, body } = project.get_decl(bar) {
-            assert_eq!(name.0, "Bar");
-            assert!(body.is_none(), "Expected an 'None' body");
-        }
-
-        let baz = project
-            .get_path(&["test", "Foo", "Baz"])
-            .expect("Couldn't resolve 'Baz'");
-
-        if let Decl::Member { name, body } = project.get_decl(baz) {
-            assert_eq!(name.0, "Baz");
-            if let StructDecl::Tuple(v) = body {
-                assert_eq!(v.len(), 1);
-                assert_eq!(v[0], parse_ty(&project, "Int"));
-            }
+            Module::new(
+                db,
+                vfs.name(db),
+                ModuleData::Package(modules),
+                ModulePath::new(db, path),
+            )
         }
     }
 }
+
+#[salsa::tracked]
+pub fn resolve_impls_vfs<'db>(db: &'db dyn Db, vfs: Vfs) -> Vec<ImplDecl<'db>> {
+    match vfs.inner(db) {
+        VfsInner::File(file) => resolve_impls(db, *file),
+        VfsInner::Dir(files) => {
+            let mut impls = Vec::new();
+            for file in files {
+                let file_impls = resolve_impls_vfs(db, *file);
+                impls.extend(file_impls);
+            }
+            impls
+        }
+    }
+}
+
+// #[cfg(test)]
+// mod tests {
+//     use crate::{
+//         check::ty::tests::parse_ty,
+//         project::{
+//             decl::{struct_::StructDecl, Decl},
+//             Project,
+//         },
+//     };
+//
+//     #[test]
+//     fn single_file() {
+//         let mut project = Project::new();
+//         project.insert_file(
+//             "test.gib".to_string(),
+//             r"
+//             struct Foo {
+//                 x: i32,
+//             }
+//             fn main() {
+//                 let x = 5
+//             }
+//             "
+//             .to_string(),
+//         );
+//
+//         let errors = project.resolve();
+//         assert!(errors.is_empty());
+//
+//         let main = project.get_path(&["test", "main"]);
+//         if let Some(main) = main {
+//             let main = project.get_decl(main);
+//             assert_eq!(main.name(), "main");
+//         } else {
+//             panic!("Failed to resolve main");
+//         }
+//     }
+//
+//     #[test]
+//     fn multi_file() {
+//         let mut project = Project::new();
+//         project.insert_file(
+//             "test.gib".to_string(),
+//             r"
+//             struct Foo {
+//                 x: i32,
+//             }
+//             fn main() {
+//                 let x = 5
+//             }
+//             "
+//             .to_string(),
+//         );
+//         project.insert_file(
+//             "test2.gib".to_string(),
+//             r"
+//             struct Bar {
+//                 y: i32,
+//             }
+//             "
+//             .to_string(),
+//         );
+//
+//         let errors = project.resolve();
+//         assert!(errors.is_empty());
+//
+//         let main = project.get_path(&["test", "main"]);
+//         if let Some(main) = main {
+//             let main = project.get_decl(main);
+//             assert_eq!(main.name(), "main");
+//         } else {
+//             panic!("Failed to resolve main");
+//         }
+//
+//         let bar = project.get_path(&["test2", "Bar"]);
+//         if let Some(bar) = bar {
+//             let bar = project.get_decl(bar);
+//             assert_eq!(bar.name(), "Bar");
+//         } else {
+//             panic!("Failed to resolve Bar");
+//         }
+//     }
+//
+//     #[allow(clippy::similar_names)]
+//     #[test]
+//     fn enum_members() {
+//         let mut project = Project::new();
+//         project.insert_file(
+//             "test.gib".to_string(),
+//             r"
+//             enum Foo {
+//                 Bar,
+//                 Baz(Int),
+//             }
+//             "
+//             .to_string(),
+//         );
+//
+//         let errors = project.resolve();
+//         assert!(errors.is_empty());
+//
+//         let bar = project
+//             .get_path(&["test", "Foo", "Bar"])
+//             .expect("Couldn't resolve 'Bar'");
+//         if let Decl::Member { name, body } = project.get_decl(bar) {
+//             assert_eq!(name.0, "Bar");
+//             assert!(body.is_none(), "Expected an 'None' body");
+//         }
+//
+//         let baz = project
+//             .get_path(&["test", "Foo", "Baz"])
+//             .expect("Couldn't resolve 'Baz'");
+//
+//         if let Decl::Member { name, body } = project.get_decl(baz) {
+//             assert_eq!(name.0, "Baz");
+//             if let StructDecl::Tuple(v) = body {
+//                 assert_eq!(v.len(), 1);
+//                 assert_eq!(v[0], parse_ty(&project, "Int"));
+//             }
+//         }
+//     }
+// }

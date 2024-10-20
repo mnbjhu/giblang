@@ -1,17 +1,17 @@
 use crate::{
-    check::err::{wildcard::UnexpectedWildcard, ResolveError},
+    check::err::{wildcard::UnexpectedWildcard, CheckError},
     parser::common::type_::Type,
     resolve::state::ResolveState,
     ty::{FuncTy, Ty},
 };
 
 impl Type {
-    pub fn resolve(&self, state: &mut ResolveState<'_>) -> Ty {
+    pub fn resolve<'db>(&self, state: &mut ResolveState<'db>) -> Ty<'db> {
         match self {
             Type::Wildcard(span) => {
-                state.error(ResolveError::UnexpectedWildcard(UnexpectedWildcard {
+                state.error(CheckError::UnexpectedWildcard(UnexpectedWildcard {
                     span: *span,
-                    file: state.get_file(),
+                    file: state.file_data,
                 }));
                 Ty::Unknown
             }

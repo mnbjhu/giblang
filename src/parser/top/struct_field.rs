@@ -7,12 +7,13 @@ use crate::parser::common::type_::type_parser;
 use crate::AstParser;
 use crate::{parser::common::type_::Type, util::Spanned};
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Eq)]
 pub struct StructField {
     pub name: Spanned<String>,
     pub ty: Spanned<Type>,
 }
 
+#[must_use]
 pub fn struct_field_parser<'tokens, 'src: 'tokens>() -> AstParser!(StructField) {
     spanned_ident_parser()
         .then_ignore(just(punct(':')))

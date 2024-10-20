@@ -1,11 +1,11 @@
 use crate::{parser::stmt::Stmt, ty::Ty, util::Span};
 
-use super::CheckState;
+use super::state::CheckState;
 
 pub mod let_;
 
-impl<'proj> Stmt {
-    pub fn check(&self, state: &mut CheckState<'proj>) -> Ty {
+impl<'db> Stmt {
+    pub fn check(&self, state: &mut CheckState<'_, 'db>) -> Ty<'db> {
         match self {
             Stmt::Let(l) => {
                 l.check(state);
@@ -15,7 +15,12 @@ impl<'proj> Stmt {
         }
     }
 
-    pub fn expect_is_instance(&self, expected: &Ty, state: &mut CheckState<'proj>, span: Span) {
+    pub fn expect_is_instance(
+        &self,
+        expected: &Ty<'db>,
+        state: &mut CheckState<'_, 'db>,
+        span: Span,
+    ) {
         match self {
             Stmt::Let(l) => {
                 l.check(state);

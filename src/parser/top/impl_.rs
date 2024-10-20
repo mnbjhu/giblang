@@ -17,13 +17,12 @@ use crate::{
 
 use super::func::{func_parser, Func};
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Eq)]
 pub struct Impl {
-    pub generics: GenericArgs,
+    pub generics: Spanned<GenericArgs>,
     pub trait_: Spanned<NamedType>,
     pub for_: Spanned<NamedType>,
     pub body: Vec<Spanned<Func>>,
-    pub id: u32,
 }
 
 pub fn impl_parser<'tokens, 'src: 'tokens>(stmt: AstParser!(Stmt)) -> AstParser!(Impl) {
@@ -44,19 +43,14 @@ pub fn impl_parser<'tokens, 'src: 'tokens>(stmt: AstParser!(Stmt)) -> AstParser!
         .map(std::option::Option::unwrap_or_default);
 
     just(kw!(impl))
-        .ignore_then(generic_args_parser())
+        .ignore_then(generic_args_parser().map_with(|g, e| (g, e.span())))
         .then(trait_)
         .then(for_)
         .then(body)
-        .map_with(|(((generics, trait_), for_), body), e| {
-            let state: &mut u32 = e.state();
-            *state += 1;
-            Impl {
-                generics,
-                trait_,
-                for_,
-                body,
-                id: *state,
-            }
+        .map(|(((generics, trait_), for_), body)| Impl {
+            generics,
+            trait_,
+            for_,
+            body,
         })
 }

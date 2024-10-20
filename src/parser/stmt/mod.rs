@@ -8,12 +8,13 @@ use super::expr::{expr_parser, Expr};
 
 pub mod let_;
 
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Debug, Eq)]
 pub enum Stmt {
     Let(LetStatement),
     Expr(Expr),
 }
 
+#[must_use]
 pub fn stmt_parser<'tokens, 'src: 'tokens>() -> AstParser!(Stmt) {
     recursive(|stmt| {
         let let_ = let_parser(expr_parser(stmt.clone())).map(Stmt::Let);
@@ -49,7 +50,10 @@ mod tests {
             stmt_parser(),
             "let x = 42",
             Stmt::Let(LetStatement {
-                pattern: (Pattern::Name("x".to_string()), (4..5).into()),
+                pattern: (
+                    Pattern::Name(("x".to_string(), (4..5).into())),
+                    (4..5).into()
+                ),
                 ty: None,
                 value: (Expr::Literal(42.into()), (8..10).into())
             })

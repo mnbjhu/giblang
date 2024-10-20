@@ -11,10 +11,10 @@ use crate::{
     AstParser,
 };
 
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Debug, Eq)]
 pub struct Match {
     pub expr: Spanned<Box<Expr>>,
-    pub arms: Vec<MatchArm>,
+    pub arms: Vec<Spanned<MatchArm>>,
 }
 
 pub fn match_parser<'tokens, 'src: 'tokens>(
@@ -22,6 +22,7 @@ pub fn match_parser<'tokens, 'src: 'tokens>(
     match_arm: AstParser!(MatchArm),
 ) -> AstParser!(Match) {
     let body = match_arm
+        .map_with(|a, s| (a, s.span()))
         .separated_by(just(punct(',')).padded_by(optional_newline()))
         .allow_trailing()
         .collect()

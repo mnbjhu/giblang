@@ -12,7 +12,7 @@ use crate::{
 
 use super::struct_field::{struct_field_parser, StructField};
 
-#[derive(Debug, PartialEq, Clone, Default)]
+#[derive(Debug, PartialEq, Clone, Default, Eq)]
 pub enum StructBody {
     #[default]
     None,

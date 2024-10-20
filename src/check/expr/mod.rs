@@ -6,21 +6,23 @@ use self::{
     tuple::{check_tuple, check_tuple_is},
 };
 
-use super::CheckState;
+use super::state::CheckState;
 
 pub mod call;
 pub mod code_block;
+pub mod field;
 pub mod ident;
 pub mod lit;
 pub mod match_;
 pub mod match_arm;
 pub mod member;
+pub mod op;
 pub mod tuple;
 
-impl Expr {
-    pub fn check(&self, state: &mut CheckState<'_>) -> Ty {
+impl<'db> Expr {
+    pub fn check(&self, state: &mut CheckState<'_, 'db>) -> Ty<'db> {
         match self {
-            Expr::Literal(lit) => lit.into(),
+            Expr::Literal(lit) => lit.to_ty(state.db),
             Expr::Ident(ident) => check_ident(state, ident),
             Expr::CodeBlock(block) => check_code_block(state, block),
             // TODO: Actually think about generics
@@ -30,10 +32,18 @@ impl Expr {
             // TODO: Handle if else expr types
             Expr::IfElse(_) => todo!(),
             Expr::MemberCall(member) => member.check(state),
+            Expr::Op(op) => op.check(state),
+            Expr::Field(field) => field.check(state),
+            Expr::Error => Ty::Unknown,
         }
     }
 
-    pub fn expect_instance_of(&self, expected: &Ty, state: &mut CheckState<'_>, span: Span) {
+    pub fn expect_instance_of(
+        &self,
+        expected: &Ty<'db>,
+        state: &mut CheckState<'_, 'db>,
+        span: Span,
+    ) {
         match self {
             Expr::Literal(lit) => lit.expect_instance_of(expected, state, span),
             Expr::Ident(ident) => check_ident_is(state, ident, expected),
@@ -42,37 +52,10 @@ impl Expr {
             Expr::Match(match_) => match_.is_instance_of(expected, state),
             Expr::Tuple(v) => check_tuple_is(state, expected, v, span),
             Expr::IfElse(_) => todo!(),
+            Expr::Op(op) => op.expected_instance_of(expected, state, span),
             Expr::MemberCall(member) => member.expected_instance_of(expected, state, span),
+            Expr::Field(field) => field.expected_instance_of(expected, state, span),
+            Expr::Error => {}
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::check::state::CheckState;
-    use crate::lexer::parser::lexer;
-    use crate::parser::expr::expr_parser;
-    use crate::parser::stmt::stmt_parser;
-    use crate::ty::Ty;
-    use crate::util::Span;
-    use chumsky::input::Input;
-    use chumsky::Parser;
-
-    pub fn parse_expr(state: &mut CheckState, expr: &str) -> Ty {
-        let eoi = Span::splat(expr.len());
-        let tokens = lexer().parse(expr).unwrap();
-        let ty = expr_parser(stmt_parser())
-            .parse(tokens.spanned(eoi))
-            .unwrap();
-        ty.check(state)
-    }
-
-    pub fn parse_expr_with_expected(state: &mut CheckState, expected: &Ty, expr: &str) {
-        let eoi = Span::splat(expr.len());
-        let tokens = lexer().parse(expr).unwrap();
-        let expr = expr_parser(stmt_parser())
-            .parse(tokens.spanned(eoi))
-            .unwrap();
-        expr.expect_instance_of(expected, state, Span::splat(0));
     }
 }

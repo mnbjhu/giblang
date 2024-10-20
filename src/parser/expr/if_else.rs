@@ -18,19 +18,19 @@ use super::{
     Expr,
 };
 
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Debug, Eq)]
 pub struct IfElse {
     pub ifs: Vec<IfBranch>,
     pub else_: Option<CodeBlock>,
 }
 
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Debug, Eq)]
 pub struct IfBranch {
     pub condition: Condition,
     pub body: Vec<Spanned<Stmt>>,
 }
 
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Debug, Eq)]
 pub enum Condition {
     Let(LetStatement),
     Expr(Spanned<Expr>),

@@ -1,5 +1,8 @@
 use crate::{
-    check::state::CheckState,
+    check::{
+        err::{is_not_instance::IsNotInstance, CheckError},
+        state::CheckState,
+    },
     parser::expr::Expr,
     ty::Ty,
     util::{Span, Spanned},
@@ -7,10 +10,15 @@ use crate::{
 
 type Tuple = Vec<Spanned<Expr>>;
 
-pub fn check_tuple(values: &Tuple, state: &mut CheckState<'_>) -> Ty {
+pub fn check_tuple<'db>(values: &Tuple, state: &mut CheckState<'_, 'db>) -> Ty<'db> {
     Ty::Tuple(values.iter().map(|value| value.0.check(state)).collect())
 }
-pub fn check_tuple_is(state: &mut CheckState<'_>, expected: &Ty, tuple: &Tuple, span: Span) {
+pub fn check_tuple_is<'db>(
+    state: &mut CheckState<'_, 'db>,
+    expected: &Ty<'db>,
+    tuple: &Tuple,
+    span: Span,
+) {
     if let Ty::Tuple(ex) = expected {
         if ex.len() == tuple.len() {
             ex.iter()
@@ -30,7 +38,12 @@ pub fn check_tuple_is(state: &mut CheckState<'_>, expected: &Ty, tuple: &Tuple, 
             );
         }
     } else {
-        check_tuple(tuple, state);
-        todo!("TODO: Add expected a tuple error");
+        let found = check_tuple(tuple, state);
+        state.error(CheckError::IsNotInstance(IsNotInstance {
+            expected: expected.get_name(state),
+            found: found.get_name(state),
+            span,
+            file: state.file_data,
+        }));
     }
 }

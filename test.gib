@@ -1,22 +1,33 @@
-fn simple[T](thing: T): Option[T] {
-}
+use std::String
+use std::Int
+use std::println
+use std::print
+use std::Option
+use std::Result
 
-enum Option[T] {
-  Some(T),
-  None
-}
-
-enum Result[R, E] {
-  Ok(R),
-  Err(E)
+trait Test {
+    fn another()
 }
 
 struct Box[T](T)
 
-fn test(thing: String) {}
+fn test(thing: Test) {
+    let other = 123
+}
 
-fn main() {
-  let test2: Option[String] = Option::Some(123)
-  test(123)
-  let test: String = 123
+struct Basic {
+    test: Int,
+    test2: String
+}
+
+fn thingy(x: Option[String]) {}
+
+fn test3(thing: Int) {
+    let some = Option::Some(thing)
+    some.unwrap()
+}
+
+fn test123() {
+    let other = Option::Some("")
+    Basic(123, other.unwrap())
 }

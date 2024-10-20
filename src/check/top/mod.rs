@@ -1,34 +1,25 @@
-use crate::{parser::top::Top, project::Project};
+use crate::parser::top::Top;
 
-use super::CheckState;
+use super::state::CheckState;
 
 pub mod enum_;
 pub mod func;
 pub mod func_arg;
+pub mod impl_;
 pub mod struct_;
 pub mod struct_body;
 pub mod trait_;
 
-impl<'proj> Top {
-    pub fn check(&'proj self, project: &'proj Project, state: &mut CheckState<'proj>) {
+impl<'db> Top {
+    pub fn check(&'db self, state: &mut CheckState<'_, 'db>) {
         state.enter_scope();
-        if self.get_name().is_some() {
-            let id = self.get_id().unwrap();
-            project
-                .get_decl(id)
-                .generics()
-                .iter()
-                .for_each(|g| state.insert_generic(g.name.0.to_string(), g.clone()));
-        }
         match self {
-            Top::Use(use_) => {
-                state.import(use_);
-            }
+            Top::Use(u) => state.import(u),
             Top::Enum(e) => e.check(state),
             Top::Trait(t) => t.check(state),
             Top::Struct(s) => s.check(state),
             Top::Func(f) => f.check(state),
-            Top::Impl(_) => (),
+            Top::Impl(i) => i.check(state),
         }
         state.exit_scope();
     }

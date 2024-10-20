@@ -12,7 +12,7 @@ use super::{
     variance::{variance_parser, Variance},
 };
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct GenericArg {
     pub variance: Variance,
     pub name: Spanned<String>,
@@ -29,6 +29,7 @@ impl Default for GenericArg {
     }
 }
 
+#[must_use]
 pub fn generic_arg_parser<'tokens, 'src: 'tokens>() -> AstParser!(GenericArg) {
     let super_ = just(punct(':'))
         .padded_by(optional_newline())

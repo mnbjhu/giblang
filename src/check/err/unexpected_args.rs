@@ -1,30 +1,32 @@
 use ariadne::{Color, Source};
 
-use crate::{check::state::CheckState, ty::FuncTy, util::Span};
+use crate::{
+    db::{
+        err::{Diagnostic, Level},
+        input::{Db, SourceFile},
+    },
+    util::Span,
+};
+
+use super::IntoWithDb;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct UnexpectedArgs {
     pub span: Span,
-    pub file: u32,
-    pub func: FuncTy,
+    pub file: SourceFile,
+    pub func: String,
     pub expected: usize,
     pub found: usize,
 }
 
 impl UnexpectedArgs {
-    pub fn print(&self, state: &CheckState) {
-        let file_data = state
-            .project
-            .get_file(self.file)
-            .unwrap_or_else(|| panic!("No file found for id {}", self.file));
-        let source = Source::from(file_data.text.clone());
-        let name = &file_data.name;
+    pub fn print(&self, db: &dyn Db) {
+        let source = Source::from(self.file.text(db).clone());
+        let path = self.file.path(db);
+        let name = path.to_str().unwrap();
 
         let err = Color::Red;
-        let msg = format!(
-            "Expected {} arguments but found {}",
-            self.expected, self.found,
-        );
+        let msg = self.message();
 
         let mut builder = ariadne::Report::build(ariadne::ReportKind::Error, name, self.span.start)
             .with_message(msg.clone())
@@ -38,5 +40,24 @@ impl UnexpectedArgs {
 
         let report = builder.finish();
         report.print((name, source)).unwrap();
+    }
+
+    pub fn message(&self) -> String {
+        format!(
+            "Expected {} arguments but found {}",
+            self.expected, self.found,
+        )
+    }
+}
+
+impl IntoWithDb<Diagnostic> for UnexpectedArgs {
+    fn into_with_db(self, db: &dyn Db) -> Diagnostic {
+        Diagnostic {
+            message: self.message(),
+            span: self.span,
+            level: Level::Error,
+            path: self.file.path(db),
+            file: self.file,
+        }
     }
 }

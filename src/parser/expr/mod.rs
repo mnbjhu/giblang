@@ -1,14 +1,19 @@
+use access::{access_parser, Access};
 use chumsky::{
     primitive::{choice, just},
     recursive::recursive,
     select, IterParser, Parser,
 };
+use field::Field;
+
+use op::{Op, OpKind};
 
 use crate::{
     lexer::{
         literal::Literal,
         token::{punct, Token},
     },
+    op,
     parser::expr::match_::{match_parser, Match},
     util::Spanned,
     AstParser,
@@ -18,23 +23,27 @@ use self::{
     call::{call_parser, Call},
     code_block::{code_block_parser, CodeBlock},
     if_else::{if_else_parser, IfElse},
-    member::{member_call_parser, MemberCall},
+    member::MemberCall,
     qualified_name::{qualified_name_parser, SpannedQualifiedName},
 };
 
 use super::{common::optional_newline::optional_newline, stmt::Stmt};
 
+pub mod access;
 pub mod call;
 pub mod code_block;
+pub mod field;
 pub mod if_else;
 pub mod match_;
 pub mod match_arm;
 pub mod member;
+pub mod op;
 pub mod qualified_name;
 
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Debug, Eq)]
 pub enum Expr {
     Literal(Literal),
+    Field(Field),
     Ident(SpannedQualifiedName),
     CodeBlock(CodeBlock),
     Call(Call),
@@ -42,6 +51,8 @@ pub enum Expr {
     Match(Match),
     Tuple(Vec<Spanned<Expr>>),
     IfElse(IfElse),
+    Op(Op),
+    Error,
 }
 
 pub fn expr_parser<'tokens, 'src: 'tokens>(stmt: AstParser!(Stmt)) -> AstParser!(Expr) {
@@ -71,15 +82,61 @@ pub fn expr_parser<'tokens, 'src: 'tokens>(stmt: AstParser!(Stmt)) -> AstParser!
         .or(bracketed)
         .or(tuple);
 
+        let call = call_parser(atom.clone(), expr.clone()).map(Expr::Call);
+        // let member = member_call_parser(atom.clone(), expr.clone()).map(Expr::MemberCall);
+
+        let atom = choice((call, atom));
+        let access = atom
+            .clone()
+            .map_with(|ex, e| (ex, e.span()))
+            .foldl_with(
+                access_parser(atom.clone()).repeated(),
+                |ex, acc, e| match acc {
+                    Access::Field(name) => (
+                        Expr::Field(Field {
+                            name,
+                            struct_: Box::new(ex),
+                        }),
+                        e.span(),
+                    ),
+                    Access::Member { name, args } => (
+                        Expr::MemberCall(MemberCall {
+                            rec: Box::new(ex),
+                            name,
+                            args,
+                        }),
+                        e.span(),
+                    ),
+                },
+            )
+            .map(|(ex, _)| ex);
+
+        let sum = access
+            .clone()
+            .map_with(|a, e| (a, e.span()))
+            .foldl_with(
+                just(op!(+))
+                    .ignore_then(atom.clone().map_with(|a, e| (a, e.span())))
+                    .repeated(),
+                |a, b, e| {
+                    (
+                        Expr::Op(Op {
+                            left: Box::new(a),
+                            kind: OpKind::Add,
+                            right: Box::new(b),
+                        }),
+                        e.span(),
+                    )
+                },
+            )
+            .map(|(a, _)| a);
+
         let match_ =
             match_parser(expr.clone(), match_arm::match_arm_parser(expr.clone())).map(Expr::Match);
 
-        let call = call_parser(atom.clone(), expr.clone()).map(Expr::Call);
-        let member = member_call_parser(atom.clone(), expr.clone()).map(Expr::MemberCall);
-
         let if_else = if_else_parser(expr, stmt).map(Expr::IfElse);
 
-        choice((if_else, match_, block, member, call, atom))
+        choice((if_else, match_, block, sum))
     })
 }
 

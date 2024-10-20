@@ -1,20 +1,15 @@
 use crate::{
-    check::CheckState,
+    check::state::CheckState,
     parser::{common::variance::Variance, top::trait_::Trait},
     ty::{Generic, Ty},
     util::Span,
 };
 
-impl<'proj> Trait {
-    pub fn check(&'proj self, state: &mut CheckState<'proj>) {
-        let args = self.generics.check(state);
-        state.add_self_ty(
-            Ty::Named {
-                name: self.id,
-                args,
-            },
-            self.name.1,
-        );
+impl<'db> Trait {
+    pub fn check(&'db self, state: &mut CheckState<'_, 'db>) {
+        let args = self.generics.0.check(state);
+        let id = state.local_id(self.name.0.to_string());
+        state.add_self_ty(Ty::Named { name: id, args }, self.name.1);
         for func in &self.body {
             state.enter_scope();
             func.0.check(state);
@@ -23,8 +18,8 @@ impl<'proj> Trait {
     }
 }
 
-impl CheckState<'_> {
-    pub fn add_self_ty(&mut self, super_: Ty, span: Span) {
+impl<'db> CheckState<'_, 'db> {
+    pub fn add_self_ty(&mut self, super_: Ty<'db>, span: Span) {
         self.insert_generic(
             "Self".to_string(),
             Generic {

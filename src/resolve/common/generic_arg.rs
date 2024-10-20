@@ -5,7 +5,7 @@ use crate::{
 };
 
 impl GenericArg {
-    pub fn resolve(&self, state: &mut ResolveState<'_>) -> Generic {
+    pub fn resolve<'db>(&self, state: &mut ResolveState<'db>) -> Generic<'db> {
         let res = Generic {
             name: self.name.clone(),
             variance: self.variance,

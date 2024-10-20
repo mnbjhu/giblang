@@ -6,7 +6,7 @@ use crate::{
 };
 
 impl StructBody {
-    pub fn resolve(&self, state: &mut ResolveState) -> StructDecl {
+    pub fn resolve<'db>(&self, state: &mut ResolveState<'db>) -> StructDecl<'db> {
         match self {
             StructBody::None => StructDecl::None,
             StructBody::Tuple(v) => {
@@ -24,7 +24,7 @@ impl StructBody {
 }
 
 impl StructField {
-    pub fn resolve(&self, state: &mut ResolveState) -> (String, Ty) {
+    pub fn resolve<'db>(&self, state: &mut ResolveState<'db>) -> (String, Ty<'db>) {
         (self.name.0.to_string(), self.ty.0.resolve(state))
     }
 }

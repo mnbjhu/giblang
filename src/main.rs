@@ -1,15 +1,20 @@
-use clap::Parser;
+use clap::Parser as _;
 use cli::Command;
 
 mod check;
 mod cli;
+pub mod db;
+pub mod item;
 mod lexer;
-mod parser;
+pub mod lsp;
+pub mod parser;
 pub mod project;
+pub mod range;
 mod resolve;
 mod ty;
 mod util;
 
-fn main() {
-    Command::parse().run();
+#[tokio::main]
+async fn main() {
+    Command::parse().run().await;
 }
