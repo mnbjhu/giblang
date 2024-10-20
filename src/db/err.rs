@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use crate::{lexer::keyword::Keyword, util::Span};
+use crate::util::Span;
 
 use super::input::SourceFile;
 
