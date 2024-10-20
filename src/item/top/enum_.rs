@@ -5,7 +5,7 @@ use async_lsp::lsp_types::{DocumentSymbol, SymbolKind};
 use crate::{
     check::{state::CheckState, SemanticToken, TokenKind},
     item::{
-        common::{generics::{braces, brackets}, type_::ContainsOffset},
+        common::{generics::braces, type_::ContainsOffset},
         AstItem,
     },
     parser::top::enum_::Enum,

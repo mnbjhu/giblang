@@ -1,10 +1,10 @@
 use access::{access_parser, Access};
 use chumsky::{
-    primitive::{choice, just, none_of},
+    primitive::{choice, just},
     recursive::recursive,
     select, IterParser, Parser,
 };
-use field::{field_parser, Field};
+use field::Field;
 
 use op::{Op, OpKind};
 
@@ -23,7 +23,7 @@ use self::{
     call::{call_parser, Call},
     code_block::{code_block_parser, CodeBlock},
     if_else::{if_else_parser, IfElse},
-    member::{member_call_parser, MemberCall},
+    member::MemberCall,
     qualified_name::{qualified_name_parser, SpannedQualifiedName},
 };
 

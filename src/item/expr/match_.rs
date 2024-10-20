@@ -1,7 +1,7 @@
 use crate::{
     item::{
         common::{
-            generics::{brackets, brackets_big},
+            generics::brackets_big,
             type_::ContainsOffset as _,
         },
         AstItem,

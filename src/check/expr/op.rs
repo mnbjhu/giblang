@@ -1,4 +1,4 @@
-use crate::{check::state::CheckState, parser::expr::op::{Op, OpKind}, ty::Ty, util::Span};
+use crate::{check::state::CheckState, parser::expr::op::Op, ty::Ty, util::Span};
 
 
 impl<'db> Op {

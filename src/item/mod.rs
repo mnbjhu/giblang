@@ -7,7 +7,7 @@ use salsa::Database;
 
 use crate::{
     check::{state::CheckState, SemanticToken},
-    db::input::{Db, SourceFile},
+    db::input::SourceFile,
     parser::{top::Top, Ast},
     ty::Ty,
     util::{Span, Spanned},

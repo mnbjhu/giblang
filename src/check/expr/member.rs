@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::{
-    check::{self, state::CheckState}, db::input::SourceFile, parser::expr::member::MemberCall, project::decl::{struct_::StructDecl, DeclKind}, ty::{is_instance::get_sub_tys, FuncTy, Ty}, util::{Span, Spanned}
+    check::{state::CheckState}, parser::expr::member::MemberCall, project::decl::{struct_::StructDecl, DeclKind}, ty::{is_instance::get_sub_tys, FuncTy, Ty}, util::{Span, Spanned}
 };
 
 use super::ident::check_ident;

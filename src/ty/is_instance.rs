@@ -3,10 +3,10 @@ use crate::{
         err::{is_not_instance::IsNotInstance, CheckError},
         state::CheckState,
     },
-    db::modules::{Module, ModulePath},
+    db::modules::ModulePath,
     parser::common::variance::Variance,
     project::{
-        decl::{struct_::StructDecl, Decl, DeclKind},
+        decl::DeclKind,
         ImplDecl,
     },
     ty::Ty,

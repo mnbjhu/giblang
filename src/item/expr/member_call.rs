@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use async_lsp::lsp_types::{CompletionItem, CompletionItemKind};
 
 use crate::{
-    check::{state::CheckState, SemanticToken, TokenKind}, db::input::SourceFile, item::{common::{generics::brackets, type_::ContainsOffset}, top::func, AstItem}, parser::expr::member::MemberCall, ty::{is_instance::get_sub_tys, Ty}, util::Span
+    check::{state::CheckState, SemanticToken, TokenKind}, item::{common::{generics::brackets, type_::ContainsOffset}, AstItem}, parser::expr::member::MemberCall, ty::Ty
 };
 
 impl AstItem for MemberCall {
