@@ -56,7 +56,6 @@ impl IntoWithDb<Diagnostic> for ImplTypeMismatch {
             level: Level::Error,
             path: self.file.path(db),
             file: self.file,
-            expected: vec![],
         }
     }
 }

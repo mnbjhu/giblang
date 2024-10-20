@@ -52,7 +52,6 @@ impl IntoWithDb<Diagnostic> for Unresolved {
             level: Level::Error,
             path: self.file.path(db),
             file: self.file,
-            expected: vec![],
         }
     }
 }

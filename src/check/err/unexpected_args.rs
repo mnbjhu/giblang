@@ -58,7 +58,6 @@ impl IntoWithDb<Diagnostic> for UnexpectedArgs {
             level: Level::Error,
             path: self.file.path(db),
             file: self.file,
-            expected: vec![],
         }
     }
 }

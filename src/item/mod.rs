@@ -92,6 +92,23 @@ impl<'db> Ast<'db> {
         }
         tokens
     }
+
+    pub fn completions<'ty, 'me, 'state>(
+        &'me self,
+        db: &'db dyn Database,
+        state: &'state mut CheckState<'ty, 'db>,
+        offset: usize,
+    ) -> Vec<CompletionItem>
+    where
+        Self: Sized,
+    {
+        for (item, span) in self.tops(db) {
+            if span.contains_offset(offset) {
+                return item.completions(state, offset);
+            }
+        }
+        vec![]
+    }
 }
 pub fn pretty_format<'b, 'db, D, A>(
     ast: &'b [Spanned<Top>],

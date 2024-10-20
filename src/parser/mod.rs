@@ -11,11 +11,7 @@ use crate::{
     },
 };
 use chumsky::{
-    error::{Rich, RichPattern},
-    input::Input,
-    primitive::{choice, just, none_of},
-    recovery::{nested_delimiters, via_parser},
-    IterParser, Parser,
+    container::Container, error::{Rich, RichPattern}, input::Input, primitive::{choice, just, none_of}, recovery::{nested_delimiters, via_parser}, IterParser, Parser
 };
 use salsa::Accumulator;
 use tracing::info;
@@ -43,6 +39,8 @@ pub struct Ast<'db> {
     #[return_ref]
     pub tops: Vec<Spanned<Top>>,
     pub valid: bool,
+    #[return_ref]
+    pub expected: Vec<Spanned<Vec<Keyword>>>,
 }
 
 #[must_use]
@@ -124,6 +122,7 @@ pub fn top_recovery<'tokens, 'src: 'tokens>() -> AstParser!(Unit) {
 pub fn parse_file<'db>(db: &'db dyn Db, file: SourceFile) -> Ast<'db> {
     info!("Parsing file: {}", file.path(db).to_str().unwrap());
     let mut valid = true;
+    let mut expected = vec![];
     let text = file.text(db);
     let (tokens, errors) = lexer().parse(text).into_output_errors();
     let len = text.len();
@@ -137,7 +136,6 @@ pub fn parse_file<'db>(db: &'db dyn Db, file: SourceFile) -> Ast<'db> {
             level: Level::Error,
             path: file.path(db),
             file,
-            expected: vec![],
         }
         .accumulate(db);
     }
@@ -149,10 +147,12 @@ pub fn parse_file<'db>(db: &'db dyn Db, file: SourceFile) -> Ast<'db> {
             valid = false;
             info!("Parser error: {:?}", error);
             let mut expected_iter = error.expected();
-            let mut expected = vec![];
+            let mut e = vec![];
             while let Some(RichPattern::Token(tok)) = expected_iter.next() {
+                info!("Expected token: {:?}", tok);
                 if let Token::Keyword(kw) = tok.clone().into_inner() {
-                    expected.push(kw);
+                    info!("Expected keyword: {:?}", kw);
+                    e.push(kw);
                 }
             }
             Diagnostic {
@@ -161,15 +161,16 @@ pub fn parse_file<'db>(db: &'db dyn Db, file: SourceFile) -> Ast<'db> {
                 level: Level::Error,
                 path: file.path(db),
                 file,
-                expected,
             }
             .accumulate(db);
+            info!("Expected all: {:?}", e);
+            expected.push((e, *error.span()));
         }
         if let Some(ast) = ast {
             found = ast;
         }
     }
-    Ast::new(db, found, valid)
+    Ast::new(db, found, valid, expected)
 }
 
 #[macro_export]

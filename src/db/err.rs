@@ -11,7 +11,6 @@ pub struct Diagnostic {
     pub level: Level,
     pub path: PathBuf,
     pub file: SourceFile,
-    pub expected: Vec<Keyword>,
 }
 
 #[derive(Clone, Debug)]

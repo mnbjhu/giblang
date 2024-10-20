@@ -54,7 +54,6 @@ impl IntoWithDb<Diagnostic> for IsNotInstance {
             level: Level::Error,
             path: self.file.path(db),
             file: self.file,
-            expected: vec![],
         }
     }
 }
