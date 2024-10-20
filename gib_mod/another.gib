@@ -1,9 +1,30 @@
 use std::println
 use std::Int
+use std::Int
 
 fn print_int(int: Int) {}
 
-fn main() {
-    let test = 123
-    print_int(test)
+trait Display {
+    fn Self.to_string(): std::String {
+        "Display"
+    }
+}
+
+trait Unwrap[T] {
+    fn Self.unwrap(): T {}
+}
+
+impl[T] Unwrap[T] for std::Option[T] {
+    fn Self.unwrap(): T {}
+}
+
+fn main() {}
+
+enum MyEnum   {
+    First,
+    Second(Int),
+    Third {
+        test: Int,
+        test2: Int
+    }
 }

@@ -1,11 +1,7 @@
 use async_lsp::lsp_types::{DocumentSymbol, SymbolKind};
 
 use crate::{
-    check::{state::CheckState, SemanticToken, TokenKind},
-    item::{common::type_::ContainsOffset, AstItem},
-    parser::top::trait_::Trait,
-    range::span_to_range_str,
-    util::Span,
+    check::{state::CheckState, SemanticToken, TokenKind}, db::modules::ModulePath, item::{common::type_::ContainsOffset, AstItem}, parser::top::trait_::Trait, range::span_to_range_str, ty::Ty, util::Span
 };
 
 use super::impl_::pretty_trait_body;
@@ -18,6 +14,10 @@ impl AstItem for Trait {
         if self.generics.1.contains_offset(offset) {
             return self.generics.0.at_offset(state, offset);
         }
+        let args = self.generics.0.check(state);
+        let name = ModulePath::new(state.db, state.path.clone());
+        let self_ty = Ty::Named { name, args };
+        state.add_self_ty(self_ty, self.name.1);
         for (func, span) in &self.body {
             if span.contains_offset(offset) {
                 return func.at_offset(state, offset);
@@ -49,10 +49,7 @@ impl AstItem for Trait {
             .append(self.name.0.clone())
             .append(self.generics.0.pretty(allocator))
             .append(allocator.space())
-            .append(pretty_trait_body(
-                allocator,
-                self.body.iter().map(|(func, _)| func.pretty(allocator)),
-            ))
+            .append(pretty_trait_body(allocator, &self.body))
     }
 }
 

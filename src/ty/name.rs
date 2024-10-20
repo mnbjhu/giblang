@@ -13,7 +13,7 @@ impl<'db> Ty<'db> {
                 let decl = state.project.get_decl(state.db, *name);
                 // TODO: check unwrap
                 if decl.is_none() {
-                    return "{err}".to_string();
+                    return format!("{{err:{}}}", name.name(state.db).join("::"));
                 }
                 let name = decl.unwrap().name(state.db);
                 if args.is_empty() {
@@ -28,7 +28,7 @@ impl<'db> Ty<'db> {
                 }
             }
             Ty::Generic(g) => g.get_name(state),
-            Ty::Meta(_) => todo!(),
+            Ty::Meta(ty) => format!("Meta({})", ty.get_name(state)),
             Ty::Function(func) => func.get_name(state),
             Ty::Tuple(tys) => {
                 let tys = tys
@@ -69,7 +69,7 @@ impl<'db> Ty<'db> {
                 let decl = state.project.get_decl(state.db, *name);
                 // TODO: check unwrap
                 if decl.is_none() {
-                    return "{err}".to_string();
+                    return format!("{{err:{}}}", name.name(state.db).join("::"));
                 }
                 let name = decl.unwrap().name(state.db);
                 if args.is_empty() {
@@ -84,7 +84,7 @@ impl<'db> Ty<'db> {
                 }
             }
             Ty::Generic(g) => g.get_name(state),
-            Ty::Meta(_) => todo!(),
+            Ty::Meta(ty) => format!("Meta({})", ty.get_name_with_types(state, type_vars)),
             Ty::Function(func) => func.get_name_with_types(state, type_vars),
             Ty::Tuple(tys) => {
                 let tys = tys
@@ -155,7 +155,7 @@ impl<'db> FuncTy<'db> {
         let receiver = self
             .receiver
             .as_ref()
-            .map_or(String::new(), |r| r.get_name_with_types(state, type_vars));
+            .map(|r| r.get_name_with_types(state, type_vars));
         let args = self
             .args
             .iter()
@@ -163,7 +163,11 @@ impl<'db> FuncTy<'db> {
             .collect::<Vec<_>>()
             .join(", ");
         let ret = self.ret.get_name_with_types(state, type_vars);
-        format!("{receiver}.({args}) -> {ret}")
+        if let Some(receiver) = &receiver {
+            format!("{receiver}.({args}) -> {ret}")
+        } else {
+            format!("({args}) -> {ret}")
+        }
     }
 }
 

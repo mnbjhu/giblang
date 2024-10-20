@@ -78,7 +78,7 @@ impl<'ty, 'db: 'ty> CheckState<'ty, 'db> {
 
     pub fn with_type_vars(&mut self, types: HashMap<u32, Ty<'db>>) {
         for (id, ty) in types {
-            self.type_state.new_type_var(Span::splat(0));
+            self.type_state.new_type_var(Span::splat(0), self.file_data);
             let var = self.type_state.get_type_var_mut(id);
             var.resolved = Some(ty);
         }
@@ -236,7 +236,7 @@ impl<'ty, 'db: 'ty> CheckState<'ty, 'db> {
                     data.resolve();
                     if data.resolved.is_none() || matches!(data.resolved, Some(Ty::Unknown)) {
                         UnboundTypeVar {
-                            file: self.file_data,
+                            file: data.file,
                             span: data.span,
                             name: data
                                 .bounds

@@ -1,7 +1,7 @@
 use crate::{
     check::{state::CheckState, SemanticToken},
     parser::{expr::Expr, stmt::Stmt},
-    util::{Span, Spanned},
+    util::{Spanned},
 };
 
 use super::{
@@ -9,9 +9,11 @@ use super::{
     AstItem,
 };
 
+pub mod field;
 pub mod call;
 pub mod code_block;
 pub mod ident;
+pub mod op;
 pub mod if_else;
 pub mod lit;
 pub mod match_;
@@ -48,7 +50,8 @@ impl AstItem for Expr {
                 self
             }
             Expr::Error => &Expr::Error,
-            Expr::Op {..} => todo!(),
+            Expr::Op (op) => op.at_offset(state, offset),
+            Expr::Field(field) => field.at_offset(state, offset),
         }
     }
 
@@ -71,7 +74,8 @@ impl AstItem for Expr {
                 }
             }
             Expr::Error => {}
-            Expr::Op {..} => todo!(),
+            Expr::Op(op) => op.tokens(state, tokens),
+            Expr::Field(field) => field.tokens(state, tokens),
         }
     }
 
@@ -95,7 +99,8 @@ impl AstItem for Expr {
             }
             Expr::Tuple(exprs) => brackets(allocator, "(", ")", exprs),
             Expr::Error => panic!(),
-            Expr::Op {..} => todo!(),
+            Expr::Op(op) => op.pretty(allocator),
+            Expr::Field(field) => field.pretty(allocator),
         }
     }
 }

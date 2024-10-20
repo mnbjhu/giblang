@@ -1,9 +1,7 @@
 use std::collections::HashMap;
 
 use crate::{
-    parser::expr::Expr,
-    ty::{Generic, Ty},
-    util::{Span, Spanned},
+    db::input::SourceFile, parser::expr::Expr, ty::{Generic, Ty}, util::{Span, Spanned}
 };
 
 #[derive(Default)]
@@ -13,22 +11,23 @@ pub struct TypeState<'ty, 'db: 'ty> {
 }
 
 impl<'ty, 'db: 'ty> TypeState<'ty, 'db> {
-    pub fn new_type_var(&mut self, span: Span) -> u32 {
+    pub fn new_type_var(&mut self, span: Span, file: SourceFile) -> u32 {
         let id = self.counter;
-        let new = MaybeTypeVar::Data(TypeVarData::new(span));
+        let new = MaybeTypeVar::Data(TypeVarData::new(span, file));
         self.vars.insert(id, new);
         self.counter += 1;
         id
     }
 
-    pub fn new_type_var_with_bound(&mut self, generic: Generic<'db>) -> u32 {
+    pub fn new_type_var_with_bound(&mut self, generic: Generic<'db>, span: Span, file: SourceFile) -> u32 {
         let id = self.counter;
         let new = MaybeTypeVar::Data(TypeVarData {
-            span: generic.name.1,
             bounds: vec![generic],
             usages: vec![],
             explicit: None,
             resolved: None,
+            file,
+            span,
         });
         self.vars.insert(id, new);
         self.counter += 1;
@@ -155,16 +154,18 @@ pub struct TypeVarData<'ty, 'db: 'ty> {
     pub explicit: Option<Spanned<Ty<'db>>>,
     pub resolved: Option<Ty<'db>>,
     pub span: Span,
+    pub file: SourceFile,
 }
 
 impl<'ty, 'db: 'ty> TypeVarData<'ty, 'db> {
-    fn new(span: Span) -> TypeVarData<'ty, 'db> {
+    fn new(span: Span, file: SourceFile) -> TypeVarData<'ty, 'db> {
         TypeVarData {
             bounds: Vec::default(),
             usages: Vec::default(),
             explicit: None,
             resolved: None,
             span,
+            file
         }
     }
 }

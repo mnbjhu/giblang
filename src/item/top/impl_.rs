@@ -5,7 +5,7 @@ use crate::{
     item::{common::type_::ContainsOffset, AstItem},
     parser::top::impl_::Impl,
     range::span_to_range_str,
-    util::Span,
+    util::{Span, Spanned},
 };
 
 impl AstItem for Impl {
@@ -37,15 +37,17 @@ impl AstItem for Impl {
         if self.for_.1.contains_offset(offset) {
             return self.for_.0.at_offset(state, offset);
         }
+        let for_ = self.for_.0.check(state);
+        state.add_self_ty(for_, self.for_.1);
         if self.trait_.1.contains_offset(offset) {
             return self.trait_.0.at_offset(state, offset);
         }
-        let for_ = self.for_.0.check(state);
-        state.add_self_ty(for_, self.for_.1);
+        self.trait_.0.check(state);
         for (func, span) in &self.body {
             if span.contains_offset(offset) {
                 return func.at_offset(state, offset);
             }
+            func.check(state);
         }
         self
     }
@@ -67,41 +69,30 @@ impl AstItem for Impl {
             .append(allocator.space())
             .append(self.for_.0.pretty(allocator))
             .append(allocator.space())
-            .append("{")
-            .append(
-                allocator
-                    .hardline()
-                    .append(allocator.intersperse(
-                        self.body.iter().map(|(func, _)| func.pretty(allocator)),
-                        allocator.hardline(),
-                    ))
-                    .nest(4),
-            )
-            .append(allocator.hardline())
-            .append("}")
+            .append(pretty_trait_body(allocator, &self.body))
     }
 }
 
-pub fn pretty_trait_body<'b, D, A>(
+pub fn pretty_trait_body<'b, D, A, T>(
     allocator: &'b D,
-    items: impl Iterator<Item = pretty::DocBuilder<'b, D, A>>,
+    items: &'b [Spanned<T>],
 ) -> pretty::DocBuilder<'b, D, A>
 where
     D: pretty::DocAllocator<'b, A>,
     D::Doc: Clone,
     A: Clone,
+    T: AstItem,
 {
     let separator = allocator.hardline();
     allocator
         .text("{")
         .append(
             allocator
-                .line_()
-                .append(allocator.intersperse(items, separator))
-                .nest(4)
-                .group(),
+                .hardline()
+                .append(allocator.intersperse(items.iter().map(|(x, _)|x.pretty(allocator)), separator))
+                .nest(4),
         )
-        .append(allocator.line_())
+        .append(allocator.hardline())
         .append("}")
         .group()
 }

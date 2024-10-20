@@ -10,7 +10,7 @@ impl Decl<'_> {
         let path_name = self.path(state.db).name(state.db).join("::");
         let kind = match self.kind(state.db) {
             DeclKind::Struct { .. } => "struct",
-            DeclKind::Trait { .. } => "trait",
+            DeclKind::Trait{ .. } => "trait",
             DeclKind::Enum { .. } => "enum",
             DeclKind::Member { .. } => "member",
             DeclKind::Function { .. } => "function",
@@ -43,7 +43,7 @@ impl Decl<'_> {
                 .iter()
                 .flat_map(|variant| variant.completions(state))
                 .collect(),
-            DeclKind::Trait { body, .. } => body
+            DeclKind::Trait{ body, .. } => body
                 .iter()
                 .flat_map(|item| item.completions(state))
                 .collect(),

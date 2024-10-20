@@ -75,18 +75,18 @@ where
     A: Clone,
     T: AstItem,
 {
-    let separator = allocator.text(",").append(allocator.line());
+    let separator = allocator.text(",").append(allocator.hardline());
     allocator
         .text(" {")
         .append(
             allocator
-                .line()
+                .hardline()
                 .append(
                     allocator.intersperse(items.iter().map(|i| i.0.pretty(allocator)), separator),
                 )
                 .nest(4),
         )
-        .append(allocator.line())
+        .append(allocator.hardline())
         .append("}")
         .group()
 }

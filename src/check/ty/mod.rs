@@ -36,7 +36,7 @@ impl Type {
                 ret: Box::new(ret.0.check(state)),
             }),
             Type::Wildcard(s) => {
-                let id = state.type_state.new_type_var(*s);
+                let id = state.type_state.new_type_var(*s, state.file_data);
                 Ty::TypeVar { id }
             }
         }

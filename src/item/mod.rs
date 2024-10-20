@@ -21,7 +21,7 @@ pub mod stmt;
 pub mod top;
 
 pub trait AstItem: Debug {
-    fn at_offset<'me>(&'me self, _state: &mut CheckState, _offset: usize) -> &'me dyn AstItem
+    fn at_offset<'me, 'db>(&'me self, _state: &mut CheckState<'_, 'db>, _offset: usize) -> &'me dyn AstItem
     where
         Self: Sized,
     {
@@ -73,9 +73,7 @@ impl<'db> Ast<'db> {
             if span.contains_offset(offset) {
                 return Some(item.at_offset(state, offset));
             }
-            if let Top::Use(u) = item {
-                state.import(u);
-            }
+            item.check(state);
         }
         None
     }

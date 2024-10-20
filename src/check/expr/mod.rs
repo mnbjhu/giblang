@@ -10,8 +10,10 @@ use super::state::CheckState;
 
 pub mod call;
 pub mod code_block;
+pub mod field;
 pub mod ident;
 pub mod lit;
+pub mod op;
 pub mod match_;
 pub mod match_arm;
 pub mod member;
@@ -30,7 +32,8 @@ impl<'db> Expr {
             // TODO: Handle if else expr types
             Expr::IfElse(_) => todo!(),
             Expr::MemberCall(member) => member.check(state),
-            Expr::Op {..} => todo!(),
+            Expr::Op(op) => op.check(state),
+            Expr::Field(field) => field.check(state),
             Expr::Error => Ty::Unknown,
         }
     }
@@ -49,8 +52,9 @@ impl<'db> Expr {
             Expr::Match(match_) => match_.is_instance_of(expected, state),
             Expr::Tuple(v) => check_tuple_is(state, expected, v, span),
             Expr::IfElse(_) => todo!(),
-            Expr::Op {..} => todo!(),
+            Expr::Op(op) => op.expected_instance_of(expected, state, span),
             Expr::MemberCall(member) => member.expected_instance_of(expected, state, span),
+            Expr::Field(field) => field.expected_instance_of(expected, state, span),
             Expr::Error => {}
         }
     }

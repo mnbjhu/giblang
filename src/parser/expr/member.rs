@@ -11,7 +11,7 @@ use super::Expr;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MemberCall {
-    pub rec: Spanned<Box<Expr>>,
+    pub rec: Box<Spanned<Expr>>,
     pub name: Spanned<String>,
     pub args: Vec<Spanned<Expr>>,
 }
@@ -32,8 +32,8 @@ pub fn member_call_parser<'tokens, 'src: 'tokens>(
 
     let name = just(punct('.')).ignore_then(spanned_ident_parser());
 
-    atom.map(Box::new)
-        .map_with(|ex, e| (ex, e.span()))
+    atom.map_with(|ex, e| (ex, e.span()))
+        .map(Box::new)
         .then(name)
         .then(args)
         .map(|((rec, name), args)| MemberCall { rec, name, args })

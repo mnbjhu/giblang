@@ -95,10 +95,17 @@ impl<'db> Decl<'db> {
 
     pub fn get_ty(&self, id: ModulePath<'db>, state: &mut CheckState<'_, 'db>) -> Ty<'db> {
         match self.kind(state.db) {
-            DeclKind::Trait { .. } | DeclKind::Enum { .. } => Ty::Unknown,
-            DeclKind::Member { body, .. } | DeclKind::Struct { body, .. } => {
+            DeclKind::Trait { .. } | DeclKind::Enum { .. }| DeclKind::Struct{..}  => Ty::Meta(Box::new(self.default_named_ty(state, id))),
+            DeclKind::Member { body, .. } => {
                 let self_ty = self.get_named_ty(state, id);
-                body.get_constructor_ty(self_ty)
+                if let StructDecl::None = body {
+                    return self_ty;
+                }
+                if let Some(ty) = body.get_constructor_ty(self_ty) {
+                    Ty::Function(ty)
+                } else {
+                    Ty::Unknown
+                }
             }
             DeclKind::Function {
                 receiver,
@@ -117,33 +124,28 @@ impl<'db> Decl<'db> {
         }
     }
 
-    fn get_named_ty(self, state: &mut CheckState<'_, 'db>, id: ModulePath<'db>) -> Ty<'db> {
+    fn default_named_ty(self, state: &mut CheckState<'_, 'db>, name: ModulePath<'db>) -> Ty<'db> {
+        Ty::Named {
+            name,
+            args: self
+                .generics(state.db)
+                .iter()
+                .cloned()
+                .map(Ty::Generic)
+                .collect(),
+        }
+    }
+
+    pub fn get_named_ty(self, state: &mut CheckState<'_, 'db>, id: ModulePath<'db>) -> Ty<'db> {
         if let DeclKind::Member { .. } = &self.kind(state.db) {
             let parent = id.get_parent(state.db);
             let parent_decl = state.project.get_decl(state.db, parent);
             if parent_decl.is_none() {
                 return Ty::Unknown;
             }
-            let parent_decl = parent_decl.unwrap();
-            Ty::Named {
-                name: parent,
-                args: parent_decl
-                    .generics(state.db)
-                    .iter()
-                    .cloned()
-                    .map(Ty::Generic)
-                    .collect(),
-            }
+            parent_decl.unwrap().default_named_ty(state, parent)
         } else {
-            Ty::Named {
-                name: id,
-                args: self
-                    .generics(state.db)
-                    .iter()
-                    .cloned()
-                    .map(Ty::Generic)
-                    .collect(),
-            }
+            self.default_named_ty(state, id)
         }
     }
 }

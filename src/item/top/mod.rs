@@ -25,6 +25,9 @@ impl AstItem for Top {
         Self: Sized,
     {
         state.enter_scope();
+        if let Some(name) = self.get_name() {
+            state.path.push(name.to_string());
+        }
         match self {
             Top::Func(f) => f.at_offset(state, offset),
             Top::Struct(s) => s.at_offset(state, offset),

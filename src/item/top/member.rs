@@ -41,7 +41,6 @@ impl AstItem for EnumMember {
     {
         allocator
             .text(self.name.0.clone())
-            .append(allocator.space())
             .append(self.body.0.pretty(allocator))
     }
 }

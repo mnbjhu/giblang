@@ -5,7 +5,7 @@ use async_lsp::lsp_types::{DocumentSymbol, SymbolKind};
 use crate::{
     check::{state::CheckState, SemanticToken, TokenKind},
     item::{
-        common::{generics::brackets, type_::ContainsOffset},
+        common::{generics::{braces, brackets}, type_::ContainsOffset},
         AstItem,
     },
     parser::top::enum_::Enum,
@@ -59,7 +59,7 @@ impl AstItem for Enum {
             .append(allocator.space())
             .append(self.generics.0.pretty(allocator))
             .append(allocator.space())
-            .append(brackets(allocator, "{", "}", &self.members))
+            .append(braces(allocator, &self.members))
     }
 }
 
