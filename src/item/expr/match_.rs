@@ -1,9 +1,6 @@
 use crate::{
     item::{
-        common::{
-            generics::brackets_big,
-            type_::ContainsOffset as _,
-        },
+        common::{generics::brackets_big, type_::ContainsOffset as _},
         AstItem,
     },
     parser::expr::match_::Match,

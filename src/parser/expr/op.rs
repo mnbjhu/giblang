@@ -4,14 +4,12 @@ use crate::util::Spanned;
 
 use super::Expr;
 
-
 #[derive(Clone, PartialEq, Debug, Eq)]
 pub struct Op {
     pub left: Box<Spanned<Expr>>,
     pub right: Box<Spanned<Expr>>,
     pub kind: OpKind,
 }
-
 
 #[derive(Clone, PartialEq, Debug, Eq)]
 pub enum OpKind {

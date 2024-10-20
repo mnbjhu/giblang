@@ -89,7 +89,10 @@ where
         .append(
             allocator
                 .hardline()
-                .append(allocator.intersperse(items.iter().map(|(x, _)|x.pretty(allocator)), separator))
+                .append(
+                    allocator
+                        .intersperse(items.iter().map(|(x, _)| x.pretty(allocator)), separator),
+                )
                 .nest(4),
         )
         .append(allocator.hardline())

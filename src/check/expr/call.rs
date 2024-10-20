@@ -2,7 +2,11 @@ use crate::{
     check::{
         err::{missing_receiver::MissingReceiver, unexpected_args::UnexpectedArgs, CheckError},
         state::CheckState,
-    }, parser::expr::call::Call, project::decl::{DeclKind}, ty::{FuncTy, Ty}, util::Span
+    },
+    parser::expr::call::Call,
+    project::decl::DeclKind,
+    ty::{FuncTy, Ty},
+    util::Span,
 };
 
 impl<'db> Call {
@@ -58,8 +62,6 @@ impl<'db> Call {
         }
     }
 
-
-
     pub fn expected_instance_of(
         &self,
         expected: &Ty<'db>,
@@ -112,7 +114,7 @@ impl<'db> Ty<'db> {
     pub fn try_get_func_ty(&self, state: &mut CheckState<'_, 'db>) -> Option<FuncTy<'db>> {
         if let Ty::Function(func_ty) = self {
             Some(func_ty.clone())
-        }  else if let Ty::Meta(ty) = self {
+        } else if let Ty::Meta(ty) = self {
             if let Ty::Named { name, .. } = ty.as_ref() {
                 let decl = state.project.get_decl(state.db, *name);
                 if let Some(decl) = decl {
@@ -127,4 +129,3 @@ impl<'db> Ty<'db> {
         }
     }
 }
-

@@ -95,7 +95,9 @@ impl<'db> Decl<'db> {
 
     pub fn get_ty(&self, id: ModulePath<'db>, state: &mut CheckState<'_, 'db>) -> Ty<'db> {
         match self.kind(state.db) {
-            DeclKind::Trait { .. } | DeclKind::Enum { .. }| DeclKind::Struct{..}  => Ty::Meta(Box::new(self.default_named_ty(state, id))),
+            DeclKind::Trait { .. } | DeclKind::Enum { .. } | DeclKind::Struct { .. } => {
+                Ty::Meta(Box::new(self.default_named_ty(state, id)))
+            }
             DeclKind::Member { body, .. } => {
                 let self_ty = self.get_named_ty(state, id);
                 if let StructDecl::None = body {

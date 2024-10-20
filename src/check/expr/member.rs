@@ -1,7 +1,11 @@
 use std::collections::HashMap;
 
 use crate::{
-    check::{state::CheckState}, parser::expr::member::MemberCall, project::decl::{struct_::StructDecl, DeclKind}, ty::{is_instance::get_sub_tys, FuncTy, Ty}, util::{Span, Spanned}
+    check::state::CheckState,
+    parser::expr::member::MemberCall,
+    project::decl::{struct_::StructDecl, DeclKind},
+    ty::{is_instance::get_sub_tys, FuncTy, Ty},
+    util::{Span, Spanned},
 };
 
 use super::ident::check_ident;
@@ -26,9 +30,7 @@ impl<'db> MemberCall {
             receiver,
         } = func_ty;
         if let Some(rec) = receiver {
-            self.rec
-                .0
-                .expect_instance_of(&rec, state, self.rec.1);
+            self.rec.0.expect_instance_of(&rec, state, self.rec.1);
         }
 
         if expected_args.len() != self.args.len() {
@@ -112,12 +114,15 @@ impl<'db> Ty<'db> {
             .zip(args.iter().cloned())
             .collect::<HashMap<_, _>>();
         match body {
-            StructDecl::Fields(fields) => {
-                fields.iter().map(|(name, ty)| (name.clone(), ty.parameterize(&params))).collect()
-            },
-            StructDecl::Tuple(tys) => {
-                tys.iter().enumerate().map(|(i, ty)| (i.to_string(), ty.clone())).collect()
-            },
+            StructDecl::Fields(fields) => fields
+                .iter()
+                .map(|(name, ty)| (name.clone(), ty.parameterize(&params)))
+                .collect(),
+            StructDecl::Tuple(tys) => tys
+                .iter()
+                .enumerate()
+                .map(|(i, ty)| (i.to_string(), ty.clone()))
+                .collect(),
             StructDecl::None => vec![],
         }
     }

@@ -1,7 +1,10 @@
 use std::collections::HashMap;
 
 use crate::{
-    db::input::SourceFile, parser::expr::Expr, ty::{Generic, Ty}, util::{Span, Spanned}
+    db::input::SourceFile,
+    parser::expr::Expr,
+    ty::{Generic, Ty},
+    util::{Span, Spanned},
 };
 
 #[derive(Default)]
@@ -19,7 +22,12 @@ impl<'ty, 'db: 'ty> TypeState<'ty, 'db> {
         id
     }
 
-    pub fn new_type_var_with_bound(&mut self, generic: Generic<'db>, span: Span, file: SourceFile) -> u32 {
+    pub fn new_type_var_with_bound(
+        &mut self,
+        generic: Generic<'db>,
+        span: Span,
+        file: SourceFile,
+    ) -> u32 {
         let id = self.counter;
         let new = MaybeTypeVar::Data(TypeVarData {
             bounds: vec![generic],
@@ -165,7 +173,7 @@ impl<'ty, 'db: 'ty> TypeVarData<'ty, 'db> {
             explicit: None,
             resolved: None,
             span,
-            file
+            file,
         }
     }
 }

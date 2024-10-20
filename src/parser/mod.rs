@@ -11,7 +11,11 @@ use crate::{
     },
 };
 use chumsky::{
-    container::Container, error::{Rich, RichPattern}, input::Input, primitive::{choice, just, none_of}, recovery::{nested_delimiters, via_parser}, IterParser, Parser
+    error::{Rich, RichPattern},
+    input::Input,
+    primitive::{choice, just, none_of},
+    recovery::{nested_delimiters, via_parser},
+    IterParser, Parser,
 };
 use salsa::Accumulator;
 use tracing::info;

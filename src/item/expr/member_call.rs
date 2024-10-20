@@ -3,7 +3,13 @@ use std::collections::HashMap;
 use async_lsp::lsp_types::{CompletionItem, CompletionItemKind};
 
 use crate::{
-    check::{state::CheckState, SemanticToken, TokenKind}, item::{common::{generics::brackets, type_::ContainsOffset}, AstItem}, parser::expr::member::MemberCall, ty::Ty
+    check::{state::CheckState, SemanticToken, TokenKind},
+    item::{
+        common::{generics::brackets, type_::ContainsOffset},
+        AstItem,
+    },
+    parser::expr::member::MemberCall,
+    ty::Ty,
 };
 
 impl AstItem for MemberCall {
@@ -24,7 +30,13 @@ impl AstItem for MemberCall {
 
     fn tokens(&self, state: &mut CheckState, tokens: &mut Vec<SemanticToken>) {
         self.rec.0.tokens(state, tokens);
-        if self.rec.0.check(state).get_member_func(&self.name, state).is_some() {
+        if self
+            .rec
+            .0
+            .check(state)
+            .get_member_func(&self.name, state)
+            .is_some()
+        {
             tokens.push(SemanticToken {
                 span: self.name.1,
                 kind: TokenKind::Func,
@@ -33,12 +45,12 @@ impl AstItem for MemberCall {
         for args in &self.args {
             args.0.tokens(state, tokens);
         }
-
     }
 
     fn at_offset<'me>(&'me self, state: &mut CheckState, offset: usize) -> &'me dyn AstItem
-        where
-            Self: Sized, {
+    where
+        Self: Sized,
+    {
         if self.rec.1.contains_offset(offset) {
             return self.rec.0.at_offset(state, offset);
         }
@@ -48,15 +60,14 @@ impl AstItem for MemberCall {
             }
         }
         self
-
     }
 
     fn hover<'db>(
-            &self,
-            state: &mut CheckState<'_, 'db>,
-            _: usize,
-            type_vars: &HashMap<u32, Ty<'db>>,
-        ) -> Option<String> {
+        &self,
+        state: &mut CheckState<'_, 'db>,
+        _: usize,
+        type_vars: &HashMap<u32, Ty<'db>>,
+    ) -> Option<String> {
         let func_ty = self.rec.0.check(state).get_member_func(&self.name, state)?;
         Some(format!(
             "{}: {}",
@@ -79,4 +90,3 @@ impl AstItem for MemberCall {
         completions
     }
 }
-

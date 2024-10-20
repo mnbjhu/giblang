@@ -9,16 +9,16 @@ use super::{
     AstItem,
 };
 
-pub mod field;
 pub mod call;
 pub mod code_block;
+pub mod field;
 pub mod ident;
-pub mod op;
 pub mod if_else;
 pub mod lit;
 pub mod match_;
 pub mod match_arm;
 pub mod member_call;
+pub mod op;
 
 impl AstItem for Expr {
     fn at_offset<'me>(&'me self, state: &mut CheckState, offset: usize) -> &'me dyn AstItem
@@ -50,7 +50,7 @@ impl AstItem for Expr {
                 self
             }
             Expr::Error => &Expr::Error,
-            Expr::Op (op) => op.at_offset(state, offset),
+            Expr::Op(op) => op.at_offset(state, offset),
             Expr::Field(field) => field.at_offset(state, offset),
         }
     }

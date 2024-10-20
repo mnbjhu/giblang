@@ -2,17 +2,26 @@ use std::collections::HashMap;
 
 use crate::{
     check::state::CheckState,
-    ty::{FuncTy, Ty}, util::Span,
+    ty::{FuncTy, Ty},
+    util::Span,
 };
 
 impl<'db> Ty<'db> {
-    pub fn inst(&self, ids: &mut HashMap<String, u32>, state: &mut CheckState<'_, 'db>, span: Span) -> Ty<'db> {
+    pub fn inst(
+        &self,
+        ids: &mut HashMap<String, u32>,
+        state: &mut CheckState<'_, 'db>,
+        span: Span,
+    ) -> Ty<'db> {
         match self {
             Ty::Generic(g) => {
                 let id = if let Some(id) = ids.get(&g.name.0) {
                     *id
                 } else {
-                    let id = state.type_state.new_type_var_with_bound(g.clone(), span, state.file_data);
+                    let id =
+                        state
+                            .type_state
+                            .new_type_var_with_bound(g.clone(), span, state.file_data);
                     ids.insert(g.name.0.clone(), id);
                     id
                 };
@@ -29,7 +38,9 @@ impl<'db> Ty<'db> {
                 args,
                 ret,
             }) => Ty::Function(FuncTy {
-                receiver: receiver.as_ref().map(|r| Box::new(r.inst(ids, state, span))),
+                receiver: receiver
+                    .as_ref()
+                    .map(|r| Box::new(r.inst(ids, state, span))),
                 args: args.iter().map(|a| a.inst(ids, state, span)).collect(),
                 ret: Box::new(ret.inst(ids, state, span)),
             }),

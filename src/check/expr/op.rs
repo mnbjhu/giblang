@@ -1,6 +1,5 @@
 use crate::{check::state::CheckState, parser::expr::op::Op, ty::Ty, util::Span};
 
-
 impl<'db> Op {
     pub fn check(&self, state: &mut CheckState<'_, 'db>) -> Ty<'db> {
         self.left.as_ref().0.check(state);

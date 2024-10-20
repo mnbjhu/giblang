@@ -14,4 +14,3 @@ impl LetStatement {
         self.pattern.0.check(state, ty);
     }
 }
-

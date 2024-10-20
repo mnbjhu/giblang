@@ -5,10 +5,7 @@ use crate::{
     },
     db::modules::ModulePath,
     parser::common::variance::Variance,
-    project::{
-        decl::DeclKind,
-        ImplDecl,
-    },
+    project::{decl::DeclKind, ImplDecl},
     ty::Ty,
     util::{Span, Spanned},
 };
@@ -159,7 +156,11 @@ pub fn get_sub_tys<'db>(name: &Ty<'db>, state: &mut CheckState<'_, 'db>) -> Vec<
 }
 
 impl<'db> Ty<'db> {
-    pub fn get_func(&self, name: &Spanned<String>, state: &mut CheckState<'_, 'db>) -> Option<FuncTy<'db>> {
+    pub fn get_func(
+        &self,
+        name: &Spanned<String>,
+        state: &mut CheckState<'_, 'db>,
+    ) -> Option<FuncTy<'db>> {
         if let Ty::Named { name: id, .. } = self {
             if let DeclKind::Trait { body, .. } = state
                 .project
@@ -170,7 +171,8 @@ impl<'db> Ty<'db> {
                 body.iter()
                     .find(|func| func.name(state.db) == name.0)
                     .map(|func| {
-                        let Ty::Function(func) = func.get_ty(state, Some(self.clone()), name.1) else {
+                        let Ty::Function(func) = func.get_ty(state, Some(self.clone()), name.1)
+                        else {
                             panic!("Expected function");
                         };
                         func
@@ -183,7 +185,7 @@ impl<'db> Ty<'db> {
         }
     }
 
-    pub fn get_funcs(&self, state: &mut CheckState<'_, 'db>) -> Vec<(String,FuncTy<'db>)> {
+    pub fn get_funcs(&self, state: &mut CheckState<'_, 'db>) -> Vec<(String, FuncTy<'db>)> {
         if let Ty::Named { name, .. } = self {
             if let DeclKind::Trait { body, .. } = state
                 .project
@@ -194,7 +196,9 @@ impl<'db> Ty<'db> {
                 return body
                     .iter()
                     .map(|mod_| {
-                        let Ty::Function(func) = mod_.get_ty(state, Some(self.clone()), Span::splat(0)) else {
+                        let Ty::Function(func) =
+                            mod_.get_ty(state, Some(self.clone()), Span::splat(0))
+                        else {
                             panic!("Expected function");
                         };
                         (mod_.name(state.db), func)

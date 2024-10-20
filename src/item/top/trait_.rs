@@ -1,7 +1,13 @@
 use async_lsp::lsp_types::{DocumentSymbol, SymbolKind};
 
 use crate::{
-    check::{state::CheckState, SemanticToken, TokenKind}, db::modules::ModulePath, item::{common::type_::ContainsOffset, AstItem}, parser::top::trait_::Trait, range::span_to_range_str, ty::Ty, util::Span
+    check::{state::CheckState, SemanticToken, TokenKind},
+    db::modules::ModulePath,
+    item::{common::type_::ContainsOffset, AstItem},
+    parser::top::trait_::Trait,
+    range::span_to_range_str,
+    ty::Ty,
+    util::Span,
 };
 
 use super::impl_::pretty_trait_body;

@@ -13,10 +13,10 @@ pub mod code_block;
 pub mod field;
 pub mod ident;
 pub mod lit;
-pub mod op;
 pub mod match_;
 pub mod match_arm;
 pub mod member;
+pub mod op;
 pub mod tuple;
 
 impl<'db> Expr {

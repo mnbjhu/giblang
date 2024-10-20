@@ -29,6 +29,7 @@ use self::{
 
 use super::{common::optional_newline::optional_newline, stmt::Stmt};
 
+pub mod access;
 pub mod call;
 pub mod code_block;
 pub mod field;
@@ -38,7 +39,6 @@ pub mod match_arm;
 pub mod member;
 pub mod op;
 pub mod qualified_name;
-pub mod access;
 
 #[derive(Clone, PartialEq, Debug, Eq)]
 pub enum Expr {
@@ -86,21 +86,30 @@ pub fn expr_parser<'tokens, 'src: 'tokens>(stmt: AstParser!(Stmt)) -> AstParser!
         // let member = member_call_parser(atom.clone(), expr.clone()).map(Expr::MemberCall);
 
         let atom = choice((call, atom));
-        let access = atom.clone().map_with(|ex,e|(ex, e.span())).foldl_with(access_parser(atom.clone()).repeated(), |ex, acc, e| {
-            match acc {
-                Access::Field(name) => (Expr::Field(Field {
-                    name,
-                    struct_: Box::new(ex),
-                }), e.span()),
-                Access::Member { name, args } => (Expr::MemberCall(MemberCall {
-                    rec: Box::new(ex),
-                    name,
-                    args,
-                }), e.span()),
-            }
-        }).map(|(ex, _)| ex);
-
-
+        let access = atom
+            .clone()
+            .map_with(|ex, e| (ex, e.span()))
+            .foldl_with(
+                access_parser(atom.clone()).repeated(),
+                |ex, acc, e| match acc {
+                    Access::Field(name) => (
+                        Expr::Field(Field {
+                            name,
+                            struct_: Box::new(ex),
+                        }),
+                        e.span(),
+                    ),
+                    Access::Member { name, args } => (
+                        Expr::MemberCall(MemberCall {
+                            rec: Box::new(ex),
+                            name,
+                            args,
+                        }),
+                        e.span(),
+                    ),
+                },
+            )
+            .map(|(ex, _)| ex);
 
         let sum = access
             .clone()

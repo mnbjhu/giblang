@@ -8,7 +8,8 @@ use crate::{
     db::modules::{Module, ModuleData},
     parser::expr::qualified_name::SpannedQualifiedName,
     project::decl::DeclKind,
-    ty::{is_instance::get_sub_decls, Ty}, util::{Span, Spanned},
+    ty::{is_instance::get_sub_decls, Ty},
+    util::{Span, Spanned},
 };
 
 pub fn check_ident<'db>(state: &mut CheckState<'_, 'db>, path: &[Spanned<String>]) -> Ty<'db> {
@@ -29,9 +30,7 @@ pub fn check_ident<'db>(state: &mut CheckState<'_, 'db>, path: &[Spanned<String>
     if let Some(parent) = state.get_module_with_error(parent) {
         match parent.content(state.db) {
             ModuleData::Package(pkg) => {
-                let found = pkg
-                    .iter()
-                    .find(|mod_| mod_.name(state.db) == name.0);
+                let found = pkg.iter().find(|mod_| mod_.name(state.db) == name.0);
                 if let Some(mod_) = found {
                     return mod_.get_ty(state, None, name.1);
                 }
@@ -54,9 +53,7 @@ pub fn check_ident<'db>(state: &mut CheckState<'_, 'db>, path: &[Spanned<String>
                             };
                             body.iter()
                                 .find(|func| func.name(state.db) == name.0)
-                                .map(|m| {
-                                    m.get_ty(state, Some(self_ty.clone()), name.1)
-                                })
+                                .map(|m| m.get_ty(state, Some(self_ty.clone()), name.1))
                         })
                         .collect::<Vec<_>>();
                     match funcs.len() {
@@ -79,7 +76,12 @@ pub fn check_ident<'db>(state: &mut CheckState<'_, 'db>, path: &[Spanned<String>
 }
 
 impl<'db> Module<'db> {
-    pub fn get_ty(&self, state: &mut CheckState<'_, 'db>, self_ty: Option<Ty<'db>>, span: Span) -> Ty<'db> {
+    pub fn get_ty(
+        &self,
+        state: &mut CheckState<'_, 'db>,
+        self_ty: Option<Ty<'db>>,
+        span: Span,
+    ) -> Ty<'db> {
         match self.content(state.db) {
             ModuleData::Package(_) => Ty::unit(),
             ModuleData::Export(decl) => {
@@ -104,4 +106,3 @@ pub fn check_ident_is<'db>(
     let span = ident.last().unwrap().1;
     actual.expect_is_instance_of(expected, state, false, span);
 }
-
