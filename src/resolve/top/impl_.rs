@@ -1,9 +1,9 @@
-use crate::{parser::top::impl_::Impl, project::ImplDecl, resolve::state::ResolveState};
+use crate::{parser::top::impl_::Impl, project::ImplForDecl, resolve::state::ResolveState};
 
 impl Impl {
-    pub fn resolve<'db>(&self, state: &mut ResolveState<'db>) -> ImplDecl<'db> {
+    pub fn resolve<'db>(&self, state: &mut ResolveState<'db>) -> ImplForDecl<'db> {
         let generics = self.generics.0.resolve(state);
-        let to = self.trait_.0.resolve(state);
+        let to = self.trait_.as_ref().map(|trait_|trait_.0.resolve(state));
         let from = self.for_.0.resolve(state);
         state.add_self_ty(from.clone(), self.for_.1);
         let mut functions = Vec::new();
@@ -13,7 +13,7 @@ impl Impl {
             functions.push(decl);
             state.exit_scope();
         }
-        ImplDecl::new(state.db, generics, from, to, functions)
+        ImplForDecl::new(state.db, generics, from, to, functions)
     }
 }
 // #[cfg(test)]

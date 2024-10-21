@@ -68,45 +68,8 @@ impl<'db> Call {
         state: &mut CheckState<'_, 'db>,
         span: Span,
     ) {
-        let name_ty = self.name.0.check(state);
-        if let Ty::Function(func_ty) = &name_ty {
-            let FuncTy {
-                args: expected_args,
-                ret,
-                receiver,
-            } = &func_ty;
-            ret.expect_is_instance_of(expected, state, false, span);
-            if let Some(receiver) = receiver {
-                state.error(CheckError::MissingReceiver(MissingReceiver {
-                    span: self.name.1,
-                    file: state.file_data,
-                    expected: receiver.get_name(state),
-                }));
-            }
-            if expected_args.len() != self.args.len() {
-                state.error(CheckError::UnexpectedArgs(UnexpectedArgs {
-                    expected: expected_args.len(),
-                    found: self.args.len(),
-                    span: self.name.1,
-                    file: state.file_data,
-                    func: func_ty.get_name(state),
-                }));
-            }
-            self.args
-                .iter()
-                .zip(expected_args)
-                .for_each(|((arg, span), expected)| {
-                    arg.expect_instance_of(expected, state, *span);
-                });
-        } else {
-            state.simple_error(
-                &format!(
-                    "Expected a function but found '{}'",
-                    name_ty.get_name(state)
-                ),
-                self.name.1,
-            );
-        }
+        let ret = self.check(state);
+        ret.expect_is_instance_of(expected, state, false, span);
     }
 }
 

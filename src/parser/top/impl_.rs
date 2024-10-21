@@ -20,7 +20,7 @@ use super::func::{func_parser, Func};
 #[derive(Debug, PartialEq, Clone, Eq)]
 pub struct Impl {
     pub generics: Spanned<GenericArgs>,
-    pub trait_: Spanned<NamedType>,
+    pub trait_: Option<Spanned<NamedType>>,
     pub for_: Spanned<NamedType>,
     pub body: Vec<Spanned<Func>>,
 }
@@ -44,7 +44,7 @@ pub fn impl_parser<'tokens, 'src: 'tokens>(stmt: AstParser!(Stmt)) -> AstParser!
 
     just(kw!(impl))
         .ignore_then(generic_args_parser().map_with(|g, e| (g, e.span())))
-        .then(trait_)
+        .then(trait_.or_not())
         .then(for_)
         .then(body)
         .map(|(((generics, trait_), for_), body)| Impl {

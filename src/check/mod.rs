@@ -8,7 +8,7 @@ use crate::{
         modules::ModulePath,
     },
     parser::parse_file,
-    project::{ImplDecl, Project},
+    project::{ImplForDecl, Project},
     resolve::{resolve_impls_vfs, resolve_vfs},
     ty::Ty,
     util::Span,
@@ -46,7 +46,7 @@ pub struct SemanticToken {
 pub fn resolve_project<'db>(db: &'db dyn Db, vfs: Vfs) -> Project<'db> {
     let decls = resolve_vfs(db, vfs, ModulePath::new(db, Vec::new()));
     let impls = resolve_impls_vfs(db, vfs);
-    let mut impl_map = HashMap::<ModulePath, Vec<ImplDecl>>::new();
+    let mut impl_map = HashMap::<ModulePath, Vec<ImplForDecl>>::new();
     for impl_ in impls {
         let Ty::Named { name, .. } = impl_.from_ty(db) else {
             panic!("Impls must be named types")

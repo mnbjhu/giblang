@@ -1,10 +1,12 @@
+use async_lsp::lsp_types::OneOf;
+
 use crate::{
     db::{
         input::{Db, SourceFile, Vfs, VfsInner},
         modules::{Module, ModuleData, ModulePath},
     },
     parser::{parse_file, top::Top},
-    project::ImplDecl,
+    project::{ImplForDecl},
 };
 
 use self::state::ResolveState;
@@ -41,7 +43,7 @@ pub fn resolve_file<'db>(db: &'db dyn Db, file: SourceFile) -> Module<'db> {
 }
 
 #[salsa::tracked]
-pub fn resolve_impls<'db>(db: &'db dyn Db, file: SourceFile) -> Vec<ImplDecl<'db>> {
+pub fn resolve_impls<'db>(db: &'db dyn Db, file: SourceFile) -> Vec<ImplForDecl<'db>> {
     let mut state = ResolveState::from_file(db, file);
     let ast = parse_file(db, file);
     ast.tops(db)
@@ -86,7 +88,7 @@ pub fn resolve_vfs<'db>(db: &'db dyn Db, vfs: Vfs, path: ModulePath<'db>) -> Mod
 }
 
 #[salsa::tracked]
-pub fn resolve_impls_vfs<'db>(db: &'db dyn Db, vfs: Vfs) -> Vec<ImplDecl<'db>> {
+pub fn resolve_impls_vfs<'db>(db: &'db dyn Db, vfs: Vfs) -> Vec<ImplForDecl<'db>> {
     match vfs.inner(db) {
         VfsInner::File(file) => resolve_impls(db, *file),
         VfsInner::Dir(files) => {

@@ -19,25 +19,18 @@ pub mod util;
 #[salsa::tracked]
 pub struct Project<'db> {
     pub decls: Module<'db>,
-    pub impl_map: HashMap<ModulePath<'db>, Vec<ImplDecl<'db>>>,
+    pub impl_map: HashMap<ModulePath<'db>, Vec<ImplForDecl<'db>>>,
 }
 
 #[salsa::tracked]
-pub struct ImplDecl<'db> {
+pub struct ImplForDecl<'db> {
     pub generics: Vec<Generic<'db>>,
     #[id]
     pub from_ty: Ty<'db>,
     #[id]
-    pub to_ty: Ty<'db>,
+    pub to_ty: Option<Ty<'db>>,
     pub functions: Vec<Decl<'db>>,
 }
-
-// #[cfg(test)]
-// #[must_use]
-// pub fn check_test_state(project: &Project) -> CheckState {
-//     CheckState::from_file(project.get_file(0).unwrap(), project)
-// }
-//
 
 impl<'db> Project<'db> {
     pub fn get_decl(self, db: &'db dyn Db, path: ModulePath<'db>) -> Option<Decl<'db>> {
@@ -48,7 +41,7 @@ impl<'db> Project<'db> {
         }
     }
 
-    pub fn get_impls(self, db: &'db dyn Db, path: ModulePath<'db>) -> Vec<ImplDecl<'db>> {
+    pub fn get_impls(self, db: &'db dyn Db, path: ModulePath<'db>) -> Vec<ImplForDecl<'db>> {
         self.impl_map(db).get(&path).cloned().unwrap_or_default()
     }
 }
@@ -59,40 +52,3 @@ pub struct TypeVar<'db> {
     pub generic: Generic<'db>,
     pub ty: Option<Ty<'db>>,
 }
-
-// #[cfg(test)]
-// mod tests {
-//     use super::Project;
-//
-//     impl Project {
-//         #[must_use]
-//         pub fn from(text: &str) -> Project {
-//             let mut project = Project::new();
-//             project.insert_file("main.gib".to_string(), text.to_string());
-//             project
-//         }
-//
-//         #[must_use]
-//         pub fn check_test() -> Project {
-//             let mut project = Project::from(
-//                 r"struct Foo
-// struct Bar[T]
-// struct Baz[T, U]
-// enum Option[out T] {
-//    Some(T),
-//    None
-// }
-// enum Result[out R, out E] {
-//    Ok(R),
-//    Err(E),
-// }
-// fn add(a: Int, b: Int): Int { }
-// fn Int.factorial(): Int { }
-// fn ident[T](t: T): T { }
-// ",
-//             );
-//             project.resolve();
-//             project
-//         }
-//     }
-// }

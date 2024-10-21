@@ -16,7 +16,7 @@ impl<'db> MemberCall {
         let Some(func_ty) = rec.get_member_func(&self.name, state) else {
             state.simple_error(
                 &format!(
-                    "No function {} found on type {}",
+                    "No function {} found for type {}",
                     self.name.0,
                     rec.get_name(state)
                 ),
@@ -70,10 +70,11 @@ impl<'db> Ty<'db> {
         name: &Spanned<String>,
         state: &mut CheckState<'_, 'db>,
     ) -> Option<FuncTy<'db>> {
-        let funcs = get_sub_tys(self, state)
+        let mut funcs = get_sub_tys(self, state)
             .iter()
             .filter_map(|ty| ty.get_func(name, state))
             .collect::<Vec<_>>();
+        funcs.extend(self.get_func(name, state));
         if funcs.len() > 1 {
             state.simple_error(&format!("Ambiguous call to function {}", &name.0), name.1);
             None

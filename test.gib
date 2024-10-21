@@ -20,14 +20,41 @@ struct Basic {
     test2: String
 }
 
-fn thingy(x: Option[String]) {}
+fn thingy(x: Option[String]) {
+    let basic = Basic(123, "hello")
+    let some_basic = Option::Some(basic)
+}
+
+impl Basic {
+    fn hello() {
+        println("Hello")
+    }
+    fn complex[T](x: T) {
+        println("Complex")
+    }
+}
 
 fn test3(thing: Int) {
     let some = Option::Some(thing)
     some.unwrap()
 }
 
-fn test123() {
-    let other = Option::Some("")
-    Basic(123, other.unwrap())
+fn test123() {}
+
+impl ToString for Basic {
+    fn to_string(): String {
+        "Hello"
+    }
+}
+
+impl ToString {
+    fn print() {
+        println("Hello")
+    }
+}
+
+trait ToString {
+    fn to_string(): String {
+        "Hello"
+    }
 }
