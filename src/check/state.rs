@@ -102,14 +102,6 @@ impl<'ty, 'db: 'ty> CheckState<'db> {
         res
     }
 
-    pub fn with_type_vars(&mut self, types: HashMap<u32, Ty<'db>>) {
-        for (id, ty) in types {
-            self.type_state.new_type_var(Span::splat(0), self.file_data);
-            let var = self.type_state.get_type_var_mut(id);
-            var.resolved = Some(ty);
-        }
-    }
-
     pub fn add_import(&mut self, name: String, path: QualifiedName) {
         self.imports.insert(name, ModulePath::new(self.db, path));
     }
@@ -190,22 +182,6 @@ impl<'ty, 'db: 'ty> CheckState<'db> {
                 }));
                 None
             }
-        } else {
-            None
-        }
-    }
-
-    pub fn get_decl_without_error(&self, path: &SpannedQualifiedName) -> Option<ModulePath<'db>> {
-        if self
-            .project
-            .decls(self.db)
-            .get_path_without_error(self.db, path.clone())
-            .is_some()
-        {
-            Some(ModulePath::new(
-                self.db,
-                path.iter().map(|(n, _)| n.to_string()).collect(),
-            ))
         } else {
             None
         }

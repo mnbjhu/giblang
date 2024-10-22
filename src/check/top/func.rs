@@ -101,7 +101,7 @@ impl<'db> Func {
                 state.simple_error(
                     &format!(
                         "Expected receiver of type '{}' but found none",
-                        trait_decl.receiver.as_ref().unwrap().get_name(state)
+                        ty.get_name(state)
                     ),
                     self.name.1,
                 );

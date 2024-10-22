@@ -11,11 +11,32 @@ trait Test {
 
 struct Box[T](T)
 
+trait New {
+    fn new(): Self
+}
+
+impl[T] New for Box[T] {
+    fn new(): Box[T] {
+        Box(x)
+    }
+}
+
+trait Pushable[T] {
+    fn Self.push(x: T)
+}
+
+impl[T] Pushable[T] for Box[T] {
+    fn Self.push(x: T) {}
+}
+
 fn test(thing: Test) {
     let other = 123
     let test: std::Vec[String] = std::Vec
     let some = Option::Some(123)
     let ty = some.unwrap()
+    let box = Box::new()
+    box.push(123)
+    box
 }
 
 struct Basic {

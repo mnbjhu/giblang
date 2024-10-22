@@ -43,7 +43,9 @@ pub trait AstItem: Debug {
         None
     }
 
-    fn completions(&self, _state: &mut CheckState, _offset: usize) -> Vec<CompletionItem> {
+    fn completions<'db>(&self, _state: &mut CheckState, _offset: usize,
+        type_vars: &HashMap<u32, Ty<'db>>,
+    ) -> Vec<CompletionItem> {
         vec![]
     }
 
@@ -74,8 +76,8 @@ impl<'db> Ast<'db> {
         None
     }
 
-    pub fn semantic_tokens<'me, 'state>(
-        &'me self,
+    pub fn semantic_tokens<'state>(
+        self,
         db: &'db dyn Database,
         state: &'state mut CheckState<'db>,
     ) -> Vec<SemanticToken>
@@ -89,22 +91,6 @@ impl<'db> Ast<'db> {
         tokens
     }
 
-    pub fn completions<'me, 'state>(
-        &'me self,
-        db: &'db dyn Database,
-        state: &'state mut CheckState<'db>,
-        offset: usize,
-    ) -> Vec<CompletionItem>
-    where
-        Self: Sized,
-    {
-        for (item, span) in self.tops(db) {
-            if span.contains_offset(offset) {
-                return item.completions(state, offset);
-            }
-        }
-        vec![]
-    }
 }
 pub fn pretty_format<'b, 'db, D, A>(
     ast: &'b [Spanned<Top>],

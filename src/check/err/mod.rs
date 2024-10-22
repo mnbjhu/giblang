@@ -29,27 +29,15 @@ pub enum CheckError {
     Simple(Simple),
     Unresolved(Unresolved),
     IsNotInstance(IsNotInstance),
+    #[allow(dead_code)]
     UnboundTypeVar(UnboundTypeVar),
     UnexpectedArgs(UnexpectedArgs),
     MissingReceiver(MissingReceiver),
     UnexpectedWildcard(UnexpectedWildcard),
+    #[allow(dead_code)]
     ImplTypeMismatch(ImplTypeMismatch),
 }
 
-impl CheckError {
-    pub fn print(&self, db: &dyn Db) {
-        match self {
-            CheckError::Simple(err) => err.print(db),
-            CheckError::Unresolved(err) => err.print(db),
-            CheckError::IsNotInstance(err) => err.print(db),
-            CheckError::UnboundTypeVar(err) => err.print(db),
-            CheckError::UnexpectedArgs(err) => err.print(db),
-            CheckError::MissingReceiver(err) => err.print(db),
-            CheckError::UnexpectedWildcard(err) => err.print(db),
-            CheckError::ImplTypeMismatch(err) => err.print(db),
-        }
-    }
-}
 pub trait IntoWithDb<T> {
     fn into_with_db(self, db: &dyn Db) -> T;
 }

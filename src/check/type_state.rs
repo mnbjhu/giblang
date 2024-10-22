@@ -128,7 +128,9 @@ pub struct TypeVarData<'db> {
     pub bounds: Vec<Generic<'db>>,
     pub explicit: Option<Spanned<Ty<'db>>>,
     pub resolved: Option<Ty<'db>>,
+    #[allow(dead_code)]
     pub span: Span,
+    #[allow(dead_code)]
     pub file: SourceFile,
 }
 

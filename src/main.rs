@@ -1,15 +1,15 @@
 use clap::Parser as _;
 use cli::Command;
 
+mod item;
 mod check;
 mod cli;
-pub mod db;
-pub mod item;
+mod db;
 mod lexer;
-pub mod lsp;
-pub mod parser;
-pub mod project;
-pub mod range;
+mod lsp;
+mod parser;
+mod project;
+mod range;
 mod resolve;
 mod ty;
 mod util;

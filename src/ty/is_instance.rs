@@ -161,7 +161,7 @@ impl<'db> Ty<'db> {
         name: &Spanned<String>,
         state: &mut CheckState<'db>,
     ) -> Option<FuncTy<'db>> {
-        if let Ty::Named { name: id, args } = self {
+        if let Ty::Named { name: id, .. } = self {
             if let DeclKind::Trait { body, .. } = state.get_decl(*id).kind(state.db) {
                 let found = body
                     .iter()
@@ -190,7 +190,7 @@ impl<'db> Ty<'db> {
                 .flat_map(|i| i.functions(state.db))
                 .find(|decl| decl.name(state.db) == name.0)
                 .map(|decl| {
-                    let Ty::Function(func) = decl.get_ty(decl.path(state.db), state) else {
+                    let Ty::Function(func) = decl.get_ty(state) else {
                         panic!("Expected function");
                     };
                     func
@@ -225,7 +225,7 @@ impl<'db> Ty<'db> {
                 })
                 .flat_map(|i| i.functions(state.db))
                 .map(|decl| {
-                    let Ty::Function(func) = decl.get_ty(decl.path(state.db), state) else {
+                    let Ty::Function(func) = decl.get_ty(state) else {
                         panic!("Expected function");
                     };
                     (decl.name(state.db), func)

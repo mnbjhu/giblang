@@ -7,7 +7,7 @@ use crate::{
 
 impl Module<'_> {
     #[must_use]
-    pub fn completions(&self, state: &CheckState) -> Vec<CompletionItem> {
+    pub fn completions(self, state: &CheckState) -> Vec<CompletionItem> {
         match self.content(state.db) {
             ModuleData::Package(_) => vec![CompletionItem {
                 label: self.name(state.db),
@@ -19,7 +19,7 @@ impl Module<'_> {
         }
     }
 
-    pub fn get_static_access_completions(&self, state: &mut CheckState) -> Vec<CompletionItem> {
+    pub fn get_static_access_completions(self, state: &mut CheckState) -> Vec<CompletionItem> {
         match self.content(state.db) {
             ModuleData::Package(pkg) => {
                 let mut completions = vec![];

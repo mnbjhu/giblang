@@ -77,7 +77,7 @@ pub fn check_ident<'db>(state: &mut CheckState<'db>, path: &[Spanned<String>]) -
 
 impl<'db> Module<'db> {
     pub fn get_ty(
-        &self,
+        self,
         state: &mut CheckState<'db>,
         self_ty: Option<Ty<'db>>,
         span: Span,
@@ -85,7 +85,7 @@ impl<'db> Module<'db> {
         match self.content(state.db) {
             ModuleData::Package(_) => Ty::unit(),
             ModuleData::Export(decl) => {
-                let mut ty = decl.get_ty(self.path(state.db), state);
+                let mut ty = decl.get_ty(state);
                 if let Some(self_ty) = self_ty {
                     let mut args = HashMap::new();
                     args.insert("Self".to_string(), self_ty);

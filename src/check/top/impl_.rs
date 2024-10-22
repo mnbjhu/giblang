@@ -83,7 +83,7 @@ impl<'db> Impl {
 }
 
 impl<'db> Module<'db> {
-    pub fn into_func(&self, db: &'db dyn Db) -> &'db Function<'db> {
+    pub fn into_func(self, db: &'db dyn Db) -> &'db Function<'db> {
         if let ModuleData::Export(e) = self.content(db) {
             e.into_func(db)
         } else {
@@ -93,7 +93,7 @@ impl<'db> Module<'db> {
 }
 
 impl<'db> Decl<'db> {
-    pub fn into_func(&self, db: &'db dyn Db) -> &'db Function<'db> {
+    pub fn into_func(self, db: &'db dyn Db) -> &'db Function<'db> {
         if let DeclKind::Function(f) = self.kind(db) {
             f
         } else {

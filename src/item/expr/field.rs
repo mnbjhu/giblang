@@ -1,9 +1,11 @@
+use std::collections::HashMap;
+
 use async_lsp::lsp_types::{CompletionItem, CompletionItemKind};
 
 use crate::{
     check::{state::CheckState, SemanticToken, TokenKind},
     item::AstItem,
-    parser::expr::field::Field,
+    parser::expr::field::Field, ty::Ty,
 };
 
 impl AstItem for Field {
@@ -54,7 +56,7 @@ impl AstItem for Field {
         ))
     }
 
-    fn completions(&self, state: &mut CheckState, _: usize) -> Vec<CompletionItem> {
+    fn completions(&self, state: &mut CheckState, _: usize, _: &HashMap<u32, Ty<'_>>) -> Vec<CompletionItem> {
         let rec = self.struct_.0.check(state);
         let mut completions = Vec::new();
         for (name, func_ty) in rec.member_funcs(state) {

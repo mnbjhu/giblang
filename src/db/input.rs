@@ -65,20 +65,6 @@ impl Db for SourceDatabase {
     }
 }
 
-#[salsa::accumulator]
-pub struct Diagnostic {
-    pub message: String,
-    pub span: Span,
-    pub level: Level,
-    pub path: PathBuf,
-}
-
-#[derive(Clone, Debug)]
-pub enum Level {
-    Error,
-    Warning,
-}
-
 #[salsa::input]
 pub struct SourceFile {
     #[return_ref]
@@ -95,7 +81,7 @@ pub struct SourceFile {
 }
 
 impl SourceFile {
-    pub fn module_path<'db>(&self, db: &'db dyn Db) -> ModulePath<'db> {
+    pub fn module_path(self, db: &dyn Db) -> ModulePath<'_> {
         ModulePath::new(db, self.module(db))
     }
 }
@@ -179,8 +165,8 @@ impl Vfs {
         module
     }
 
-    pub fn get_file(&self, db: &mut dyn Db, path: &[String]) -> Option<SourceFile> {
-        let mut module: Vfs = *self;
+    pub fn get_file(self, db: &mut dyn Db, path: &[String]) -> Option<SourceFile> {
+        let mut module: Vfs = self;
         for seg in path {
             if let Some(exising) = module.get(db, seg) {
                 module = *exising;
@@ -197,8 +183,8 @@ impl Vfs {
         }
     }
 
-    pub fn insert_path(&self, db: &mut dyn Db, path: &[String], src: SourceFile) {
-        let mut module: Vfs = *self;
+    pub fn insert_path(self, db: &mut dyn Db, path: &[String], src: SourceFile) {
+        let mut module: Vfs = self;
         for seg in path {
             if let Some(exising) = module.get(db, seg) {
                 module = *exising;

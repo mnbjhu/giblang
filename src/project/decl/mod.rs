@@ -6,7 +6,7 @@ use crate::{
         input::{Db, SourceFile},
         modules::{Module, ModulePath},
     },
-    ty::{prim::PrimTy, FuncTy, Generic, Ty},
+    ty::{FuncTy, Generic, Ty},
     util::Span,
 };
 
@@ -33,7 +33,7 @@ impl<'db> Decl<'db> {
             DeclKind::Enum { .. } => TokenKind::Enum,
             DeclKind::Function(Function { .. }) => TokenKind::Func,
             DeclKind::Member { .. } => TokenKind::Member,
-            DeclKind::Prim(_) | DeclKind::Struct { .. } => TokenKind::Struct,
+            DeclKind::Struct { .. } => TokenKind::Struct,
         }
     }
 }
@@ -66,7 +66,6 @@ pub enum DeclKind<'db> {
         body: StructDecl<'db>,
     },
     Function(Function<'db>),
-    Prim(PrimTy),
 }
 
 #[salsa::tracked]
@@ -82,7 +81,6 @@ impl<'db> Decl<'db> {
             DeclKind::Member { .. } => {
                 panic!("Hmm, don't think I need this, guess I'll find out")
             }
-            DeclKind::Prim(_) => vec![],
         }
     }
 
@@ -98,7 +96,8 @@ impl<'db> Decl<'db> {
         }
     }
 
-    pub fn get_ty(&self, id: ModulePath<'db>, state: &mut CheckState<'db>) -> Ty<'db> {
+    pub fn get_ty(&self, state: &mut CheckState<'db>) -> Ty<'db> {
+        let id = self.path(state.db);
         match self.kind(state.db) {
             DeclKind::Struct {
                 body: StructDecl::None,
@@ -131,7 +130,6 @@ impl<'db> Decl<'db> {
                     ret: Box::new(ret.clone()),
                 })
             }
-            DeclKind::Prim(p) => Ty::Meta(Box::new(Ty::from_prim(*p, state.db))),
         }
     }
 

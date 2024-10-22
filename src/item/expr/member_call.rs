@@ -76,7 +76,7 @@ impl AstItem for MemberCall {
         ))
     }
 
-    fn completions(&self, state: &mut CheckState, _: usize) -> Vec<CompletionItem> {
+    fn completions(&self, state: &mut CheckState, _: usize, _: &HashMap<u32, Ty>) -> Vec<CompletionItem> {
         let rec = self.rec.0.check(state);
         let mut completions = Vec::new();
         for (name, func_ty) in rec.member_funcs(state) {
