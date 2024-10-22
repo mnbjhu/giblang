@@ -71,7 +71,6 @@ pub fn check_file<'db>(
     for top in ast.tops(db) {
         top.0.check(&mut state);
     }
-    state.resolve_type_vars();
     state.get_type_vars()
 }
 

@@ -1,4 +1,4 @@
-use chumsky::{primitive::just, IterParser, Parser};
+use chumsky::{primitive::just, recovery::via_parser, IterParser, Parser};
 
 use crate::{
     kw,
@@ -10,6 +10,7 @@ use crate::{
             type_::{named_parser, type_parser, NamedType},
         },
         stmt::Stmt,
+        top_recovery,
     },
     util::Spanned,
     AstParser,
@@ -33,8 +34,11 @@ pub fn impl_parser<'tokens, 'src: 'tokens>(stmt: AstParser!(Stmt)) -> AstParser!
 
     let body = func_parser(stmt)
         .map_with(|s, e| (s, e.span()))
+        .map(Option::Some)
+        .recover_with(via_parser(top_recovery().map(|()| None)))
         .separated_by(just(newline()))
-        .collect()
+        .collect::<Vec<_>>()
+        .map(|v| v.into_iter().flatten().collect())
         .delimited_by(
             just(punct('{')).then(optional_newline()),
             optional_newline().then(just(punct('}'))),

@@ -2,7 +2,7 @@ use async_lsp::lsp_types::{CompletionItem, CompletionItemKind};
 
 use crate::{
     check::state::CheckState,
-    project::decl::{Decl, DeclKind},
+    project::decl::{Decl, DeclKind, Function},
 };
 
 impl Decl<'_> {
@@ -13,7 +13,7 @@ impl Decl<'_> {
             DeclKind::Trait { .. } => "trait",
             DeclKind::Enum { .. } => "enum",
             DeclKind::Member { .. } => "member",
-            DeclKind::Function { .. } => "function",
+            DeclKind::Function(Function { .. }) => "function",
             DeclKind::Prim(_) => "primitive",
         };
         format!("{kind} {path_name}")

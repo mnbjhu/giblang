@@ -110,7 +110,7 @@ impl<'db> Module<'db> {
 
     pub fn get_path_with_state(
         self,
-        state: &mut CheckState<'_, 'db>,
+        state: &mut CheckState<'db>,
         path: &[Spanned<String>],
         file: SourceFile,
         should_error: bool,
@@ -120,7 +120,7 @@ impl<'db> Module<'db> {
 
     fn get_path_with_state_inner(
         self,
-        state: &mut CheckState<'_, 'db>,
+        state: &mut CheckState<'db>,
         path: &[Spanned<String>],
         file: SourceFile,
         current: &mut Vec<String>,

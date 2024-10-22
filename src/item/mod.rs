@@ -21,11 +21,7 @@ pub mod stmt;
 pub mod top;
 
 pub trait AstItem: Debug {
-    fn at_offset<'me>(
-        &'me self,
-        _state: &mut CheckState<'_, '_>,
-        _offset: usize,
-    ) -> &'me dyn AstItem
+    fn at_offset<'me>(&'me self, _state: &mut CheckState<'_>, _offset: usize) -> &'me dyn AstItem
     where
         Self: Sized,
     {
@@ -36,18 +32,14 @@ pub trait AstItem: Debug {
 
     fn hover<'db>(
         &self,
-        _state: &mut CheckState<'_, 'db>,
+        _state: &mut CheckState<'db>,
         _offset: usize,
         _type_vars: &HashMap<u32, Ty<'db>>,
     ) -> Option<String> {
         None
     }
 
-    fn goto_def(
-        &self,
-        _state: &mut CheckState<'_, '_>,
-        _offset: usize,
-    ) -> Option<(SourceFile, Span)> {
+    fn goto_def(&self, _state: &mut CheckState<'_>, _offset: usize) -> Option<(SourceFile, Span)> {
         None
     }
 
@@ -64,10 +56,10 @@ pub trait AstItem: Debug {
 }
 
 impl<'db> Ast<'db> {
-    pub fn at_offset<'ty, 'me, 'state>(
+    pub fn at_offset<'me, 'state>(
         &'me self,
         db: &'db dyn Database,
-        state: &'state mut CheckState<'ty, 'db>,
+        state: &'state mut CheckState<'db>,
         offset: usize,
     ) -> Option<&'me dyn AstItem>
     where
@@ -82,10 +74,10 @@ impl<'db> Ast<'db> {
         None
     }
 
-    pub fn semantic_tokens<'ty, 'me, 'state>(
+    pub fn semantic_tokens<'me, 'state>(
         &'me self,
         db: &'db dyn Database,
-        state: &'state mut CheckState<'ty, 'db>,
+        state: &'state mut CheckState<'db>,
     ) -> Vec<SemanticToken>
     where
         Self: Sized,
@@ -97,10 +89,10 @@ impl<'db> Ast<'db> {
         tokens
     }
 
-    pub fn completions<'ty, 'me, 'state>(
+    pub fn completions<'me, 'state>(
         &'me self,
         db: &'db dyn Database,
-        state: &'state mut CheckState<'ty, 'db>,
+        state: &'state mut CheckState<'db>,
         offset: usize,
     ) -> Vec<CompletionItem>
     where

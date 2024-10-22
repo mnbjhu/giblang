@@ -12,7 +12,7 @@ use crate::{
     util::{Span, Spanned},
 };
 
-pub fn check_ident<'db>(state: &mut CheckState<'_, 'db>, path: &[Spanned<String>]) -> Ty<'db> {
+pub fn check_ident<'db>(state: &mut CheckState<'db>, path: &[Spanned<String>]) -> Ty<'db> {
     let name = path.last().unwrap();
     if path.len() == 1 {
         if let Some(var) = state.get_variable(&name.0) {
@@ -47,7 +47,7 @@ pub fn check_ident<'db>(state: &mut CheckState<'_, 'db>, path: &[Spanned<String>
                     let funcs = sub_tys
                         .iter()
                         .filter_map(|mod_| {
-                            let decl = state.project.get_decl(state.db, *mod_).unwrap();
+                            let decl = state.get_decl(*mod_);
                             let DeclKind::Trait { body, .. } = decl.kind(state.db) else {
                                 panic!("Expected trait");
                             };
@@ -78,7 +78,7 @@ pub fn check_ident<'db>(state: &mut CheckState<'_, 'db>, path: &[Spanned<String>
 impl<'db> Module<'db> {
     pub fn get_ty(
         &self,
-        state: &mut CheckState<'_, 'db>,
+        state: &mut CheckState<'db>,
         self_ty: Option<Ty<'db>>,
         span: Span,
     ) -> Ty<'db> {
@@ -98,7 +98,7 @@ impl<'db> Module<'db> {
 }
 
 pub fn check_ident_is<'db>(
-    state: &mut CheckState<'_, 'db>,
+    state: &mut CheckState<'db>,
     ident: &SpannedQualifiedName,
     expected: &Ty<'db>,
 ) {

@@ -65,7 +65,7 @@ impl AstItem for SpannedQualifiedName {
 
     fn hover<'db>(
         &self,
-        state: &mut CheckState<'_, 'db>,
+        state: &mut CheckState<'db>,
         offset: usize,
         type_vars: &HashMap<u32, Ty<'db>>,
     ) -> Option<String> {
@@ -105,7 +105,7 @@ impl AstItem for SpannedQualifiedName {
 
     fn goto_def(
         &self,
-        state: &mut CheckState<'_, '_>,
+        state: &mut CheckState<'_>,
         offset: usize,
     ) -> Option<(crate::db::input::SourceFile, crate::util::Span)> {
         let index = self
@@ -212,7 +212,7 @@ impl<'db> IdentDef<'db> {
     }
 }
 
-impl<'db> CheckState<'_, 'db> {
+impl<'db> CheckState<'db> {
     pub fn get_ident_def(&mut self, ident: &[Spanned<String>]) -> IdentDef<'db> {
         if ident.len() == 1 {
             let name = &ident[0];

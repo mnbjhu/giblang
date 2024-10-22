@@ -10,7 +10,7 @@ use crate::{
 };
 
 impl<'db> Call {
-    pub fn check(&self, state: &mut CheckState<'_, 'db>) -> Ty<'db> {
+    pub fn check(&self, state: &mut CheckState<'db>) -> Ty<'db> {
         let name_ty = self.name.0.check(state);
         if let Ty::Unknown = name_ty {
             for arg in &self.args {
@@ -65,7 +65,7 @@ impl<'db> Call {
     pub fn expected_instance_of(
         &self,
         expected: &Ty<'db>,
-        state: &mut CheckState<'_, 'db>,
+        state: &mut CheckState<'db>,
         span: Span,
     ) {
         let ret = self.check(state);
@@ -74,12 +74,12 @@ impl<'db> Call {
 }
 
 impl<'db> Ty<'db> {
-    pub fn try_get_func_ty(&self, state: &mut CheckState<'_, 'db>) -> Option<FuncTy<'db>> {
+    pub fn try_get_func_ty(&self, state: &mut CheckState<'db>) -> Option<FuncTy<'db>> {
         if let Ty::Function(func_ty) = self {
             Some(func_ty.clone())
         } else if let Ty::Meta(ty) = self {
             if let Ty::Named { name, .. } = ty.as_ref() {
-                let decl = state.project.get_decl(state.db, *name);
+                let decl = state.try_get_decl(*name);
                 if let Some(decl) = decl {
                     if let DeclKind::Struct { body, .. } = decl.kind(state.db) {
                         return body.get_constructor_ty(ty.as_ref().clone());

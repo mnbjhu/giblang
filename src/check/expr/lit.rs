@@ -10,7 +10,7 @@ impl Literal {
     pub fn expect_instance_of<'db>(
         &self,
         expected: &Ty<'db>,
-        state: &mut CheckState<'_, 'db>,
+        state: &mut CheckState<'db>,
         span: Span,
     ) {
         let actual = self.to_ty(state.db);

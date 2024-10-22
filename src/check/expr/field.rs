@@ -9,13 +9,13 @@ use crate::{
 };
 
 impl<'db> Field {
-    pub fn check(&self, state: &mut CheckState<'_, 'db>) -> Ty<'db> {
+    pub fn check(&self, state: &mut CheckState<'db>) -> Ty<'db> {
         let struct_ty = self.struct_.0.check(state);
         if self.name.0.is_empty() {
             return Ty::Unknown;
         }
         if let Ty::Named { name, args } = struct_ty {
-            let decl = state.project.get_decl(state.db, name);
+            let decl = state.try_get_decl(name);
             if let Some(decl) = decl {
                 if let DeclKind::Struct { body, generics } = decl.kind(state.db) {
                     let params = generics
@@ -71,7 +71,7 @@ impl<'db> Field {
     pub fn expected_instance_of(
         &self,
         expected: &Ty<'db>,
-        state: &mut CheckState<'_, 'db>,
+        state: &mut CheckState<'db>,
         span: Span,
     ) {
         self.check(state)

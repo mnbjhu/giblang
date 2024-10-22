@@ -10,11 +10,11 @@ use crate::{
 
 type Tuple = Vec<Spanned<Expr>>;
 
-pub fn check_tuple<'db>(values: &Tuple, state: &mut CheckState<'_, 'db>) -> Ty<'db> {
+pub fn check_tuple<'db>(values: &Tuple, state: &mut CheckState<'db>) -> Ty<'db> {
     Ty::Tuple(values.iter().map(|value| value.0.check(state)).collect())
 }
 pub fn check_tuple_is<'db>(
-    state: &mut CheckState<'_, 'db>,
+    state: &mut CheckState<'db>,
     expected: &Ty<'db>,
     tuple: &Tuple,
     span: Span,

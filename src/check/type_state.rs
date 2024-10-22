@@ -2,18 +2,17 @@ use std::collections::HashMap;
 
 use crate::{
     db::input::SourceFile,
-    parser::expr::Expr,
     ty::{Generic, Ty},
     util::{Span, Spanned},
 };
 
 #[derive(Default)]
-pub struct TypeState<'ty, 'db: 'ty> {
-    pub vars: HashMap<u32, MaybeTypeVar<'ty, 'db>>,
+pub struct TypeState<'db> {
+    pub vars: HashMap<u32, MaybeTypeVar<'db>>,
     counter: u32,
 }
 
-impl<'ty, 'db: 'ty> TypeState<'ty, 'db> {
+impl<'db> TypeState<'db> {
     pub fn new_type_var(&mut self, span: Span, file: SourceFile) -> u32 {
         let id = self.counter;
         let new = MaybeTypeVar::Data(TypeVarData::new(span, file));
@@ -31,7 +30,6 @@ impl<'ty, 'db: 'ty> TypeState<'ty, 'db> {
         let id = self.counter;
         let new = MaybeTypeVar::Data(TypeVarData {
             bounds: vec![generic],
-            usages: vec![],
             explicit: None,
             resolved: None,
             file,
@@ -55,7 +53,7 @@ impl<'ty, 'db: 'ty> TypeState<'ty, 'db> {
         ret
     }
 
-    pub fn get_type_var(&self, id: u32) -> &TypeVarData<'ty, 'db> {
+    pub fn get_type_var(&self, id: u32) -> &TypeVarData<'db> {
         let data_pointer = self.get_data_pointer(id);
         let maybe = self
             .vars
@@ -68,7 +66,7 @@ impl<'ty, 'db: 'ty> TypeState<'ty, 'db> {
         }
     }
 
-    pub fn get_type_var_mut(&mut self, id: u32) -> &mut TypeVarData<'ty, 'db> {
+    pub fn get_type_var_mut(&mut self, id: u32) -> &mut TypeVarData<'db> {
         let data_pointer = self.get_data_pointer(id);
         let maybe = self
             .vars
@@ -85,35 +83,6 @@ impl<'ty, 'db: 'ty> TypeState<'ty, 'db> {
         let var = self.get_type_var_mut(id);
         var.explicit = Some(ty);
     }
-
-    pub fn expected_var_is_ty(&mut self, id: u32, ty: Ty<'db>, span: Span) {
-        if let Ty::TypeVar { id: second } = ty {
-            self.merge(id, second);
-            return;
-        }
-        let var = self.get_type_var_mut(id);
-        var.usages.push(TypeVarUsage::VarIsTy((ty, span)));
-    }
-
-    pub fn expected_ty_is_var(&mut self, id: u32, ty: Ty<'db>, span: Span) {
-        if let Ty::TypeVar { id: second } = ty {
-            self.merge(id, second);
-            return;
-        }
-        let var = self.get_type_var_mut(id);
-        var.usages.push(TypeVarUsage::TyIsVar((ty, span)));
-    }
-
-    pub fn expect_var_is_expr(&mut self, id: u32, expr: &'ty Spanned<Expr>) {
-        let var = self.get_type_var_mut(id);
-        var.usages.push(TypeVarUsage::VarIsExpr(expr));
-    }
-
-    pub fn expect_expr_is_var(&mut self, id: u32, expr: &'ty Spanned<Expr>) {
-        let var = self.get_type_var_mut(id);
-        var.usages.push(TypeVarUsage::ExprIsVar(expr));
-    }
-
     pub fn merge(&mut self, first: u32, second: u32) {
         let first = self.get_data_pointer(first);
         let second = self.get_data_pointer(second);
@@ -126,7 +95,6 @@ impl<'ty, 'db: 'ty> TypeState<'ty, 'db> {
             .expect("Expected second type var to exist")
             .unwrap();
         let first = self.get_type_var_mut(first);
-        first.usages.extend(second.usages);
         first.bounds.extend(second.bounds);
         let explicit = match (&first.explicit, &second.explicit) {
             (None, None) => None,
@@ -142,13 +110,13 @@ impl<'ty, 'db: 'ty> TypeState<'ty, 'db> {
     }
 }
 
-pub enum MaybeTypeVar<'ty, 'db: 'ty> {
-    Data(TypeVarData<'ty, 'db>),
+pub enum MaybeTypeVar<'db> {
+    Data(TypeVarData<'db>),
     Pointer(u32),
 }
 
-impl<'ty, 'db: 'ty> MaybeTypeVar<'ty, 'db> {
-    fn unwrap(self) -> TypeVarData<'ty, 'db> {
+impl<'db> MaybeTypeVar<'db> {
+    fn unwrap(self) -> TypeVarData<'db> {
         match self {
             MaybeTypeVar::Data(data) => data,
             MaybeTypeVar::Pointer(_) => panic!("Called unwrap on MaybeTypeVar::Pointer"),
@@ -156,48 +124,22 @@ impl<'ty, 'db: 'ty> MaybeTypeVar<'ty, 'db> {
     }
 }
 
-pub struct TypeVarData<'ty, 'db: 'ty> {
+pub struct TypeVarData<'db> {
     pub bounds: Vec<Generic<'db>>,
-    pub usages: Vec<TypeVarUsage<'ty, 'db>>,
     pub explicit: Option<Spanned<Ty<'db>>>,
     pub resolved: Option<Ty<'db>>,
     pub span: Span,
     pub file: SourceFile,
 }
 
-impl<'ty, 'db: 'ty> TypeVarData<'ty, 'db> {
-    fn new(span: Span, file: SourceFile) -> TypeVarData<'ty, 'db> {
+impl<'db> TypeVarData<'db> {
+    fn new(span: Span, file: SourceFile) -> TypeVarData<'db> {
         TypeVarData {
             bounds: Vec::default(),
-            usages: Vec::default(),
             explicit: None,
             resolved: None,
             span,
             file,
-        }
-    }
-}
-
-#[derive(Clone)]
-pub enum TypeVarUsage<'ty, 'db: 'ty> {
-    VarIsExpr(&'ty Spanned<Expr>),
-    ExprIsVar(&'ty Spanned<Expr>),
-    VarIsTy(Spanned<Ty<'db>>),
-    TyIsVar(Spanned<Ty<'db>>),
-}
-
-impl<'ty, 'db: 'ty> TypeVarData<'ty, 'db> {
-    pub fn resolve(&mut self) {
-        if let Some(ty) = &self.explicit {
-            self.resolved = Some(ty.0.clone());
-        }
-        if let Some(usage) = self.usages.first() {
-            self.resolved = match usage {
-                TypeVarUsage::VarIsTy(ty) | TypeVarUsage::TyIsVar(ty) => Some(ty.0.clone()),
-                _ => todo!("Check if needed"),
-            };
-        } else {
-            self.resolved = Some(Ty::Unknown);
         }
     }
 }

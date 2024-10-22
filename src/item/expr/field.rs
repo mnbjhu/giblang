@@ -42,7 +42,7 @@ impl AstItem for Field {
 
     fn hover<'db>(
         &self,
-        state: &mut CheckState<'_, 'db>,
+        state: &mut CheckState<'db>,
         _: usize,
         type_vars: &std::collections::HashMap<u32, crate::ty::Ty<'db>>,
     ) -> Option<String> {

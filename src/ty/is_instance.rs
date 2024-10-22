@@ -16,7 +16,7 @@ impl<'db> Ty<'db> {
     pub fn expect_is_instance_of(
         &self,
         other: &Ty<'db>,
-        state: &mut CheckState<'_, 'db>,
+        state: &mut CheckState<'db>,
         explicit: bool,
         span: Span,
     ) -> bool {
@@ -31,14 +31,12 @@ impl<'db> Ty<'db> {
                         .type_state
                         .add_explicit_type(*id, (other.clone(), span));
                 } else {
-                    state
-                        .type_state
-                        .expected_var_is_ty(*id, other.clone(), span);
+                    state.expected_var_is_ty(*id, other.clone(), span);
                 }
                 true
             }
             (_, Ty::TypeVar { id }) => {
-                state.type_state.expected_ty_is_var(*id, self.clone(), span);
+                state.expected_ty_is_var(*id, self.clone(), span);
                 true
             }
             (_, Ty::Any) => true,
@@ -103,7 +101,7 @@ impl<'db> Ty<'db> {
     fn imply_named_sub_ty(
         &self,
         sub_ty: ModulePath<'db>,
-        state: &mut CheckState<'_, 'db>,
+        state: &mut CheckState<'db>,
     ) -> Option<Ty<'db>> {
         if let Ty::Named { name, .. } = self {
             let path = path_to_sub_ty(*name, sub_ty, state)?;
@@ -120,7 +118,7 @@ impl<'db> Ty<'db> {
 
 pub fn get_sub_decls<'db>(
     name: ModulePath<'db>,
-    state: &mut CheckState<'_, 'db>,
+    state: &mut CheckState<'db>,
 ) -> Vec<ModulePath<'db>> {
     state
         .project
@@ -139,7 +137,7 @@ pub fn get_sub_decls<'db>(
         .collect()
 }
 
-pub fn get_sub_tys<'db>(name: &Ty<'db>, state: &mut CheckState<'_, 'db>) -> Vec<Ty<'db>> {
+pub fn get_sub_tys<'db>(name: &Ty<'db>, state: &mut CheckState<'db>) -> Vec<Ty<'db>> {
     match name {
         Ty::Named { name, .. } => state
             .project
@@ -161,16 +159,12 @@ impl<'db> Ty<'db> {
     pub fn get_func(
         &self,
         name: &Spanned<String>,
-        state: &mut CheckState<'_, 'db>,
+        state: &mut CheckState<'db>,
     ) -> Option<FuncTy<'db>> {
-        if let Ty::Named { name: id, .. } = self {
-            if let DeclKind::Trait { body, .. } = state
-                .project
-                .get_decl(state.db, *id)
-                .unwrap()
-                .kind(state.db)
-            {
-                let found = body.iter()
+        if let Ty::Named { name: id, args } = self {
+            if let DeclKind::Trait { body, .. } = state.get_decl(*id).kind(state.db) {
+                let found = body
+                    .iter()
                     .find(|func| func.name(state.db) == name.0)
                     .map(|func| {
                         let Ty::Function(func) = func.get_ty(state, Some(self.clone()), name.1)
@@ -179,9 +173,9 @@ impl<'db> Ty<'db> {
                         };
                         func
                     });
-                    if let Some(found) = found {
-                        return Some(found);
-                    }
+                if let Some(found) = found {
+                    return Some(found);
+                }
             };
             let impl_func = state
                 .project
@@ -193,13 +187,10 @@ impl<'db> Ty<'db> {
                     };
                     *id == n && i.to_ty(state.db).is_none()
                 })
-                .flat_map(|i| {
-                    i.functions(state.db)
-                })
+                .flat_map(|i| i.functions(state.db))
                 .find(|decl| decl.name(state.db) == name.0)
                 .map(|decl| {
-                    let Ty::Function(func) = decl.get_ty(decl.path(state.db), state)
-                    else {
+                    let Ty::Function(func) = decl.get_ty(decl.path(state.db), state) else {
                         panic!("Expected function");
                     };
                     func
@@ -210,26 +201,17 @@ impl<'db> Ty<'db> {
         }
     }
 
-    pub fn get_funcs(&self, state: &mut CheckState<'_, 'db>) -> Vec<(String, FuncTy<'db>)> {
+    pub fn get_funcs(&self, state: &mut CheckState<'db>) -> Vec<(String, FuncTy<'db>)> {
         let mut funcs = Vec::new();
         if let Ty::Named { name, .. } = self {
-            if let DeclKind::Trait { body, .. } = state
-                .project
-                .get_decl(state.db, *name)
-                .unwrap()
-                .kind(state.db)
-            {
-                funcs.extend(body
-                    .iter()
-                    .map(|mod_| {
-                        let Ty::Function(func) =
-                            mod_.get_ty(state, Some(self.clone()), Span::splat(0))
-                        else {
-                            panic!("Expected function");
-                        };
-                        (mod_.name(state.db), func)
-                    })
-                );
+            if let DeclKind::Trait { body, .. } = state.get_decl(*name).kind(state.db) {
+                funcs.extend(body.iter().map(|mod_| {
+                    let Ty::Function(func) = mod_.get_ty(state, Some(self.clone()), Span::splat(0))
+                    else {
+                        panic!("Expected function");
+                    };
+                    (mod_.name(state.db), func)
+                }));
             }
             let impls = state
                 .project
@@ -241,18 +223,13 @@ impl<'db> Ty<'db> {
                     };
                     *name == n && i.to_ty(state.db).is_none()
                 })
-                .flat_map(|i| {
-                    i.functions(state.db)
-                })
+                .flat_map(|i| i.functions(state.db))
                 .map(|decl| {
-                    let Ty::Function(func) =
-                        decl.get_ty(decl.path(state.db) ,state)
-                    else {
+                    let Ty::Function(func) = decl.get_ty(decl.path(state.db), state) else {
                         panic!("Expected function");
                     };
                     (decl.name(state.db), func)
-                })
-            ;
+                });
             funcs.extend(impls);
         }
         funcs
@@ -262,7 +239,7 @@ impl<'db> Ty<'db> {
 fn path_to_sub_ty<'db>(
     name: ModulePath<'db>,
     sub_ty: ModulePath<'db>,
-    state: &mut CheckState<'_, 'db>,
+    state: &mut CheckState<'db>,
 ) -> Option<Vec<ImplForDecl<'db>>> {
     if name == sub_ty {
         return Some(Vec::new());
@@ -287,7 +264,7 @@ fn path_to_sub_ty<'db>(
 fn expect_named_is_instance_of_named<'db>(
     first: &Ty<'db>,
     second: &Ty<'db>,
-    state: &mut CheckState<'_, 'db>,
+    state: &mut CheckState<'db>,
     explicit: bool,
     span: Span,
 ) -> bool {
@@ -304,7 +281,7 @@ fn expect_named_is_instance_of_named<'db>(
         }) = first.imply_named_sub_ty(*other_name, state)
         {
             // TODO: Check this unwrap
-            let decl = state.project.get_decl(state.db, *name).unwrap();
+            let decl = state.get_decl(*name);
             let generics = decl.generics(state.db);
             for ((g, arg), other) in generics.iter().zip(implied_args).zip(other_args) {
                 let variance = g.variance;

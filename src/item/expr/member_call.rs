@@ -64,7 +64,7 @@ impl AstItem for MemberCall {
 
     fn hover<'db>(
         &self,
-        state: &mut CheckState<'_, 'db>,
+        state: &mut CheckState<'db>,
         _: usize,
         type_vars: &HashMap<u32, Ty<'db>>,
     ) -> Option<String> {

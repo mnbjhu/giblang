@@ -1,6 +1,6 @@
 use crate::{
     parser::top::func::Func,
-    project::decl::{Decl, DeclKind},
+    project::decl::{Decl, DeclKind, Function},
     resolve::state::ResolveState,
     ty::Ty,
 };
@@ -15,12 +15,14 @@ impl Func {
             .ret
             .as_ref()
             .map_or(Ty::unit(), |(ret, _)| ret.resolve(state));
-        let kind = DeclKind::Function {
+        let kind = DeclKind::Function(Function {
+            name: self.name.0.clone(),
             generics,
             receiver,
             args,
             ret,
-        };
+            required: self.body.is_none(),
+        });
         Decl::new(
             state.db,
             name.0,

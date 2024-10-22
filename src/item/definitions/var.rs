@@ -8,11 +8,7 @@ use crate::{
 };
 
 impl<'db> VarDecl<'db> {
-    pub fn hover(
-        &self,
-        state: &mut CheckState<'_, 'db>,
-        type_vars: &HashMap<u32, Ty<'db>>,
-    ) -> String {
+    pub fn hover(&self, state: &mut CheckState<'db>, type_vars: &HashMap<u32, Ty<'db>>) -> String {
         format!(
             "{}: {}",
             self.name,

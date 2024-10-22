@@ -73,7 +73,7 @@ impl AstItem for Pattern {
 
     fn hover<'db>(
         &self,
-        state: &mut CheckState<'_, 'db>,
+        state: &mut CheckState<'db>,
         _: usize,
         type_vars: &HashMap<u32, crate::ty::Ty<'db>>,
     ) -> Option<String> {
@@ -149,7 +149,7 @@ impl AstItem for StructFieldPattern {
 
     fn hover<'db>(
         &self,
-        state: &mut CheckState<'_, 'db>,
+        state: &mut CheckState<'db>,
         offset: usize,
         type_vars: &HashMap<u32, crate::ty::Ty<'db>>,
     ) -> Option<String> {

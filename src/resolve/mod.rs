@@ -1,12 +1,10 @@
-use async_lsp::lsp_types::OneOf;
-
 use crate::{
     db::{
         input::{Db, SourceFile, Vfs, VfsInner},
         modules::{Module, ModuleData, ModulePath},
     },
     parser::{parse_file, top::Top},
-    project::{ImplForDecl},
+    project::ImplForDecl,
 };
 
 use self::state::ResolveState;

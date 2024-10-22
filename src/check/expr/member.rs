@@ -11,7 +11,7 @@ use crate::{
 use super::ident::check_ident;
 
 impl<'db> MemberCall {
-    pub fn check(&self, state: &mut CheckState<'_, 'db>) -> Ty<'db> {
+    pub fn check(&self, state: &mut CheckState<'db>) -> Ty<'db> {
         let rec = self.rec.0.check(state);
         let Some(func_ty) = rec.get_member_func(&self.name, state) else {
             state.simple_error(
@@ -56,7 +56,7 @@ impl<'db> MemberCall {
     pub fn expected_instance_of(
         &self,
         expected: &Ty<'db>,
-        state: &mut CheckState<'_, 'db>,
+        state: &mut CheckState<'db>,
         span: Span,
     ) {
         let actual = self.check(state);
@@ -68,7 +68,7 @@ impl<'db> Ty<'db> {
     pub fn get_member_func(
         &self,
         name: &Spanned<String>,
-        state: &mut CheckState<'_, 'db>,
+        state: &mut CheckState<'db>,
     ) -> Option<FuncTy<'db>> {
         let mut funcs = get_sub_tys(self, state)
             .iter()
@@ -87,7 +87,7 @@ impl<'db> Ty<'db> {
         }
     }
 
-    pub fn member_funcs(&self, state: &mut CheckState<'_, 'db>) -> Vec<(String, FuncTy<'db>)> {
+    pub fn member_funcs(&self, state: &mut CheckState<'db>) -> Vec<(String, FuncTy<'db>)> {
         let mut funcs = get_sub_tys(self, state)
             .iter()
             .flat_map(|t| t.get_funcs(state))
@@ -96,11 +96,11 @@ impl<'db> Ty<'db> {
         funcs
     }
 
-    pub fn fields(&self, state: &mut CheckState<'_, 'db>) -> Vec<(String, Ty<'db>)> {
+    pub fn fields(&self, state: &mut CheckState<'db>) -> Vec<(String, Ty<'db>)> {
         let Ty::Named { name, args } = self else {
             return Vec::new();
         };
-        let Some(decl) = state.project.get_decl(state.db, *name) else {
+        let Some(decl) = state.try_get_decl(*name) else {
             return Vec::new();
         };
         let DeclKind::Struct { body, generics } = decl.kind(state.db) else {

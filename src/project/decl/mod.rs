@@ -31,11 +31,21 @@ impl<'db> Decl<'db> {
         match &self.kind(db) {
             DeclKind::Trait { .. } => TokenKind::Trait,
             DeclKind::Enum { .. } => TokenKind::Enum,
-            DeclKind::Function { .. } => TokenKind::Func,
+            DeclKind::Function(Function { .. }) => TokenKind::Func,
             DeclKind::Member { .. } => TokenKind::Member,
             DeclKind::Prim(_) | DeclKind::Struct { .. } => TokenKind::Struct,
         }
     }
+}
+
+#[derive(Update, Debug, Clone, PartialEq)]
+pub struct Function<'db> {
+    pub name: String,
+    pub generics: Vec<Generic<'db>>,
+    pub receiver: Option<Ty<'db>>,
+    pub args: Vec<(String, Ty<'db>)>,
+    pub ret: Ty<'db>,
+    pub required: bool,
 }
 
 #[derive(Update, Debug, Clone, PartialEq)]
@@ -55,12 +65,7 @@ pub enum DeclKind<'db> {
     Member {
         body: StructDecl<'db>,
     },
-    Function {
-        generics: Vec<Generic<'db>>,
-        receiver: Option<Ty<'db>>,
-        args: Vec<(String, Ty<'db>)>,
-        ret: Ty<'db>,
-    },
+    Function(Function<'db>),
     Prim(PrimTy),
 }
 
@@ -73,7 +78,7 @@ impl<'db> Decl<'db> {
             DeclKind::Struct { generics, .. }
             | DeclKind::Trait { generics, .. }
             | DeclKind::Enum { generics, .. }
-            | DeclKind::Function { generics, .. } => generics.clone(),
+            | DeclKind::Function(Function { generics, .. }) => generics.clone(),
             DeclKind::Member { .. } => {
                 panic!("Hmm, don't think I need this, guess I'll find out")
             }
@@ -93,8 +98,12 @@ impl<'db> Decl<'db> {
         }
     }
 
-    pub fn get_ty(&self, id: ModulePath<'db>, state: &mut CheckState<'_, 'db>) -> Ty<'db> {
+    pub fn get_ty(&self, id: ModulePath<'db>, state: &mut CheckState<'db>) -> Ty<'db> {
         match self.kind(state.db) {
+            DeclKind::Struct {
+                body: StructDecl::None,
+                ..
+            } => self.get_named_ty(state, id),
             DeclKind::Trait { .. } | DeclKind::Enum { .. } | DeclKind::Struct { .. } => {
                 Ty::Meta(Box::new(self.default_named_ty(state, id)))
             }
@@ -109,12 +118,12 @@ impl<'db> Decl<'db> {
                     Ty::Unknown
                 }
             }
-            DeclKind::Function {
+            DeclKind::Function(Function {
                 receiver,
                 args,
                 ret,
                 ..
-            } => {
+            }) => {
                 let args = args.iter().map(|(_, ty)| ty.clone()).collect::<Vec<_>>();
                 Ty::Function(FuncTy {
                     receiver: receiver.clone().map(Box::new),
@@ -126,7 +135,7 @@ impl<'db> Decl<'db> {
         }
     }
 
-    fn default_named_ty(self, state: &mut CheckState<'_, 'db>, name: ModulePath<'db>) -> Ty<'db> {
+    fn default_named_ty(self, state: &mut CheckState<'db>, name: ModulePath<'db>) -> Ty<'db> {
         Ty::Named {
             name,
             args: self
@@ -138,10 +147,10 @@ impl<'db> Decl<'db> {
         }
     }
 
-    pub fn get_named_ty(self, state: &mut CheckState<'_, 'db>, id: ModulePath<'db>) -> Ty<'db> {
+    pub fn get_named_ty(self, state: &mut CheckState<'db>, id: ModulePath<'db>) -> Ty<'db> {
         if let DeclKind::Member { .. } = &self.kind(state.db) {
             let parent = id.get_parent(state.db);
-            let parent_decl = state.project.get_decl(state.db, parent);
+            let parent_decl = state.try_get_decl(parent);
             if parent_decl.is_none() {
                 return Ty::Unknown;
             }

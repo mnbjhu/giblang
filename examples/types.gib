@@ -1,0 +1,45 @@
+use std::String
+use std::Int
+
+struct ExampleStruct {
+    name: String,
+    count: Int
+}
+
+enum ExampleEnum   {
+    One,
+    Two(Int),
+    Three {
+        name: String,
+        count: Int
+    }
+}
+
+struct Box[T](T)
+
+trait ExampleTrait {
+    fn static(): String
+    fn Self.member() {}
+}
+
+impl ExampleTrait for ExampleStruct {
+    fn static(): String {
+        "Todo"
+    }
+    fn Self.member()
+}
+
+struct Vec[T]
+
+impl[T] Vec[T] {
+    fn new(): Self {
+        Vec
+    }
+    fn Self.push(item: T)
+}
+
+fn main() {
+    let vec = Vec
+    vec.push("hello")
+    vec
+}

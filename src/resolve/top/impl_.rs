@@ -3,7 +3,7 @@ use crate::{parser::top::impl_::Impl, project::ImplForDecl, resolve::state::Reso
 impl Impl {
     pub fn resolve<'db>(&self, state: &mut ResolveState<'db>) -> ImplForDecl<'db> {
         let generics = self.generics.0.resolve(state);
-        let to = self.trait_.as_ref().map(|trait_|trait_.0.resolve(state));
+        let to = self.trait_.as_ref().map(|trait_| trait_.0.resolve(state));
         let from = self.for_.0.resolve(state);
         state.add_self_ty(from.clone(), self.for_.1);
         let mut functions = Vec::new();

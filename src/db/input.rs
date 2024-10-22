@@ -142,7 +142,13 @@ impl Vfs {
                 fn println(text: String)
 
                 struct Vec[T]
-                fn Vec[T].push[T](thing: T)
+
+                impl[T] Vec[T] {
+                    fn new(): Self {
+                        Vec
+                    }
+                    fn Self.push(item: T)
+                }
 
                 enum Option[T] {
                     Some(T),

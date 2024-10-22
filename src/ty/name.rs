@@ -10,7 +10,7 @@ impl<'db> Ty<'db> {
             Ty::Any => "Any".to_string(),
             Ty::Unknown => "Unknown".to_string(),
             Ty::Named { name, args } => {
-                let decl = state.project.get_decl(state.db, *name);
+                let decl = state.try_get_decl(*name);
                 // TODO: check unwrap
                 if decl.is_none() {
                     return format!("{{err:{}}}", name.name(state.db).join("::"));
@@ -59,14 +59,14 @@ impl<'db> Ty<'db> {
 
     pub fn get_name_with_types(
         &self,
-        state: &CheckState<'_, 'db>,
+        state: &CheckState<'db>,
         type_vars: &HashMap<u32, Ty<'db>>,
     ) -> String {
         match self {
             Ty::Any => "Any".to_string(),
             Ty::Unknown => "Unknown".to_string(),
             Ty::Named { name, args } => {
-                let decl = state.project.get_decl(state.db, *name);
+                let decl = state.try_get_decl(*name);
                 // TODO: check unwrap
                 if decl.is_none() {
                     return format!("{{err:{}}}", name.name(state.db).join("::"));

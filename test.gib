@@ -13,6 +13,9 @@ struct Box[T](T)
 
 fn test(thing: Test) {
     let other = 123
+    let test: std::Vec[String] = std::Vec
+    let some = Option::Some(123)
+    let ty = some.unwrap()
 }
 
 struct Basic {
@@ -39,7 +42,9 @@ fn test3(thing: Int) {
     some.unwrap()
 }
 
-fn test123() {}
+fn test123() {
+    let test = std::Vec
+}
 
 impl ToString for Basic {
     fn to_string(): String {
@@ -57,4 +62,12 @@ trait ToString {
     fn to_string(): String {
         "Hello"
     }
+}
+
+trait Clone {
+    fn clone(): Self {}
+}
+
+impl Clone for Basic {
+    fn clone(): Basic {}
 }

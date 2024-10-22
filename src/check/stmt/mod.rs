@@ -5,7 +5,7 @@ use super::state::CheckState;
 pub mod let_;
 
 impl<'db> Stmt {
-    pub fn check(&self, state: &mut CheckState<'_, 'db>) -> Ty<'db> {
+    pub fn check(&self, state: &mut CheckState<'db>) -> Ty<'db> {
         match self {
             Stmt::Let(l) => {
                 l.check(state);
@@ -15,12 +15,7 @@ impl<'db> Stmt {
         }
     }
 
-    pub fn expect_is_instance(
-        &self,
-        expected: &Ty<'db>,
-        state: &mut CheckState<'_, 'db>,
-        span: Span,
-    ) {
+    pub fn expect_is_instance(&self, expected: &Ty<'db>, state: &mut CheckState<'db>, span: Span) {
         match self {
             Stmt::Let(l) => {
                 l.check(state);
