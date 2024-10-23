@@ -20,13 +20,12 @@ impl<'db> Trait {
 
 impl<'db> CheckState<'db> {
     pub fn add_self_ty(&mut self, super_: Ty<'db>, span: Span) {
-        self.insert_generic(
-            "Self".to_string(),
-            Generic {
-                name: ("Self".to_string(), span),
-                variance: Variance::Invariant,
-                super_: Box::new(super_),
-            },
-        );
+        let generic = Generic {
+            name: ("Self".to_string(), span),
+            variance: Variance::Invariant,
+            super_: Box::new(super_.clone()),
+        };
+        self.insert_generic("Self".to_string(), generic);
+        self.insert_variable("self".to_string(), super_, true, span);
     }
 }

@@ -79,7 +79,8 @@ impl<'db> Ty<'db> {
             state.simple_error(&format!("Ambiguous call to function {}", &name.0), name.1);
             None
         } else if funcs.len() == 1 {
-            Some(funcs[0].clone())
+            let func = funcs[0].inst(&mut HashMap::new(), state, name.1);
+            Some(func)
         } else if let Ty::Function(func_ty) = check_ident(state, &[name.clone()]) {
             Some(func_ty)
         } else {

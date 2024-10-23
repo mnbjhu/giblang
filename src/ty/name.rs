@@ -7,6 +7,7 @@ use super::{FuncTy, Ty};
 impl<'db> Ty<'db> {
     pub fn get_name(&self, state: &CheckState) -> String {
         match self {
+            Ty::Nothing => "Nothing".to_string(),
             Ty::Any => "Any".to_string(),
             Ty::Unknown => "Unknown".to_string(),
             Ty::Named { name, args } => {
@@ -64,6 +65,7 @@ impl<'db> Ty<'db> {
     ) -> String {
         match self {
             Ty::Any => "Any".to_string(),
+            Ty::Nothing => "Nothing".to_string(),
             Ty::Unknown => "Unknown".to_string(),
             Ty::Named { name, args } => {
                 let decl = state.try_get_decl(*name);
@@ -118,6 +120,7 @@ impl<'db> Ty<'db> {
 
     pub fn kind(&self) -> String {
         match self {
+            Ty::Nothing => "Nothing".to_string(),
             Ty::Any => "Any".to_string(),
             Ty::Unknown => "Unknown".to_string(),
             Ty::Named { .. } => "Named".to_string(),

@@ -9,8 +9,6 @@ use std::{
 use glob::glob;
 use salsa::{AsDynDatabase, Setter, Update};
 
-use crate::util::Span;
-
 use super::modules::ModulePath;
 
 #[derive(Clone, Default)]

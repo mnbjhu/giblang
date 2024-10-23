@@ -33,18 +33,26 @@ impl<'db> Ty<'db> {
             },
             Ty::Tuple(t) => Ty::Tuple(t.iter().map(|t| t.inst(ids, state, span)).collect()),
             Ty::Sum(s) => Ty::Sum(s.iter().map(|t| t.inst(ids, state, span)).collect()),
-            Ty::Function(FuncTy {
-                receiver,
-                args,
-                ret,
-            }) => Ty::Function(FuncTy {
-                receiver: receiver
-                    .as_ref()
-                    .map(|r| Box::new(r.inst(ids, state, span))),
-                args: args.iter().map(|a| a.inst(ids, state, span)).collect(),
-                ret: Box::new(ret.inst(ids, state, span)),
-            }),
+            Ty::Function(func) => Ty::Function(func.inst(ids, state, span)),
             _ => self.clone(),
+        }
+    }
+}
+
+impl<'db> FuncTy<'db> {
+    pub fn inst(
+        &self,
+        ids: &mut HashMap<String, u32>,
+        state: &mut CheckState<'db>,
+        span: Span,
+    ) -> FuncTy<'db> {
+        FuncTy {
+            receiver: self
+                .receiver
+                .as_ref()
+                .map(|r| Box::new(r.inst(ids, state, span))),
+            args: self.args.iter().map(|a| a.inst(ids, state, span)).collect(),
+            ret: Box::new(self.ret.inst(ids, state, span)),
         }
     }
 }

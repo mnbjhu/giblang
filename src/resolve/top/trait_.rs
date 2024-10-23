@@ -1,5 +1,5 @@
 use crate::{
-    db::modules::{Module, ModuleData, ModulePath},
+    db::modules::{ModulePath},
     parser::top::trait_::Trait,
     project::decl::DeclKind,
     resolve::state::ResolveState,
@@ -24,12 +24,7 @@ impl Trait {
             state.enter_scope();
             state.path.push(func.0.name.0.clone());
             let decl = func.0.resolve(state);
-            body.push(Module::new(
-                state.db,
-                decl.name(state.db),
-                ModuleData::Export(decl),
-                decl.path(state.db),
-            ));
+            body.push(decl);
             state.path.pop();
             state.exit_scope();
         }
@@ -39,7 +34,7 @@ impl Trait {
             name.0,
             name.1,
             kind,
-            state.file_data,
+            Some(state.file_data),
             state.module_path(),
         )
     }

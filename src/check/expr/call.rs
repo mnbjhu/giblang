@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::{
     check::{
         err::{missing_receiver::MissingReceiver, unexpected_args::UnexpectedArgs, CheckError},
@@ -18,7 +20,7 @@ impl<'db> Call {
             }
             return Ty::Unknown;
         }
-        let func_ty = name_ty.try_get_func_ty(state);
+        let func_ty = name_ty.try_get_func_ty(state, self.name.1);
         if let Some(func_ty) = &func_ty {
             let FuncTy {
                 args: expected_args,
@@ -74,7 +76,7 @@ impl<'db> Call {
 }
 
 impl<'db> Ty<'db> {
-    pub fn try_get_func_ty(&self, state: &mut CheckState<'db>) -> Option<FuncTy<'db>> {
+    pub fn try_get_func_ty(&self, state: &mut CheckState<'db>, span: Span) -> Option<FuncTy<'db>> {
         if let Ty::Function(func_ty) = self {
             Some(func_ty.clone())
         } else if let Ty::Meta(ty) = self {
@@ -82,7 +84,7 @@ impl<'db> Ty<'db> {
                 let decl = state.try_get_decl(*name);
                 if let Some(decl) = decl {
                     if let DeclKind::Struct { body, .. } = decl.kind(state.db) {
-                        return body.get_constructor_ty(ty.as_ref().clone());
+                        return body.get_constructor_ty(ty.as_ref().clone()).map(|ty| ty.inst(&mut HashMap::new(), state, span));
                     }
                 }
             }

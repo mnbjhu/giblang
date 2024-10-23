@@ -1,10 +1,12 @@
+use std::collections::HashMap;
+
 use salsa::Update;
 
 use crate::{
     check::{state::CheckState, TokenKind},
     db::{
         input::{Db, SourceFile},
-        modules::{Module, ModulePath},
+        modules::ModulePath,
     },
     ty::{FuncTy, Generic, Ty},
     util::Span,
@@ -22,8 +24,14 @@ pub struct Decl<'db> {
     pub span: Span,
     #[return_ref]
     pub kind: DeclKind<'db>,
-    pub file: SourceFile,
+    pub maybe_file: Option<SourceFile>,
     pub path: ModulePath<'db>,
+}
+
+impl<'db> Decl<'db> {
+    pub fn file(&self, db: &'db dyn Db) -> SourceFile {
+        self.maybe_file(db).expect("Modules do not have files")
+    }
 }
 
 impl<'db> Decl<'db> {
@@ -34,6 +42,7 @@ impl<'db> Decl<'db> {
             DeclKind::Function(Function { .. }) => TokenKind::Func,
             DeclKind::Member { .. } => TokenKind::Member,
             DeclKind::Struct { .. } => TokenKind::Struct,
+            DeclKind::Module(_) => TokenKind::Module,
         }
     }
 }
@@ -48,6 +57,16 @@ pub struct Function<'db> {
     pub required: bool,
 }
 
+impl<'db> Generic<'db> {
+    pub fn parameterize(&self, params: &HashMap<String, Ty<'db>>) -> Generic<'db> {
+        Generic {
+            name: self.name.clone(),
+            variance: self.variance,
+            super_: Box::new(self.super_.parameterize(params)),
+        }
+    }
+}
+
 #[derive(Update, Debug, Clone, PartialEq)]
 pub enum DeclKind<'db> {
     Struct {
@@ -56,47 +75,35 @@ pub enum DeclKind<'db> {
     },
     Trait {
         generics: Vec<Generic<'db>>,
-        body: Vec<Module<'db>>,
+        body: Vec<Decl<'db>>,
     },
     Enum {
         generics: Vec<Generic<'db>>,
-        variants: Vec<Module<'db>>,
+        variants: Vec<Decl<'db>>,
     },
     Member {
         body: StructDecl<'db>,
     },
     Function(Function<'db>),
+    Module(Vec<Decl<'db>>),
 }
 
 #[salsa::tracked]
 impl<'db> Decl<'db> {
     #[must_use]
-    #[salsa::tracked]
     pub fn generics(self, db: &'db dyn Db) -> Vec<Generic<'db>> {
         match self.kind(db) {
             DeclKind::Struct { generics, .. }
             | DeclKind::Trait { generics, .. }
             | DeclKind::Enum { generics, .. }
             | DeclKind::Function(Function { generics, .. }) => generics.clone(),
-            DeclKind::Member { .. } => {
-                panic!("Hmm, don't think I need this, guess I'll find out")
+            DeclKind::Member { .. } | DeclKind::Module(_) => {
+                panic!("Generics not supported for this decl kind")
             }
         }
     }
 
-    #[must_use]
-    #[salsa::tracked]
-    pub fn get(self, db: &'db dyn Db, name: String) -> Option<Module<'db>> {
-        match self.kind(db) {
-            DeclKind::Enum { variants, .. } => {
-                variants.iter().find(|v| v.name(db) == name).copied()
-            }
-            DeclKind::Trait { body, .. } => body.iter().find(|m| m.name(db) == name).copied(),
-            _ => None,
-        }
-    }
-
-    pub fn get_ty(&self, state: &mut CheckState<'db>) -> Ty<'db> {
+    pub fn get_ty(&self, state: &CheckState<'db>) -> Ty<'db> {
         let id = self.path(state.db);
         match self.kind(state.db) {
             DeclKind::Struct {
@@ -130,10 +137,11 @@ impl<'db> Decl<'db> {
                     ret: Box::new(ret.clone()),
                 })
             }
+            DeclKind::Module(_) => Ty::unit(),
         }
     }
 
-    fn default_named_ty(self, state: &mut CheckState<'db>, name: ModulePath<'db>) -> Ty<'db> {
+    fn default_named_ty(self, state: &CheckState<'db>, name: ModulePath<'db>) -> Ty<'db> {
         Ty::Named {
             name,
             args: self
@@ -145,7 +153,7 @@ impl<'db> Decl<'db> {
         }
     }
 
-    pub fn get_named_ty(self, state: &mut CheckState<'db>, id: ModulePath<'db>) -> Ty<'db> {
+    pub fn get_named_ty(self, state: &CheckState<'db>, id: ModulePath<'db>) -> Ty<'db> {
         if let DeclKind::Member { .. } = &self.kind(state.db) {
             let parent = id.get_parent(state.db);
             let parent_decl = state.try_get_decl(parent);

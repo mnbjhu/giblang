@@ -25,19 +25,29 @@ trait Pushable[T] {
     fn Self.push(x: T)
 }
 
-impl[T] Pushable[T] for Box[T] {
-    fn Self.push(x: T) {}
+impl[U] Pushable[U] for Box[U] {
+    fn Self.push(x: U) {}
 }
 
 fn test(thing: Test) {
     let other = 123
-    let test: std::Vec[String] = std::Vec
+    let test = std::Vec
     let some = Option::Some(123)
-    let ty = some.unwrap()
-    let box = Box::new()
-    box.push(123)
-    box
+    let test = some.unwrap()
+    let inner = some.expect("Test")
+    let thing = Basic::from("Hello")
 }
+
+impl[T] Option[T] {
+    fn expect(text: String): T {
+        match self {
+            Option::Some(res) => res,
+            Option::None => panic(text)
+        }
+    }
+}
+
+fn panic(text: String): Nothing {}
 
 struct Basic {
     test: Int,
@@ -68,7 +78,7 @@ fn test123() {
 }
 
 impl ToString for Basic {
-    fn to_string(): String {
+    fn Self.to_string(): String {
         "Hello"
     }
 }
@@ -80,9 +90,7 @@ impl ToString {
 }
 
 trait ToString {
-    fn to_string(): String {
-        "Hello"
-    }
+    fn Self.to_string(): String
 }
 
 trait Clone {
@@ -91,4 +99,26 @@ trait Clone {
 
 impl Clone for Basic {
     fn clone(): Basic {}
+}
+
+impl ToString for Option[String] {
+    fn Self.to_string(): String {}
+}
+
+trait Into[T] {
+    fn Self.into(): T
+}
+
+trait From[T] {
+    fn from(value: T): Self
+}
+
+impl From[String] for Basic {
+    fn from(value: String): Self
+}
+
+impl Into[String] for Basic {
+    fn Basic.into(): String {
+        self.to_string()
+    }
 }

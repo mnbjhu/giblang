@@ -65,6 +65,7 @@ pub enum Ty<'db> {
     Function(FuncTy<'db>),
     Tuple(Vec<Ty<'db>>),
     Sum(Vec<Ty<'db>>),
+    Nothing,
 }
 
 // #[cfg(test)]

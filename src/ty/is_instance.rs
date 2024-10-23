@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::{
     check::{
         err::{is_not_instance::IsNotInstance, CheckError},
@@ -24,7 +26,7 @@ impl<'db> Ty<'db> {
             return true;
         }
         let res = match (self, other) {
-            (Ty::Unknown, _) | (_, Ty::Unknown) => true,
+            (Ty::Unknown | Ty::Nothing, _) | (_, Ty::Unknown) => true,
             (Ty::TypeVar { id }, _) => {
                 if explicit {
                     state
@@ -59,8 +61,12 @@ impl<'db> Ty<'db> {
             (Ty::Generic(Generic { super_, .. }), _) => {
                 super_.expect_is_instance_of(other, state, explicit, span)
             }
-            (_, Ty::Generic(Generic { super_, .. })) => {
-                self.expect_is_instance_of(super_, state, explicit, span)
+            (_, Ty::Generic(Generic { super_, name, .. })) => {
+                if name.0 == "Self" {
+                    self.expect_is_instance_of(super_, state, explicit, span)
+                } else {
+                    self.eq(other)
+                }
             }
             (
                 Ty::Function(FuncTy {
@@ -161,14 +167,28 @@ impl<'db> Ty<'db> {
         name: &Spanned<String>,
         state: &mut CheckState<'db>,
     ) -> Option<FuncTy<'db>> {
-        if let Ty::Named { name: id, .. } = self {
-            if let DeclKind::Trait { body, .. } = state.get_decl(*id).kind(state.db) {
+        if let Ty::Named { name: id, args } = self {
+            if let DeclKind::Trait { body, generics } = state.get_decl(*id).kind(state.db) {
+                assert_eq!(
+                    args.len(),
+                    generics.len(),
+                    "TODO: Look into whether this will be true"
+                );
+                let mut params = generics
+                    .iter()
+                    .map(|arg| arg.name.0.clone())
+                    .zip(args.iter().cloned())
+                    .collect::<HashMap<_, _>>();
+                params.insert("Self".to_string(), self.clone());
                 let found = body
                     .iter()
                     .find(|func| func.name(state.db) == name.0)
                     .map(|func| {
-                        let Ty::Function(func) = func.get_ty(state, Some(self.clone()), name.1)
-                        else {
+                        let Ty::Function(func) = func.get_ty(state).parameterize(&params).inst(
+                            &mut HashMap::new(),
+                            state,
+                            name.1,
+                        ) else {
                             panic!("Expected function");
                         };
                         func
@@ -177,7 +197,7 @@ impl<'db> Ty<'db> {
                     return Some(found);
                 }
             };
-            let impl_func = state
+            let impl_funcs = state
                 .project
                 .get_impls(state.db, *id)
                 .into_iter()
@@ -187,15 +207,26 @@ impl<'db> Ty<'db> {
                     };
                     *id == n && i.to_ty(state.db).is_none()
                 })
-                .flat_map(|i| i.functions(state.db))
-                .find(|decl| decl.name(state.db) == name.0)
-                .map(|decl| {
-                    let Ty::Function(func) = decl.get_ty(state) else {
-                        panic!("Expected function");
-                    };
-                    func
-                });
-            impl_func
+                .flat_map(|i| {
+                    let mut funcs = Vec::new();
+                    let mut implied = HashMap::new();
+                    i.from_ty(state.db).imply_generic_args(self, &mut implied);
+                    let self_ty = self.parameterize(&implied);
+                    implied.insert("Self".to_string(), self_ty);
+                    for func in i.functions(state.db) {
+                        if func.name(state.db) != name.0 {
+                            continue;
+                        }
+                        let parameterized = func.get_ty(state).parameterize(&implied);
+                        funcs.push(parameterized);
+                    }
+                    funcs
+                })
+                .collect::<Vec<_>>();
+            let Some(Ty::Function(func)) = impl_funcs.first() else {
+                return None;
+            };
+            Some(func.clone())
         } else {
             None
         }
@@ -206,8 +237,7 @@ impl<'db> Ty<'db> {
         if let Ty::Named { name, .. } = self {
             if let DeclKind::Trait { body, .. } = state.get_decl(*name).kind(state.db) {
                 funcs.extend(body.iter().map(|mod_| {
-                    let Ty::Function(func) = mod_.get_ty(state, Some(self.clone()), Span::splat(0))
-                    else {
+                    let Ty::Function(func) = mod_.get_ty(state) else {
                         panic!("Expected function");
                     };
                     (mod_.name(state.db), func)

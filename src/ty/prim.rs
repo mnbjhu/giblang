@@ -1,5 +1,3 @@
-use std::fmt::Display;
-
 use crate::db::{input::Db, modules::ModulePath};
 
 use super::Ty;

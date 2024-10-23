@@ -6,10 +6,14 @@ use crate::{
     check::err::{simple::Simple, CheckError},
     db::{
         input::{Db, SourceFile},
-        modules::{Module, ModuleData, ModulePath},
+        modules::ModulePath,
     },
     parser::{expr::qualified_name::SpannedQualifiedName, parse_file},
-    project::{decl::Decl, name::QualifiedName, Project},
+    project::{
+        decl::{Decl, DeclKind},
+        name::QualifiedName,
+        Project,
+    },
     ty::{Generic, Ty},
     util::{Span, Spanned},
 };
@@ -132,20 +136,6 @@ impl<'ty, 'db: 'ty> CheckState<'db> {
         }
     }
 
-    pub fn get_module_with_error(&mut self, path: &[Spanned<String>]) -> Option<Module<'db>> {
-        if let Some(import) = self.imports.get(&path[0].0).copied() {
-            let module = self.project.decls(self.db).get_path(self.db, import)?;
-            module.get_path_with_state(self, &path[1..], self.file_data, self.should_error)
-        } else {
-            self.project.decls(self.db).get_path_with_state(
-                self,
-                path,
-                self.file_data,
-                self.should_error,
-            )
-        }
-    }
-
     pub fn get_decl_with_error(&mut self, path: &[Spanned<String>]) -> Option<ModulePath<'db>> {
         if let Some(import) = self.imports.get(&path[0].0).copied() {
             let module = self
@@ -169,26 +159,17 @@ impl<'ty, 'db: 'ty> CheckState<'db> {
             self.file_data,
             self.should_error,
         ) {
-            if let ModuleData::Export(_) = found.content(self.db) {
-                Some(ModulePath::new(
-                    self.db,
-                    path.iter().map(|(n, _)| n.to_string()).collect(),
-                ))
-            } else {
-                self.error(CheckError::Simple(Simple {
-                    message: "Expected export".to_string(),
-                    span: path.last().unwrap().1,
-                    file: self.file_data,
-                }));
-                None
-            }
+            Some(ModulePath::new(
+                self.db,
+                path.iter().map(|(n, _)| n.to_string()).collect(),
+            ))
         } else {
             None
         }
     }
 
     pub fn import(&mut self, use_: &SpannedQualifiedName) {
-        if self.get_module_with_error(use_).is_some() {
+        if self.get_decl_with_error(use_).is_some() {
             self.imports.insert(
                 use_.last().unwrap().0.clone(),
                 ModulePath::new(self.db, use_.iter().map(|(name, _)| name.clone()).collect()),

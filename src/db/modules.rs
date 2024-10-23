@@ -4,30 +4,10 @@ use crate::{
     check::{
         err::{unresolved::Unresolved, IntoWithDb},
         state::CheckState,
-    },
-    parser::expr::qualified_name::SpannedQualifiedName,
-    project::decl::Decl,
-    util::Spanned,
+    }, parser::expr::qualified_name::SpannedQualifiedName, project::decl::{Decl, DeclKind}, util::Spanned
 };
 
 use super::input::{Db, SourceFile};
-
-#[salsa::tracked]
-pub struct Module<'db> {
-    #[id]
-    pub name: String,
-
-    #[return_ref]
-    pub content: ModuleData<'db>,
-
-    pub path: ModulePath<'db>,
-}
-
-#[derive(Update, Clone, Debug)]
-pub enum ModuleData<'db> {
-    Package(Vec<Module<'db>>),
-    Export(Decl<'db>),
-}
 
 #[salsa::interned]
 pub struct ModulePath<'db> {
@@ -44,24 +24,21 @@ impl<'db> ModulePath<'db> {
 }
 
 #[salsa::tracked]
-impl<'db> Module<'db> {
-    pub fn get(self, db: &'db dyn Db, name: String) -> Option<Module<'db>> {
-        match self.content(db) {
-            ModuleData::Package(modules) => modules.iter().find(|m| m.name(db) == name).copied(),
-            ModuleData::Export(export) => export.get(db, name),
+impl<'db> Decl<'db> {
+    pub fn get(self, db: &'db dyn Db, name: &str) -> Option<Decl<'db>> {
+        match self.kind(db) {
+            DeclKind::Module(modules) => modules.iter().find(|m| m.name(db) == name).copied(),
+            DeclKind::Enum { variants, ..} => variants.iter().find(|v| v.name(db) == name).copied(),
+            DeclKind::Trait { body, .. } => body.iter().find(|m| m.name(db) == name).copied(),
+            _ => None,
         }
     }
 
     #[salsa::tracked]
-    pub fn get_path(self, db: &'db dyn Db, path: ModulePath<'db>) -> Option<Module<'db>> {
+    pub fn get_path(self, db: &'db dyn Db, path: ModulePath<'db>) -> Option<Decl<'db>> {
         let mut current = self;
         for name in path.name(db) {
-            match current.content(db) {
-                ModuleData::Package(modules) => {
-                    current = modules.iter().find(|m| m.name(db) == *name).copied()?;
-                }
-                ModuleData::Export(export) => current = export.get(db, name.to_string())?,
-            }
+            current = current.get(db, name)?;
         }
         Some(current)
     }
@@ -71,7 +48,7 @@ impl<'db> Module<'db> {
         self,
         db: &'db dyn Db,
         path: SpannedQualifiedName,
-    ) -> Option<Module<'db>> {
+    ) -> Option<Decl<'db>> {
         let segs = path
             .iter()
             .map(|(name, _)| name.to_string())
@@ -86,7 +63,7 @@ impl<'db> Module<'db> {
         db: &'db dyn Db,
         path: SpannedQualifiedName,
         file: SourceFile,
-    ) -> Option<Module<'db>> {
+    ) -> Option<Decl<'db>> {
         if path.is_empty() {
             return Some(self);
         }
@@ -114,7 +91,7 @@ impl<'db> Module<'db> {
         path: &[Spanned<String>],
         file: SourceFile,
         should_error: bool,
-    ) -> Option<Module<'db>> {
+    ) -> Option<Decl<'db>> {
         self.get_path_with_state_inner(state, path, file, &mut Vec::new(), should_error)
     }
 
@@ -125,10 +102,10 @@ impl<'db> Module<'db> {
         file: SourceFile,
         current: &mut Vec<String>,
         should_error: bool,
-    ) -> Option<Module<'db>> {
+    ) -> Option<Decl<'db>> {
         if path.is_empty() {
             Some(self)
-        } else if let Some(found) = self.get(state.db, path[0].0.to_string()) {
+        } else if let Some(found) = self.get(state.db, &path[0].0) {
             current.push(path[0].0.to_string());
             found.get_path_with_state_inner(state, &path[1..], file, current, should_error)
         } else {

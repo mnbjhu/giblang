@@ -14,6 +14,7 @@ impl Decl<'_> {
             DeclKind::Enum { .. } => "enum",
             DeclKind::Member { .. } => "member",
             DeclKind::Function(Function { .. }) => "function",
+            DeclKind::Module(_) => "module",
         };
         format!("{kind} {path_name}")
     }
@@ -29,6 +30,7 @@ impl Decl<'_> {
                 DeclKind::Trait { .. } => CompletionItemKind::INTERFACE,
                 DeclKind::Function { .. } => CompletionItemKind::FUNCTION,
                 DeclKind::Member { .. } => CompletionItemKind::ENUM_MEMBER,
+                DeclKind::Module(_) => CompletionItemKind::MODULE,
             }),
             detail: Some(self.path(state.db).name(state.db).join("::")),
             ..Default::default()
@@ -45,6 +47,7 @@ impl Decl<'_> {
                 .iter()
                 .flat_map(|item| item.completions(state))
                 .collect(),
+            DeclKind::Module(decls) => decls.iter().flat_map(|d| d.completions(state)).collect(),
             _ => vec![],
         }
     }

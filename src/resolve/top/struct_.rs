@@ -13,7 +13,7 @@ impl Struct {
             name.0,
             name.1,
             kind,
-            state.file_data,
+            Some(state.file_data),
             state.module_path(),
         )
     }

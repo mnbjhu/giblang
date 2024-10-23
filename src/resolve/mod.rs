@@ -1,10 +1,10 @@
 use crate::{
     db::{
         input::{Db, SourceFile, Vfs, VfsInner},
-        modules::{Module, ModuleData, ModulePath},
+        modules::ModulePath,
     },
     parser::{parse_file, top::Top},
-    project::ImplForDecl,
+    project::{decl::{Decl, DeclKind}, ImplForDecl}, util::Span,
 };
 
 use self::state::ResolveState;
@@ -14,28 +14,20 @@ pub mod state;
 mod top;
 
 #[salsa::tracked]
-pub fn resolve_file<'db>(db: &'db dyn Db, file: SourceFile) -> Module<'db> {
+pub fn resolve_file<'db>(db: &'db dyn Db, file: SourceFile) -> Decl<'db> {
     let mut state = ResolveState::from_file(db, file);
     let ast = parse_file(db, file);
     let decls = ast
         .tops(db)
         .iter()
-        .filter_map(|item| {
-            state.enter_scope();
-            let found = item.0.resolve(&mut state)?;
-            state.path.push(found.name(db));
-            let name = found.name(db);
-            let export = ModuleData::Export(found);
-            let mod_ = Module::new(db, name, export, ModulePath::new(db, state.path.clone()));
-            state.exit_scope();
-            state.path.pop();
-            Some(mod_)
-        })
+        .filter_map(|item| item.0.resolve(&mut state))
         .collect();
-    Module::new(
+    Decl::new(
         db,
         file.name(db).to_string(),
-        ModuleData::Package(decls),
+        Span::splat(0),
+        DeclKind::Module(decls),
+        Some(file),
         ModulePath::new(db, state.path.clone()),
     )
 }
@@ -63,7 +55,7 @@ pub fn resolve_impls<'db>(db: &'db dyn Db, file: SourceFile) -> Vec<ImplForDecl<
 }
 
 #[salsa::tracked]
-pub fn resolve_vfs<'db>(db: &'db dyn Db, vfs: Vfs, path: ModulePath<'db>) -> Module<'db> {
+pub fn resolve_vfs<'db>(db: &'db dyn Db, vfs: Vfs, path: ModulePath<'db>) -> Decl<'db> {
     match vfs.inner(db) {
         VfsInner::File(file) => resolve_file(db, *file),
         VfsInner::Dir(files) => {
@@ -75,10 +67,12 @@ pub fn resolve_vfs<'db>(db: &'db dyn Db, vfs: Vfs, path: ModulePath<'db>) -> Mod
                 path.pop();
                 modules.push(module);
             }
-            Module::new(
+            Decl::new(
                 db,
                 vfs.name(db),
-                ModuleData::Package(modules),
+                Span::splat(0),
+                DeclKind::Module(modules),
+                None,
                 ModulePath::new(db, path),
             )
         }

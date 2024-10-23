@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::{
     check::{
         expr::code_block::{check_code_block, check_code_block_is},
@@ -30,9 +32,14 @@ impl<'db> Func {
         }
     }
 
-    pub fn check_matches(&self, trait_decl: &Function<'db>, state: &mut CheckState<'db>) {
+    pub fn check_matches(
+        &self,
+        trait_decl: &Function<'db>,
+        state: &mut CheckState<'db>,
+        // FROM THE TRAIT
+        params: &HashMap<String, Ty<'db>>,
+    ) {
         let generics = self.generics.0.check(state);
-
         let spanned_decl_generics = generics
             .iter()
             .map(|g| {
@@ -45,9 +52,9 @@ impl<'db> Func {
 
         if trait_decl.generics.len() == generics.len() {
             spanned_decl_generics
-                .zip(&trait_decl.generics)
+                .zip(trait_decl.generics.iter().map(|g|g.parameterize(params)))
                 .for_each(|((i, s), t)| {
-                    if i != t {
+                    if i != &t {
                         state.simple_error(
                             &format!(
                                 "Expected '{}' but found '{}'",
@@ -78,9 +85,9 @@ impl<'db> Func {
         let spanned_decl_args = args.iter().zip(self.args.iter().map(|(_, s)| s));
 
         spanned_decl_args
-            .zip(&trait_decl.args)
+            .zip(trait_decl.args.iter().map(|arg| arg.1.parameterize(params)))
             .for_each(|((i, s), t)| {
-                i.1.expect_is_instance_of(&t.1, state, false, *s);
+                i.1.expect_is_instance_of(&t, state, false, *s);
             });
 
         let ret = self
@@ -88,13 +95,13 @@ impl<'db> Func {
             .as_ref()
             .map_or(Ty::unit(), |(ret, _)| ret.check(state));
 
-        ret.expect_is_instance_of(&trait_decl.ret, state, false, self.name.1);
+        ret.expect_is_instance_of(&trait_decl.ret.parameterize(params), state, false, self.name.1);
 
         let receiver = self.receiver.as_ref().map(|(rec, _)| rec.check(state));
 
-        match (&receiver, &trait_decl.receiver) {
+        match (&receiver, trait_decl.receiver.as_ref().map(|r| r.parameterize(params))) {
             (Some(i), Some(t)) => {
-                i.expect_is_instance_of(t, state, false, self.name.1);
+                i.expect_is_instance_of(&t, state, false, self.name.1);
             }
             (None, None) => {}
             (None, Some(ty)) => {

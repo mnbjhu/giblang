@@ -3,10 +3,7 @@ use std::collections::HashMap;
 use decl::Decl;
 
 use crate::{
-    db::{
-        input::Db,
-        modules::{Module, ModuleData, ModulePath},
-    },
+    db::{input::Db, modules::ModulePath},
     ty::{Generic, Ty},
 };
 
@@ -18,7 +15,7 @@ pub mod util;
 
 #[salsa::tracked]
 pub struct Project<'db> {
-    pub decls: Module<'db>,
+    pub decls: Decl<'db>,
     pub impl_map: HashMap<ModulePath<'db>, Vec<ImplForDecl<'db>>>,
 }
 
@@ -34,21 +31,10 @@ pub struct ImplForDecl<'db> {
 
 impl<'db> Project<'db> {
     pub fn get_decl(self, db: &'db dyn Db, path: ModulePath<'db>) -> Option<Decl<'db>> {
-        let module = self.decls(db).get_path(db, path)?;
-        match module.content(db) {
-            ModuleData::Export(decl) => Some(*decl),
-            ModuleData::Package(_) => None,
-        }
+        self.decls(db).get_path(db, path)
     }
 
     pub fn get_impls(self, db: &'db dyn Db, path: ModulePath<'db>) -> Vec<ImplForDecl<'db>> {
         self.impl_map(db).get(&path).cloned().unwrap_or_default()
     }
-}
-
-#[derive(Debug, Clone)]
-pub struct TypeVar<'db> {
-    pub id: ModulePath<'db>,
-    pub generic: Generic<'db>,
-    pub ty: Option<Ty<'db>>,
 }
