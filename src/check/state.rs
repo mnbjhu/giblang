@@ -10,7 +10,7 @@ use crate::{
     },
     parser::{expr::qualified_name::SpannedQualifiedName, parse_file},
     project::{
-        decl::{Decl, DeclKind},
+        decl::Decl,
         name::QualifiedName,
         Project,
     },
@@ -153,12 +153,12 @@ impl<'ty, 'db: 'ty> CheckState<'db> {
             } else {
                 None
             }
-        } else if let Some(found) = self.project.decls(self.db).get_path_with_state(
+        } else if self.project.decls(self.db).get_path_with_state(
             self,
             path,
             self.file_data,
             self.should_error,
-        ) {
+        ).is_some() {
             Some(ModulePath::new(
                 self.db,
                 path.iter().map(|(n, _)| n.to_string()).collect(),

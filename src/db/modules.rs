@@ -1,4 +1,4 @@
-use salsa::{Accumulator, Update};
+use salsa::Accumulator;
 
 use crate::{
     check::{
