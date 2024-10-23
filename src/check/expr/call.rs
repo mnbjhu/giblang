@@ -1,12 +1,9 @@
-use std::collections::HashMap;
-
 use crate::{
     check::{
         err::{missing_receiver::MissingReceiver, unexpected_args::UnexpectedArgs, CheckError},
         state::CheckState,
     },
     parser::expr::call::Call,
-    project::decl::DeclKind,
     ty::{FuncTy, Ty},
     util::Span,
 };
@@ -31,7 +28,7 @@ impl<'db> Call {
                 state.error(CheckError::MissingReceiver(MissingReceiver {
                     span: self.name.1,
                     file: state.file_data,
-                    expected: receiver.get_name(state),
+                    expected: receiver.get_name(state, None),
                 }));
             }
             if expected_args.len() != self.args.len() {
@@ -40,7 +37,7 @@ impl<'db> Call {
                     found: self.args.len(),
                     span: self.name.1,
                     file: state.file_data,
-                    func: func_ty.get_name(state),
+                    func: func_ty.get_name(state, None),
                 }));
             }
             self.args
@@ -56,7 +53,7 @@ impl<'db> Call {
             state.simple_error(
                 &format!(
                     "Expected a function but found '{}'",
-                    name_ty.get_name(state)
+                    name_ty.get_name(state, None)
                 ),
                 self.name.1,
             );
@@ -75,24 +72,3 @@ impl<'db> Call {
     }
 }
 
-impl<'db> Ty<'db> {
-    pub fn try_get_func_ty(&self, state: &mut CheckState<'db>, span: Span) -> Option<FuncTy<'db>> {
-        if let Ty::Function(func_ty) = self {
-            Some(func_ty.clone())
-        } else if let Ty::Meta(ty) = self {
-            if let Ty::Named { name, .. } = ty.as_ref() {
-                let decl = state.try_get_decl(*name);
-                if let Some(decl) = decl {
-                    if let DeclKind::Struct { body, .. } = decl.kind(state.db) {
-                        return body
-                            .get_constructor_ty(ty.as_ref().clone())
-                            .map(|ty| ty.inst(&mut HashMap::new(), state, span));
-                    }
-                }
-            }
-            None
-        } else {
-            None
-        }
-    }
-}

@@ -4,13 +4,12 @@ use async_lsp::lsp_types::CompletionItem;
 
 use crate::{
     check::{
-        state::{CheckState, VarDecl},
+        state::CheckState,
         SemanticToken, TokenKind,
     },
-    item::{common::type_::ContainsOffset, AstItem},
+    item::{common::type_::ContainsOffset, definitions::ident::IdentDef, AstItem},
     parser::expr::qualified_name::SpannedQualifiedName,
-    project::decl::Decl,
-    ty::{Generic, Ty},
+    ty::Ty,
     util::Spanned,
 };
 
@@ -144,8 +143,8 @@ fn get_ident_completions(
     for (_, var) in state.get_variables() {
         completions.extend(var.completions(state, type_vars));
     }
-    for (_, var) in state.get_generics() {
-        completions.extend(var.completions(state));
+    for (_, g) in state.get_generics() {
+        completions.extend(g.completions(state));
     }
     for (name, import) in state.get_imports() {
         let module = state.project.decls(state.db).get_path(state.db, *import);
@@ -165,27 +164,6 @@ fn get_ident_completions(
     );
 }
 
-pub enum IdentDef<'db> {
-    Variable(VarDecl<'db>),
-    Generic(Generic<'db>),
-    Decl(Decl<'db>),
-    Unknown,
-}
-
-impl<'db> IdentDef<'db> {
-    pub fn completions(
-        &self,
-        state: &mut CheckState<'db>,
-        type_vars: &HashMap<u32, Ty<'db>>,
-    ) -> Vec<CompletionItem> {
-        match self {
-            IdentDef::Variable(var) => var.completions(state, type_vars),
-            IdentDef::Generic(g) => g.completions(state),
-            IdentDef::Decl(decl) => decl.completions(state),
-            IdentDef::Unknown => vec![],
-        }
-    }
-}
 
 impl<'db> CheckState<'db> {
     pub fn get_ident_def(&mut self, ident: &[Spanned<String>]) -> IdentDef<'db> {

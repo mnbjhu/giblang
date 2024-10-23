@@ -1,6 +1,6 @@
 use crate::{
     check::state::CheckState,
-    db::{input::Db, modules::ModulePath},
+    db::{input::Db, path::ModulePath},
     lexer::literal::Literal,
     ty::Ty,
     util::Span,

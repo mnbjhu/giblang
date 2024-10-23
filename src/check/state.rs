@@ -5,11 +5,9 @@ use salsa::Accumulator;
 use crate::{
     check::err::{simple::Simple, CheckError},
     db::{
-        input::{Db, SourceFile},
-        modules::ModulePath,
+        decl::{Decl, Project}, input::{Db, SourceFile}, path::ModulePath
     },
-    parser::{expr::qualified_name::SpannedQualifiedName, parse_file},
-    project::{decl::Decl, name::QualifiedName, Project},
+    parser::{expr::qualified_name::{QualifiedName, SpannedQualifiedName}, parse_file},
     ty::{Generic, Ty},
     util::{Span, Spanned},
 };
@@ -125,7 +123,7 @@ impl<'ty, 'db: 'ty> CheckState<'db> {
     }
 
     pub fn error(&mut self, error: CheckError) {
-        if self.should_error {
+        if self.should_error && self.path.first().unwrap() != "std" {
             Error { inner: error }
                 .into_with_db(self.db)
                 .accumulate(self.db);

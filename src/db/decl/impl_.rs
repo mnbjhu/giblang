@@ -1,8 +1,18 @@
 use std::collections::HashMap;
 
-use crate::{db::input::Db, project::ImplForDecl, ty::Ty};
+use crate::{db::{decl::Decl, input::Db}, ty::{Generic, Ty}};
 
-// Create generic arg
+#[salsa::tracked]
+#[derive()]
+pub struct ImplForDecl<'db> {
+    pub generics: Vec<Generic<'db>>,
+    #[id]
+    pub from_ty: Ty<'db>,
+    #[id]
+    pub to_ty: Option<Ty<'db>>,
+    pub functions: Vec<Decl<'db>>,
+}
+
 
 impl<'db> ImplForDecl<'db> {
     #[must_use]

@@ -80,11 +80,6 @@ pub fn file_parser<'tokens, 'src: 'tokens>() -> AstParser!(File) {
 
 type Unit = ();
 
-pub struct ExpectedKeyword {
-    pub kw: Keyword,
-    pub span: Span,
-}
-
 #[must_use]
 pub fn top_recovery<'tokens, 'src: 'tokens>() -> AstParser!(Unit) {
     let braces = nested_delimiters(

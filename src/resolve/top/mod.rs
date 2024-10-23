@@ -1,4 +1,4 @@
-use crate::{parser::top::Top, project::decl::Decl};
+use crate::{db::decl::Decl, parser::top::Top};
 
 use super::state::ResolveState;
 

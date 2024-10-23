@@ -24,8 +24,8 @@ impl<'db> Stmt {
                     state.simple_error(
                         &format!(
                             "Expected value to be of type '{}' but found '{}'",
-                            expected.get_name(state),
-                            actual.get_name(state),
+                            expected.get_name(state, None),
+                            actual.get_name(state, None),
                         ),
                         span,
                     );

@@ -1,18 +1,14 @@
 use std::collections::HashMap;
 
 use crate::{
-    check::state::CheckState,
-    db::input::Db,
-    parser::top::impl_::Impl,
-    project::decl::{Decl, DeclKind, Function},
-    ty::Ty,
+    check::state::CheckState, db::decl::DeclKind, parser::top::impl_::Impl, ty::Ty
 };
 
 impl<'db> Impl {
     pub fn check(&'db self, state: &mut CheckState<'db>) {
         self.generics.0.check(state);
         let for_ = self.for_.0.check(state);
-        state.add_self_ty(for_, self.for_.1);
+        state.add_self_ty(&for_, self.for_.1);
         if let Some(trait_) = &self.trait_ {
             let trait_ty = trait_.0.check(state);
             if let Ty::Named { name, .. } = &trait_ty {
@@ -88,12 +84,3 @@ impl<'db> Impl {
     }
 }
 
-impl<'db> Decl<'db> {
-    pub fn into_func(self, db: &'db dyn Db) -> &'db Function<'db> {
-        if let DeclKind::Function(f) = self.kind(db) {
-            f
-        } else {
-            panic!("Expected function");
-        }
-    }
-}

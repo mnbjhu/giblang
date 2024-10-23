@@ -1,13 +1,7 @@
 use async_lsp::lsp_types::{DocumentSymbol, SymbolKind};
 
 use crate::{
-    check::{state::CheckState, SemanticToken, TokenKind},
-    db::modules::ModulePath,
-    item::{common::type_::ContainsOffset, AstItem},
-    parser::top::trait_::Trait,
-    range::span_to_range_str,
-    ty::Ty,
-    util::Span,
+    check::{state::CheckState, SemanticToken, TokenKind}, db::path::ModulePath, item::{common::type_::ContainsOffset, AstItem}, parser::top::trait_::Trait, range::span_to_range_str, ty::Ty, util::Span
 };
 
 use super::impl_::pretty_trait_body;
@@ -23,7 +17,7 @@ impl AstItem for Trait {
         let args = self.generics.0.check(state);
         let name = ModulePath::new(state.db, state.path.clone());
         let self_ty = Ty::Named { name, args };
-        state.add_self_ty(self_ty, self.name.1);
+        state.add_self_ty(&self_ty, self.name.1);
         for (func, span) in &self.body {
             if span.contains_offset(offset) {
                 return func.at_offset(state, offset);

@@ -1,8 +1,5 @@
 use crate::{
-    parser::top::func::Func,
-    project::decl::{Decl, DeclKind, Function},
-    resolve::state::ResolveState,
-    ty::Ty,
+    db::decl::{func::Function, Decl, DeclKind}, parser::top::func::Func, resolve::state::ResolveState, ty::Ty
 };
 
 impl Func {

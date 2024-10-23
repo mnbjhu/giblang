@@ -6,14 +6,13 @@ use chumsky::{
 };
 use field::Field;
 
-use op::{Op, OpKind};
+use op::{op_parser, Op};
 
 use crate::{
     lexer::{
         literal::Literal,
         token::{punct, Token},
     },
-    op,
     parser::expr::match_::{match_parser, Match},
     util::Spanned,
     AstParser,
@@ -83,9 +82,8 @@ pub fn expr_parser<'tokens, 'src: 'tokens>(stmt: AstParser!(Stmt)) -> AstParser!
         .or(tuple);
 
         let call = call_parser(atom.clone(), expr.clone()).map(Expr::Call);
-        // let member = member_call_parser(atom.clone(), expr.clone()).map(Expr::MemberCall);
-
         let atom = choice((call, atom));
+
         let access = atom
             .clone()
             .map_with(|ex, e| (ex, e.span()))
@@ -111,32 +109,15 @@ pub fn expr_parser<'tokens, 'src: 'tokens>(stmt: AstParser!(Stmt)) -> AstParser!
             )
             .map(|(ex, _)| ex);
 
-        let sum = access
-            .clone()
-            .map_with(|a, e| (a, e.span()))
-            .foldl_with(
-                just(op!(+))
-                    .ignore_then(atom.clone().map_with(|a, e| (a, e.span())))
-                    .repeated(),
-                |a, b, e| {
-                    (
-                        Expr::Op(Op {
-                            left: Box::new(a),
-                            kind: OpKind::Add,
-                            right: Box::new(b),
-                        }),
-                        e.span(),
-                    )
-                },
-            )
-            .map(|(a, _)| a);
+        let op = op_parser(access);
+
 
         let match_ =
             match_parser(expr.clone(), match_arm::match_arm_parser(expr.clone())).map(Expr::Match);
 
         let if_else = if_else_parser(expr, stmt).map(Expr::IfElse);
 
-        choice((if_else, match_, block, sum))
+        choice((if_else, match_, block, op))
     })
 }
 

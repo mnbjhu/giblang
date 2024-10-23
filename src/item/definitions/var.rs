@@ -12,7 +12,7 @@ impl<'db> VarDecl<'db> {
         format!(
             "{}: {}",
             self.name,
-            self.ty.get_name_with_types(state, type_vars)
+            self.ty.get_name(state, Some(type_vars))
         )
     }
 
@@ -24,7 +24,7 @@ impl<'db> VarDecl<'db> {
         vec![CompletionItem {
             label: self.name.clone(),
             kind: Some(CompletionItemKind::VARIABLE),
-            detail: Some(self.ty.get_name_with_types(state, type_vars)),
+            detail: Some(self.ty.get_name(state, Some(type_vars))),
             ..Default::default()
         }]
     }

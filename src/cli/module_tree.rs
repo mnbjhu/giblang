@@ -1,7 +1,6 @@
 use crate::{
     check::resolve_project,
-    db::input::{Db, SourceDatabase},
-    project::decl::{Decl, DeclKind},
+    db::{decl::{Decl, DeclKind}, input::{Db, SourceDatabase}},
 };
 
 pub fn module_tree() {

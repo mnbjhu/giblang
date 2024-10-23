@@ -2,8 +2,8 @@ use std::collections::HashMap;
 
 use crate::{
     check::state::CheckState,
+    db::decl::{struct_::StructDecl, DeclKind},
     parser::common::pattern::{Pattern, StructFieldPattern},
-    project::decl::{struct_::StructDecl, DeclKind},
     ty::Ty,
     util::Span,
 };
@@ -72,7 +72,13 @@ impl<'db> Pattern {
                         ),
                     }
                 } else {
-                    state.simple_error("Expected a struct", name.last().unwrap().1);
+                    state.simple_error(
+                        &format!(
+                            "Expected a struct but found type {}",
+                            ty.get_name(state, None)
+                        ),
+                        name.last().unwrap().1,
+                    );
                 }
             } else {
                 state.simple_error("Expected a struct", name.last().unwrap().1);

@@ -9,7 +9,7 @@ use std::{
 use glob::glob;
 use salsa::{AsDynDatabase, Setter, Update};
 
-use super::modules::ModulePath;
+use super::path::ModulePath;
 
 #[derive(Clone, Default)]
 #[salsa::db]
@@ -122,6 +122,7 @@ impl Vfs {
                 struct String
                 struct Any
 
+                fn panic(message: String): Nothing
                 fn print(text: String)
                 fn println(text: String)
 

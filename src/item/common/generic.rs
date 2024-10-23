@@ -20,10 +20,10 @@ impl AstItem for GenericArg {
         self
     }
 
-    fn hover(&self, state: &mut CheckState, _: usize, _: &HashMap<u32, Ty<'_>>) -> Option<String> {
+    fn hover(&self, state: &mut CheckState, _: usize, type_vars: &HashMap<u32, Ty<'_>>) -> Option<String> {
         if let Some(super_) = &self.super_ {
             let ty = super_.0.check(state);
-            Some(format!("{}: {}", self.name.0, ty.get_name(state)))
+            Some(format!("{}: {}", self.name.0, ty.get_name(state, Some(type_vars))))
         } else {
             Some(self.name.0.clone())
         }

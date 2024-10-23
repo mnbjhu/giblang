@@ -1,11 +1,7 @@
 use std::collections::HashMap;
 
 use crate::{
-    check::state::CheckState,
-    parser::expr::field::Field,
-    project::decl::{struct_::StructDecl, DeclKind},
-    ty::Ty,
-    util::Span,
+    check::state::CheckState, db::decl::{struct_::StructDecl, DeclKind}, parser::expr::field::Field, ty::Ty, util::Span
 };
 
 impl<'db> Field {

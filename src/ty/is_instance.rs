@@ -4,12 +4,7 @@ use crate::{
     check::{
         err::{is_not_instance::IsNotInstance, CheckError},
         state::CheckState,
-    },
-    db::modules::ModulePath,
-    parser::common::variance::Variance,
-    project::{decl::DeclKind, ImplForDecl},
-    ty::Ty,
-    util::{Span, Spanned},
+    }, db::{decl::{impl_::ImplForDecl, DeclKind}, path::ModulePath}, parser::common::variance::Variance, ty::Ty, util::{Span, Spanned}
 };
 
 use super::{FuncTy, Generic};
@@ -59,14 +54,14 @@ impl<'db> Ty<'db> {
                         .all(|(s, o)| s.expect_is_instance_of(o, state, explicit, span))
             }
             (Ty::Generic(Generic { super_, .. }), _) => {
-                super_.expect_is_instance_of(other, state, explicit, span)
+                // TODO: Fix error messages for generic types
+                return super_.expect_is_instance_of(other, state, explicit, span)
             }
             (_, Ty::Generic(Generic { super_, name, .. })) => {
                 if name.0 == "Self" {
-                    self.expect_is_instance_of(super_, state, explicit, span)
-                } else {
-                    self.eq(other)
+                    return self.expect_is_instance_of(super_, state, explicit, span)
                 }
+                self.eq(other)
             }
             (
                 Ty::Function(FuncTy {
@@ -96,8 +91,8 @@ impl<'db> Ty<'db> {
         if !res {
             state.error(CheckError::IsNotInstance(IsNotInstance {
                 span,
-                found: self.get_name(state),
-                expected: other.get_name(state),
+                found: self.get_name(state, None),
+                expected: other.get_name(state, None),
                 file: state.file_data,
             }));
         }

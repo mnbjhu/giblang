@@ -4,11 +4,7 @@ use crate::{
     check::{
         err::{unresolved::Unresolved, CheckError},
         state::CheckState,
-    },
-    parser::expr::qualified_name::SpannedQualifiedName,
-    project::decl::DeclKind,
-    ty::{is_instance::get_sub_decls, Ty},
-    util::Spanned,
+    }, db::decl::DeclKind, parser::expr::qualified_name::SpannedQualifiedName, ty::{is_instance::get_sub_decls, Ty}, util::Spanned
 };
 
 pub fn check_ident<'db>(state: &mut CheckState<'db>, path: &[Spanned<String>]) -> Ty<'db> {

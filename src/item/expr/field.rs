@@ -53,7 +53,7 @@ impl AstItem for Field {
         Some(format!(
             "{}: {}",
             self.name.0,
-            ty.get_name_with_types(state, type_vars)
+            ty.get_name(state, Some(type_vars))
         ))
     }
 
@@ -61,7 +61,7 @@ impl AstItem for Field {
         &self,
         state: &mut CheckState,
         _: usize,
-        _: &HashMap<u32, Ty<'_>>,
+        type_vars: &HashMap<u32, Ty<'_>>,
     ) -> Vec<CompletionItem> {
         let rec = self.struct_.0.check(state);
         let mut completions = Vec::new();
@@ -69,7 +69,7 @@ impl AstItem for Field {
             completions.push(CompletionItem {
                 label: name.clone(),
                 kind: Some(CompletionItemKind::METHOD),
-                detail: Some(func_ty.get_name(state)),
+                detail: Some(func_ty.get_name(state, Some(type_vars))),
                 ..Default::default()
             });
         }
@@ -77,7 +77,7 @@ impl AstItem for Field {
             completions.push(CompletionItem {
                 label: name.clone(),
                 kind: Some(CompletionItemKind::PROPERTY),
-                detail: Some(ty.get_name(state)),
+                detail: Some(ty.get_name(state, Some(type_vars))),
                 ..Default::default()
             });
         }

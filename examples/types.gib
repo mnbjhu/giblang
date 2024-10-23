@@ -1,5 +1,6 @@
 use std::String
 use std::Int
+use std::panic
 
 struct ExampleStruct {
     name: String,
@@ -37,9 +38,11 @@ struct Vec[T]
 
 impl[T] Vec[T] {
     fn new(): Self {
-        self
+        panic("Not implemented")
     }
-    fn Self.push(item: T)
+    fn Self.push(item: T) {
+        item
+    }
 }
 
 fn main() {

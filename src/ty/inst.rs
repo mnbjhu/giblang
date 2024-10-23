@@ -1,10 +1,9 @@
 use std::collections::HashMap;
 
-use crate::{
-    check::state::CheckState,
-    ty::{FuncTy, Ty},
-    util::Span,
-};
+use crate::{check::state::CheckState, util::Span};
+
+use super::{FuncTy, Ty};
+
 
 impl<'db> Ty<'db> {
     pub fn inst(

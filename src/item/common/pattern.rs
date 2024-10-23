@@ -80,7 +80,7 @@ impl AstItem for Pattern {
         if let Pattern::Name(name) = self {
             state
                 .get_variable(&name.0)
-                .map(|ty| ty.ty.get_name_with_types(state, type_vars))
+                .map(|ty| ty.ty.get_name(state, Some(type_vars)))
         } else {
             None
         }
@@ -156,12 +156,12 @@ impl AstItem for StructFieldPattern {
         match self {
             StructFieldPattern::Implied(name) => state
                 .get_variable(&name.0)
-                .map(|ty| ty.ty.get_name_with_types(state, type_vars)),
+                .map(|ty| ty.ty.get_name(state, Some(type_vars) )),
             StructFieldPattern::Explicit { field, pattern } => {
                 if field.1.contains_offset(offset) {
                     state
                         .get_variable(&field.0)
-                        .map(|ty| ty.ty.get_name_with_types(state, type_vars))
+                        .map(|ty| ty.ty.get_name(state, Some(type_vars)))
                 } else {
                     pattern.0.hover(state, offset, type_vars)
                 }

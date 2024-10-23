@@ -1,13 +1,8 @@
 use crate::{
     db::{
-        input::{Db, SourceFile, Vfs, VfsInner},
-        modules::ModulePath,
+        decl::{impl_::ImplForDecl, Decl, DeclKind}, input::{Db, SourceFile, Vfs, VfsInner}, path::ModulePath
     },
     parser::{parse_file, top::Top},
-    project::{
-        decl::{Decl, DeclKind},
-        ImplForDecl,
-    },
     util::Span,
 };
 

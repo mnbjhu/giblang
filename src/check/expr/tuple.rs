@@ -40,8 +40,8 @@ pub fn check_tuple_is<'db>(
     } else {
         let found = check_tuple(tuple, state);
         state.error(CheckError::IsNotInstance(IsNotInstance {
-            expected: expected.get_name(state),
-            found: found.get_name(state),
+            expected: expected.get_name(state, None),
+            found: found.get_name(state, None),
             span,
             file: state.file_data,
         }));

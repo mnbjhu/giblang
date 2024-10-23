@@ -40,6 +40,10 @@ impl AstItem for Func {
                 return ret.0.at_offset(state, offset);
             }
         }
+        if let Some(rec) = &self.receiver {
+            let self_ty = rec.0.check(state);
+            self.add_self_param(self_ty, state);
+        }
         if let Some(body) = &self.body {
             for stmt in body {
                 if stmt.1.contains_offset(offset) {
@@ -67,6 +71,10 @@ impl AstItem for Func {
         }
         if let Some(ret) = &self.ret {
             ret.0.tokens(state, tokens);
+        }
+        if let Some(rec) = &self.receiver {
+            let self_ty = rec.0.check(state);
+            self.add_self_param(self_ty, state);
         }
         if let Some(body) = &self.body {
             for stmt in body {

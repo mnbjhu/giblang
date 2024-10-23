@@ -1,4 +1,4 @@
-use crate::{parser::top::struct_::Struct, project::decl::DeclKind, resolve::state::ResolveState};
+use crate::{db::decl::DeclKind, parser::top::struct_::Struct, resolve::state::ResolveState};
 
 use super::Decl;
 

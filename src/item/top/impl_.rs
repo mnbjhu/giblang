@@ -40,7 +40,7 @@ impl AstItem for Impl {
             return self.for_.0.at_offset(state, offset);
         }
         let for_ = self.for_.0.check(state);
-        state.add_self_ty(for_, self.for_.1);
+        state.add_self_ty(&for_, self.for_.1);
         if let Some(trait_) = &self.trait_ {
             if trait_.1.contains_offset(offset) {
                 return trait_.0.at_offset(state, offset);
@@ -121,11 +121,11 @@ impl Impl {
         self.generics.0.check(state);
         let name = if let Some(trait_) = self.trait_.as_ref() {
             trait_.0.check(state);
-            let trait_ = trait_.0.check(state).get_name(state);
-            let for_ = self.for_.0.check(state).get_name(state);
+            let trait_ = trait_.0.check(state).get_name(state, None);
+            let for_ = self.for_.0.check(state).get_name(state, None);
             format!("impl {trait_} for {for_}")
         } else {
-            let for_ = self.for_.0.check(state).get_name(state);
+            let for_ = self.for_.0.check(state).get_name(state, None);
             format!("impl for {for_}")
         };
         for (func, span) in &self.body {

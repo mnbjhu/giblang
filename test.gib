@@ -4,6 +4,8 @@ use std::println
 use std::print
 use std::Option
 use std::Result
+use std::panic
+use std::Bool
 
 trait Test {
     fn another()
@@ -26,7 +28,9 @@ trait Pushable[T] {
 }
 
 impl[U] Pushable[U] for Box[U] {
-    fn Self.push(x: U) {}
+    fn Self.push(x: U) {
+        println("Pushed")
+    }
 }
 
 fn test(thing: Test) {
@@ -39,15 +43,13 @@ fn test(thing: Test) {
 }
 
 impl[T] Option[T] {
-    fn expect(text: String): T {
+    fn Self.expect(text: String): T {
         match self {
             Option::Some(res) => res,
             Option::None => panic(text)
         }
     }
 }
-
-fn panic(text: String): Nothing {}
 
 struct Basic {
     test: Int,
@@ -121,4 +123,12 @@ impl Into[String] for Basic {
     fn Basic.into(): String {
         self.to_string()
     }
+}
+
+trait Eq[T] {
+    fn Self.eq(other: T): Bool
+}
+
+impl[T] Eq[T] for Basic {
+    fn Self.eq(other: Basic): T {}
 }

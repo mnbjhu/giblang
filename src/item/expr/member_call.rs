@@ -72,7 +72,7 @@ impl AstItem for MemberCall {
         Some(format!(
             "{}: {}",
             self.name.0,
-            func_ty.get_name_with_types(state, type_vars)
+            func_ty.get_name(state, Some(type_vars))
         ))
     }
 
@@ -80,7 +80,7 @@ impl AstItem for MemberCall {
         &self,
         state: &mut CheckState,
         _: usize,
-        _: &HashMap<u32, Ty>,
+        type_vars: &HashMap<u32, Ty>,
     ) -> Vec<CompletionItem> {
         let rec = self.rec.0.check(state);
         let mut completions = Vec::new();
@@ -88,7 +88,7 @@ impl AstItem for MemberCall {
             completions.push(CompletionItem {
                 label: name.clone(),
                 kind: Some(CompletionItemKind::METHOD),
-                detail: Some(func_ty.get_name(state)),
+                detail: Some(func_ty.get_name(state, Some(type_vars))),
                 ..Default::default()
             });
         }

@@ -4,11 +4,9 @@ use salsa::Update;
 
 use crate::{
     db::{
-        input::{Db, SourceFile, Vfs, VfsInner},
-        modules::ModulePath,
+        decl::{impl_::ImplForDecl, Project}, input::{Db, SourceFile, Vfs, VfsInner}, path::ModulePath
     },
     parser::parse_file,
-    project::{ImplForDecl, Project},
     resolve::{resolve_impls_vfs, resolve_vfs},
     ty::Ty,
     util::Span,
@@ -16,7 +14,7 @@ use crate::{
 
 mod common;
 pub mod err;
-mod expr;
+pub mod expr;
 pub mod state;
 mod stmt;
 mod top;
