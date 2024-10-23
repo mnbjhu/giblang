@@ -1,6 +1,5 @@
 use super::input::Db;
 
-
 #[salsa::interned]
 pub struct ModulePath<'db> {
     #[return_ref]
@@ -14,4 +13,3 @@ impl<'db> ModulePath<'db> {
         ModulePath::new(db, path[0..path.len() - 1].to_vec())
     }
 }
-

@@ -2,7 +2,6 @@ use salsa::Update;
 
 use crate::ty::{Generic, Ty};
 
-
 #[derive(Update, Debug, Clone, PartialEq)]
 pub struct Function<'db> {
     pub name: String,
@@ -12,4 +11,3 @@ pub struct Function<'db> {
     pub ret: Ty<'db>,
     pub required: bool,
 }
-

@@ -57,7 +57,7 @@ impl<'db> Ty<'db> {
                 }
                 if let Some(tv) = type_vars {
                     if let Some(ty) = tv.get(id) {
-                        return ty.get_name(state, type_vars)
+                        return ty.get_name(state, type_vars);
                     }
                 }
                 format!("{{unknown:{id}}}")
@@ -71,7 +71,11 @@ impl<'db> Ty<'db> {
 }
 
 impl<'db> Generic<'db> {
-    pub fn get_name(&self, state: &CheckState, type_vars: Option<&HashMap<u32, Ty<'db>>>,) -> String {
+    pub fn get_name(
+        &self,
+        state: &CheckState,
+        type_vars: Option<&HashMap<u32, Ty<'db>>>,
+    ) -> String {
         if let Ty::Any = self.super_.as_ref() {
             format!("{}{}", self.variance, self.name.0)
         } else {
@@ -86,7 +90,11 @@ impl<'db> Generic<'db> {
 }
 
 impl<'db> FuncTy<'db> {
-    pub fn get_name(&self, state: &CheckState, type_vars: Option<&HashMap<u32, Ty<'db>>>,) -> String {
+    pub fn get_name(
+        &self,
+        state: &CheckState,
+        type_vars: Option<&HashMap<u32, Ty<'db>>>,
+    ) -> String {
         let args = self
             .args
             .iter()
@@ -102,4 +110,3 @@ impl<'db> FuncTy<'db> {
         }
     }
 }
-

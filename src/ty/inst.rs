@@ -4,7 +4,6 @@ use crate::{check::state::CheckState, util::Span};
 
 use super::{FuncTy, Ty};
 
-
 impl<'db> Ty<'db> {
     pub fn inst(
         &self,

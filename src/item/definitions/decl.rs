@@ -1,7 +1,8 @@
 use async_lsp::lsp_types::{CompletionItem, CompletionItemKind};
 
 use crate::{
-    check::state::CheckState, db::decl::{func::Function, Decl, DeclKind},
+    check::state::CheckState,
+    db::decl::{func::Function, Decl, DeclKind},
 };
 
 impl Decl<'_> {

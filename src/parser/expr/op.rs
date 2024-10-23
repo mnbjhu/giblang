@@ -37,80 +37,76 @@ impl Display for OpKind {
 }
 
 pub fn op_parser<'tokens, 'src: 'tokens>(expr: AstParser!(Expr)) -> AstParser!(Expr) {
+    let mul_op = select! {
+        Token::Op(op) if op == "*" => OpKind::Mul,
+        Token::Op(op) if op == "/" => OpKind::Div,
+    };
 
-        let mul_op = select! {
-            Token::Op(op) if op == "*" => OpKind::Mul,
-            Token::Op(op) if op == "/" => OpKind::Div,
-        };
+    let mul = expr
+        .clone()
+        .map_with(|a, e| (a, e.span()))
+        .foldl_with(
+            mul_op
+                .then(expr.clone().map_with(|a, e| (a, e.span())))
+                .repeated(),
+            |a, (kind, b), e| {
+                (
+                    Expr::Op(Op {
+                        left: Box::new(a),
+                        kind,
+                        right: Box::new(b),
+                    }),
+                    e.span(),
+                )
+            },
+        )
+        .map(|(a, _)| a);
 
-        let mul = expr
-            .clone()
-            .map_with(|a, e| (a, e.span()))
-            .foldl_with(
-                mul_op
-                    .then(expr.clone().map_with(|a, e| (a, e.span())))
-                    .repeated(),
-                |a, (kind, b), e| {
-                    (
-                        Expr::Op(Op {
-                            left: Box::new(a),
-                            kind,
-                            right: Box::new(b),
-                        }),
-                        e.span(),
-                    )
-                },
-            )
-            .map(|(a, _)| a);
+    let sum_op = select! {
+        Token::Op(op) if op == "+" => OpKind::Add,
+        Token::Op(op) if op == "-" => OpKind::Sub,
+    };
 
+    let sum = mul
+        .clone()
+        .map_with(|a, e| (a, e.span()))
+        .foldl_with(
+            sum_op
+                .then(mul.clone().map_with(|a, e| (a, e.span())))
+                .repeated(),
+            |a, (kind, b), e| {
+                (
+                    Expr::Op(Op {
+                        left: Box::new(a),
+                        kind,
+                        right: Box::new(b),
+                    }),
+                    e.span(),
+                )
+            },
+        )
+        .map(|(a, _)| a);
 
-        let sum_op = select! {
-            Token::Op(op) if op == "+" => OpKind::Add,
-            Token::Op(op) if op == "-" => OpKind::Sub,
-        };
+    let eq = select! {
+        Token::Op(op) if op == "==" => OpKind::Eq,
+        Token::Op(op) if op == "!=" => OpKind::Neq,
+    };
 
-        let sum = mul
-            .clone()
-            .map_with(|a, e| (a, e.span()))
-            .foldl_with(
-                sum_op
-                    .then(mul.clone().map_with(|a, e| (a, e.span())))
-                    .repeated(),
-                |a, (kind, b), e| {
-                    (
-                        Expr::Op(Op {
-                            left: Box::new(a),
-                            kind,
-                            right: Box::new(b),
-                        }),
-                        e.span(),
-                    )
-                },
-            )
-            .map(|(a, _)| a);
-
-        let eq = select! {
-            Token::Op(op) if op == "==" => OpKind::Eq,
-            Token::Op(op) if op == "!=" => OpKind::Neq,
-        };
-
-        sum
-            .clone()
-            .map_with(|a, e| (a, e.span()))
-            .foldl_with(
-                eq
-                    .then(sum.clone().map_with(|a, e| (a, e.span())))
-                    .repeated(),
-                |a, (kind, b), e| {
-                    (
-                        Expr::Op(Op {
-                            left: Box::new(a),
-                            kind,
-                            right: Box::new(b),
-                        }),
-                        e.span(),
-                    )
-                },
-            )
-            .map(|(a, _)| a)
+    sum.clone()
+        .map_with(|a, e| (a, e.span()))
+        .foldl_with(
+            eq.then(sum.clone().map_with(|a, e| (a, e.span())))
+                .repeated(),
+            |a, (kind, b), e| {
+                (
+                    Expr::Op(Op {
+                        left: Box::new(a),
+                        kind,
+                        right: Box::new(b),
+                    }),
+                    e.span(),
+                )
+            },
+        )
+        .map(|(a, _)| a)
 }

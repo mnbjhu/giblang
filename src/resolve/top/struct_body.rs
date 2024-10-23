@@ -1,5 +1,8 @@
 use crate::{
-    db::decl::struct_::StructDecl, parser::top::{struct_body::StructBody, struct_field::StructField}, resolve::state::ResolveState, ty::Ty
+    db::decl::struct_::StructDecl,
+    parser::top::{struct_body::StructBody, struct_field::StructField},
+    resolve::state::ResolveState,
+    ty::Ty,
 };
 
 impl StructBody {

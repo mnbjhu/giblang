@@ -5,7 +5,8 @@ use salsa::Accumulator;
 use crate::{
     check::err::{CheckError, Error},
     db::{
-        input::{Db, SourceFile}, path::ModulePath,
+        input::{Db, SourceFile},
+        path::ModulePath,
     },
     parser::{common::variance::Variance, expr::qualified_name::SpannedQualifiedName, parse_file},
     ty::{Generic, Ty},

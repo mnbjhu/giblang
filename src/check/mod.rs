@@ -4,7 +4,9 @@ use salsa::Update;
 
 use crate::{
     db::{
-        decl::{impl_::ImplForDecl, Project}, input::{Db, SourceFile, Vfs, VfsInner}, path::ModulePath
+        decl::{impl_::ImplForDecl, Project},
+        input::{Db, SourceFile, Vfs, VfsInner},
+        path::ModulePath,
     },
     parser::parse_file,
     resolve::{resolve_impls_vfs, resolve_vfs},

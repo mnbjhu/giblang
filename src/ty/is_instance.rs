@@ -4,7 +4,14 @@ use crate::{
     check::{
         err::{is_not_instance::IsNotInstance, CheckError},
         state::CheckState,
-    }, db::{decl::{impl_::ImplForDecl, DeclKind}, path::ModulePath}, parser::common::variance::Variance, ty::Ty, util::{Span, Spanned}
+    },
+    db::{
+        decl::{impl_::ImplForDecl, DeclKind},
+        path::ModulePath,
+    },
+    parser::common::variance::Variance,
+    ty::Ty,
+    util::{Span, Spanned},
 };
 
 use super::{FuncTy, Generic};
@@ -55,11 +62,11 @@ impl<'db> Ty<'db> {
             }
             (Ty::Generic(Generic { super_, .. }), _) => {
                 // TODO: Fix error messages for generic types
-                return super_.expect_is_instance_of(other, state, explicit, span)
+                return super_.expect_is_instance_of(other, state, explicit, span);
             }
             (_, Ty::Generic(Generic { super_, name, .. })) => {
                 if name.0 == "Self" {
-                    return self.expect_is_instance_of(super_, state, explicit, span)
+                    return self.expect_is_instance_of(super_, state, explicit, span);
                 }
                 self.eq(other)
             }

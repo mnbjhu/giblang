@@ -1,8 +1,6 @@
 use std::collections::HashMap;
 
-use crate::{
-    check::state::CheckState, db::decl::DeclKind, parser::top::impl_::Impl, ty::Ty
-};
+use crate::{check::state::CheckState, db::decl::DeclKind, parser::top::impl_::Impl, ty::Ty};
 
 impl<'db> Impl {
     pub fn check(&'db self, state: &mut CheckState<'db>) {
@@ -83,4 +81,3 @@ impl<'db> Impl {
         }
     }
 }
-

@@ -1,6 +1,9 @@
 use std::collections::HashMap;
 
-use crate::{db::{decl::Decl, input::Db}, ty::{Generic, Ty}};
+use crate::{
+    db::{decl::Decl, input::Db},
+    ty::{Generic, Ty},
+};
 
 #[salsa::tracked]
 #[derive()]
@@ -12,7 +15,6 @@ pub struct ImplForDecl<'db> {
     pub to_ty: Option<Ty<'db>>,
     pub functions: Vec<Decl<'db>>,
 }
-
 
 impl<'db> ImplForDecl<'db> {
     #[must_use]

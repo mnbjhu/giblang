@@ -5,15 +5,19 @@ use impl_::ImplForDecl;
 use salsa::{Accumulator, Update};
 use struct_::StructDecl;
 
+pub mod func;
 pub mod impl_;
 pub mod struct_;
-pub mod func;
 
 use crate::{
     check::{
         err::{unresolved::Unresolved, IntoWithDb},
-        state::CheckState, TokenKind,
-    }, parser::expr::qualified_name::SpannedQualifiedName, ty::{FuncTy, Generic, Ty}, util::{Span, Spanned}
+        state::CheckState,
+        TokenKind,
+    },
+    parser::expr::qualified_name::SpannedQualifiedName,
+    ty::{FuncTy, Generic, Ty},
+    util::{Span, Spanned},
 };
 
 use super::{
@@ -21,14 +25,12 @@ use super::{
     path::ModulePath,
 };
 
-
 #[salsa::tracked]
 #[derive()]
 pub struct Project<'db> {
     pub decls: Decl<'db>,
     pub impl_map: HashMap<ModulePath<'db>, Vec<ImplForDecl<'db>>>,
 }
-
 
 impl<'db> Project<'db> {
     pub fn get_decl(self, db: &'db dyn Db, path: ModulePath<'db>) -> Option<Decl<'db>> {
@@ -49,7 +51,6 @@ pub struct Decl<'db> {
     pub maybe_file: Option<SourceFile>,
     pub path: ModulePath<'db>,
 }
-
 
 #[derive(Update, Debug, Clone, PartialEq)]
 pub enum DeclKind<'db> {

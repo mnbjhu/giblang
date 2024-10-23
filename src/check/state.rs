@@ -5,9 +5,14 @@ use salsa::Accumulator;
 use crate::{
     check::err::{simple::Simple, CheckError},
     db::{
-        decl::{Decl, Project}, input::{Db, SourceFile}, path::ModulePath
+        decl::{Decl, Project},
+        input::{Db, SourceFile},
+        path::ModulePath,
     },
-    parser::{expr::qualified_name::{QualifiedName, SpannedQualifiedName}, parse_file},
+    parser::{
+        expr::qualified_name::{QualifiedName, SpannedQualifiedName},
+        parse_file,
+    },
     ty::{Generic, Ty},
     util::{Span, Spanned},
 };

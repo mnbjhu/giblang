@@ -1,9 +1,12 @@
 use std::collections::HashMap;
 
-use crate::{check::{expr::ident::check_ident, state::CheckState}, db::decl::{struct_::StructDecl, DeclKind}, util::{Span, Spanned}};
+use crate::{
+    check::{expr::ident::check_ident, state::CheckState},
+    db::decl::{struct_::StructDecl, DeclKind},
+    util::{Span, Spanned},
+};
 
 use super::{is_instance::get_sub_tys, FuncTy, Ty};
-
 
 impl<'db> Ty<'db> {
     pub fn try_get_func_ty(&self, state: &mut CheckState<'db>, span: Span) -> Option<FuncTy<'db>> {

@@ -1,5 +1,7 @@
 use crate::{
-    db::decl::{Decl, DeclKind}, parser::top::enum_::Enum, resolve::state::ResolveState
+    db::decl::{Decl, DeclKind},
+    parser::top::enum_::Enum,
+    resolve::state::ResolveState,
 };
 
 impl Enum {

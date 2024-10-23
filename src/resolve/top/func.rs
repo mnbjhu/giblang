@@ -1,5 +1,8 @@
 use crate::{
-    db::decl::{func::Function, Decl, DeclKind}, parser::top::func::Func, resolve::state::ResolveState, ty::Ty
+    db::decl::{func::Function, Decl, DeclKind},
+    parser::top::func::Func,
+    resolve::state::ResolveState,
+    ty::Ty,
 };
 
 impl Func {

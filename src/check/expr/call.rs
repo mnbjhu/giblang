@@ -71,4 +71,3 @@ impl<'db> Call {
         ret.expect_is_instance_of(expected, state, false, span);
     }
 }
-

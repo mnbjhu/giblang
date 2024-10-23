@@ -131,10 +131,7 @@ impl<'db> Func {
             (None, None) => {}
             (None, Some(ty)) => {
                 state.simple_error(
-                    &format!(
-                        "Expected receiver of type '{}'",
-                        ty.get_name(state, None)
-                    ),
+                    &format!("Expected receiver of type '{}'", ty.get_name(state, None)),
                     self.name.1,
                 );
             }

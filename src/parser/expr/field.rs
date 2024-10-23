@@ -1,5 +1,5 @@
-use crate::util::Spanned;
 use super::Expr;
+use crate::util::Spanned;
 
 #[derive(Clone, PartialEq, Debug, Eq)]
 pub struct Field {

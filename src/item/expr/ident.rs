@@ -3,10 +3,7 @@ use std::collections::HashMap;
 use async_lsp::lsp_types::CompletionItem;
 
 use crate::{
-    check::{
-        state::CheckState,
-        SemanticToken, TokenKind,
-    },
+    check::{state::CheckState, SemanticToken, TokenKind},
     item::{common::type_::ContainsOffset, definitions::ident::IdentDef, AstItem},
     parser::expr::qualified_name::SpannedQualifiedName,
     ty::Ty,
@@ -163,7 +160,6 @@ fn get_ident_completions(
             .get_static_access_completions(state),
     );
 }
-
 
 impl<'db> CheckState<'db> {
     pub fn get_ident_def(&mut self, ident: &[Spanned<String>]) -> IdentDef<'db> {

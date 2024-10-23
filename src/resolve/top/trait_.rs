@@ -1,5 +1,8 @@
 use crate::{
-    db::{decl::DeclKind, path::ModulePath}, parser::top::trait_::Trait, resolve::state::ResolveState, ty::Ty
+    db::{decl::DeclKind, path::ModulePath},
+    parser::top::trait_::Trait,
+    resolve::state::ResolveState,
+    ty::Ty,
 };
 
 use super::Decl;

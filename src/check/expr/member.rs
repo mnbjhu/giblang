@@ -5,7 +5,6 @@ use crate::{
     util::Span,
 };
 
-
 impl<'db> MemberCall {
     pub fn check(&self, state: &mut CheckState<'db>) -> Ty<'db> {
         let rec = self.rec.0.check(state);
@@ -59,4 +58,3 @@ impl<'db> MemberCall {
         actual.expect_is_instance_of(expected, state, false, span);
     }
 }
-

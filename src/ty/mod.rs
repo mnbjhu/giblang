@@ -1,16 +1,13 @@
 use salsa::Update;
 
-use crate::{
-    db::path::ModulePath, parser::common::variance::Variance, util::Spanned
-};
+use crate::{db::path::ModulePath, parser::common::variance::Variance, util::Spanned};
 
 pub mod func;
 pub mod imply;
+pub mod inst;
 pub mod is_instance;
 pub mod name;
 pub mod parameterize;
-pub mod inst;
-
 
 #[derive(Clone, Debug, PartialEq, Default, Update, Hash, Eq)]
 pub enum Ty<'db> {
@@ -45,7 +42,6 @@ pub struct FuncTy<'db> {
     pub args: Vec<Ty<'db>>,
     pub ret: Box<Ty<'db>>,
 }
-
 
 impl<'db> Ty<'db> {
     pub fn is_unit(&self) -> bool {

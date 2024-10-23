@@ -6,7 +6,10 @@ use super::{FuncTy, Generic, Ty};
 impl<'db> Ty<'db> {
     pub fn parameterize(&self, generics: &HashMap<String, Ty<'db>>) -> Ty<'db> {
         match self {
-            Ty::Generic(arg) => generics.get(&arg.name.0).cloned().unwrap_or(arg.super_.parameterize(generics)),
+            Ty::Generic(arg) => generics
+                .get(&arg.name.0)
+                .cloned()
+                .unwrap_or(arg.super_.parameterize(generics)),
             Ty::Named { name, args } => Ty::Named {
                 name: *name,
                 args: args.iter().map(|ty| ty.parameterize(generics)).collect(),

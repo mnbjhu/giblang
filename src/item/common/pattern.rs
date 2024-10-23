@@ -156,7 +156,7 @@ impl AstItem for StructFieldPattern {
         match self {
             StructFieldPattern::Implied(name) => state
                 .get_variable(&name.0)
-                .map(|ty| ty.ty.get_name(state, Some(type_vars) )),
+                .map(|ty| ty.ty.get_name(state, Some(type_vars))),
             StructFieldPattern::Explicit { field, pattern } => {
                 if field.1.contains_offset(offset) {
                     state
