@@ -4,7 +4,11 @@ use crate::{
         modules::ModulePath,
     },
     parser::{parse_file, top::Top},
-    project::{decl::{Decl, DeclKind}, ImplForDecl}, util::Span,
+    project::{
+        decl::{Decl, DeclKind},
+        ImplForDecl,
+    },
+    util::Span,
 };
 
 use self::state::ResolveState;

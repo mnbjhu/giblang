@@ -1,9 +1,6 @@
 use crate::{
-    db::modules::{ModulePath},
-    parser::top::trait_::Trait,
-    project::decl::DeclKind,
-    resolve::state::ResolveState,
-    ty::Ty,
+    db::modules::ModulePath, parser::top::trait_::Trait, project::decl::DeclKind,
+    resolve::state::ResolveState, ty::Ty,
 };
 
 use super::Decl;

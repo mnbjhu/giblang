@@ -43,8 +43,11 @@ pub trait AstItem: Debug {
         None
     }
 
-    fn completions<'db>(&self, _state: &mut CheckState, _offset: usize,
-        type_vars: &HashMap<u32, Ty<'db>>,
+    fn completions(
+        &self,
+        _state: &mut CheckState,
+        _offset: usize,
+        _: &HashMap<u32, Ty<'_>>,
     ) -> Vec<CompletionItem> {
         vec![]
     }
@@ -90,7 +93,6 @@ impl<'db> Ast<'db> {
         }
         tokens
     }
-
 }
 pub fn pretty_format<'b, 'db, D, A>(
     ast: &'b [Spanned<Top>],

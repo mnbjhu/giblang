@@ -4,7 +4,10 @@ use crate::{
     check::{
         err::{unresolved::Unresolved, IntoWithDb},
         state::CheckState,
-    }, parser::expr::qualified_name::SpannedQualifiedName, project::decl::{Decl, DeclKind}, util::Spanned
+    },
+    parser::expr::qualified_name::SpannedQualifiedName,
+    project::decl::{Decl, DeclKind},
+    util::Spanned,
 };
 
 use super::input::{Db, SourceFile};
@@ -28,7 +31,9 @@ impl<'db> Decl<'db> {
     pub fn get(self, db: &'db dyn Db, name: &str) -> Option<Decl<'db>> {
         match self.kind(db) {
             DeclKind::Module(modules) => modules.iter().find(|m| m.name(db) == name).copied(),
-            DeclKind::Enum { variants, ..} => variants.iter().find(|v| v.name(db) == name).copied(),
+            DeclKind::Enum { variants, .. } => {
+                variants.iter().find(|v| v.name(db) == name).copied()
+            }
             DeclKind::Trait { body, .. } => body.iter().find(|m| m.name(db) == name).copied(),
             _ => None,
         }

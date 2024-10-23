@@ -20,7 +20,10 @@ pub fn check_ident<'db>(state: &mut CheckState<'db>, path: &[Spanned<String>]) -
             return Ty::Meta(Box::new(Ty::Generic(generic)));
         }
         if let Some(found) = state.get_decl_with_error(path) {
-            return state.get_decl(found).get_ty(state).inst(&mut HashMap::new(), state, name.1);
+            return state
+                .get_decl(found)
+                .get_ty(state)
+                .inst(&mut HashMap::new(), state, name.1);
         }
         return Ty::Unknown;
     }
@@ -29,7 +32,9 @@ pub fn check_ident<'db>(state: &mut CheckState<'db>, path: &[Spanned<String>]) -
     if let Some(parent_decl) = state.get_decl_with_error(parent) {
         let parent_decl = state.get_decl(parent_decl);
         if let Some(export) = parent_decl.get(state.db, &name.0) {
-            return export.get_ty(state).inst(&mut HashMap::new(), state, path.last().unwrap().1);
+            return export
+                .get_ty(state)
+                .inst(&mut HashMap::new(), state, path.last().unwrap().1);
         }
         if let DeclKind::Trait { .. } | DeclKind::Enum { .. } | DeclKind::Struct { .. } =
             parent_decl.kind(state.db)

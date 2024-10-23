@@ -84,7 +84,9 @@ impl<'db> Ty<'db> {
                 let decl = state.try_get_decl(*name);
                 if let Some(decl) = decl {
                     if let DeclKind::Struct { body, .. } = decl.kind(state.db) {
-                        return body.get_constructor_ty(ty.as_ref().clone()).map(|ty| ty.inst(&mut HashMap::new(), state, span));
+                        return body
+                            .get_constructor_ty(ty.as_ref().clone())
+                            .map(|ty| ty.inst(&mut HashMap::new(), state, span));
                     }
                 }
             }

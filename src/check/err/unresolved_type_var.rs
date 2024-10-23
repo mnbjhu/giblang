@@ -16,7 +16,6 @@ pub struct UnboundTypeVar {
 }
 
 impl UnboundTypeVar {
-
     pub fn message(&self) -> String {
         format!(
             "Cannot imply type for type generic parameter '{}'",

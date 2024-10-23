@@ -18,7 +18,6 @@ pub struct UnexpectedArgs {
 }
 
 impl UnexpectedArgs {
-
     pub fn message(&self) -> String {
         format!(
             "Expected {} arguments but found {}",

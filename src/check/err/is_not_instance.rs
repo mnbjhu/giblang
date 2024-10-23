@@ -17,7 +17,6 @@ pub struct IsNotInstance {
 }
 
 impl IsNotInstance {
-
     pub fn message(&self) -> String {
         format!("Expected {} but found {}", self.expected, self.found)
     }

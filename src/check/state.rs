@@ -9,11 +9,7 @@ use crate::{
         modules::ModulePath,
     },
     parser::{expr::qualified_name::SpannedQualifiedName, parse_file},
-    project::{
-        decl::Decl,
-        name::QualifiedName,
-        Project,
-    },
+    project::{decl::Decl, name::QualifiedName, Project},
     ty::{Generic, Ty},
     util::{Span, Spanned},
 };
@@ -153,12 +149,12 @@ impl<'ty, 'db: 'ty> CheckState<'db> {
             } else {
                 None
             }
-        } else if self.project.decls(self.db).get_path_with_state(
-            self,
-            path,
-            self.file_data,
-            self.should_error,
-        ).is_some() {
+        } else if self
+            .project
+            .decls(self.db)
+            .get_path_with_state(self, path, self.file_data, self.should_error)
+            .is_some()
+        {
             Some(ModulePath::new(
                 self.db,
                 path.iter().map(|(n, _)| n.to_string()).collect(),

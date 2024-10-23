@@ -52,7 +52,7 @@ impl<'db> Func {
 
         if trait_decl.generics.len() == generics.len() {
             spanned_decl_generics
-                .zip(trait_decl.generics.iter().map(|g|g.parameterize(params)))
+                .zip(trait_decl.generics.iter().map(|g| g.parameterize(params)))
                 .for_each(|((i, s), t)| {
                     if i != &t {
                         state.simple_error(
@@ -95,11 +95,19 @@ impl<'db> Func {
             .as_ref()
             .map_or(Ty::unit(), |(ret, _)| ret.check(state));
 
-        ret.expect_is_instance_of(&trait_decl.ret.parameterize(params), state, false, self.name.1);
+        ret.expect_is_instance_of(
+            &trait_decl.ret.parameterize(params),
+            state,
+            false,
+            self.name.1,
+        );
 
         let receiver = self.receiver.as_ref().map(|(rec, _)| rec.check(state));
 
-        match (&receiver, trait_decl.receiver.as_ref().map(|r| r.parameterize(params))) {
+        match (
+            &receiver,
+            trait_decl.receiver.as_ref().map(|r| r.parameterize(params)),
+        ) {
             (Some(i), Some(t)) => {
                 i.expect_is_instance_of(&t, state, false, self.name.1);
             }
