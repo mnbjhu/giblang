@@ -125,10 +125,12 @@ impl Into[String] for Basic {
     }
 }
 
-trait Eq[T] {
-    fn Self.eq(other: T): Bool
+trait Eq {
+    fn Self.eq(other: Self): Bool
 }
 
-impl[T] Eq[T] for Basic {
-    fn Self.eq(other: Basic): T {}
+impl Eq for Basic {
+    fn Self.eq(other: Self): Bool {
+        self.test == other.test
+    }
 }

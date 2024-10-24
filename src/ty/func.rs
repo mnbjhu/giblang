@@ -35,9 +35,9 @@ impl<'db> Ty<'db> {
     ) -> Option<FuncTy<'db>> {
         let mut funcs = get_sub_tys(self, state)
             .iter()
-            .filter_map(|ty| ty.get_func(name, state))
+            .filter_map(|ty| ty.get_func(name, state, self))
             .collect::<Vec<_>>();
-        funcs.extend(self.get_func(name, state));
+        funcs.extend(self.get_func(name, state, self));
         if funcs.len() > 1 {
             state.simple_error(&format!("Ambiguous call to function {}", &name.0), name.1);
             None

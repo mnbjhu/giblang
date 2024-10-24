@@ -168,20 +168,19 @@ impl<'db> Ty<'db> {
         &self,
         name: &Spanned<String>,
         state: &mut CheckState<'db>,
+        self_ty: &Ty<'db>,
     ) -> Option<FuncTy<'db>> {
         if let Ty::Named { name: id, args } = self {
             if let DeclKind::Trait { body, generics } = state.get_decl(*id).kind(state.db) {
-                assert_eq!(
-                    args.len(),
-                    generics.len(),
-                    "TODO: Look into whether this will be true"
-                );
+                if args.len() != generics.len() {
+                    return None;
+                }
                 let mut params = generics
                     .iter()
                     .map(|arg| arg.name.0.clone())
                     .zip(args.iter().cloned())
                     .collect::<HashMap<_, _>>();
-                params.insert("Self".to_string(), self.clone());
+                params.insert("Self".to_string(), self_ty.clone());
                 let found = body
                     .iter()
                     .find(|func| func.name(state.db) == name.0)
