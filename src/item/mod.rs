@@ -21,11 +21,7 @@ pub mod stmt;
 pub mod top;
 
 pub trait AstItem: Debug {
-    fn at_offset<'me>(
-        &'me self,
-        _state: &mut CheckState<'_, '_>,
-        _offset: usize,
-    ) -> &'me dyn AstItem
+    fn at_offset<'me>(&'me self, _state: &mut CheckState<'_>, _offset: usize) -> &'me dyn AstItem
     where
         Self: Sized,
     {
@@ -36,22 +32,23 @@ pub trait AstItem: Debug {
 
     fn hover<'db>(
         &self,
-        _state: &mut CheckState<'_, 'db>,
+        _state: &mut CheckState<'db>,
         _offset: usize,
         _type_vars: &HashMap<u32, Ty<'db>>,
     ) -> Option<String> {
         None
     }
 
-    fn goto_def(
-        &self,
-        _state: &mut CheckState<'_, '_>,
-        _offset: usize,
-    ) -> Option<(SourceFile, Span)> {
+    fn goto_def(&self, _state: &mut CheckState<'_>, _offset: usize) -> Option<(SourceFile, Span)> {
         None
     }
 
-    fn completions(&self, _state: &mut CheckState, _offset: usize) -> Vec<CompletionItem> {
+    fn completions(
+        &self,
+        _state: &mut CheckState,
+        _offset: usize,
+        _: &HashMap<u32, Ty<'_>>,
+    ) -> Vec<CompletionItem> {
         vec![]
     }
 
@@ -64,10 +61,10 @@ pub trait AstItem: Debug {
 }
 
 impl<'db> Ast<'db> {
-    pub fn at_offset<'ty, 'me, 'state>(
+    pub fn at_offset<'me, 'state>(
         &'me self,
         db: &'db dyn Database,
-        state: &'state mut CheckState<'ty, 'db>,
+        state: &'state mut CheckState<'db>,
         offset: usize,
     ) -> Option<&'me dyn AstItem>
     where
@@ -82,10 +79,10 @@ impl<'db> Ast<'db> {
         None
     }
 
-    pub fn semantic_tokens<'ty, 'me, 'state>(
-        &'me self,
+    pub fn semantic_tokens<'state>(
+        self,
         db: &'db dyn Database,
-        state: &'state mut CheckState<'ty, 'db>,
+        state: &'state mut CheckState<'db>,
     ) -> Vec<SemanticToken>
     where
         Self: Sized,
@@ -95,23 +92,6 @@ impl<'db> Ast<'db> {
             item.0.tokens(state, &mut tokens);
         }
         tokens
-    }
-
-    pub fn completions<'ty, 'me, 'state>(
-        &'me self,
-        db: &'db dyn Database,
-        state: &'state mut CheckState<'ty, 'db>,
-        offset: usize,
-    ) -> Vec<CompletionItem>
-    where
-        Self: Sized,
-    {
-        for (item, span) in self.tops(db) {
-            if span.contains_offset(offset) {
-                return item.completions(state, offset);
-            }
-        }
-        vec![]
     }
 }
 pub fn pretty_format<'b, 'db, D, A>(

@@ -1,4 +1,4 @@
-use crate::{parser::top::Top, project::decl::Decl};
+use crate::{db::decl::Decl, parser::top::Top};
 
 use super::state::ResolveState;
 
@@ -16,6 +16,7 @@ impl Top {
         let name = self.get_name();
         if let Some(name) = name {
             state.path.push(name.to_string());
+            state.enter_scope();
         }
         let res = match self {
             Top::Func(f) => Some(f.resolve(state)),
@@ -30,6 +31,7 @@ impl Top {
         };
         if name.is_some() {
             state.path.pop();
+            state.exit_scope();
         }
         res
     }

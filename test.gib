@@ -4,6 +4,8 @@ use std::println
 use std::print
 use std::Option
 use std::Result
+use std::panic
+use std::Bool
 
 trait Test {
     fn another()
@@ -11,8 +13,42 @@ trait Test {
 
 struct Box[T](T)
 
+trait New {
+    fn new(): Self
+}
+
+impl[T] New for Box[T] {
+    fn new(): Box[T] {
+        Box(x)
+    }
+}
+
+trait Pushable[T] {
+    fn Self.push(x: T)
+}
+
+impl[U] Pushable[U] for Box[U] {
+    fn Self.push(x: U) {
+        println("Pushed")
+    }
+}
+
 fn test(thing: Test) {
     let other = 123
+    let test = std::Vec
+    let some = Option::Some(123)
+    let test = some.unwrap()
+    let inner = some.expect("Test")
+    let thing = Basic::from("Hello")
+}
+
+impl[T] Option[T] {
+    fn Self.expect(text: String): T {
+        match self {
+            Option::Some(res) => res,
+            Option::None => panic(text)
+        }
+    }
 }
 
 struct Basic {
@@ -20,7 +56,19 @@ struct Basic {
     test2: String
 }
 
-fn thingy(x: Option[String]) {}
+fn thingy(x: Option[String]) {
+    let basic = Basic(123, "hello")
+    let some_basic = Option::Some(basic)
+}
+
+impl Basic {
+    fn hello() {
+        println("Hello")
+    }
+    fn complex[T](x: T) {
+        println("Complex")
+    }
+}
 
 fn test3(thing: Int) {
     let some = Option::Some(thing)
@@ -28,6 +76,61 @@ fn test3(thing: Int) {
 }
 
 fn test123() {
-    let other = Option::Some("")
-    Basic(123, other.unwrap())
+    let test = std::Vec
+}
+
+impl ToString for Basic {
+    fn Self.to_string(): String {
+        "Hello"
+    }
+}
+
+impl ToString {
+    fn print() {
+        println("Hello")
+    }
+}
+
+trait ToString {
+    fn Self.to_string(): String
+}
+
+trait Clone {
+    fn clone(): Self {}
+}
+
+impl Clone for Basic {
+    fn clone(): Basic {}
+}
+
+impl ToString for Option[String] {
+    fn Self.to_string(): String {}
+}
+
+trait Into[T] {
+    fn Self.into(): T
+}
+
+trait From[T] {
+    fn from(value: T): Self
+}
+
+impl From[String] for Basic {
+    fn from(value: String): Self
+}
+
+impl Into[String] for Basic {
+    fn Basic.into(): String {
+        self.to_string()
+    }
+}
+
+trait Eq {
+    fn Self.eq(other: Self): Bool
+}
+
+impl Eq for Basic {
+    fn Self.eq(other: Self): Bool {
+        self.test == other.test
+    }
 }

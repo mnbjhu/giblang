@@ -14,8 +14,8 @@ trait Unwrap[T] {
     fn Self.unwrap(): T {}
 }
 
-impl[T] Unwrap[T] for std::Option[T] {
-    fn Self.unwrap(): T {}
+impl[U] Unwrap[U] for std::Option[U] {
+    fn Self.unwrap(): U {}
 }
 
 fn main() {}

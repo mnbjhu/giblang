@@ -20,7 +20,7 @@ pub mod op;
 pub mod tuple;
 
 impl<'db> Expr {
-    pub fn check(&self, state: &mut CheckState<'_, 'db>) -> Ty<'db> {
+    pub fn check(&self, state: &mut CheckState<'db>) -> Ty<'db> {
         match self {
             Expr::Literal(lit) => lit.to_ty(state.db),
             Expr::Ident(ident) => check_ident(state, ident),
@@ -38,12 +38,7 @@ impl<'db> Expr {
         }
     }
 
-    pub fn expect_instance_of(
-        &self,
-        expected: &Ty<'db>,
-        state: &mut CheckState<'_, 'db>,
-        span: Span,
-    ) {
+    pub fn expect_instance_of(&self, expected: &Ty<'db>, state: &mut CheckState<'db>, span: Span) {
         match self {
             Expr::Literal(lit) => lit.expect_instance_of(expected, state, span),
             Expr::Ident(ident) => check_ident_is(state, ident, expected),

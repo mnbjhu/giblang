@@ -220,9 +220,10 @@ fn get_completions(mut db: SourceDatabase, msg: &CompletionParams) -> Option<Com
     let project = resolve_project(&db, db.vfs.unwrap());
     let mut state = CheckState::from_file(&db, file, project);
     state.should_error = false;
+    let type_vars = check_file(&db, file, project);
     let found = ast.at_offset(&db, &mut state, offset);
     let mut completions = found
-        .map(|found| found.completions(&mut state, offset))
+        .map(|found| found.completions(&mut state, offset, &type_vars))
         .unwrap_or_default();
     let kw_completions = ast
         .expected(state.db)

@@ -5,6 +5,8 @@ impl NamedType {
         if self.name.len() == 1 {
             if self.name[0].0 == "Any" {
                 return Ty::Any;
+            } else if self.name[0].0 == "Nothing" {
+                return Ty::Nothing;
             }
             if let Some(generic) = state.get_generic(&self.name[0].0) {
                 return Ty::Generic(generic.clone());

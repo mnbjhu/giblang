@@ -11,14 +11,14 @@ pub mod struct_body;
 pub mod trait_;
 
 impl<'db> Top {
-    pub fn check(&'db self, state: &mut CheckState<'_, 'db>) {
+    pub fn check(&'db self, state: &mut CheckState<'db>) {
         state.enter_scope();
         match self {
             Top::Use(u) => state.import(u),
             Top::Enum(e) => e.check(state),
             Top::Trait(t) => t.check(state),
             Top::Struct(s) => s.check(state),
-            Top::Func(f) => f.check(state),
+            Top::Func(f) => f.check(state, false),
             Top::Impl(i) => i.check(state),
         }
         state.exit_scope();

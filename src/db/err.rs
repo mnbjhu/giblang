@@ -8,6 +8,7 @@ use super::input::SourceFile;
 pub struct Diagnostic {
     pub message: String,
     pub span: Span,
+    #[allow(dead_code)]
     pub level: Level,
     pub path: PathBuf,
     pub file: SourceFile,
@@ -16,5 +17,6 @@ pub struct Diagnostic {
 #[derive(Clone, Debug)]
 pub enum Level {
     Error,
+    #[allow(dead_code)]
     Warning,
 }

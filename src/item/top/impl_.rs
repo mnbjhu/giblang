@@ -16,7 +16,9 @@ impl AstItem for Impl {
     ) {
         self.generics.0.tokens(state, tokens);
         self.for_.0.tokens(state, tokens);
-        self.trait_.0.tokens(state, tokens);
+        if let Some(trait_) = &self.trait_ {
+            trait_.0.tokens(state, tokens);
+        }
         for (func, _) in &self.body {
             func.tokens(state, tokens);
         }
@@ -38,16 +40,19 @@ impl AstItem for Impl {
             return self.for_.0.at_offset(state, offset);
         }
         let for_ = self.for_.0.check(state);
-        state.add_self_ty(for_, self.for_.1);
-        if self.trait_.1.contains_offset(offset) {
-            return self.trait_.0.at_offset(state, offset);
+        state.add_self_ty(&for_, self.for_.1);
+        if let Some(trait_) = &self.trait_ {
+            if trait_.1.contains_offset(offset) {
+                return trait_.0.at_offset(state, offset);
+            }
+
+            trait_.0.check(state);
         }
-        self.trait_.0.check(state);
         for (func, span) in &self.body {
             if span.contains_offset(offset) {
                 return func.at_offset(state, offset);
             }
-            func.check(state);
+            func.check(state, false);
         }
         self
     }
@@ -59,14 +64,21 @@ impl AstItem for Impl {
         D::Doc: Clone,
         A: Clone,
     {
+        let trait_ = if let Some(trait_) = &self.trait_ {
+            trait_
+                .0
+                .pretty(allocator)
+                .append(allocator.space())
+                .append("for")
+                .append(allocator.space())
+        } else {
+            allocator.nil()
+        };
         allocator
             .text("impl")
             .append(self.generics.0.pretty(allocator))
             .append(allocator.space())
-            .append(self.trait_.0.pretty(allocator))
-            .append(allocator.space())
-            .append("for")
-            .append(allocator.space())
+            .append(trait_)
             .append(self.for_.0.pretty(allocator))
             .append(allocator.space())
             .append(pretty_trait_body(allocator, &self.body))
@@ -107,9 +119,15 @@ impl Impl {
         let selection_range = span_to_range_str(self.for_.1.into(), txt);
         let mut symbols = Vec::new();
         self.generics.0.check(state);
-        let trait_ = self.trait_.0.check(state).get_name(state);
-        let for_ = self.for_.0.check(state).get_name(state);
-        let name = format!("impl {trait_} for {for_}");
+        let name = if let Some(trait_) = self.trait_.as_ref() {
+            trait_.0.check(state);
+            let trait_ = trait_.0.check(state).get_name(state, None);
+            let for_ = self.for_.0.check(state).get_name(state, None);
+            format!("impl {trait_} for {for_}")
+        } else {
+            let for_ = self.for_.0.check(state).get_name(state, None);
+            format!("impl for {for_}")
+        };
         for (func, span) in &self.body {
             symbols.push(func.document_symbol(state, *span));
         }

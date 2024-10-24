@@ -12,7 +12,7 @@ impl AstItem for Literal {
 
     fn hover<'db>(
         &self,
-        _: &mut CheckState<'_, 'db>,
+        _: &mut CheckState<'db>,
         _: usize,
         _: &HashMap<u32, crate::ty::Ty<'db>>,
     ) -> Option<String> {

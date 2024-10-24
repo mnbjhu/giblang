@@ -4,11 +4,11 @@ use salsa::Update;
 
 use crate::{
     db::{
+        decl::{impl_::ImplForDecl, Project},
         input::{Db, SourceFile, Vfs, VfsInner},
-        modules::ModulePath,
+        path::ModulePath,
     },
     parser::parse_file,
-    project::{ImplDecl, Project},
     resolve::{resolve_impls_vfs, resolve_vfs},
     ty::Ty,
     util::Span,
@@ -16,7 +16,7 @@ use crate::{
 
 mod common;
 pub mod err;
-mod expr;
+pub mod expr;
 pub mod state;
 mod stmt;
 mod top;
@@ -46,7 +46,7 @@ pub struct SemanticToken {
 pub fn resolve_project<'db>(db: &'db dyn Db, vfs: Vfs) -> Project<'db> {
     let decls = resolve_vfs(db, vfs, ModulePath::new(db, Vec::new()));
     let impls = resolve_impls_vfs(db, vfs);
-    let mut impl_map = HashMap::<ModulePath, Vec<ImplDecl>>::new();
+    let mut impl_map = HashMap::<ModulePath, Vec<ImplForDecl>>::new();
     for impl_ in impls {
         let Ty::Named { name, .. } = impl_.from_ty(db) else {
             panic!("Impls must be named types")
@@ -71,7 +71,6 @@ pub fn check_file<'db>(
     for top in ast.tops(db) {
         top.0.check(&mut state);
     }
-    state.resolve_type_vars();
     state.get_type_vars()
 }
 

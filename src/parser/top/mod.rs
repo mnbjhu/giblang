@@ -62,31 +62,4 @@ impl Top {
             Top::Use(_) => unimplemented!("Use statement doesn't have a name"),
         }
     }
-
-    #[must_use]
-    pub fn is_parent(&self) -> bool {
-        match &self {
-            Top::Trait(_) | Top::Struct(_) | Top::Enum(_) | Top::Impl(_) => true,
-            Top::Use(_) | Top::Func(_) => false,
-        }
-    }
-
-    // pub fn children(&self) -> Vec<(String, u32)> {
-    //     match &self {
-    //         Top::Trait(Trait { body, .. }) => body
-    //             .iter()
-    //             .map(|f| (f.0.name.0.to_string(), f.0.id))
-    //             .collect(),
-    //         Top::Enum(Enum { members, .. }) => members
-    //             .iter()
-    //             .map(|f| (f.0.name.0.to_string(), f.0.id))
-    //             .collect(),
-    //         Top::Impl(impl_) => impl_
-    //             .body
-    //             .iter()
-    //             .map(|f| (f.0.name.0.to_string(), f.0.id))
-    //             .collect(),
-    //         _ => vec![],
-    //     }
-    // }
 }

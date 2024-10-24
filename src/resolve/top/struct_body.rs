@@ -1,6 +1,6 @@
 use crate::{
+    db::decl::struct_::StructDecl,
     parser::top::{struct_body::StructBody, struct_field::StructField},
-    project::decl::struct_::StructDecl,
     resolve::state::ResolveState,
     ty::Ty,
 };

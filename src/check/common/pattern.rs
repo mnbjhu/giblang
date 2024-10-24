@@ -2,14 +2,14 @@ use std::collections::HashMap;
 
 use crate::{
     check::state::CheckState,
+    db::decl::{struct_::StructDecl, DeclKind},
     parser::common::pattern::{Pattern, StructFieldPattern},
-    project::decl::{struct_::StructDecl, DeclKind},
     ty::Ty,
     util::Span,
 };
 
 impl<'db> Pattern {
-    pub fn check(&self, state: &mut CheckState<'_, 'db>, ty: Ty<'db>) {
+    pub fn check(&self, state: &mut CheckState<'db>, ty: Ty<'db>) {
         if let Pattern::Name(name) = self {
             state.insert_variable(name.0.to_string(), ty, false, name.1);
             return;
@@ -17,7 +17,7 @@ impl<'db> Pattern {
         let name = self.name();
         let decl_id = state.get_decl_with_error(name);
         if let Some(decl_id) = decl_id {
-            let decl = state.project.get_decl(state.db, decl_id).unwrap();
+            let decl = state.get_decl(decl_id);
             let kind = decl.kind(state.db);
             if let DeclKind::Member { body } | DeclKind::Struct { body, .. } = kind {
                 if let Ty::Named {
@@ -34,22 +34,14 @@ impl<'db> Pattern {
                         state.simple_error(
                             &format!(
                                 "Expected struct '{}' but found '{}'",
-                                state
-                                    .project
-                                    .get_decl(state.db, *expected_name)
-                                    .unwrap()
-                                    .name(state.db),
-                                state
-                                    .project
-                                    .get_decl(state.db, ty_decl_id)
-                                    .unwrap()
-                                    .name(state.db)
+                                state.get_decl(*expected_name).name(state.db),
+                                state.get_decl(ty_decl_id).name(state.db)
                             ),
                             name.last().unwrap().1,
                         );
                         return;
                     }
-                    let parent_decl = state.project.get_decl(state.db, *expected_name).unwrap();
+                    let parent_decl = state.get_decl(*expected_name);
                     let generics = parent_decl
                         .generics(state.db)
                         .iter()
@@ -80,7 +72,13 @@ impl<'db> Pattern {
                         ),
                     }
                 } else {
-                    state.simple_error("Expected a struct", name.last().unwrap().1);
+                    state.simple_error(
+                        &format!(
+                            "Expected a struct but found type {}",
+                            ty.get_name(state, None)
+                        ),
+                        name.last().unwrap().1,
+                    );
                 }
             } else {
                 state.simple_error("Expected a struct", name.last().unwrap().1);
@@ -92,7 +90,7 @@ impl<'db> Pattern {
 impl<'db> StructFieldPattern {
     pub fn check(
         &self,
-        state: &mut CheckState<'_, 'db>,
+        state: &mut CheckState<'db>,
         fields: &HashMap<String, Ty<'db>>,
         span: Span,
     ) {

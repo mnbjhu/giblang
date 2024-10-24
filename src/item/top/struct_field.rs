@@ -32,7 +32,7 @@ impl AstItem for StructField {
 
     fn hover<'db>(
         &self,
-        state: &mut CheckState<'_, 'db>,
+        state: &mut CheckState<'db>,
         _: usize,
         type_vars: &HashMap<u32, Ty<'db>>,
     ) -> Option<String> {
@@ -40,7 +40,7 @@ impl AstItem for StructField {
         Some(format!(
             "{}: {}",
             self.name.0,
-            ty.get_name_with_types(state, type_vars)
+            ty.get_name(state, Some(type_vars))
         ))
     }
 

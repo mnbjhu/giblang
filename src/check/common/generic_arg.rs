@@ -5,7 +5,7 @@ use crate::{
 };
 
 impl GenericArg {
-    pub fn check<'db>(&self, state: &mut CheckState<'_, 'db>) -> Ty<'db> {
+    pub fn check<'db>(&self, state: &mut CheckState<'db>) -> Ty<'db> {
         let super_ = if let Some((super_, _)) = &self.super_ {
             super_.check(state)
         } else {

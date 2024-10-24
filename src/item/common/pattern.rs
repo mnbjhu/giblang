@@ -73,14 +73,14 @@ impl AstItem for Pattern {
 
     fn hover<'db>(
         &self,
-        state: &mut CheckState<'_, 'db>,
+        state: &mut CheckState<'db>,
         _: usize,
         type_vars: &HashMap<u32, crate::ty::Ty<'db>>,
     ) -> Option<String> {
         if let Pattern::Name(name) = self {
             state
                 .get_variable(&name.0)
-                .map(|ty| ty.ty.get_name_with_types(state, type_vars))
+                .map(|ty| ty.ty.get_name(state, Some(type_vars)))
         } else {
             None
         }
@@ -149,19 +149,19 @@ impl AstItem for StructFieldPattern {
 
     fn hover<'db>(
         &self,
-        state: &mut CheckState<'_, 'db>,
+        state: &mut CheckState<'db>,
         offset: usize,
         type_vars: &HashMap<u32, crate::ty::Ty<'db>>,
     ) -> Option<String> {
         match self {
             StructFieldPattern::Implied(name) => state
                 .get_variable(&name.0)
-                .map(|ty| ty.ty.get_name_with_types(state, type_vars)),
+                .map(|ty| ty.ty.get_name(state, Some(type_vars))),
             StructFieldPattern::Explicit { field, pattern } => {
                 if field.1.contains_offset(offset) {
                     state
                         .get_variable(&field.0)
-                        .map(|ty| ty.ty.get_name_with_types(state, type_vars))
+                        .map(|ty| ty.ty.get_name(state, Some(type_vars)))
                 } else {
                     pattern.0.hover(state, offset, type_vars)
                 }

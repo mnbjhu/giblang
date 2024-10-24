@@ -7,7 +7,7 @@ use crate::{
 pub mod named;
 
 impl Type {
-    pub fn check<'db>(&self, state: &mut CheckState<'_, 'db>) -> Ty<'db> {
+    pub fn check<'db>(&self, state: &mut CheckState<'db>) -> Ty<'db> {
         match &self {
             Type::Named(named) => named.check(state),
             Type::Tuple(tup) => {
@@ -45,7 +45,7 @@ impl Type {
     pub fn expect_is_bound_by<'db>(
         &self,
         bound: &Generic<'db>,
-        state: &mut CheckState<'_, 'db>,
+        state: &mut CheckState<'db>,
         span: Span,
     ) -> Ty<'db> {
         let ty = self.check(state);

@@ -64,7 +64,7 @@ impl AstItem for MemberCall {
 
     fn hover<'db>(
         &self,
-        state: &mut CheckState<'_, 'db>,
+        state: &mut CheckState<'db>,
         _: usize,
         type_vars: &HashMap<u32, Ty<'db>>,
     ) -> Option<String> {
@@ -72,18 +72,23 @@ impl AstItem for MemberCall {
         Some(format!(
             "{}: {}",
             self.name.0,
-            func_ty.get_name_with_types(state, type_vars)
+            func_ty.get_name(state, Some(type_vars))
         ))
     }
 
-    fn completions(&self, state: &mut CheckState, _: usize) -> Vec<CompletionItem> {
+    fn completions(
+        &self,
+        state: &mut CheckState,
+        _: usize,
+        type_vars: &HashMap<u32, Ty>,
+    ) -> Vec<CompletionItem> {
         let rec = self.rec.0.check(state);
         let mut completions = Vec::new();
         for (name, func_ty) in rec.member_funcs(state) {
             completions.push(CompletionItem {
                 label: name.clone(),
                 kind: Some(CompletionItemKind::METHOD),
-                detail: Some(func_ty.get_name(state)),
+                detail: Some(func_ty.get_name(state, Some(type_vars))),
                 ..Default::default()
             });
         }

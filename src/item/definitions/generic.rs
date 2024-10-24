@@ -10,7 +10,7 @@ impl Generic<'_> {
         if let Ty::Any = self.super_.as_ref() {
             self.name.0.clone()
         } else {
-            format!("{}: {}", self.name.0, self.super_.get_name(state))
+            format!("{}: {}", self.name.0, self.super_.get_name(state, None))
         }
     }
     pub fn completions(&self, state: &mut CheckState) -> Vec<CompletionItem> {

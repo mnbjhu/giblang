@@ -1,5 +1,3 @@
-use ariadne::{Color, Source};
-
 use crate::{
     db::{
         err::{Diagnostic, Level},
@@ -18,31 +16,6 @@ pub struct MissingReceiver {
 }
 
 impl MissingReceiver {
-    pub fn print(&self, db: &dyn Db) {
-        let source = Source::from(self.file.text(db).clone());
-        let path = self.file.path(db);
-        let name = path.to_str().unwrap();
-
-        let err = Color::Red;
-        let msg = format!(
-            "Expected function to have a receiver of type {} but found no receiver",
-            self.expected,
-        );
-
-        let mut builder = ariadne::Report::build(ariadne::ReportKind::Error, name, self.span.start)
-            .with_message(msg.clone())
-            .with_code("error");
-
-        builder = builder.with_label(
-            ariadne::Label::new((name, self.span.into_range()))
-                .with_message(&msg)
-                .with_color(err),
-        );
-
-        let report = builder.finish();
-        report.print((name, source)).unwrap();
-    }
-
     pub fn message(&self) -> String {
         format!(
             "Expected function to have a receiver of type {} but found no receiver",
