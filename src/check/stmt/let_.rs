@@ -11,6 +11,6 @@ impl LetStatement {
         } else {
             self.value.0.check(state)
         };
-        self.pattern.0.check(state, ty);
+        self.pattern.0.check(state, &ty);
     }
 }

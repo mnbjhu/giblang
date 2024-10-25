@@ -6,6 +6,7 @@ use chumsky::{
 };
 use field::Field;
 
+use lambda::Lambda;
 use op::{op_parser, Op};
 
 use crate::{
@@ -38,6 +39,7 @@ pub mod match_arm;
 pub mod member;
 pub mod op;
 pub mod qualified_name;
+pub mod lambda;
 
 #[derive(Clone, PartialEq, Debug, Eq)]
 pub enum Expr {
@@ -51,6 +53,7 @@ pub enum Expr {
     Tuple(Vec<Spanned<Expr>>),
     IfElse(IfElse),
     Op(Op),
+    Lambda(Lambda),
     Error,
 }
 

@@ -9,10 +9,10 @@ impl AstItem for LetStatement {
     where
         Self: Sized,
     {
+        self.check(state);
         if self.value.1.contains_offset(offset) {
             return self.value.0.at_offset(state, offset);
         }
-        self.check(state);
         if self.pattern.1.contains_offset(offset) {
             return self.pattern.0.at_offset(state, offset);
         }

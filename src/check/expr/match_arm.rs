@@ -3,7 +3,7 @@ use crate::{check::state::CheckState, parser::expr::match_arm::MatchArm, ty::Ty}
 impl<'db> MatchArm {
     pub fn check(&self, state: &mut CheckState<'db>, ty: Ty<'db>) -> Ty<'db> {
         state.enter_scope();
-        self.pattern.0.check(state, ty);
+        self.pattern.0.check(state, &ty);
         let ty = self.expr.0.check(state);
         state.exit_scope();
         ty
@@ -16,7 +16,7 @@ impl<'db> MatchArm {
         ty: Ty<'db>,
     ) {
         state.enter_scope();
-        self.pattern.0.check(state, ty);
+        self.pattern.0.check(state, &ty);
         self.expr.0.expect_instance_of(expected, state, self.expr.1);
         state.exit_scope();
     }

@@ -9,9 +9,9 @@ use crate::{
 };
 
 impl<'db> Pattern {
-    pub fn check(&self, state: &mut CheckState<'db>, ty: Ty<'db>) {
+    pub fn check(&self, state: &mut CheckState<'db>, ty: &Ty<'db>) {
         if let Pattern::Name(name) = self {
-            state.insert_variable(name.0.to_string(), ty, false, name.1);
+            state.insert_variable(name.0.to_string(), ty.clone(), false, name.1);
             return;
         }
         let name = self.name();
@@ -20,6 +20,15 @@ impl<'db> Pattern {
             let decl = state.get_decl(decl_id);
             let kind = decl.kind(state.db);
             if let DeclKind::Member { body } | DeclKind::Struct { body, .. } = kind {
+                // TODO: THIS NEEDS TESTING - Remove block to fallback
+                let ty = if let Ty::TypeVar { .. } = &ty {
+                    let new = decl.get_named_ty(state).inst(&mut HashMap::new(), state, name.last().unwrap().1);
+                    new.expect_is_instance_of(ty, state, false, name.last().unwrap().1);
+                    new
+
+                } else {
+                    ty.clone()
+                };
                 if let Ty::Named {
                     name: expected_name,
                     args,
@@ -62,7 +71,7 @@ impl<'db> Pattern {
                         (Pattern::UnitStruct(_), StructDecl::None) => {}
                         (Pattern::TupleStruct { fields, .. }, StructDecl::Tuple(tys)) => {
                             for (field, ty) in fields.iter().zip(tys) {
-                                field.0.check(state, ty.parameterize(&generics));
+                                field.0.check(state, &ty.parameterize(&generics));
                             }
                         }
                         (Pattern::Name(_), _) => unreachable!(),
@@ -104,7 +113,7 @@ impl<'db> StructFieldPattern {
             }
             StructFieldPattern::Explicit { field, pattern } => {
                 if let Some(ty) = fields.get(&field.0) {
-                    pattern.0.check(state, ty.clone());
+                    pattern.0.check(state, ty);
                 } else {
                     state.simple_error(&format!("Field '{}' not found", field.0), field.1);
                 }

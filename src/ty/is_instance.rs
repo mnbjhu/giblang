@@ -171,7 +171,9 @@ impl<'db> Ty<'db> {
         self_ty: &Ty<'db>,
     ) -> Option<FuncTy<'db>> {
         if let Ty::Named { name: id, args } = self {
-            if let DeclKind::Trait { body, generics } = state.get_decl(*id).kind(state.db) {
+            if let Some(DeclKind::Trait { body, generics }) =
+                state.try_get_decl(*id).map(|d| d.kind(state.db))
+            {
                 if args.len() != generics.len() {
                     return None;
                 }
@@ -236,7 +238,7 @@ impl<'db> Ty<'db> {
     pub fn get_funcs(&self, state: &mut CheckState<'db>) -> Vec<(String, FuncTy<'db>)> {
         let mut funcs = Vec::new();
         if let Ty::Named { name, .. } = self {
-            if let DeclKind::Trait { body, .. } = state.get_decl(*name).kind(state.db) {
+            if let Some(DeclKind::Trait { body, .. }) = state.try_get_decl(*name).map(|d|d.kind(state.db)) {
                 funcs.extend(body.iter().map(|mod_| {
                     let Ty::Function(func) = mod_.get_ty(state) else {
                         panic!("Expected function");

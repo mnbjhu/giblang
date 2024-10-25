@@ -89,17 +89,16 @@ impl<'db> Decl<'db> {
     }
 
     pub fn get_ty(self, state: &CheckState<'db>) -> Ty<'db> {
-        let id = self.path(state.db);
         match self.kind(state.db) {
             DeclKind::Struct {
                 body: StructDecl::None,
                 ..
-            } => self.get_named_ty(state, id),
+            } => self.get_named_ty(state),
             DeclKind::Trait { .. } | DeclKind::Enum { .. } | DeclKind::Struct { .. } => {
-                Ty::Meta(Box::new(self.default_named_ty(state, id)))
+                Ty::Meta(Box::new(self.default_named_ty(state)))
             }
             DeclKind::Member { body, .. } => {
-                let self_ty = self.get_named_ty(state, id);
+                let self_ty = self.get_named_ty(state);
                 if let StructDecl::None = body {
                     return self_ty;
                 }
@@ -126,9 +125,9 @@ impl<'db> Decl<'db> {
         }
     }
 
-    fn default_named_ty(self, state: &CheckState<'db>, name: ModulePath<'db>) -> Ty<'db> {
+    pub fn default_named_ty(self, state: &CheckState<'db>) -> Ty<'db> {
         Ty::Named {
-            name,
+            name: self.path(state.db),
             args: self
                 .generics(state.db)
                 .iter()
@@ -138,16 +137,13 @@ impl<'db> Decl<'db> {
         }
     }
 
-    pub fn get_named_ty(self, state: &CheckState<'db>, id: ModulePath<'db>) -> Ty<'db> {
+    pub fn get_named_ty(self, state: &CheckState<'db>) -> Ty<'db> {
         if let DeclKind::Member { .. } = &self.kind(state.db) {
-            let parent = id.get_parent(state.db);
+            let parent = self.path(state.db).get_parent(state.db);
             let parent_decl = state.try_get_decl(parent);
-            if parent_decl.is_none() {
-                return Ty::Unknown;
-            }
-            parent_decl.unwrap().default_named_ty(state, parent)
+            parent_decl.expect("No parent found for decl").default_named_ty(state)
         } else {
-            self.default_named_ty(state, id)
+            self.default_named_ty(state)
         }
     }
 }

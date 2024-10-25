@@ -19,6 +19,7 @@ pub mod match_;
 pub mod match_arm;
 pub mod member_call;
 pub mod op;
+pub mod lambda;
 
 impl AstItem for Expr {
     fn at_offset<'me>(&'me self, state: &mut CheckState, offset: usize) -> &'me dyn AstItem
@@ -52,6 +53,7 @@ impl AstItem for Expr {
             Expr::Error => &Expr::Error,
             Expr::Op(op) => op.at_offset(state, offset),
             Expr::Field(field) => field.at_offset(state, offset),
+            Expr::Lambda(l) => l.at_offset(state, offset),
         }
     }
 
@@ -76,6 +78,7 @@ impl AstItem for Expr {
             Expr::Error => {}
             Expr::Op(op) => op.tokens(state, tokens),
             Expr::Field(field) => field.tokens(state, tokens),
+            Expr::Lambda(lambda) => lambda.tokens(state, tokens),
         }
     }
 
@@ -101,6 +104,7 @@ impl AstItem for Expr {
             Expr::Error => panic!(),
             Expr::Op(op) => op.pretty(allocator),
             Expr::Field(field) => field.pretty(allocator),
+            Expr::Lambda(lambda) => lambda.pretty(allocator),
         }
     }
 }

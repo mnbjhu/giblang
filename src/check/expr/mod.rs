@@ -18,6 +18,7 @@ pub mod match_arm;
 pub mod member;
 pub mod op;
 pub mod tuple;
+pub mod lambda;
 
 impl<'db> Expr {
     pub fn check(&self, state: &mut CheckState<'db>) -> Ty<'db> {
@@ -34,6 +35,7 @@ impl<'db> Expr {
             Expr::MemberCall(member) => member.check(state),
             Expr::Op(op) => op.check(state),
             Expr::Field(field) => field.check(state),
+            Expr::Lambda(lambda) => lambda.check(state),
             Expr::Error => Ty::Unknown,
         }
     }
@@ -50,6 +52,7 @@ impl<'db> Expr {
             Expr::Op(op) => op.expected_instance_of(expected, state, span),
             Expr::MemberCall(member) => member.expected_instance_of(expected, state, span),
             Expr::Field(field) => field.expected_instance_of(expected, state, span),
+            Expr::Lambda(lambda) => lambda.expected_instance_of(expected, state, span),
             Expr::Error => {}
         }
     }

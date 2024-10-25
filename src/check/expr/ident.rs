@@ -41,7 +41,7 @@ pub fn check_ident<'db>(state: &mut CheckState<'db>, path: &[Spanned<String>]) -
         {
             // Static Access
             let sub_tys = get_sub_decls(parent_decl.path(state.db), state);
-            let self_ty = parent_decl.get_named_ty(state, parent_decl.path(state.db));
+            let self_ty = parent_decl.get_named_ty(state);
             let mut params = HashMap::new();
             params.insert("Self".to_string(), self_ty);
             let funcs = sub_tys
