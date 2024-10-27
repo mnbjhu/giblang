@@ -6,7 +6,7 @@ use chumsky::{
 };
 use field::Field;
 
-use lambda::Lambda;
+use lambda::{lambda_parser, Lambda};
 use op::{op_parser, Op};
 
 use crate::{
@@ -58,7 +58,8 @@ pub enum Expr {
 }
 
 pub fn expr_parser<'tokens, 'src: 'tokens>(stmt: AstParser!(Stmt)) -> AstParser!(Expr) {
-    let block = code_block_parser(stmt.clone()).map(Expr::CodeBlock);
+    // let block = code_block_parser(stmt.clone()).map(Expr::CodeBlock);
+    let lambda = lambda_parser(stmt.clone()).map(Expr::Lambda);
 
     recursive(|expr| {
         let tuple = expr
@@ -119,7 +120,7 @@ pub fn expr_parser<'tokens, 'src: 'tokens>(stmt: AstParser!(Stmt)) -> AstParser!
 
         let if_else = if_else_parser(expr, stmt).map(Expr::IfElse);
 
-        choice((if_else, match_, block, op))
+        choice((if_else, match_, lambda, op))
     })
 }
 

@@ -42,7 +42,9 @@ pub fn lambda_parser<'tokens, 'src: 'tokens>(stmt: AstParser!(Stmt)) -> AstParse
         .map_with(|p, e| (p, e.span()))
         .separated_by(just(punct(',')).padded_by(optional_newline()))
         .collect::<Vec<_>>()
-        .then_ignore(just(op!(->)).padded_by(optional_newline()));
+        .then_ignore(just(op!(->)).padded_by(optional_newline()))
+        .or_not()
+        .map(Option::unwrap_or_default);
 
     args.then(stmts)
         .delimited_by(
@@ -53,7 +55,7 @@ pub fn lambda_parser<'tokens, 'src: 'tokens>(stmt: AstParser!(Stmt)) -> AstParse
 }
 
 pub fn lambda_param_parser<'tokens, 'src: 'tokens>() -> AstParser!(LambdaParam) {
-    let ty = just(op!(':')).ignore_then(type_parser().map_with(|t, e| (t, e.span())));
+    let ty = just(punct(':')).ignore_then(type_parser().map_with(|t, e| (t, e.span())));
     pattern_parser()
         .map_with(|p, e| (p, e.span()))
         .then(ty.or_not())

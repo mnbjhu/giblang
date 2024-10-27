@@ -1,4 +1,4 @@
-use crate::{check::state::CheckState, item::{common::type_::ContainsOffset, AstItem}, parser::expr::lambda::{Lambda, LambdaParam}};
+use crate::{check::{state::CheckState, SemanticToken}, item::{common::type_::ContainsOffset, AstItem}, parser::expr::lambda::{Lambda, LambdaParam}};
 
 impl AstItem for Lambda {
     fn pretty<'b, D, A>(&'b self, allocator: &'b D) -> pretty::DocBuilder<'b, D, A>
@@ -29,6 +29,15 @@ impl AstItem for Lambda {
         self
     }
 
+    fn tokens(&self, state: &mut CheckState, tokens: &mut Vec<SemanticToken>) {
+        for (arg, _) in &self.args {
+            arg.tokens(state, tokens);
+        }
+        for stmt in &self.body.0 {
+            stmt.0.tokens(state, tokens);
+        }
+    }
+
 }
 impl AstItem for LambdaParam {
     fn pretty<'b, D, A>(&'b self, allocator: &'b D) -> pretty::DocBuilder<'b, D, A>
@@ -53,5 +62,12 @@ impl AstItem for LambdaParam {
         };
         self
 
+    }
+
+    fn tokens(&self, state: &mut CheckState, tokens: &mut Vec<SemanticToken>) {
+        self.pattern.0.tokens(state, tokens);
+        if let Some(ty) = &self.ty {
+            ty.0.tokens(state, tokens);
+        }
     }
 }

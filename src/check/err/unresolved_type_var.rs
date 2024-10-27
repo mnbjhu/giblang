@@ -12,22 +12,18 @@ use super::IntoWithDb;
 pub struct UnboundTypeVar {
     pub span: Span,
     pub file: SourceFile,
-    pub name: String,
 }
 
 impl UnboundTypeVar {
-    pub fn message(&self) -> String {
-        format!(
-            "Cannot imply type for type generic parameter '{}'",
-            self.name
-        )
+    pub fn message() -> String {
+            "Cannot imply type for type variable".to_string()
     }
 }
 
 impl IntoWithDb<Diagnostic> for UnboundTypeVar {
     fn into_with_db(self, db: &dyn Db) -> Diagnostic {
         Diagnostic {
-            message: self.message(),
+            message: Self::message(),
             span: self.span,
             level: Level::Error,
             path: self.file.path(db),

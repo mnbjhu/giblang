@@ -23,7 +23,7 @@ impl<'db> Pattern {
                 // TODO: THIS NEEDS TESTING - Remove block to fallback
                 let ty = if let Ty::TypeVar { .. } = &ty {
                     let new = decl.get_named_ty(state).inst(&mut HashMap::new(), state, name.last().unwrap().1);
-                    new.expect_is_instance_of(ty, state, false, name.last().unwrap().1);
+                    ty.expect_is_instance_of(&new, state, false, name.last().unwrap().1);
                     new
 
                 } else {

@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 
+use backtrace::Backtrace;
+
 use crate::{
     db::input::SourceFile,
     ty::{Generic, Ty},
@@ -40,15 +42,18 @@ impl<'db> TypeState<'db> {
         id
     }
 
-    fn get_data_pointer(&self, id: u32) -> u32 {
-        let mut current = self
-            .vars
-            .get(&id)
-            .expect("All type var ids should be valid");
+    pub fn get_data_pointer(&self, id: u32) -> u32 {
+        let bt = Backtrace::new();
+        let mut current = self.vars.get(&id).unwrap_or_else(|| {
+            panic!("All type var ids should be valid (get_data_pointer 1) {bt:?}",)
+        });
         let mut ret = id;
         while let MaybeTypeVar::Pointer(id) = current {
             ret = *id;
-            current = self.vars.get(id).expect("All type var ids should be valid");
+            current = self
+                .vars
+                .get(id)
+                .expect("All type var ids should be valid (get_data_pointer 2)");
         }
         ret
     }
@@ -58,7 +63,7 @@ impl<'db> TypeState<'db> {
         let maybe = self
             .vars
             .get(&data_pointer)
-            .expect("All type var ids should be valid");
+            .expect("All type var ids should be valid (get_type_var)");
         if let MaybeTypeVar::Data(data) = maybe {
             data
         } else {
@@ -71,7 +76,7 @@ impl<'db> TypeState<'db> {
         let maybe = self
             .vars
             .get_mut(&data_pointer)
-            .expect("All type var ids should be valid");
+            .expect("All type var ids should be valid (get_type_var_mut)");
         if let MaybeTypeVar::Data(data) = maybe {
             data
         } else {
@@ -124,6 +129,7 @@ impl<'db> MaybeTypeVar<'db> {
     }
 }
 
+#[derive(Clone)]
 pub struct TypeVarData<'db> {
     pub bounds: Vec<Generic<'db>>,
     pub explicit: Option<Spanned<Ty<'db>>>,

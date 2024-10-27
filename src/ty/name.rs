@@ -52,13 +52,13 @@ impl<'db> Ty<'db> {
                 format!("({tys})")
             }
             Ty::TypeVar { id } => {
-                if let Some(resolved) = state.try_get_resolved_type_var(*id) {
-                    return resolved.get_name(state, type_vars);
-                }
                 if let Some(tv) = type_vars {
                     if let Some(ty) = tv.get(id) {
                         return ty.get_name(state, type_vars);
                     }
+                }
+                if let Some(resolved) = state.try_get_resolved_type_var(*id) {
+                    return resolved.get_name(state, type_vars);
                 }
                 format!("{{unknown:{id}}}")
             }

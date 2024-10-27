@@ -16,22 +16,19 @@ impl<'db> Ty<'db> {
             },
             Ty::Tuple(tys) => Ty::Tuple(tys.iter().map(|ty| ty.parameterize(generics)).collect()),
             Ty::Sum(tys) => Ty::Sum(tys.iter().map(|ty| ty.parameterize(generics)).collect()),
-            Ty::Function(FuncTy {
-                receiver,
-                args,
-                ret,
-            }) => {
-                let receiver = receiver
-                    .as_ref()
-                    .map(|r| Box::new(r.parameterize(generics)));
-                Ty::Function(FuncTy {
-                    receiver,
-                    args: args.iter().map(|ty| ty.parameterize(generics)).collect(),
-                    ret: Box::new(ret.parameterize(generics)),
-                })
-            }
+            Ty::Function(func) => Ty::Function(func.parameterize(generics)),
             Ty::Meta(_) => unimplemented!("Need to thing about this..."),
             _ => self.clone(),
+        }
+    }
+}
+
+impl<'db> FuncTy<'db> {
+    pub fn parameterize(&self, generics: &HashMap<String, Ty<'db>>) -> FuncTy<'db> {
+        FuncTy {
+            receiver: self.receiver.as_ref().map(|r| Box::new(r.parameterize(generics))),
+            args: self.args.iter().map(|ty| ty.parameterize(generics)).collect(),
+            ret: Box::new(self.ret.parameterize(generics)),
         }
     }
 }

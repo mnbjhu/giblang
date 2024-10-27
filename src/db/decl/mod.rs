@@ -16,7 +16,7 @@ use crate::{
         TokenKind,
     },
     parser::expr::qualified_name::SpannedQualifiedName,
-    ty::{FuncTy, Generic, Ty},
+    ty::{is_instance::get_sub_tys, FuncTy, Generic, Ty},
     util::{Span, Spanned},
 };
 
@@ -108,19 +108,7 @@ impl<'db> Decl<'db> {
                     Ty::Unknown
                 }
             }
-            DeclKind::Function(Function {
-                receiver,
-                args,
-                ret,
-                ..
-            }) => {
-                let args = args.iter().map(|(_, ty)| ty.clone()).collect::<Vec<_>>();
-                Ty::Function(FuncTy {
-                    receiver: receiver.clone().map(Box::new),
-                    args,
-                    ret: Box::new(ret.clone()),
-                })
-            }
+            DeclKind::Function(f) => Ty::Function(f.get_ty(state)),
             DeclKind::Module(_) => Ty::unit(),
         }
     }
@@ -141,9 +129,48 @@ impl<'db> Decl<'db> {
         if let DeclKind::Member { .. } = &self.kind(state.db) {
             let parent = self.path(state.db).get_parent(state.db);
             let parent_decl = state.try_get_decl(parent);
-            parent_decl.expect("No parent found for decl").default_named_ty(state)
+            parent_decl
+                .expect("No parent found for decl")
+                .default_named_ty(state)
         } else {
             self.default_named_ty(state)
+        }
+    }
+
+    pub fn static_funcs(
+        self,
+        state: &mut CheckState<'db>,
+        span: Span,
+    ) -> Vec<(String, FuncTy<'db>)> {
+        if !matches!(
+            self.kind(state.db),
+            DeclKind::Trait { .. } | DeclKind::Enum { .. } | DeclKind::Struct { .. }
+        ) {
+            return Vec::new();
+        }
+        let ty = self
+            .default_named_ty(state)
+            .inst(&mut HashMap::new(), state, span);
+        let mut funcs = get_sub_tys(&ty, state)
+            .iter()
+            .flat_map(|t| t.get_funcs(state))
+            .collect::<Vec<_>>();
+        funcs.extend(ty.get_funcs(state));
+        funcs
+    }
+}
+
+impl<'db> Function<'db> {
+    pub fn get_ty(&self, state: &CheckState<'db>) -> FuncTy<'db> {
+        let args = self
+            .args
+            .iter()
+            .map(|(_, ty)| ty.clone())
+            .collect::<Vec<_>>();
+        FuncTy {
+            receiver: self.receiver.clone().map(Box::new),
+            args,
+            ret: Box::new(self.ret.clone()),
         }
     }
 }

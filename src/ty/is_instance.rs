@@ -6,7 +6,7 @@ use crate::{
         state::CheckState,
     },
     db::{
-        decl::{impl_::ImplForDecl, DeclKind},
+        decl::{impl_::ImplForDecl, Decl, DeclKind},
         path::ModulePath,
     },
     parser::common::variance::Variance,
@@ -239,11 +239,11 @@ impl<'db> Ty<'db> {
         let mut funcs = Vec::new();
         if let Ty::Named { name, .. } = self {
             if let Some(DeclKind::Trait { body, .. }) = state.try_get_decl(*name).map(|d|d.kind(state.db)) {
-                funcs.extend(body.iter().map(|mod_| {
-                    let Ty::Function(func) = mod_.get_ty(state) else {
+                funcs.extend(body.iter().map(|func_decl| {
+                    let Ty::Function(func) = func_decl.get_ty(state) else {
                         panic!("Expected function");
                     };
-                    (mod_.name(state.db), func)
+                    (func_decl.name(state.db), func)
                 }));
             }
             let impls = state
@@ -256,12 +256,17 @@ impl<'db> Ty<'db> {
                     };
                     *name == n && i.to_ty(state.db).is_none()
                 })
-                .flat_map(|i| i.functions(state.db))
-                .map(|decl| {
-                    let Ty::Function(func) = decl.get_ty(state) else {
-                        panic!("Expected function");
-                    };
-                    (decl.name(state.db), func)
+                .flat_map(|i| {
+                    let mut implied = HashMap::new();
+                    i.from_ty(state.db).imply_generic_args(self, &mut implied);
+                    let self_ty = self.parameterize(&implied);
+                    implied.insert("Self".to_string(), self_ty);
+                    i.functions(state.db).iter().map(|f|{
+                        let DeclKind::Function(func) = f.kind(state.db) else {
+                            panic!("Expected function");
+                        };
+                        (f.name(state.db), func.get_ty(state).parameterize(&implied))
+                    }).collect::<Vec<_>>()
                 });
             funcs.extend(impls);
         }

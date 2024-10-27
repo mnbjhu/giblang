@@ -33,24 +33,49 @@ impl[U] Pushable[U] for Box[U] {
     }
 }
 
+impl From[Int] for String {
+    fn from(value: Int): String {
+        "Hello"
+    }
+}
+
+impl From[String] for Int {
+    fn from(value: String): Int {
+        "Hello"
+    }
+}
+
 fn test(thing: Test) {
     let other = 123
-    let test = std::Vec
+    let new = std::Vec::new()
+    let test = std::Vec::new()
+    test.push(other)
     let some = Option::Some(123)
+    let transform = { x: Int -> x.add(x) }
+    let transformed = some.map(String::from)
     let test = some.unwrap()
     let inner = some.expect("Test")
     let thing = Basic::from("Hello")
+
 }
 
-impl[U] Unwrap[U] for std::Option[U] {
-    fn Self.unwrap(): U {}
-}
-
-impl[T] Option[T] {
+impl[T] std::Option[T] {
+    fn Self.unwrap(): T {
+        match self {
+            Option::Some(inner) => inner,
+            Option::None => panic("Called unwrap on None")
+        }
+    }
     fn Self.expect(text: String): T {
         match self {
             Option::Some(res) => res,
             Option::None => panic(text)
+        }
+    }
+    fn Self.map[U: String](f: (T) -> U): Option[U] {
+        match self {
+            Option::Some(inner) => Option::Some(f(inner)),
+            Option::None => Option::None
         }
     }
 }
@@ -81,6 +106,7 @@ fn test3(thing: Int) {
 
 fn test123() {
     let test = std::Vec
+    test.push(123)
 }
 
 impl ToString for Basic {

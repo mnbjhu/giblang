@@ -18,7 +18,7 @@ use crate::{
 };
 
 use super::{
-    err::{Error, IntoWithDb},
+    err::{unresolved_type_var::UnboundTypeVar, Error, IntoWithDb},
     type_state::TypeState,
 };
 
@@ -97,10 +97,26 @@ impl<'ty, 'db: 'ty> CheckState<'db> {
         var.resolved = Some(ty);
     }
 
-    pub fn get_type_vars(&self) -> HashMap<u32, Ty<'db>> {
+    pub fn get_type_vars(&mut self) -> HashMap<u32, Ty<'db>> {
         let mut res = HashMap::new();
-        for id in self.type_state.vars.keys() {
-            res.insert(*id, self.get_resolved_type_var(*id));
+        let mut errors = vec![];
+        for id in self.type_state.vars.keys().copied().collect::<Vec<_>>() {
+            let ty = self.get_resolved_type_var(id);
+            let data = self.type_state.get_type_var(id).clone();
+            if let Ty::Unknown = ty {
+                errors.push(UnboundTypeVar {
+                    span: data.span,
+                    file: data.file,
+                });
+            }
+            // TODO: This should only error if the bound it not met. It shouldn't imply types
+            // for bound in &data.bounds {
+            //     ty.expect_is_instance_of(bound.super_.as_ref(), self, false, data.span);
+            // }
+            res.insert(id, ty);
+        }
+        for error in errors {
+            self.error(CheckError::UnboundTypeVar(error));
         }
         res
     }

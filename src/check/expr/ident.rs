@@ -7,7 +7,7 @@ use crate::{
     },
     db::decl::DeclKind,
     parser::expr::qualified_name::SpannedQualifiedName,
-    ty::{is_instance::get_sub_decls, Ty},
+    ty::Ty,
     util::Spanned,
 };
 
@@ -40,28 +40,38 @@ pub fn check_ident<'db>(state: &mut CheckState<'db>, path: &[Spanned<String>]) -
             parent_decl.kind(state.db)
         {
             // Static Access
-            let sub_tys = get_sub_decls(parent_decl.path(state.db), state);
-            let self_ty = parent_decl.get_named_ty(state);
-            let mut params = HashMap::new();
-            params.insert("Self".to_string(), self_ty);
-            let funcs = sub_tys
-                .iter()
-                .filter_map(|id| {
-                    let decl = state.get_decl(*id);
-                    let DeclKind::Trait { body, .. } = decl.kind(state.db) else {
-                        panic!("Expected trait");
-                    };
-                    body.iter()
-                        .find(|func| func.name(state.db) == name.0)
-                        .map(|m| {
-                            m.get_ty(state).parameterize(&params).inst(
-                                &mut HashMap::new(),
-                                state,
-                                name.1,
-                            )
-                        })
-                })
-                .collect::<Vec<_>>();
+            // let sub_tys = get_sub_decls(parent_decl.path(state.db), state);
+            // let self_ty = parent_decl.get_named_ty(state);
+            // let mut params = HashMap::new();
+            // params.insert("Self".to_string(), self_ty);
+            // let funcs = sub_tys
+            //     .iter()
+            //     .filter_map(|id| {
+            //         let decl = state.get_decl(*id);
+            //         let DeclKind::Trait { body, .. } = decl.kind(state.db) else {
+            //             panic!("Expected trait");
+            //         };
+            //         body.iter()
+            //             .find(|func| func.name(state.db) == name.0)
+            //             .map(|d| {
+            //                 d.get_ty(state).parameterize(&params).inst(
+            //                     &mut HashMap::new(),
+            //                     state,
+            //                     name.1,
+            //                 )
+            //             })
+            //     })
+            //     .collect::<Vec<_>>();
+            let funcs = parent_decl.static_funcs(state, name.1).iter().filter_map(|(name, ty)| {
+                if name == &path.last().unwrap().0 {
+                    Some(Ty::Function(ty.clone()))
+                } else {
+                    None
+                }
+            }).collect::<Vec<_>>();
+
+
+
             match funcs.len() {
                 0 => {}
                 1 => return funcs[0].clone(),
