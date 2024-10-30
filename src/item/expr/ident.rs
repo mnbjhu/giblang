@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use async_lsp::lsp_types::CompletionItem;
 
 use crate::{
-    check::{state::CheckState, SemanticToken, TokenKind},
+    check::{err::unresolved::Unresolved, state::CheckState, SemanticToken, TokenKind},
     item::{common::type_::ContainsOffset, definitions::ident::IdentDef, AstItem},
     parser::expr::qualified_name::SpannedQualifiedName,
     ty::Ty,
@@ -43,16 +43,13 @@ impl AstItem for SpannedQualifiedName {
             }
         }
         for i in 1..=self.len() {
-            let found = state.get_decl_with_error(&self[..i]);
-            if found.is_none() {
-                return;
+            if let Ok(found) = state.get_decl_with_error(&self[..i]) {
+                let kind = found.get_kind(state.db);
+                tokens.push(SemanticToken {
+                    span: self[i - 1].1,
+                    kind,
+                });
             }
-            let found = state.get_decl(found.unwrap());
-            let kind = found.get_kind(state.db);
-            tokens.push(SemanticToken {
-                span: self[i - 1].1,
-                kind,
-            });
         }
     }
 
@@ -67,11 +64,11 @@ impl AstItem for SpannedQualifiedName {
             .position(|(_, span)| span.contains_offset(offset))?;
         let path = &self[..=index];
         let found = state.get_ident_def(path);
+        let Ok(found) = found else { return None };
         match found {
             IdentDef::Variable(var) => Some(var.hover(state, type_vars)),
             IdentDef::Generic(g) => Some(g.hover(state)),
             IdentDef::Decl(decl) => Some(decl.hover(state)),
-            IdentDef::Unknown => None,
         }
     }
 
@@ -93,8 +90,7 @@ impl AstItem for SpannedQualifiedName {
             }
             let parent = &self[..index.unwrap()];
             let found = state.get_decl_with_error(parent);
-            if let Some(found) = found {
-                let found = state.get_decl(found);
+            if let Ok(found) = found {
                 return found.get_static_access_completions(state);
             }
         }
@@ -111,11 +107,13 @@ impl AstItem for SpannedQualifiedName {
             .position(|(_, span)| span.start <= offset && offset <= span.end)?;
         let path = &self[..=index];
         let found = state.get_ident_def(path);
+        let Ok(found) = found else {
+            return None;
+        };
         match found {
             IdentDef::Variable(var) => Some((state.file_data, var.span)),
             IdentDef::Generic(g) => Some((state.file_data, g.name.1)),
             IdentDef::Decl(decl) => Some((decl.file(state.db), decl.span(state.db))),
-            IdentDef::Unknown => None,
         }
     }
 
@@ -162,21 +160,20 @@ fn get_ident_completions(
 }
 
 impl<'db> CheckState<'db> {
-    pub fn get_ident_def(&mut self, ident: &[Spanned<String>]) -> IdentDef<'db> {
+    pub fn get_ident_def(
+        &mut self,
+        ident: &[Spanned<String>],
+    ) -> Result<IdentDef<'db>, Unresolved> {
         if ident.len() == 1 {
             let name = &ident[0];
             if let Some(var) = self.get_variable(&name.0) {
-                return IdentDef::Variable(var);
+                return Ok(IdentDef::Variable(var));
             }
             if let Some(gen) = self.get_generic(&name.0) {
-                return IdentDef::Generic(gen.clone());
+                return Ok(IdentDef::Generic(gen.clone()));
             }
         }
-        let decl = self.get_decl_with_error(ident);
-        if let Some(decl) = decl {
-            let decl = self.get_decl(decl);
-            return IdentDef::Decl(decl);
-        }
-        IdentDef::Unknown
+        let decl = self.get_decl_with_error(ident)?;
+        Ok(IdentDef::Decl(decl))
     }
 }

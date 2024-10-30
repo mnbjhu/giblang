@@ -15,7 +15,7 @@ impl<'db> Field {
             return Ty::Unknown;
         }
         if let Ty::Named { name, args } = struct_ty {
-            let decl = state.try_get_decl(name);
+            let decl = state.try_get_decl_path(name);
             if let Some(decl) = decl {
                 if let DeclKind::Struct { body, generics } = decl.kind(state.db) {
                     let params = generics

@@ -21,7 +21,7 @@ use crate::{
 
 use self::{
     call::{call_parser, Call},
-    code_block::{code_block_parser, CodeBlock},
+    code_block::CodeBlock,
     if_else::{if_else_parser, IfElse},
     member::MemberCall,
     qualified_name::{qualified_name_parser, SpannedQualifiedName},
@@ -34,12 +34,12 @@ pub mod call;
 pub mod code_block;
 pub mod field;
 pub mod if_else;
+pub mod lambda;
 pub mod match_;
 pub mod match_arm;
 pub mod member;
 pub mod op;
 pub mod qualified_name;
-pub mod lambda;
 
 #[derive(Clone, PartialEq, Debug, Eq)]
 pub enum Expr {
@@ -115,8 +115,11 @@ pub fn expr_parser<'tokens, 'src: 'tokens>(stmt: AstParser!(Stmt)) -> AstParser!
 
         let op = op_parser(access);
 
-        let match_ =
-            match_parser(expr.clone(), match_arm::match_arm_parser(expr.clone())).map(Expr::Match);
+        let match_ = match_parser(
+            expr.clone(),
+            match_arm::match_arm_parser(expr.clone(), stmt.clone()),
+        )
+        .map(Expr::Match);
 
         let if_else = if_else_parser(expr, stmt).map(Expr::IfElse);
 

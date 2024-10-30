@@ -27,7 +27,7 @@ impl<'db> CheckState<'db> {
         };
         self.insert_generic("Self".to_string(), generic);
     }
-    pub fn add_self_param(&mut self, super_: Ty<'db>, span: Span) {
-        self.insert_variable("self".to_string(), super_, true, span);
+    pub fn add_self_param(&mut self, ty: Ty<'db>, span: Span) {
+        self.insert_variable("self".to_string(), ty, true, span);
     }
 }

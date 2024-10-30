@@ -4,5 +4,4 @@ pub enum IdentDef<'db> {
     Variable(VarDecl<'db>),
     Generic(Generic<'db>),
     Decl(Decl<'db>),
-    Unknown,
 }

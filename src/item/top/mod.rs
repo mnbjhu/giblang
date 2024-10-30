@@ -48,7 +48,7 @@ impl AstItem for Top {
             Top::Impl(i) => i.tokens(state, tokens),
             Top::Use(u) => {
                 u.tokens(state, tokens);
-                state.import(u);
+                let _ = state.import(u);
             }
         }
         state.exit_scope();
@@ -85,7 +85,7 @@ impl Top {
             Top::Trait(t) => Some(t.document_symbol(state, span)),
             Top::Impl(i) => Some(i.document_symbol(state, span)),
             Top::Use(u) => {
-                state.import(u);
+                let _ = state.import(u);
                 None
             }
         };

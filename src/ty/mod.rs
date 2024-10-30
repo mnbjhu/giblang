@@ -3,6 +3,7 @@ use salsa::Update;
 use crate::{db::path::ModulePath, parser::common::variance::Variance, util::Spanned};
 
 pub mod func;
+pub mod sub_tys;
 pub mod imply;
 pub mod inst;
 pub mod is_instance;

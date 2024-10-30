@@ -6,7 +6,7 @@ use crate::{
     util::{Span, Spanned},
 };
 
-use super::{is_instance::get_sub_tys, FuncTy, Ty};
+use super::{sub_tys::get_sub_tys, FuncTy, Ty};
 
 impl<'db> Ty<'db> {
     pub fn try_get_func_ty(&self, state: &mut CheckState<'db>, span: Span) -> Option<FuncTy<'db>> {
@@ -14,7 +14,7 @@ impl<'db> Ty<'db> {
             Some(func_ty.clone())
         } else if let Ty::Meta(ty) = self {
             if let Ty::Named { name, .. } = ty.as_ref() {
-                let decl = state.try_get_decl(*name);
+                let decl = state.try_get_decl_path(*name);
                 if let Some(decl) = decl {
                     if let DeclKind::Struct { body, .. } = decl.kind(state.db) {
                         return body
@@ -64,7 +64,7 @@ impl<'db> Ty<'db> {
         let Ty::Named { name, args } = self else {
             return Vec::new();
         };
-        let Some(decl) = state.try_get_decl(*name) else {
+        let Some(decl) = state.try_get_decl_path(*name) else {
             return Vec::new();
         };
         let DeclKind::Struct { body, generics } = decl.kind(state.db) else {

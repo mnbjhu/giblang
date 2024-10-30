@@ -6,9 +6,9 @@ impl<'db> Match {
         let mut ret = Ty::Unknown;
         for arm in &self.arms {
             if ret == Ty::Unknown {
-                ret = arm.0.check(state, expr_ty.clone());
+                ret = arm.0.check(state, &expr_ty);
             } else {
-                arm.0.expected_instance_of(&ret, state, expr_ty.clone());
+                arm.0.expected_instance_of(&ret, state, &expr_ty);
             }
         }
         ret
@@ -17,7 +17,7 @@ impl<'db> Match {
     pub fn is_instance_of(&self, expected: &Ty<'db>, state: &mut CheckState<'db>) {
         let expr_ty = self.expr.0.check(state);
         for arm in &self.arms {
-            arm.0.expected_instance_of(expected, state, expr_ty.clone());
+            arm.0.expected_instance_of(expected, state, &expr_ty);
         }
     }
 }

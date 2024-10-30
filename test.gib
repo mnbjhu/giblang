@@ -1,5 +1,6 @@
 use std::String
 use std::Int
+use std::Float
 use std::println
 use std::print
 use std::Option
@@ -47,16 +48,20 @@ impl From[String] for Int {
 
 fn test(thing: Test) {
     let other = 123
-    let new = std::Vec::new()
     let test = std::Vec::new()
     test.push(other)
     let some = Option::Some(123)
-    let transform = { x: Int -> x.add(x) }
-    let transformed = some.map(String::from)
+    let transform =  { x: Int -> 
+        x.add(x)
+    }
+    let some_test: Option[Int].() -> Int =  { 
+        self.unwrap()
+    }
+    let another_test: (Option[Int]) -> Int =  { it -> 
+        it.unwrap()
+    }
     let test = some.unwrap()
     let inner = some.expect("Test")
-    let thing = Basic::from("Hello")
-
 }
 
 impl[T] std::Option[T] {
@@ -72,7 +77,7 @@ impl[T] std::Option[T] {
             Option::None => panic(text)
         }
     }
-    fn Self.map[U: String](f: (T) -> U): Option[U] {
+    fn Self.map[U:  String](f: (T) -> U): Option[U] {
         match self {
             Option::Some(inner) => Option::Some(f(inner)),
             Option::None => Option::None

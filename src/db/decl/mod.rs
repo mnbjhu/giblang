@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use func::Function;
 use impl_::ImplForDecl;
-use salsa::{Accumulator, Update};
+use salsa::Update;
 use struct_::StructDecl;
 
 pub mod func;
@@ -11,12 +11,11 @@ pub mod struct_;
 
 use crate::{
     check::{
-        err::{unresolved::Unresolved, IntoWithDb},
+        err::unresolved::Unresolved,
         state::CheckState,
         TokenKind,
     },
-    parser::expr::qualified_name::SpannedQualifiedName,
-    ty::{is_instance::get_sub_tys, FuncTy, Generic, Ty},
+    ty::{sub_tys::get_sub_tys, FuncTy, Generic, Ty},
     util::{Span, Spanned},
 };
 
@@ -108,7 +107,7 @@ impl<'db> Decl<'db> {
                     Ty::Unknown
                 }
             }
-            DeclKind::Function(f) => Ty::Function(f.get_ty(state)),
+            DeclKind::Function(f) => Ty::Function(f.get_ty()),
             DeclKind::Module(_) => Ty::unit(),
         }
     }
@@ -128,7 +127,7 @@ impl<'db> Decl<'db> {
     pub fn get_named_ty(self, state: &CheckState<'db>) -> Ty<'db> {
         if let DeclKind::Member { .. } = &self.kind(state.db) {
             let parent = self.path(state.db).get_parent(state.db);
-            let parent_decl = state.try_get_decl(parent);
+            let parent_decl = state.try_get_decl_path(parent);
             parent_decl
                 .expect("No parent found for decl")
                 .default_named_ty(state)
@@ -150,7 +149,7 @@ impl<'db> Decl<'db> {
         }
         let ty = self
             .default_named_ty(state)
-            .inst(&mut HashMap::new(), state, span);
+            .inst(state, span);
         let mut funcs = get_sub_tys(&ty, state)
             .iter()
             .flat_map(|t| t.get_funcs(state))
@@ -161,7 +160,7 @@ impl<'db> Decl<'db> {
 }
 
 impl<'db> Function<'db> {
-    pub fn get_ty(&self, state: &CheckState<'db>) -> FuncTy<'db> {
+    pub fn get_ty(&self) -> FuncTy<'db> {
         let args = self
             .args
             .iter()
@@ -196,82 +195,19 @@ impl<'db> Decl<'db> {
         Some(current)
     }
 
-    #[salsa::tracked]
-    pub fn get_path_without_error(
-        self,
-        db: &'db dyn Db,
-        path: SpannedQualifiedName,
-    ) -> Option<Decl<'db>> {
-        let segs = path
-            .iter()
-            .map(|(name, _)| name.to_string())
-            .collect::<Vec<_>>();
-        let module_path = ModulePath::new(db, segs.clone());
-        self.get_path(db, module_path)
-    }
-
-    #[salsa::tracked]
-    pub fn get_path_with_error(
-        self,
-        db: &'db dyn Db,
-        path: SpannedQualifiedName,
-        file: SourceFile,
-    ) -> Option<Decl<'db>> {
-        if path.is_empty() {
-            return Some(self);
-        }
-        let span = path.first().unwrap().1.start..path.last().unwrap().1.end;
-        let segs = path
-            .iter()
-            .map(|(name, _)| name.to_string())
-            .collect::<Vec<_>>();
-        let module_path = ModulePath::new(db, segs.clone());
-        let found = self.get_path(db, module_path);
-        if found.is_none() {
-            Unresolved {
-                name: (segs.join("::"), span.into()),
-                file,
+    pub fn try_get_path(self, state: &CheckState<'db>, path: &[Spanned<String>]) -> Result<Decl<'db>, Unresolved> {
+        let mut current = self;
+        for name in path {
+            if let Some(decl) = current.get(state.db, &name.0) {
+                current = decl;
+            } else {
+                return Err(Unresolved {
+                    name: (name.0.clone(), name.1),
+                    file: state.file_data,
+                });
             }
-            .into_with_db(db)
-            .accumulate(db);
-        };
-        found
-    }
-
-    pub fn get_path_with_state(
-        self,
-        state: &mut CheckState<'db>,
-        path: &[Spanned<String>],
-        file: SourceFile,
-        should_error: bool,
-    ) -> Option<Decl<'db>> {
-        self.get_path_with_state_inner(state, path, file, &mut Vec::new(), should_error)
-    }
-
-    fn get_path_with_state_inner(
-        self,
-        state: &mut CheckState<'db>,
-        path: &[Spanned<String>],
-        file: SourceFile,
-        current: &mut Vec<String>,
-        should_error: bool,
-    ) -> Option<Decl<'db>> {
-        if path.is_empty() {
-            Some(self)
-        } else if let Some(found) = self.get(state.db, &path[0].0) {
-            current.push(path[0].0.to_string());
-            found.get_path_with_state_inner(state, &path[1..], file, current, should_error)
-        } else {
-            if should_error {
-                Unresolved {
-                    name: (path[0].0.to_string(), path[0].1),
-                    file,
-                }
-                .into_with_db(state.db)
-                .accumulate(state.db);
-            }
-            None
         }
+        Ok(current)
     }
 
     pub fn into_func(self, db: &'db dyn Db) -> &'db Function<'db> {

@@ -15,7 +15,7 @@ impl<'db> Ty<'db> {
             Ty::Nothing => "Nothing".to_string(),
             Ty::Unknown => "Unknown".to_string(),
             Ty::Named { name, args } => {
-                let decl = state.try_get_decl(*name);
+                let decl = state.try_get_decl_path(*name);
                 // TODO: check unwrap
                 if decl.is_none() {
                     return format!("{{err:{}}}", name.name(state.db).join("::"));

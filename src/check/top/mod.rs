@@ -1,6 +1,6 @@
 use crate::parser::top::Top;
 
-use super::state::CheckState;
+use super::{err::CheckError, state::CheckState};
 
 pub mod enum_;
 pub mod func;
@@ -14,7 +14,12 @@ impl<'db> Top {
     pub fn check(&'db self, state: &mut CheckState<'db>) {
         state.enter_scope();
         match self {
-            Top::Use(u) => state.import(u),
+            Top::Use(u) => {
+                let res = state.import(u);
+                if let Err(e) = res {
+                    state.error(CheckError::Unresolved(e));
+                }
+            },
             Top::Enum(e) => e.check(state),
             Top::Trait(t) => t.check(state),
             Top::Struct(s) => s.check(state),

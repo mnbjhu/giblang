@@ -18,7 +18,7 @@ use crate::{
 };
 
 use super::{
-    err::{unresolved_type_var::UnboundTypeVar, Error, IntoWithDb},
+    err::{unresolved::Unresolved, unresolved_type_var::UnboundTypeVar, Error, IntoWithDb},
     type_state::TypeState,
 };
 
@@ -151,44 +151,31 @@ impl<'ty, 'db: 'ty> CheckState<'db> {
         }
     }
 
-    pub fn get_decl_with_error(&mut self, path: &[Spanned<String>]) -> Option<ModulePath<'db>> {
+    pub fn get_decl_with_error(
+        &mut self,
+        path: &[Spanned<String>],
+    ) -> Result<Decl<'db>, Unresolved> {
         if let Some(import) = self.imports.get(&path[0].0).copied() {
             let module = self
                 .project
                 .decls(self.db)
                 .get_path(self.db, import)
                 .unwrap();
-            if module
-                .get_path_with_state(self, &path[1..], self.file_data, self.should_error)
-                .is_some()
-            {
-                let mut new = import.name(self.db).clone();
-                new.extend(path[1..].iter().map(|(n, _)| n.to_string()));
-                Some(ModulePath::new(self.db, new))
-            } else {
-                None
-            }
-        } else if self
-            .project
-            .decls(self.db)
-            .get_path_with_state(self, path, self.file_data, self.should_error)
-            .is_some()
-        {
-            Some(ModulePath::new(
-                self.db,
-                path.iter().map(|(n, _)| n.to_string()).collect(),
-            ))
+            module.try_get_path(self, &path[1..])
         } else {
-            None
+            self.project.decls(self.db).try_get_path(self, path)
         }
     }
 
-    pub fn import(&mut self, use_: &SpannedQualifiedName) {
-        if self.get_decl_with_error(use_).is_some() {
+    pub fn import(&mut self, use_: &SpannedQualifiedName) -> Result<(), Unresolved> {
+        if let Err(e) = self.get_decl_with_error(use_) {
+            Err(e)
+        } else {
             self.imports.insert(
                 use_.last().unwrap().0.clone(),
                 ModulePath::new(self.db, use_.iter().map(|(name, _)| name.clone()).collect()),
             );
+            Ok(())
         }
     }
 
@@ -267,10 +254,10 @@ impl<'ty, 'db: 'ty> CheckState<'db> {
     }
 
     pub fn get_decl(&self, name: ModulePath<'db>) -> Decl<'db> {
-        self.try_get_decl(name).expect("Decl not found")
+        self.try_get_decl_path(name).expect("Decl not found")
     }
 
-    pub fn try_get_decl(&self, name: ModulePath<'db>) -> Option<Decl<'db>> {
+    pub fn try_get_decl_path(&self, name: ModulePath<'db>) -> Option<Decl<'db>> {
         self.project.get_decl(self.db, name)
     }
 }

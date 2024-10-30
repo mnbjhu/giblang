@@ -6,7 +6,7 @@ use crate::{
         state::CheckState,
     },
     db::{
-        decl::{impl_::ImplForDecl, Decl, DeclKind},
+        decl::{impl_::ImplForDecl, DeclKind},
         path::ModulePath,
     },
     parser::common::variance::Variance,
@@ -124,45 +124,6 @@ impl<'db> Ty<'db> {
     }
 }
 
-pub fn get_sub_decls<'db>(
-    name: ModulePath<'db>,
-    state: &mut CheckState<'db>,
-) -> Vec<ModulePath<'db>> {
-    state
-        .project
-        .get_impls(state.db, name)
-        .into_iter()
-        .filter(|i| i.to_ty(state.db).is_some())
-        .flat_map(|i| {
-            if let Ty::Named { name, .. } = i.to_ty(state.db).unwrap() {
-                let mut sub = get_sub_decls(name, state);
-                sub.push(name);
-                sub
-            } else {
-                unreachable!()
-            }
-        })
-        .collect()
-}
-
-pub fn get_sub_tys<'db>(name: &Ty<'db>, state: &mut CheckState<'db>) -> Vec<Ty<'db>> {
-    match name {
-        Ty::Named { name, .. } => state
-            .project
-            .get_impls(state.db, *name)
-            .into_iter()
-            .filter(|i| i.to_ty(state.db).is_some())
-            .flat_map(|i| {
-                let ty = i.to_ty(state.db);
-                let mut tys = get_sub_tys(ty.as_ref().unwrap(), state);
-                tys.push(ty.unwrap());
-                tys
-            })
-            .collect(),
-        _ => vec![],
-    }
-}
-
 impl<'db> Ty<'db> {
     pub fn get_func(
         &self,
@@ -172,7 +133,7 @@ impl<'db> Ty<'db> {
     ) -> Option<FuncTy<'db>> {
         if let Ty::Named { name: id, args } = self {
             if let Some(DeclKind::Trait { body, generics }) =
-                state.try_get_decl(*id).map(|d| d.kind(state.db))
+                state.try_get_decl_path(*id).map(|d| d.kind(state.db))
             {
                 if args.len() != generics.len() {
                     return None;
@@ -187,11 +148,9 @@ impl<'db> Ty<'db> {
                     .iter()
                     .find(|func| func.name(state.db) == name.0)
                     .map(|func| {
-                        let Ty::Function(func) = func.get_ty(state).parameterize(&params).inst(
-                            &mut HashMap::new(),
-                            state,
-                            name.1,
-                        ) else {
+                        let Ty::Function(func) =
+                            func.get_ty(state).parameterize(&params).inst(state, name.1)
+                        else {
                             panic!("Expected function");
                         };
                         func
@@ -238,7 +197,9 @@ impl<'db> Ty<'db> {
     pub fn get_funcs(&self, state: &mut CheckState<'db>) -> Vec<(String, FuncTy<'db>)> {
         let mut funcs = Vec::new();
         if let Ty::Named { name, .. } = self {
-            if let Some(DeclKind::Trait { body, .. }) = state.try_get_decl(*name).map(|d|d.kind(state.db)) {
+            if let Some(DeclKind::Trait { body, .. }) =
+                state.try_get_decl_path(*name).map(|d| d.kind(state.db))
+            {
                 funcs.extend(body.iter().map(|func_decl| {
                     let Ty::Function(func) = func_decl.get_ty(state) else {
                         panic!("Expected function");
@@ -261,12 +222,15 @@ impl<'db> Ty<'db> {
                     i.from_ty(state.db).imply_generic_args(self, &mut implied);
                     let self_ty = self.parameterize(&implied);
                     implied.insert("Self".to_string(), self_ty);
-                    i.functions(state.db).iter().map(|f|{
-                        let DeclKind::Function(func) = f.kind(state.db) else {
-                            panic!("Expected function");
-                        };
-                        (f.name(state.db), func.get_ty(state).parameterize(&implied))
-                    }).collect::<Vec<_>>()
+                    i.functions(state.db)
+                        .iter()
+                        .map(|f| {
+                            let DeclKind::Function(func) = f.kind(state.db) else {
+                                panic!("Expected function");
+                            };
+                            (f.name(state.db), func.get_ty().parameterize(&implied))
+                        })
+                        .collect::<Vec<_>>()
                 });
             funcs.extend(impls);
         }
@@ -344,117 +308,3 @@ fn expect_named_is_instance_of_named<'db>(
         panic!("Expected named types")
     }
 }
-
-// #[cfg(test)]
-// mod tests {
-//     use crate::{
-//         check::{state::CheckState, ty::tests::parse_ty_with_state},
-//         project::Project,
-//         util::Span,
-//     };
-//
-//     use super::path_to_sub_ty;
-//
-//     impl Project {
-//         #[must_use]
-//         pub fn ty_test() -> Project {
-//             let mut project = Project::from(
-//                 r"struct Foo
-//             struct Bar
-//             struct Baz[T]
-//             trait Magic {
-//                 fn magic(): Self
-//             }
-//             trait Epic {
-//                 fn epic(): Self
-//             }
-//             trait Strange [T] {
-//                 fn strange(): T
-//             }
-//
-//             impl Magic for Foo
-//
-//             impl Magic for Bar
-//             impl Epic for Bar
-//
-//             impl Strange[T] for Baz[T]",
-//             );
-//             project.resolve();
-//             project
-//         }
-//     }
-//
-//     #[test]
-//     fn test_path_to_subtype() {
-//         let project = Project::ty_test();
-//         let file_data = project.get_file(project.get_counter()).unwrap();
-//         let mut state = CheckState::from_file(file_data, &project);
-//         let foo = state
-//             .get_decl_without_error(&[("Foo".to_string(), Span::splat(0))])
-//             .unwrap();
-//         let magic = state
-//             .get_decl_without_error(&[("Magic".to_string(), Span::splat(0))])
-//             .unwrap();
-//
-//         let path = path_to_sub_ty(foo, magic, &mut state).expect("Expected path");
-//         assert_eq!(path.len(), 1);
-//     }
-//
-//     fn assert_instance_of(first: &str, second: &str) {
-//         let project = Project::ty_test();
-//         let file_data = project.get_file(project.get_counter()).unwrap();
-//         let mut state = CheckState::from_file(file_data, &project);
-//         let first = parse_ty_with_state(&mut state, first);
-//         let second = parse_ty_with_state(&mut state, second);
-//         let res = first.expect_is_instance_of(&second, &mut state, false, Span::splat(0));
-//         assert_eq!(state.errors, vec![]);
-//         assert!(
-//             res,
-//             "{} is not an instance of {}",
-//             first.get_name(&state),
-//             second.get_name(&state)
-//         );
-//     }
-//
-//     fn assert_not_instance_of(first: &str, second: &str) {
-//         let project = Project::ty_test();
-//         let file_data = project.get_file(project.get_counter()).unwrap();
-//         let mut state = CheckState::from_file(file_data, &project);
-//         let first = parse_ty_with_state(&mut state, first);
-//         let second = parse_ty_with_state(&mut state, second);
-//         let res = first.expect_is_instance_of(&second, &mut state, false, Span::splat(0));
-//         assert!(
-//             !res,
-//             "{} is an instance of {}",
-//             first.get_name(&state),
-//             second.get_name(&state)
-//         );
-//     }
-//
-//     #[test]
-//     fn any() {
-//         assert_instance_of("Any", "Any");
-//         assert_not_instance_of("Any", "Foo");
-//         assert_instance_of("Foo", "Any");
-//     }
-//
-//     #[test]
-//     fn foo_is_foo() {
-//         assert_instance_of("Foo", "Foo");
-//         assert_instance_of("Foo", "Magic");
-//     }
-//
-//     #[test]
-//     fn named() {
-//         assert_not_instance_of("Magic", "Foo");
-//         assert_not_instance_of("Foo", "Bar");
-//         assert_instance_of("Magic", "Magic");
-//     }
-//
-//     // TODO: Maybe remove?
-//     // #[test]
-//     // fn sum() {
-//     //     assert_instance_of("Foo + Bar", "Foo");
-//     //     assert_instance_of("Foo + Bar", "Bar");
-//     // }
-// }

@@ -13,12 +13,7 @@ impl NamedType {
                 return Ty::Generic(generic);
             }
         };
-        if let Some(decl_id) = state.get_decl_with_error(&self.name) {
-            let decl = state.try_get_decl(decl_id);
-            if decl.is_none() {
-                return Ty::Unknown;
-            }
-            let decl = decl.unwrap();
+        if let Ok(decl) = state.get_decl_with_error(&self.name) {
             let args = self
                 .args
                 .iter()
@@ -26,7 +21,7 @@ impl NamedType {
                 .map(|(arg, gen)| arg.0.expect_is_bound_by(&gen, state, arg.1))
                 .collect();
             return Ty::Named {
-                name: decl_id,
+                name: decl.path(state.db),
                 args,
             };
         };
