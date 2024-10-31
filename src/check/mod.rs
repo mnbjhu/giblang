@@ -1,17 +1,14 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, ops::ControlFlow};
 
 use salsa::Update;
+use state::CheckState;
 
 use crate::{
     db::{
         decl::{impl_::ImplForDecl, Project},
         input::{Db, SourceFile, Vfs, VfsInner},
         path::ModulePath,
-    },
-    parser::parse_file,
-    resolve::{resolve_impls_vfs, resolve_vfs},
-    ty::Ty,
-    util::Span,
+    }, item::AstItem, parser::parse_file, resolve::{resolve_impls_vfs, resolve_vfs}, ty::Ty, util::Span
 };
 
 mod common;
@@ -91,4 +88,23 @@ pub fn check_vfs<'db>(db: &'db dyn Db, vfs: Vfs, project: Project<'db>) {
 pub fn check_project<'db>(db: &'db dyn Db, vfs: Vfs) {
     let project = resolve_project(db, vfs);
     check_vfs(db, vfs, project);
+}
+
+struct CurrentScope<'db, 'scope> {
+    state: &'scope CheckState<'db>,
+    node: &'scope dyn AstItem,
+    enter: bool,
+}
+
+trait Check<'db> {
+    type Output;
+
+    fn enter(&self, state: &mut CheckState<'db>);
+    fn exit(&self, state: &mut CheckState<'db>);
+
+    fn check_inner(&self, state: &mut CheckState<'db>) -> Self::Output;
+    fn expect_inner(&self, state: &mut CheckState<'db>, expected: &Ty<'db>, span: Span);
+
+    fn check<F: Fn(&CheckState) -> bool>(&self, state: &mut CheckState<'db>, f: F) -> ControlFlow<Self::Output> {
+    }
 }

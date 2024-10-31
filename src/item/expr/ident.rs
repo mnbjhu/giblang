@@ -64,7 +64,7 @@ impl AstItem for SpannedQualifiedName {
             .position(|(_, span)| span.contains_offset(offset))?;
         let path = &self[..=index];
         let found = state.get_ident_def(path);
-        let Ok(found) = found else { return None };
+        let Ok(found) = found else { return Some("Not Found".to_string()) };
         match found {
             IdentDef::Variable(var) => Some(var.hover(state, type_vars)),
             IdentDef::Generic(g) => Some(g.hover(state)),
