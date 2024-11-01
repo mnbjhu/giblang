@@ -52,7 +52,8 @@ impl AstItem for Impl {
             if span.contains_offset(offset) {
                 return func.at_offset(state, offset);
             }
-            func.check(state, false);
+            // TODO: REPLACING THIS
+            // func.check(state, false);
         }
         self
     }

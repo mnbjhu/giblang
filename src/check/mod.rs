@@ -1,4 +1,4 @@
-use std::{collections::HashMap, ops::ControlFlow};
+use std::{collections::HashMap, ops::ControlFlow, ptr::eq};
 
 use salsa::Update;
 use state::CheckState;
@@ -8,7 +8,12 @@ use crate::{
         decl::{impl_::ImplForDecl, Project},
         input::{Db, SourceFile, Vfs, VfsInner},
         path::ModulePath,
-    }, item::AstItem, parser::parse_file, resolve::{resolve_impls_vfs, resolve_vfs}, ty::Ty, util::Span
+    },
+    item::{common::type_::ContainsOffset, AstItem},
+    parser::parse_file,
+    resolve::{resolve_impls_vfs, resolve_vfs},
+    ty::Ty,
+    util::Span,
 };
 
 mod common;
@@ -16,9 +21,48 @@ pub mod err;
 pub mod expr;
 pub mod state;
 mod stmt;
-mod top;
+pub mod top;
 pub mod ty;
 mod type_state;
+
+pub trait Check<'ast, 'db, Iter: ControlIter<'ast>, T = (), A = ()> {
+    #[must_use]
+    fn check(
+        &'ast self,
+        state: &mut CheckState<'db>,
+        control: &mut Iter,
+        span: Span,
+        args: A,
+    ) -> ControlFlow<&'ast dyn AstItem, T>;
+
+    #[must_use]
+    fn expect(
+        &'ast self,
+        state: &mut CheckState<'db>,
+        control: &mut Iter,
+        expected: &Ty<'db>,
+        span: Span,
+        args: A,
+    ) -> ControlFlow<&'ast dyn AstItem, T> {
+        self.check(state, control, span, args)
+    }
+}
+
+pub trait ControlIter<'ast> {
+    fn act(
+        &mut self,
+        item: &'ast dyn AstItem,
+        state: &mut CheckState,
+        dir: Dir,
+        span: Span,
+    ) -> ControlFlow<&'ast dyn AstItem>;
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Dir {
+    Enter,
+    Exit,
+}
 
 #[derive(Debug, Clone, Update)]
 pub enum TokenKind {
@@ -57,6 +101,18 @@ pub fn resolve_project<'db>(db: &'db dyn Db, vfs: Vfs) -> Project<'db> {
     Project::new(db, decls, impl_map)
 }
 
+impl<'ast> ControlIter<'ast> for () {
+    fn act(
+        &mut self,
+        _: &'ast dyn AstItem,
+        _: &mut CheckState,
+        _: Dir,
+        _: Span,
+    ) -> ControlFlow<&'ast dyn AstItem> {
+        ControlFlow::Continue(())
+    }
+}
+
 #[salsa::tracked]
 pub fn check_file<'db>(
     db: &'db dyn Db,
@@ -66,7 +122,7 @@ pub fn check_file<'db>(
     let mut state = state::CheckState::from_file(db, file, project);
     let ast = parse_file(db, file);
     for top in ast.tops(db) {
-        top.0.check(&mut state);
+        let _ = top.check(&mut state, &mut (), ());
     }
     state.get_type_vars()
 }
@@ -90,21 +146,34 @@ pub fn check_project<'db>(db: &'db dyn Db, vfs: Vfs) {
     check_vfs(db, vfs, project);
 }
 
-struct CurrentScope<'db, 'scope> {
-    state: &'scope CheckState<'db>,
-    node: &'scope dyn AstItem,
-    enter: bool,
+pub struct AtOffsetIter<'ast> {
+    offset: usize,
+    last: Option<&'ast dyn AstItem>,
 }
 
-trait Check<'db> {
-    type Output;
-
-    fn enter(&self, state: &mut CheckState<'db>);
-    fn exit(&self, state: &mut CheckState<'db>);
-
-    fn check_inner(&self, state: &mut CheckState<'db>) -> Self::Output;
-    fn expect_inner(&self, state: &mut CheckState<'db>, expected: &Ty<'db>, span: Span);
-
-    fn check<F: Fn(&CheckState) -> bool>(&self, state: &mut CheckState<'db>, f: F) -> ControlFlow<Self::Output> {
+impl<'ast> ControlIter<'ast> for AtOffsetIter<'ast> {
+    fn act(
+        &mut self,
+        item: &'ast dyn AstItem,
+        _: &mut CheckState,
+        dir: Dir,
+        span: Span,
+    ) -> ControlFlow<&'ast dyn AstItem> {
+        match dir {
+            Dir::Enter => {
+                if span.contains_offset(self.offset) {
+                    self.last = Some(item);
+                }
+                ControlFlow::Continue(())
+            }
+            Dir::Exit => {
+                if let Some(last) = self.last {
+                    if eq(last, item) {
+                        return ControlFlow::Break(last);
+                    }
+                }
+                ControlFlow::Continue(())
+            }
+        }
     }
 }

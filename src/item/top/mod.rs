@@ -1,7 +1,7 @@
 use async_lsp::lsp_types::DocumentSymbol;
 
 use crate::{
-    check::{state::CheckState, SemanticToken},
+    check::{state::CheckState},
     parser::top::Top,
     util::Span,
 };
@@ -20,39 +20,6 @@ pub mod trait_;
 pub mod use_;
 
 impl AstItem for Top {
-    fn at_offset<'me>(&'me self, state: &mut CheckState, offset: usize) -> &'me dyn AstItem
-    where
-        Self: Sized,
-    {
-        state.enter_scope();
-        if let Some(name) = self.get_name() {
-            state.path.push(name.to_string());
-        }
-        match self {
-            Top::Func(f) => f.at_offset(state, offset),
-            Top::Struct(s) => s.at_offset(state, offset),
-            Top::Enum(e) => e.at_offset(state, offset),
-            Top::Trait(t) => t.at_offset(state, offset),
-            Top::Impl(i) => i.at_offset(state, offset),
-            Top::Use(u) => u.at_offset(state, offset),
-        }
-    }
-
-    fn tokens(&self, state: &mut CheckState, tokens: &mut Vec<SemanticToken>) {
-        state.enter_scope();
-        match self {
-            Top::Func(f) => f.tokens(state, tokens),
-            Top::Struct(s) => s.tokens(state, tokens),
-            Top::Enum(e) => e.tokens(state, tokens),
-            Top::Trait(t) => t.tokens(state, tokens),
-            Top::Impl(i) => i.tokens(state, tokens),
-            Top::Use(u) => {
-                u.tokens(state, tokens);
-                let _ = state.import(u);
-            }
-        }
-        state.exit_scope();
-    }
 
     fn pretty<'b, D, A>(&'b self, allocator: &'b D) -> pretty::DocBuilder<'b, D, A>
     where
@@ -62,11 +29,11 @@ impl AstItem for Top {
         A: Clone,
     {
         match self {
-            Top::Struct(s) => s.pretty(allocator),
-            Top::Func(f) => f.pretty(allocator),
-            Top::Enum(e) => e.pretty(allocator),
-            Top::Trait(t) => t.pretty(allocator),
-            Top::Impl(i) => i.pretty(allocator),
+            Top::Struct(s) => s.0.pretty(allocator),
+            Top::Func(f) => f.0.pretty(allocator),
+            Top::Enum(e) => e.0.pretty(allocator),
+            Top::Trait(t) => t.0.pretty(allocator),
+            Top::Impl(i) => i.0.pretty(allocator),
             Top::Use(u) => allocator
                 .text("use")
                 .append(allocator.space())
@@ -79,11 +46,11 @@ impl Top {
     pub fn document_symbol(&self, state: &mut CheckState, span: Span) -> Option<DocumentSymbol> {
         state.enter_scope();
         let found = match self {
-            Top::Func(f) => Some(f.document_symbol(state, span)),
-            Top::Struct(s) => Some(s.document_symbol(state, span)),
-            Top::Enum(e) => Some(e.document_symbol(state, span)),
-            Top::Trait(t) => Some(t.document_symbol(state, span)),
-            Top::Impl(i) => Some(i.document_symbol(state, span)),
+            Top::Func(f) => Some(f.0.document_symbol(state, span)),
+            Top::Struct(s) => Some(s.0.document_symbol(state, span)),
+            Top::Enum(e) => Some(e.0.document_symbol(state, span)),
+            Top::Trait(t) => Some(t.0.document_symbol(state, span)),
+            Top::Impl(i) => Some(i.0.document_symbol(state, span)),
             Top::Use(u) => {
                 let _ = state.import(u);
                 None

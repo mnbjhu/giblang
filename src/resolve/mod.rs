@@ -45,7 +45,7 @@ pub fn resolve_impls<'db>(db: &'db dyn Db, file: SourceFile) -> Vec<ImplForDecl<
             }
             if let Top::Impl(impl_) = &item.0 {
                 state.enter_scope();
-                let impl_ = impl_.resolve(&mut state);
+                let impl_ = impl_.0.resolve(&mut state);
                 state.exit_scope();
                 Some(impl_)
             } else {

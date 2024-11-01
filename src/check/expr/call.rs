@@ -1,11 +1,9 @@
+use std::ops::ControlFlow;
+
 use crate::{
     check::{
-        err::{missing_receiver::MissingReceiver, unexpected_args::UnexpectedArgs, CheckError},
-        state::CheckState,
-    },
-    parser::expr::call::Call,
-    ty::{FuncTy, Ty},
-    util::Span,
+        err::{missing_receiver::MissingReceiver, unexpected_args::UnexpectedArgs, CheckError}, state::CheckState, Check, ControlIter
+    }, item::AstItem, parser::expr::call::Call, ty::{FuncTy, Ty}, util::{Span, Spanned}
 };
 
 impl<'db> Call {
@@ -69,5 +67,30 @@ impl<'db> Call {
     ) {
         let ret = self.check(state);
         ret.expect_is_instance_of(expected, state, false, span);
+    }
+}
+
+impl<'ast, 'db, Iter: ControlIter<'ast>> Check<'ast, 'db, Iter, Ty<'db>> for Call {
+    fn check(
+        &'ast self,
+        state: &mut CheckState<'db>,
+        control: &mut Iter,
+        span: Span,
+        (): (),
+    ) -> ControlFlow<&'ast dyn AstItem, Ty<'db>> {
+        self.0.check(state);
+        ControlFlow::Continue(Ty::unit())
+    }
+
+    fn expect(
+        &'ast self,
+        state: &mut CheckState<'db>,
+        control: &mut Iter,
+        expected: &Ty<'db>,
+        span: Span,
+        (): (),
+    ) -> std::ops::ControlFlow<&'ast dyn AstItem, Ty<'db>> {
+        self.expected_instance_of(expected, state, self.1);
+        ControlFlow::Continue(expected.clone())
     }
 }

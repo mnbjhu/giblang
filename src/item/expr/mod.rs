@@ -38,7 +38,7 @@ impl AstItem for Expr {
                     if stmt.1.contains_offset(offset) {
                         return stmt.0.at_offset(state, offset);
                     }
-                    stmt.0.check(state);
+                    stmt.check(state);
                 }
                 self
             }

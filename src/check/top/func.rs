@@ -1,14 +1,15 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, ops::ControlFlow};
 
 use crate::{
-    check::{
-        expr::code_block::{check_code_block, check_code_block_is},
-        state::CheckState,
-    },
+    check::{state::CheckState, ControlIter, Dir},
     db::decl::func::Function,
+    item::AstItem,
     parser::top::func::Func,
     ty::{Generic, Ty},
+    util::{Span, Spanned},
 };
+
+use super::Check;
 
 impl<'db> Func {
     pub fn add_self_param(&self, self_ty: Ty<'db>, state: &mut CheckState<'db>) {
@@ -19,28 +20,6 @@ impl<'db> Func {
             _ => {
                 state.add_self_param(self_ty.clone(), self.receiver.as_ref().unwrap().1);
             }
-        }
-    }
-
-    pub fn check(&self, state: &mut CheckState<'_>, allow_empty: bool) {
-        self.generics.0.check(state);
-        if let Some(rec) = &self.receiver {
-            let self_ty = rec.0.check(state);
-            self.add_self_param(self_ty, state);
-        }
-        for arg in &self.args {
-            arg.0.check(state);
-        }
-        if self.ret.is_some() && !allow_empty {
-            let expected = self.ret.as_ref().unwrap().0.check(state);
-            check_code_block_is(
-                state,
-                &expected,
-                self.body.as_ref().unwrap_or(&vec![]),
-                self.name.1,
-            );
-        } else if let Some(body) = &self.body {
-            check_code_block(state, body);
         }
     }
 
@@ -142,5 +121,37 @@ impl<'db> Func {
                 );
             }
         }
+    }
+}
+
+impl<'ast, 'db, Iter: ControlIter<'ast>> Check<'ast, 'db, Iter, (), bool> for Spanned<Func> {
+    fn check(
+        &'ast self,
+        state: &mut CheckState<'db>,
+        control: &mut Iter,
+        span: Span,
+        allow_empty: bool,
+    ) -> ControlFlow<&'ast dyn AstItem> {
+        control.act(&self.0, state, Dir::Enter, self.1)?;
+        self.0.generics.0.check(state);
+        if let Some(rec) = &self.0.receiver {
+            let self_ty = rec.0.check(state);
+            self.0.add_self_param(self_ty, state);
+        }
+        for arg in &self.0.args {
+            arg.0.check(state);
+        }
+        if self.0.ret.is_some() && !allow_empty {
+            let expected = self.0.ret.as_ref().unwrap().0.check(state);
+            self.0
+                .body
+                .as_ref()
+                .unwrap_or(&vec![])
+                .expect(state, control, &expected, span, ());
+        } else if let Some(body) = &self.0.body {
+            body.check(state, control, span, ());
+        }
+        control.act(&self.0, state, Dir::Exit, self.1)?;
+        ControlFlow::Continue(())
     }
 }

@@ -1,31 +1,43 @@
-use crate::{parser::expr::Expr, ty::Ty, util::Span};
+use std::ops::ControlFlow;
+
+use crate::{
+    item::AstItem,
+    parser::expr::Expr,
+    ty::Ty,
+    util::{Span, Spanned},
+};
 
 use self::{
-    code_block::{check_code_block, check_code_block_is},
     ident::{check_ident, check_ident_is},
     tuple::{check_tuple, check_tuple_is},
 };
 
-use super::state::CheckState;
+use super::{state::CheckState, Check, ControlIter};
 
 pub mod call;
 pub mod code_block;
 pub mod field;
 pub mod ident;
+pub mod lambda;
 pub mod lit;
 pub mod match_;
 pub mod match_arm;
 pub mod member;
 pub mod op;
 pub mod tuple;
-pub mod lambda;
 
-impl<'db> Expr {
-    pub fn check(&self, state: &mut CheckState<'db>) -> Ty<'db> {
+impl<'ast, 'db, Iter: ControlIter<'ast>> Check<'ast, 'db, Iter, Ty<'db>> for Spanned<Expr> {
+    fn check(
+        &'ast self,
+        state: &mut CheckState<'db>,
+        control: &mut Iter,
+        span: Span,
+        args: (),
+    ) -> ControlFlow<&'ast dyn AstItem, Ty<'db>> {
         match self {
             Expr::Literal(lit) => lit.to_ty(state.db),
             Expr::Ident(ident) => check_ident(state, ident),
-            Expr::CodeBlock(block) => check_code_block(state, block),
+            Expr::CodeBlock(block) => block.check(state),
             // TODO: Actually think about generics
             Expr::Call(call) => call.check(state),
             Expr::Match(match_) => match_.check(state),
@@ -40,11 +52,18 @@ impl<'db> Expr {
         }
     }
 
-    pub fn expect_instance_of(&self, expected: &Ty<'db>, state: &mut CheckState<'db>, span: Span) {
-        match self {
+    fn expect(
+        &'ast self,
+        state: &mut CheckState<'db>,
+        control: &mut Iter,
+        expected: &Ty<'db>,
+        span: Span,
+        args: (),
+    ) -> ControlFlow<&'ast dyn AstItem, Ty<'db>> {
+        match &self.0 {
             Expr::Literal(lit) => lit.expect_instance_of(expected, state, span),
             Expr::Ident(ident) => check_ident_is(state, ident, expected),
-            Expr::CodeBlock(block) => check_code_block_is(state, expected, block, span),
+            Expr::CodeBlock(block) => block.expect(state, control, (), expected),
             Expr::Call(call) => call.expected_instance_of(expected, state, span),
             Expr::Match(match_) => match_.is_instance_of(expected, state),
             Expr::Tuple(v) => check_tuple_is(state, expected, v, span),

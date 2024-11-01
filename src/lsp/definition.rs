@@ -41,3 +41,4 @@ pub fn goto_definition(
         Ok(None)
     }
 }
+

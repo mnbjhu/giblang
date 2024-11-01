@@ -1,6 +1,12 @@
-use crate::parser::top::Top;
+use std::ops::ControlFlow;
 
-use super::{err::CheckError, state::CheckState};
+use crate::{
+    item::AstItem,
+    parser::top::Top,
+    util::{Span, Spanned},
+};
+
+use super::{err::CheckError, state::CheckState, Check, ControlIter};
 
 pub mod enum_;
 pub mod func;
@@ -10,22 +16,29 @@ pub mod struct_;
 pub mod struct_body;
 pub mod trait_;
 
-impl<'db> Top {
-    pub fn check(&'db self, state: &mut CheckState<'db>) {
+impl<'ast, 'db, Iter: ControlIter<'ast>> Check<'ast, 'db, Iter> for Top {
+    fn check(
+        &'ast self,
+        state: &mut CheckState<'db>,
+        control: &mut Iter,
+        span: Span,
+        (): (),
+    ) -> ControlFlow<&'ast dyn AstItem> {
         state.enter_scope();
-        match self {
+        match &self {
             Top::Use(u) => {
                 let res = state.import(u);
                 if let Err(e) = res {
                     state.error(CheckError::Unresolved(e));
                 }
-            },
-            Top::Enum(e) => e.check(state),
-            Top::Trait(t) => t.check(state),
-            Top::Struct(s) => s.check(state),
-            Top::Func(f) => f.check(state, false),
-            Top::Impl(i) => i.check(state),
+            }
+            Top::Enum(e) => e.check(state, control, span, ())?,
+            Top::Trait(t) => t.check(state, control, span, ())?,
+            Top::Struct(s) => s.check(state, control, span, ())?,
+            Top::Func(f) => f.check(state, control, span, false)?,
+            Top::Impl(i) => i.check(state, control, span, ())?,
         }
         state.exit_scope();
+        ControlFlow::Continue(())
     }
 }

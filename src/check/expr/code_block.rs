@@ -1,31 +1,48 @@
-use crate::{check::state::CheckState, parser::expr::code_block::CodeBlock, ty::Ty, util::Span};
+use std::ops::ControlFlow;
 
-pub fn check_code_block<'db>(state: &mut CheckState<'db>, block: &CodeBlock) -> Ty<'db> {
-    state.enter_scope();
-    let mut ret = Ty::unit();
-    for (stmt, _) in block {
-        ret = stmt.check(state);
-    }
-    state.exit_scope();
-    ret
-}
+use crate::{
+    check::{state::CheckState, Check, ControlIter},
+    item::AstItem,
+    parser::expr::code_block::CodeBlock,
+    ty::Ty,
+    util::Span,
+};
 
-pub fn check_code_block_is<'db>(
-    state: &mut CheckState<'db>,
-    expected: &Ty<'db>,
-    block: &CodeBlock,
-    span: Span,
-) {
-    if block.is_empty() {
-        Ty::unit().expect_is_instance_of(expected, state, false, span);
-        return;
+impl<'ast, 'db, Iter: ControlIter<'ast>> Check<'ast, 'db, Iter, Ty<'db>> for CodeBlock {
+    fn check(
+        &'ast self,
+        state: &mut CheckState<'db>,
+        control: &mut Iter,
+        span: Span,
+        (): (),
+    ) -> ControlFlow<&'ast dyn AstItem, Ty<'db>> {
+        state.enter_scope();
+        let mut ret = Ty::unit();
+        for stmt in self {
+            ret = stmt.check(state, control, (), span)?;
+        }
+        state.exit_scope();
+        ControlFlow::Continue(ret)
     }
-    state.enter_scope();
-    for (stmt, _) in &block[0..block.len() - 1] {
-        stmt.check(state);
-    }
-    let last = block.last().unwrap();
 
-    last.0.expect_is_instance(expected, state, last.1);
-    state.exit_scope();
+    fn expect(
+        &'ast self,
+        state: &mut CheckState<'db>,
+        control: &mut Iter,
+        expected: &Ty<'db>,
+        span: Span,
+        args: (),
+    ) -> ControlFlow<&'ast dyn AstItem, Ty<'db>> {
+        if self.is_empty() {
+            Ty::unit().expect_is_instance_of(expected, state, false, span);
+            return;
+        }
+        state.enter_scope();
+        for stmt in &self[0..self.len() - 1] {
+            stmt.check(state, control, expected, stmt.1);
+        }
+        let last = self.last().unwrap();
+        last.expect(state, control, expected, last.1, ());
+        state.exit_scope();
+    }
 }

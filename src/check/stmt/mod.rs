@@ -1,24 +1,42 @@
-use crate::{parser::stmt::Stmt, ty::Ty, util::Span};
+use std::ops::ControlFlow;
 
-use super::state::CheckState;
+use crate::{
+    item::AstItem, parser::stmt::Stmt, ty::Ty, util::Span
+};
+
+use super::{state::CheckState, Check, ControlIter};
 
 pub mod let_;
 
-impl<'db> Stmt {
-    pub fn check(&self, state: &mut CheckState<'db>) -> Ty<'db> {
-        match self {
+impl<'ast, 'db, Iter: ControlIter<'ast>> Check<'ast, 'db, Iter, Ty<'db>> for Stmt {
+    fn check(
+        &'ast self,
+        state: &mut CheckState<'db>,
+        control: &mut Iter,
+        span: Span,
+        (): (),
+    ) -> ControlFlow<&'ast dyn AstItem, Ty<'db>> {
+        let ty = match &self {
             Stmt::Let(l) => {
-                l.check(state);
+                l.0.check(state, control, l.1, ());
                 Ty::unit()
             }
             Stmt::Expr(e) => e.check(state),
-        }
+        };
+        ControlFlow::Continue(ty)
     }
 
-    pub fn expect_is_instance(&self, expected: &Ty<'db>, state: &mut CheckState<'db>, span: Span) {
-        match self {
+    fn expect(
+        &'ast self,
+        state: &mut CheckState<'db>,
+        control: &mut Iter,
+        expected: &Ty<'db>,
+        span: Span,
+        (): (),
+    ) -> std::ops::ControlFlow<&'ast dyn crate::item::AstItem, Ty<'db>> {
+        match &self.0 {
             Stmt::Let(l) => {
-                l.check(state);
+                l.check(state, control, ());
                 let actual = Ty::unit();
                 if !expected.eq(&actual) {
                     state.simple_error(
@@ -27,11 +45,12 @@ impl<'db> Stmt {
                             expected.get_name(state, None),
                             actual.get_name(state, None),
                         ),
-                        span,
+                        self.1,
                     );
                 }
             }
-            Stmt::Expr(e) => e.expect_instance_of(expected, state, span),
+            Stmt::Expr(e) => e.expect_instance_of(expected, state, self.1),
         }
+        ControlFlow::Continue(expected.clone())
     }
 }

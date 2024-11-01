@@ -74,7 +74,8 @@ impl<'db> Ast<'db> {
             if span.contains_offset(offset) {
                 return Some(item.at_offset(state, offset));
             }
-            item.check(state);
+            // item.check(state);
+            // TODO: REPLACING THIS
         }
         None
     }
