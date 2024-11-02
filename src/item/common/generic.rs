@@ -8,38 +8,17 @@ use crate::{
 };
 
 impl AstItem for GenericArg {
-    fn at_offset<'me>(&'me self, state: &mut CheckState, offset: usize) -> &'me dyn AstItem
-    where
-        Self: Sized,
-    {
-        if let Some(super_) = &self.super_ {
-            if super_.1.start <= offset && offset <= super_.1.end {
-                return super_.0.at_offset(state, offset);
-            }
-        }
-        self
-    }
-
     fn hover(
         &self,
         state: &mut CheckState,
         _: usize,
-        type_vars: &HashMap<u32, Ty<'_>>,
+        _: &HashMap<u32, Ty<'_>>,
+        _: &Ty<'_>,
     ) -> Option<String> {
-        if let Some(super_) = &self.super_ {
-            let ty = super_.0.check(state);
-            Some(format!(
-                "{}: {}",
-                self.name.0,
-                ty.get_name(state, Some(type_vars))
-            ))
-        } else {
-            Some(self.name.0.clone())
-        }
+        Some(state.get_generic(&self.name.0).unwrap().hover(state))
     }
 
-    fn tokens(&self, state: &mut CheckState, tokens: &mut Vec<crate::check::SemanticToken>) {
-        self.check(state);
+    fn tokens(&self, _: &mut CheckState, tokens: &mut Vec<crate::check::SemanticToken>, _: &Ty<'_>) {
         tokens.push(crate::check::SemanticToken {
             span: self.name.1,
             kind: TokenKind::Generic,

@@ -1,32 +1,30 @@
 use std::ops::ControlFlow;
 
 use crate::{
-    check::{state::CheckState, Check, ControlIter, Dir},
-    item::AstItem,
-    parser::stmt::let_::LetStatement,
-    util::Span,
+    check::{state::CheckState, Check, ControlIter, Dir}, item::AstItem, parser::stmt::let_::LetStatement, ty::Ty, util::Span
 };
 
-impl<'ast, 'db, Iter: ControlIter<'ast>> Check<'ast, 'db, Iter> for LetStatement {
+impl<'ast, 'db, Iter: ControlIter<'ast, 'db>> Check<'ast, 'db, Iter, (),> for LetStatement {
     fn check(
         &'ast self,
         state: &mut CheckState<'db>,
         control: &mut Iter,
         span: Span,
         (): (),
-    ) -> ControlFlow<&'ast dyn AstItem, ()> {
+    ) -> ControlFlow<(&'ast dyn AstItem, Ty<'db>), ()> {
         control.act(self, state, Dir::Enter, span)?;
         let ty = if let Some(expected) = &self.ty {
-            let expected = expected.0.check(state);
+            let expected = expected.0.check(state, control, expected.1, ())?;
             self.value
                 .0
-                .expect_instance_of(&expected, state, self.0.value.1);
+                .expect(state, control, &expected, self.value.1, ())?;
             expected
         } else {
-            self.value.0.check(state)
+            self.value.0.check(state, control, self.value.1, ())?
         };
-        self.pattern.0.check(state, &ty);
-        control.act(self, state, Dir::Exit, span)?;
+        self.pattern.0.check(state, control, self.pattern.1, &ty)?;
+        control.act(self, state, Dir::Exit(Ty::unit()), span)?;
         ControlFlow::Continue(())
     }
 }
+

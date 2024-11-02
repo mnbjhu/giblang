@@ -1,13 +1,23 @@
+use std::ops::ControlFlow;
+
 use crate::{
-    check::state::CheckState,
+    check::{state::CheckState, Check, ControlIter, Dir},
+    item::AstItem,
     parser::expr::member::MemberCall,
     ty::{FuncTy, Ty},
     util::Span,
 };
 
-impl<'db> MemberCall {
-    pub fn check(&self, state: &mut CheckState<'db>) -> Ty<'db> {
-        let rec = self.rec.0.check(state);
+impl<'ast, 'db, Iter: ControlIter<'ast, 'db>> Check<'ast, 'db, Iter> for MemberCall {
+    fn check(
+        &'ast self,
+        state: &mut CheckState<'db>,
+        control: &mut Iter,
+        span: Span,
+        (): (),
+    ) -> ControlFlow<(&'ast dyn AstItem, Ty<'db>), Ty<'db>> {
+        control.act(self, state, Dir::Enter, span)?;
+        let rec = self.rec.0.check(state, control, self.rec.1, ())?;
         let Some(func_ty) = rec.get_member_func(&self.name, state) else {
             state.simple_error(
                 &format!(
@@ -17,7 +27,8 @@ impl<'db> MemberCall {
                 ),
                 self.name.1,
             );
-            return Ty::Unknown;
+            control.act(self, state, Dir::Exit(Ty::Unknown), span)?;
+            return ControlFlow::Continue(Ty::Unknown);
         };
         let FuncTy {
             args: expected_args,
@@ -25,7 +36,7 @@ impl<'db> MemberCall {
             receiver,
         } = func_ty;
         if let Some(rec) = receiver {
-            self.rec.0.expect_instance_of(&rec, state, self.rec.1);
+            self.rec.0.expect(state, control, &rec, self.rec.1, ())?;
         }
 
         if expected_args.len() != self.args.len() {
@@ -39,22 +50,24 @@ impl<'db> MemberCall {
             );
         }
 
-        self.args
-            .iter()
-            .zip(expected_args)
-            .for_each(|((arg, span), expected)| {
-                arg.expect_instance_of(&expected, state, *span);
-            });
-        ret.as_ref().clone()
+        for ((arg, span), expected) in self.args.iter().zip(expected_args) {
+            arg.expect(state, control, &expected, *span, ())?;
+        }
+        let ty = ret.as_ref().clone();
+        control.act(self, state, Dir::Exit(ty.clone()), span)?;
+        ControlFlow::Continue(ty)
     }
 
-    pub fn expected_instance_of(
-        &self,
-        expected: &Ty<'db>,
+    fn expect(
+        &'ast self,
         state: &mut CheckState<'db>,
+        control: &mut Iter,
+        expected: &Ty<'db>,
         span: Span,
-    ) {
-        let actual = self.check(state);
-        actual.expect_is_instance_of(expected, state, false, span);
+        (): (),
+    ) -> ControlFlow<(&'ast dyn AstItem, Ty<'db>), Ty<'db>> {
+        let ty = self.check(state, control, span, ())?;
+        ty.expect_is_instance_of(expected, state, false, span);
+        ControlFlow::Continue(ty)
     }
 }

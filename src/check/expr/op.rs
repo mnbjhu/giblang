@@ -1,19 +1,31 @@
-use crate::{check::state::CheckState, parser::expr::op::Op, ty::Ty, util::Span};
+use std::ops::ControlFlow;
 
-impl<'db> Op {
-    pub fn check(&self, state: &mut CheckState<'db>) -> Ty<'db> {
-        self.left.as_ref().0.check(state);
-        self.right.as_ref().0.check(state);
-        Ty::Unknown
+use crate::{check::{state::CheckState, Check, ControlIter}, item::AstItem, parser::expr::op::Op, ty::Ty, util::Span};
+
+impl<'ast, 'db, Iter: ControlIter<'ast, 'db>> Check<'ast, 'db, Iter> for Op {
+    fn check(
+        &'ast self,
+        state: &mut CheckState<'db>,
+        control: &mut Iter,
+        span: Span,
+        (): (),
+    ) -> ControlFlow<(&'ast dyn AstItem, Ty<'db>), Ty<'db>> {
+        self.left.as_ref().0.check(state, control, span, ())?;
+        self.right.as_ref().0.check(state, control, span, ())?;
+        // TODO: Implement operator checking
+        ControlFlow::Continue(Ty::Unknown)
     }
 
-    pub fn expected_instance_of(
-        &self,
-        expected: &Ty<'db>,
+    fn expect(
+        &'ast self,
         state: &mut CheckState<'db>,
+        control: &mut Iter,
+        expected: &Ty<'db>,
         span: Span,
-    ) {
-        let actual = self.check(state);
+        (): (),
+    ) -> ControlFlow<(&'ast dyn AstItem, Ty<'db>), Ty<'db>> {
+        let actual = self.check(state, control, span, ())?;
         actual.expect_is_instance_of(expected, state, false, span);
+        ControlFlow::Continue(Ty::Unknown)
     }
 }

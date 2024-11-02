@@ -5,7 +5,7 @@ use async_lsp::lsp_types::{DocumentSymbol, SymbolKind};
 use crate::{
     check::{state::CheckState, SemanticToken, TokenKind},
     item::{
-        common::{generics::braces, type_::ContainsOffset},
+        common::generics::braces,
         AstItem,
     },
     parser::top::enum_::Enum,
@@ -15,34 +15,14 @@ use crate::{
 };
 
 impl AstItem for Enum {
-    fn at_offset<'me>(&'me self, state: &mut CheckState, offset: usize) -> &'me dyn AstItem
-    where
-        Self: Sized,
-    {
-        if self.generics.1.contains_offset(offset) {
-            return self.generics.0.at_offset(state, offset);
-        }
-        for member in &self.members {
-            if member.1.contains_offset(offset) {
-                return member.0.at_offset(state, offset);
-            }
-        }
-        self
-    }
-
-    fn hover(&self, _: &mut CheckState, _: usize, _: &HashMap<u32, Ty<'_>>) -> Option<String> {
+    fn hover(&self, _: &mut CheckState, _: usize, _: &HashMap<u32, Ty<'_>>, _: &Ty<'_>) -> Option<String> {
         Some(format!("Enum {}", self.name.0))
     }
-
-    fn tokens(&self, state: &mut CheckState, tokens: &mut Vec<SemanticToken>) {
+fn tokens(&self, _: &mut CheckState, tokens: &mut Vec<SemanticToken>, _: &Ty<'_>) {
         tokens.push(SemanticToken {
             span: self.name.1,
             kind: TokenKind::Enum,
         });
-        self.generics.0.tokens(state, tokens);
-        for member in &self.members {
-            member.0.tokens(state, tokens);
-        }
     }
 
     fn pretty<'b, D, A>(&'b self, allocator: &'b D) -> pretty::DocBuilder<'b, D, A>
@@ -68,7 +48,6 @@ impl Enum {
         let txt = state.file_data.text(state.db);
         let range = span_to_range_str(span.into(), txt);
         let selection_range = span_to_range_str(self.name.1.into(), txt);
-        self.generics.0.check(state);
         DocumentSymbol {
             name: self.name.0.clone(),
             detail: Some("enum".to_string()),

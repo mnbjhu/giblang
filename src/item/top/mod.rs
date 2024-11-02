@@ -1,9 +1,7 @@
 use async_lsp::lsp_types::DocumentSymbol;
 
 use crate::{
-    check::{state::CheckState},
-    parser::top::Top,
-    util::Span,
+    check::state::CheckState, parser::top::Top, util::Span
 };
 
 use super::AstItem;
@@ -29,11 +27,11 @@ impl AstItem for Top {
         A: Clone,
     {
         match self {
-            Top::Struct(s) => s.0.pretty(allocator),
-            Top::Func(f) => f.0.pretty(allocator),
-            Top::Enum(e) => e.0.pretty(allocator),
-            Top::Trait(t) => t.0.pretty(allocator),
-            Top::Impl(i) => i.0.pretty(allocator),
+            Top::Struct(s) => s.pretty(allocator),
+            Top::Func(f) => f.pretty(allocator),
+            Top::Enum(e) => e.pretty(allocator),
+            Top::Trait(t) => t.pretty(allocator),
+            Top::Impl(i) => i.pretty(allocator),
             Top::Use(u) => allocator
                 .text("use")
                 .append(allocator.space())
@@ -46,11 +44,11 @@ impl Top {
     pub fn document_symbol(&self, state: &mut CheckState, span: Span) -> Option<DocumentSymbol> {
         state.enter_scope();
         let found = match self {
-            Top::Func(f) => Some(f.0.document_symbol(state, span)),
-            Top::Struct(s) => Some(s.0.document_symbol(state, span)),
-            Top::Enum(e) => Some(e.0.document_symbol(state, span)),
-            Top::Trait(t) => Some(t.0.document_symbol(state, span)),
-            Top::Impl(i) => Some(i.0.document_symbol(state, span)),
+            Top::Func(f) => Some(f.document_symbol(state, span)),
+            Top::Struct(s) => Some(s.document_symbol(state, span)),
+            Top::Enum(e) => Some(e.document_symbol(state, span)),
+            Top::Trait(t) => Some(t.document_symbol(state, span)),
+            Top::Impl(i) => Some(i.document_symbol(state, span)),
             Top::Use(u) => {
                 let _ = state.import(u);
                 None

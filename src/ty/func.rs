@@ -1,7 +1,7 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, ops::ControlFlow};
 
 use crate::{
-    check::{expr::ident::check_ident, state::CheckState},
+    check::{state::CheckState, Check},
     db::decl::{struct_::StructDecl, DeclKind},
     util::{Span, Spanned},
 };
@@ -44,7 +44,7 @@ impl<'db> Ty<'db> {
         } else if funcs.len() == 1 {
             let func = funcs[0].inst(&mut HashMap::new(), state, name.1);
             Some(func)
-        } else if let Ty::Function(func_ty) = check_ident(state, &[name.clone()]) {
+        } else if let ControlFlow::Continue(Ty::Function(func_ty)) = vec![name.clone()].check(state, &mut (), name.1, ()) {
             Some(func_ty)
         } else {
             None

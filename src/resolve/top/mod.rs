@@ -19,10 +19,10 @@ impl Top {
             state.enter_scope();
         }
         let res = match self {
-            Top::Func(f) => Some(f.0.resolve(state)),
-            Top::Struct(s) => Some(s.0.resolve(state)),
-            Top::Enum(e) => Some(e.0.resolve(state)),
-            Top::Trait(t) => Some(t.0.resolve(state)),
+            Top::Func(f) => Some(f.resolve(state)),
+            Top::Struct(s) => Some(s.resolve(state)),
+            Top::Enum(e) => Some(e.resolve(state)),
+            Top::Trait(t) => Some(t.resolve(state)),
             Top::Use(u) => {
                 state.import(u);
                 None

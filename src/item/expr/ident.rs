@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use async_lsp::lsp_types::CompletionItem;
 
 use crate::{
-    check::{err::unresolved::Unresolved, state::CheckState, SemanticToken, TokenKind},
+    check::{err::unresolved::Unresolved, state::CheckState},
     item::{common::type_::ContainsOffset, definitions::ident::IdentDef, AstItem},
     parser::expr::qualified_name::SpannedQualifiedName,
     ty::Ty,
@@ -11,53 +11,12 @@ use crate::{
 };
 
 impl AstItem for SpannedQualifiedName {
-    fn at_offset<'me>(&'me self, _: &mut CheckState, _: usize) -> &'me dyn AstItem
-    where
-        Self: Sized,
-    {
-        self
-    }
-    fn tokens(&self, state: &mut CheckState, tokens: &mut Vec<SemanticToken>) {
-        if self.len() == 1 {
-            let name = &self[0];
-            if state.get_generic(&name.0).is_some() {
-                tokens.push(SemanticToken {
-                    span: name.1,
-                    kind: TokenKind::Generic,
-                });
-                return;
-            }
-            if let Some(var) = state.get_variable(&name.0) {
-                if var.is_param {
-                    tokens.push(SemanticToken {
-                        span: name.1,
-                        kind: TokenKind::Param,
-                    });
-                } else {
-                    tokens.push(SemanticToken {
-                        span: name.1,
-                        kind: TokenKind::Var,
-                    });
-                }
-                return;
-            }
-        }
-        for i in 1..=self.len() {
-            if let Ok(found) = state.get_decl_with_error(&self[..i]) {
-                let kind = found.get_kind(state.db);
-                tokens.push(SemanticToken {
-                    span: self[i - 1].1,
-                    kind,
-                });
-            }
-        }
-    }
-
     fn hover<'db>(
         &self,
         state: &mut CheckState<'db>,
         offset: usize,
         type_vars: &HashMap<u32, Ty<'db>>,
+        _: &Ty<'db>,
     ) -> Option<String> {
         let index = self
             .iter()
@@ -77,6 +36,7 @@ impl AstItem for SpannedQualifiedName {
         state: &mut CheckState,
         offset: usize,
         type_vars: &HashMap<u32, Ty>,
+        _: &Ty,
     ) -> Vec<CompletionItem> {
         let mut completions = vec![];
         if self.len() == 1 {

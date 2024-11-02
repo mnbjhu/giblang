@@ -2,18 +2,31 @@ use std::ops::ControlFlow;
 
 use crate::{
     check::{
-        err::{missing_receiver::MissingReceiver, unexpected_args::UnexpectedArgs, CheckError}, state::CheckState, Check, ControlIter
-    }, item::AstItem, parser::expr::call::Call, ty::{FuncTy, Ty}, util::{Span, Spanned}
+        err::{missing_receiver::MissingReceiver, unexpected_args::UnexpectedArgs, CheckError},
+        state::CheckState,
+        Check, ControlIter, Dir,
+    },
+    item::AstItem,
+    parser::expr::call::Call,
+    ty::{FuncTy, Ty},
+    util::Span,
 };
 
-impl<'db> Call {
-    pub fn check(&self, state: &mut CheckState<'db>) -> Ty<'db> {
-        let name_ty = self.name.0.check(state);
+impl<'ast, 'db, Iter: ControlIter<'ast, 'db>> Check<'ast, 'db, Iter> for Call {
+    fn check(
+        &'ast self,
+        state: &mut CheckState<'db>,
+        control: &mut Iter,
+        span: Span,
+        (): (),
+    ) -> ControlFlow<(&'ast dyn AstItem, Ty<'db>), Ty<'db>> {
+        control.act(self, state, Dir::Enter, span)?;
+        let name_ty = self.name.0.check(state, control, self.name.1, ())?;
         if let Ty::Unknown = name_ty {
             for arg in &self.args {
-                arg.0.check(state);
+                arg.0.check(state, control, arg.1, ())?;
             }
-            return Ty::Unknown;
+            return ControlFlow::Continue(Ty::Unknown);
         }
         let func_ty = name_ty.try_get_func_ty(state, self.name.1);
         if let Some(func_ty) = &func_ty {
@@ -38,15 +51,18 @@ impl<'db> Call {
                     func: func_ty.get_name(state, None),
                 }));
             }
-            self.args
-                .iter()
-                .zip(expected_args)
-                .for_each(|((arg, span), expected)| {
-                    arg.expect_instance_of(expected, state, *span);
-                });
-            ret.as_ref().clone()
+            for ((arg, span), expected) in self.args.iter().zip(expected_args) {
+                arg.expect(state, control, expected, *span, ())?;
+            }
+            for ((arg, span), expected) in self.args.iter().zip(expected_args) {
+                arg.expect(state, control, expected, *span, ())?;
+            }
+            let ty = ret.as_ref().clone();
+            control.act(self, state, Dir::Exit(ty.clone()), span)?;
+            ControlFlow::Continue(ty)
         } else if let Ty::Unknown = name_ty {
-            Ty::Unknown
+            control.act(self, state, Dir::Exit(Ty::Unknown), span)?;
+            ControlFlow::Continue(Ty::Unknown)
         } else {
             state.simple_error(
                 &format!(
@@ -55,31 +71,9 @@ impl<'db> Call {
                 ),
                 self.name.1,
             );
-            Ty::Unknown
+            control.act(self, state, Dir::Exit(Ty::Unknown), span)?;
+            ControlFlow::Continue(Ty::Unknown)
         }
-    }
-
-    pub fn expected_instance_of(
-        &self,
-        expected: &Ty<'db>,
-        state: &mut CheckState<'db>,
-        span: Span,
-    ) {
-        let ret = self.check(state);
-        ret.expect_is_instance_of(expected, state, false, span);
-    }
-}
-
-impl<'ast, 'db, Iter: ControlIter<'ast>> Check<'ast, 'db, Iter, Ty<'db>> for Call {
-    fn check(
-        &'ast self,
-        state: &mut CheckState<'db>,
-        control: &mut Iter,
-        span: Span,
-        (): (),
-    ) -> ControlFlow<&'ast dyn AstItem, Ty<'db>> {
-        self.0.check(state);
-        ControlFlow::Continue(Ty::unit())
     }
 
     fn expect(
@@ -89,8 +83,9 @@ impl<'ast, 'db, Iter: ControlIter<'ast>> Check<'ast, 'db, Iter, Ty<'db>> for Cal
         expected: &Ty<'db>,
         span: Span,
         (): (),
-    ) -> std::ops::ControlFlow<&'ast dyn AstItem, Ty<'db>> {
-        self.expected_instance_of(expected, state, self.1);
-        ControlFlow::Continue(expected.clone())
+    ) -> std::ops::ControlFlow<(&'ast dyn AstItem, Ty<'db>), Ty<'db>> {
+        let ret = self.check(state, control, span, ())?;
+        ret.expect_is_instance_of(expected, state, false, span);
+        ControlFlow::Continue(ret)
     }
 }

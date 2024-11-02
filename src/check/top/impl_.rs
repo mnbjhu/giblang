@@ -6,25 +6,25 @@ use crate::{
     item::AstItem,
     parser::top::impl_::Impl,
     ty::Ty,
-    util::{Span, Spanned},
+    util::Span,
 };
 
 use super::Check;
 
-impl<'ast, 'db, Iter: ControlIter<'ast>> Check<'ast, 'db, Iter> for Spanned<Impl> {
+impl<'ast, 'db, Iter: ControlIter<'ast, 'db>> Check<'ast, 'db, Iter, (),> for Impl {
     fn check(
         &'ast self,
         state: &mut CheckState<'db>,
         control: &mut Iter,
         span: Span,
         (): (),
-    ) -> ControlFlow<&'ast dyn AstItem> {
-        control.act(&self.0, state, Dir::Exit, self.1)?;
-        self.0.generics.0.check(state);
-        let for_ = self.0.for_.0.check(state);
-        state.add_self_ty(&for_, self.0.for_.1);
-        if let Some(trait_) = &self.0.trait_ {
-            let trait_ty = trait_.0.check(state);
+    ) -> ControlFlow<(&'ast dyn AstItem, Ty<'db>), ()> {
+        control.act(self, state, Dir::Enter, span)?;
+        self.generics.0.check(state, control, self.generics.1, ())?;
+        let for_ = self.for_.0.check(state, control, self.for_.1, ())?;
+        state.add_self_ty(&for_, self.for_.1);
+        if let Some(trait_) = &self.trait_ {
+            let trait_ty = trait_.0.check(state, control, trait_.1, ())?;
             if let Ty::Named { name, .. } = &trait_ty {
                 if let DeclKind::Trait { body, generics, .. } = state
                     .project
@@ -39,7 +39,7 @@ impl<'ast, 'db, Iter: ControlIter<'ast>> Check<'ast, 'db, Iter> for Spanned<Impl
                     let mut params = HashMap::new();
                     trait_decl_ty.imply_generic_args(&trait_ty, &mut params);
                     let mut found = Vec::new();
-                    for func in &self.0.body {
+                    for func in &self.body {
                         let expected = body.iter().find_map(|mod_| {
                             if mod_.name(state.db) == func.0.name.0 {
                                 Some(mod_.into_func(state.db))
@@ -49,7 +49,7 @@ impl<'ast, 'db, Iter: ControlIter<'ast>> Check<'ast, 'db, Iter> for Spanned<Impl
                         });
                         if let Some(expected) = expected {
                             found.push(expected);
-                            func.0.check_matches(expected, state, &params);
+                            func.0.check_matches(expected, state, &params, control);
                         } else {
                             state.simple_error(
                                 &format!(
@@ -78,7 +78,7 @@ impl<'ast, 'db, Iter: ControlIter<'ast>> Check<'ast, 'db, Iter> for Spanned<Impl
                                     .collect::<Vec<_>>()
                                     .join(", ")
                             ),
-                            self.0.for_.1,
+                            self.for_.1,
                         );
                     }
                 } else {
@@ -89,13 +89,13 @@ impl<'ast, 'db, Iter: ControlIter<'ast>> Check<'ast, 'db, Iter> for Spanned<Impl
                 };
             }
         } else {
-            for func in &self.0.body {
+            for (func, span) in &self.body {
                 state.enter_scope();
-                func.check(state, control, span, false)?;
+                func.check(state, control, *span, false)?;
                 state.exit_scope();
             }
         }
-        control.act(&self.0, state, Dir::Exit, self.1)?;
+        control.act(self, state, Dir::Exit(Ty::unit()), span)?;
         ControlFlow::Continue(())
     }
 }
