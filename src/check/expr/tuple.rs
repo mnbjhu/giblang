@@ -1,8 +1,12 @@
+use std::ops::ControlFlow;
+
 use crate::{
     check::{
         err::{is_not_instance::IsNotInstance, CheckError},
         state::CheckState,
+        Check, ControlIter,
     },
+    item::AstItem,
     parser::expr::Expr,
     ty::Ty,
     util::{Span, Spanned},
@@ -10,40 +14,59 @@ use crate::{
 
 type Tuple = Vec<Spanned<Expr>>;
 
-pub fn check_tuple<'db>(values: &Tuple, state: &mut CheckState<'_, 'db>) -> Ty<'db> {
-    Ty::Tuple(values.iter().map(|value| value.0.check(state)).collect())
-}
-pub fn check_tuple_is<'db>(
-    state: &mut CheckState<'_, 'db>,
-    expected: &Ty<'db>,
-    tuple: &Tuple,
-    span: Span,
-) {
-    if let Ty::Tuple(ex) = expected {
-        if ex.len() == tuple.len() {
-            ex.iter()
-                .zip(tuple)
-                .for_each(|(ex, ac)| ac.0.expect_instance_of(ex, state, span));
-        } else {
-            for value in tuple {
-                value.0.check(state);
-            }
-            state.simple_error(
-                &format!(
-                    "Expected a tuple of length {} but found one of length {}",
-                    ex.len(),
-                    tuple.len()
-                ),
-                span,
-            );
+impl<'ast, 'db, Iter: ControlIter<'ast, 'db>> Check<'ast, 'db, Iter> for Tuple {
+    fn check(
+        &'ast self,
+        state: &mut CheckState<'db>,
+        control: &mut Iter,
+        span: Span,
+        (): (),
+    ) -> ControlFlow<(&'ast dyn AstItem, Ty<'db>), Ty<'db>> {
+        let mut tys = Vec::new();
+        for ty in self {
+            tys.push(ty.0.check(state, control, span, ())?);
         }
-    } else {
-        let found = check_tuple(tuple, state);
-        state.error(CheckError::IsNotInstance(IsNotInstance {
-            expected: expected.get_name(state),
-            found: found.get_name(state),
-            span,
-            file: state.file_data,
-        }));
+        ControlFlow::Continue(Ty::Tuple(tys))
+    }
+
+    fn expect(
+        &'ast self,
+        state: &mut CheckState<'db>,
+        control: &mut Iter,
+        expected: &Ty<'db>,
+        span: Span,
+        args: (),
+    ) -> ControlFlow<(&'ast dyn AstItem, Ty<'db>), Ty<'db>> {
+        if let Ty::Tuple(ex) = expected {
+            if ex.len() == self.len() {
+                let mut tys = Vec::new();
+                for (ex, ac) in ex.iter().zip(self) {
+                    tys.push(ac.0.expect(state, control, ex, ac.1, ())?);
+                }
+                ControlFlow::Continue(Ty::Tuple(tys))
+            } else {
+                for value in self {
+                    value.0.check(state, control, value.1, ())?;
+                }
+                state.simple_error(
+                    &format!(
+                        "Expected a tuple of length {} but found one of length {}",
+                        ex.len(),
+                        self.len()
+                    ),
+                    span,
+                );
+                ControlFlow::Continue(Ty::Unknown)
+            }
+        } else {
+            let found = self.check(state, control, span, args)?;
+            state.error(CheckError::IsNotInstance(IsNotInstance {
+                expected: expected.get_name(state, None),
+                found: found.get_name(state, None),
+                span,
+                file: state.file_data,
+            }));
+            ControlFlow::Continue(Ty::Unknown)
+        }
     }
 }

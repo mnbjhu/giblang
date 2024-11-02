@@ -4,89 +4,49 @@ use async_lsp::lsp_types::{CompletionItem, CompletionItemKind};
 
 use crate::{
     check::{
+        err::unresolved::Unresolved,
         state::{CheckState, VarDecl},
         SemanticToken, TokenKind,
     },
-    db::modules::{Module, ModuleData},
-    item::{common::type_::ContainsOffset, AstItem},
+    item::{common::type_::ContainsOffset, definitions::ident::IdentDef, AstItem},
     parser::expr::qualified_name::SpannedQualifiedName,
-    project::decl::{Decl, DeclKind},
-    ty::{Generic, Ty},
-    util::Spanned,
+    ty::Ty,
+    util::{Span, Spanned},
 };
 
 impl AstItem for SpannedQualifiedName {
-    fn at_offset<'me>(&'me self, _: &mut CheckState, _: usize) -> &'me dyn AstItem
-    where
-        Self: Sized,
-    {
-        self
-    }
-    fn tokens(&self, state: &mut CheckState, tokens: &mut Vec<SemanticToken>) {
-        if self.len() == 1 {
-            let name = &self[0];
-            if state.get_generic(&name.0).is_some() {
-                tokens.push(SemanticToken {
-                    span: name.1,
-                    kind: TokenKind::Generic,
-                });
-                return;
-            }
-            if let Some(var) = state.get_variable(&name.0) {
-                if var.is_param {
-                    tokens.push(SemanticToken {
-                        span: name.1,
-                        kind: TokenKind::Param,
-                    });
-                } else {
-                    tokens.push(SemanticToken {
-                        span: name.1,
-                        kind: TokenKind::Var,
-                    });
-                }
-                return;
-            }
-        }
-        for i in 1..=self.len() {
-            let found = state.get_module_with_error(&self[..i]);
-            if found.is_none() {
-                return;
-            }
-            let kind = match found.unwrap().content(state.db) {
-                ModuleData::Package(_) => TokenKind::Module,
-                ModuleData::Export(e) => e.get_kind(state.db),
-            };
-            tokens.push(SemanticToken {
-                span: self[i - 1].1,
-                kind,
-            });
-        }
-    }
-
     fn hover<'db>(
         &self,
-        state: &mut CheckState<'_, 'db>,
+        state: &mut CheckState<'db>,
         offset: usize,
         type_vars: &HashMap<u32, Ty<'db>>,
+        _: &Ty<'db>,
     ) -> Option<String> {
         let index = self
             .iter()
             .position(|(_, span)| span.contains_offset(offset))?;
         let path = &self[..=index];
         let found = state.get_ident_def(path);
+        let Ok(found) = found else {
+            return Some("Not Found".to_string());
+        };
         match found {
             IdentDef::Variable(var) => Some(var.hover(state, type_vars)),
             IdentDef::Generic(g) => Some(g.hover(state)),
             IdentDef::Decl(decl) => Some(decl.hover(state)),
-            IdentDef::Pkg(_) => todo!(),
-            IdentDef::Unknown => None,
         }
     }
 
-    fn completions(&self, state: &mut CheckState, offset: usize) -> Vec<CompletionItem> {
+    fn completions(
+        &self,
+        state: &mut CheckState,
+        offset: usize,
+        type_vars: &HashMap<u32, Ty>,
+        _: &Ty,
+    ) -> Vec<CompletionItem> {
         let mut completions = vec![];
         if self.len() == 1 {
-            get_ident_completions(state, &mut completions);
+            get_ident_completions(state, &mut completions, type_vars);
         } else {
             let index = self
                 .iter()
@@ -95,8 +55,8 @@ impl AstItem for SpannedQualifiedName {
                 return vec![];
             }
             let parent = &self[..index.unwrap()];
-            let found = state.get_module_with_error(parent);
-            if let Some(found) = found {
+            let found = state.get_decl_with_error(parent);
+            if let Ok(found) = found {
                 return found.get_static_access_completions(state);
             }
         }
@@ -105,7 +65,7 @@ impl AstItem for SpannedQualifiedName {
 
     fn goto_def(
         &self,
-        state: &mut CheckState<'_, '_>,
+        state: &mut CheckState<'_>,
         offset: usize,
     ) -> Option<(crate::db::input::SourceFile, crate::util::Span)> {
         let index = self
@@ -113,12 +73,13 @@ impl AstItem for SpannedQualifiedName {
             .position(|(_, span)| span.start <= offset && offset <= span.end)?;
         let path = &self[..=index];
         let found = state.get_ident_def(path);
+        let Ok(found) = found else {
+            return None;
+        };
         match found {
             IdentDef::Variable(var) => Some((state.file_data, var.span)),
             IdentDef::Generic(g) => Some((state.file_data, g.name.1)),
             IdentDef::Decl(decl) => Some((decl.file(state.db), decl.span(state.db))),
-            IdentDef::Pkg(_) => todo!(),
-            IdentDef::Unknown => None,
         }
     }
 
@@ -133,24 +94,34 @@ impl AstItem for SpannedQualifiedName {
         let parts = self.iter().map(|(name, _)| allocator.text(name));
         allocator.intersperse(parts, sep)
     }
+
+    fn tokens(&self, state: &mut CheckState, tokens: &mut Vec<SemanticToken>, _: &Ty<'_>) {
+        for i in 1..=self.len() {
+            let def = state.get_ident_def(&self[..i]);
+            if let Ok(def) = def {
+                tokens.push(SemanticToken {
+                    span: self[i - 1].1,
+                    kind: match def {
+                        IdentDef::Variable(var) => var.kind,
+                        IdentDef::Generic(_) => TokenKind::Generic,
+                        IdentDef::Decl(decl) => decl.get_kind(state.db),
+                    },
+                });
+            }
+        }
+    }
 }
 
-fn get_ident_completions(state: &mut CheckState, completions: &mut Vec<CompletionItem>) {
-    for (name, var) in state.get_variables() {
-        completions.push(CompletionItem {
-            label: name.clone(),
-            kind: Some(CompletionItemKind::VARIABLE),
-            detail: Some(var.ty.get_name(state)),
-            ..Default::default()
-        });
+fn get_ident_completions(
+    state: &mut CheckState,
+    completions: &mut Vec<CompletionItem>,
+    type_vars: &HashMap<u32, Ty>,
+) {
+    for (_, var) in state.get_variables() {
+        completions.extend(var.completions(state, type_vars));
     }
-    for (name, var) in state.get_generics() {
-        completions.push(CompletionItem {
-            label: name.clone(),
-            kind: Some(CompletionItemKind::TYPE_PARAMETER),
-            detail: Some(var.get_name(state)),
-            ..Default::default()
-        });
+    for (_, g) in state.get_generics() {
+        completions.extend(g.completions(state));
     }
     for (name, import) in state.get_imports() {
         let module = state.project.decls(state.db).get_path(state.db, *import);
@@ -162,6 +133,25 @@ fn get_ident_completions(state: &mut CheckState, completions: &mut Vec<Completio
             }
         };
     }
+    if let Some(self_param) = state.get_variable("self") {
+        for (name, func_ty) in self_param.ty.member_funcs(state, Span::splat(0)) {
+            completions.push(CompletionItem {
+                label: name.clone(),
+                kind: Some(CompletionItemKind::METHOD),
+                detail: Some(func_ty.get_name(state, Some(type_vars))),
+                ..Default::default()
+            });
+        }
+
+        for (name, ty) in self_param.ty.fields(state) {
+            completions.push(CompletionItem {
+                label: name.clone(),
+                kind: Some(CompletionItemKind::FIELD),
+                detail: Some(ty.get_name(state, Some(type_vars))),
+                ..Default::default()
+            });
+        }
+    }
     completions.extend(
         state
             .project
@@ -170,67 +160,49 @@ fn get_ident_completions(state: &mut CheckState, completions: &mut Vec<Completio
     );
 }
 
-pub enum IdentDef<'db> {
-    Variable(VarDecl<'db>),
-    Generic(Generic<'db>),
-    Decl(Decl<'db>),
-    Pkg(Module<'db>),
-    Unknown,
-}
-
-impl<'db> IdentDef<'db> {
-    pub fn completions(&self, state: &mut CheckState) -> Vec<CompletionItem> {
-        match self {
-            IdentDef::Variable(var) => vec![CompletionItem {
-                label: var.name.clone(),
-                kind: Some(CompletionItemKind::VARIABLE),
-                detail: Some(var.ty.get_name(state)),
-                ..Default::default()
-            }],
-            IdentDef::Generic(g) => vec![CompletionItem {
-                label: g.name.0.clone(),
-                kind: Some(CompletionItemKind::TYPE_PARAMETER),
-                detail: Some(g.get_name(state)),
-                ..Default::default()
-            }],
-            IdentDef::Decl(decl) => vec![CompletionItem {
-                label: decl.name(state.db),
-                kind: Some(match decl.kind(state.db) {
-                    DeclKind::Struct { .. } => CompletionItemKind::STRUCT,
-                    DeclKind::Enum { .. } => CompletionItemKind::ENUM,
-                    DeclKind::Trait { .. } => CompletionItemKind::INTERFACE,
-                    DeclKind::Function { .. } => CompletionItemKind::FUNCTION,
-                    DeclKind::Member { .. } => CompletionItemKind::ENUM_MEMBER,
-                    DeclKind::Prim(_) => todo!(),
-                }),
-                detail: Some(decl.path(state.db).name(state.db).join("::")),
-                ..Default::default()
-            }],
-            IdentDef::Pkg(_) => todo!(),
-            IdentDef::Unknown => vec![],
-        }
-    }
-}
-
-impl<'db> CheckState<'_, 'db> {
-    pub fn get_ident_def(&mut self, ident: &[Spanned<String>]) -> IdentDef<'db> {
+impl<'db> CheckState<'db> {
+    pub fn get_ident_def(
+        &mut self,
+        ident: &[Spanned<String>],
+    ) -> Result<IdentDef<'db>, Unresolved> {
         if ident.len() == 1 {
             let name = &ident[0];
+            if let Some(self_param) = self.get_variable("self") {
+                if let Some(field) = self_param
+                    .ty
+                    .fields(self)
+                    .iter()
+                    .find(|(n, _)| n == &name.0)
+                {
+                    return Ok(IdentDef::Variable(VarDecl {
+                        name: name.0.clone(),
+                        ty: field.1.clone(),
+                        span: name.1,
+                        kind: TokenKind::Property,
+                    }));
+                }
+                if let Some(func) = self_param
+                    .ty
+                    .member_funcs(self, name.1)
+                    .iter()
+                    .find(|(n, _)| n == &name.0)
+                {
+                    return Ok(IdentDef::Variable(VarDecl {
+                        name: name.0.clone(),
+                        ty: Ty::Function(func.1.clone()),
+                        span: name.1,
+                        kind: TokenKind::Func,
+                    }));
+                }
+            }
             if let Some(var) = self.get_variable(&name.0) {
-                return IdentDef::Variable(var);
+                return Ok(IdentDef::Variable(var));
             }
             if let Some(gen) = self.get_generic(&name.0) {
-                return IdentDef::Generic(gen.clone());
+                return Ok(IdentDef::Generic(gen.clone()));
             }
         }
-        let mod_ = self.get_module_with_error(ident);
-        if let Some(mod_) = mod_ {
-            match mod_.content(self.db) {
-                ModuleData::Package(_) => IdentDef::Pkg(mod_),
-                ModuleData::Export(e) => IdentDef::Decl(*e),
-            }
-        } else {
-            IdentDef::Unknown
-        }
+        let decl = self.get_decl_with_error(ident)?;
+        Ok(IdentDef::Decl(decl))
     }
 }

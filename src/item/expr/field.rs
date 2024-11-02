@@ -1,9 +1,13 @@
+use std::{collections::HashMap, ops::ControlFlow};
+
 use async_lsp::lsp_types::{CompletionItem, CompletionItemKind};
 
 use crate::{
-    check::{state::CheckState, SemanticToken, TokenKind},
+    check::{state::CheckState, Check, SemanticToken, TokenKind},
     item::AstItem,
     parser::expr::field::Field,
+    ty::Ty,
+    util::Span,
 };
 
 impl AstItem for Field {
@@ -21,19 +25,7 @@ impl AstItem for Field {
             .append(&self.name.0)
     }
 
-    fn at_offset<'me>(&'me self, state: &mut CheckState, offset: usize) -> &'me dyn AstItem
-    where
-        Self: Sized,
-    {
-        if offset < self.name.1.start {
-            self.struct_.0.at_offset(state, offset)
-        } else {
-            self
-        }
-    }
-
-    fn tokens(&self, state: &mut CheckState, tokens: &mut Vec<SemanticToken>) {
-        self.struct_.0.tokens(state, tokens);
+    fn tokens(&self, _: &mut CheckState, tokens: &mut Vec<SemanticToken>, _: &Ty<'_>) {
         tokens.push(SemanticToken {
             span: self.name.1,
             kind: TokenKind::Property,
@@ -42,26 +34,35 @@ impl AstItem for Field {
 
     fn hover<'db>(
         &self,
-        state: &mut CheckState<'_, 'db>,
-        _: usize,
+        state: &mut CheckState<'db>,
+        offset: usize,
         type_vars: &std::collections::HashMap<u32, crate::ty::Ty<'db>>,
+        _: &crate::ty::Ty<'_>,
     ) -> Option<String> {
-        let ty = self.check(state);
-        Some(format!(
-            "{}: {}",
-            self.name.0,
-            ty.get_name_with_types(state, type_vars)
-        ))
+        let ty = self.check(state, &mut (), Span::splat(offset), ());
+        if let ControlFlow::Continue(ty) = ty {
+            return Some(ty.get_name(state, Some(type_vars)));
+        }
+        panic!("Unexpected ControlFlow::Break in Field::hover");
     }
 
-    fn completions(&self, state: &mut CheckState, _: usize) -> Vec<CompletionItem> {
-        let rec = self.struct_.0.check(state);
+    fn completions(
+        &self,
+        state: &mut CheckState,
+        _: usize,
+        type_vars: &HashMap<u32, Ty<'_>>,
+        _: &Ty<'_>,
+    ) -> Vec<CompletionItem> {
+        let ControlFlow::Continue(rec) = self.struct_.0.check(state, &mut (), self.struct_.1, ())
+        else {
+            panic!("Unexpected ControlFlow::Break in Field::completions");
+        };
         let mut completions = Vec::new();
-        for (name, func_ty) in rec.member_funcs(state) {
+        for (name, func_ty) in rec.member_funcs(state, self.name.1) {
             completions.push(CompletionItem {
                 label: name.clone(),
                 kind: Some(CompletionItemKind::METHOD),
-                detail: Some(func_ty.get_name(state)),
+                detail: Some(func_ty.get_name(state, Some(type_vars))),
                 ..Default::default()
             });
         }
@@ -69,7 +70,7 @@ impl AstItem for Field {
             completions.push(CompletionItem {
                 label: name.clone(),
                 kind: Some(CompletionItemKind::PROPERTY),
-                detail: Some(ty.get_name(state)),
+                detail: Some(ty.get_name(state, Some(type_vars))),
                 ..Default::default()
             });
         }

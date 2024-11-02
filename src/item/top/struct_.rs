@@ -1,35 +1,20 @@
 use async_lsp::lsp_types::{DocumentSymbol, SymbolKind};
 
 use crate::{
-    check::{state::CheckState, SemanticToken, TokenKind},
-    item::{common::type_::ContainsOffset, AstItem},
+    check::{state::CheckState, Check, SemanticToken, TokenKind},
+    item::AstItem,
     parser::top::struct_::Struct,
     range::span_to_range_str,
+    ty::Ty,
     util::Span,
 };
 
 impl AstItem for Struct {
-    fn at_offset<'me>(&'me self, state: &mut CheckState, offset: usize) -> &'me dyn AstItem
-    where
-        Self: Sized,
-    {
-        if self.generics.1.contains_offset(offset) {
-            return self.generics.0.at_offset(state, offset);
-        }
-        self.generics.0.check(state);
-        if self.body.1.contains_offset(offset) {
-            return self.body.0.at_offset(state, offset);
-        }
-        self
-    }
-
-    fn tokens(&self, state: &mut CheckState, tokens: &mut Vec<SemanticToken>) {
+    fn tokens(&self, _: &mut CheckState, tokens: &mut Vec<SemanticToken>, _: &Ty<'_>) {
         tokens.push(SemanticToken {
             span: self.name.1,
             kind: TokenKind::Struct,
         });
-        self.generics.0.tokens(state, tokens);
-        self.body.0.tokens(state, tokens);
     }
 
     fn pretty<'b, D, A>(&'b self, allocator: &'b D) -> pretty::DocBuilder<'b, D, A>
@@ -53,7 +38,7 @@ impl Struct {
         let txt = state.file_data.text(state.db);
         let range = span_to_range_str(span.into(), txt);
         let selection_range = span_to_range_str(self.name.1.into(), txt);
-        self.generics.0.check(state);
+        let _ = self.generics.0.check(state, &mut (), self.generics.1, ());
         DocumentSymbol {
             name: self.name.0.clone(),
             detail: Some("struct".to_string()),

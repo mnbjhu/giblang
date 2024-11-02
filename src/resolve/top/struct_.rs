@@ -1,4 +1,4 @@
-use crate::{parser::top::struct_::Struct, project::decl::DeclKind, resolve::state::ResolveState};
+use crate::{db::decl::DeclKind, parser::top::struct_::Struct, resolve::state::ResolveState};
 
 use super::Decl;
 
@@ -13,7 +13,7 @@ impl Struct {
             name.0,
             name.1,
             kind,
-            state.file_data,
+            Some(state.file_data),
             state.module_path(),
         )
     }

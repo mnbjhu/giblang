@@ -1,42 +1,56 @@
-use crate::{parser::stmt::Stmt, ty::Ty, util::Span};
+use std::ops::ControlFlow;
 
-use super::state::CheckState;
+use crate::{item::AstItem, parser::stmt::Stmt, ty::Ty, util::Span};
+
+use super::{state::CheckState, Check, ControlIter};
 
 pub mod let_;
 
-impl<'db> Stmt {
-    pub fn check(&self, state: &mut CheckState<'_, 'db>) -> Ty<'db> {
-        match self {
+impl<'ast, 'db, Iter: ControlIter<'ast, 'db>> Check<'ast, 'db, Iter> for Stmt {
+    fn check(
+        &'ast self,
+        state: &mut CheckState<'db>,
+        control: &mut Iter,
+        span: Span,
+        (): (),
+    ) -> ControlFlow<(&'ast dyn AstItem, Ty<'db>), Ty<'db>> {
+        let ty = match &self {
             Stmt::Let(l) => {
-                l.check(state);
+                l.check(state, control, span, ())?;
                 Ty::unit()
             }
-            Stmt::Expr(e) => e.check(state),
-        }
+            Stmt::Expr(e) => e.check(state, control, span, ())?,
+        };
+        ControlFlow::Continue(ty)
     }
 
-    pub fn expect_is_instance(
-        &self,
+    fn expect(
+        &'ast self,
+        state: &mut CheckState<'db>,
+        control: &mut Iter,
         expected: &Ty<'db>,
-        state: &mut CheckState<'_, 'db>,
         span: Span,
-    ) {
-        match self {
+        (): (),
+    ) -> std::ops::ControlFlow<(&'ast dyn AstItem, Ty<'db>), Ty<'db>> {
+        match &self {
             Stmt::Let(l) => {
-                l.check(state);
+                l.check(state, control, span, ())?;
                 let actual = Ty::unit();
                 if !expected.eq(&actual) {
                     state.simple_error(
                         &format!(
                             "Expected value to be of type '{}' but found '{}'",
-                            expected.get_name(state),
-                            actual.get_name(state),
+                            expected.get_name(state, None),
+                            actual.get_name(state, None),
                         ),
                         span,
                     );
                 }
             }
-            Stmt::Expr(e) => e.expect_instance_of(expected, state, span),
+            Stmt::Expr(e) => {
+                e.expect(state, control, expected, span, ())?;
+            }
         }
+        ControlFlow::Continue(expected.clone())
     }
 }

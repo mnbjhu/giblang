@@ -1,0 +1,8 @@
+use std::Option
+
+fn main() {
+    let x: Option[_] = Option::None
+    let y = x.unwrap()
+    let Option::Some(z) = y
+    1.add(z)
+}

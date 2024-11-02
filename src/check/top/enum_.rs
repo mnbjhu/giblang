@@ -1,12 +1,31 @@
-use crate::{check::state::CheckState, parser::top::enum_::Enum};
+use std::ops::ControlFlow;
 
-impl Enum {
-    pub fn check(&self, state: &mut CheckState) {
-        self.generics.0.check(state);
+use crate::{
+    check::{state::CheckState, ControlIter, Dir},
+    item::AstItem,
+    parser::top::enum_::Enum,
+    ty::Ty,
+    util::Span,
+};
+
+use super::Check;
+
+impl<'ast, 'db, Iter: ControlIter<'ast, 'db>> Check<'ast, 'db, Iter, ()> for Enum {
+    fn check(
+        &'ast self,
+        state: &mut CheckState<'db>,
+        control: &mut Iter,
+        span: Span,
+        (): (),
+    ) -> ControlFlow<(&'ast dyn AstItem, Ty<'db>), ()> {
+        control.act(self, state, Dir::Enter, span)?;
+        self.generics.0.check(state, control, self.generics.1, ())?;
         state.path.push(self.name.0.to_string());
         for member in &self.members {
-            member.0.body.0.check(state);
+            member.0.check(state, control, member.1, ())?;
         }
         state.path.pop();
+        control.act(self, state, Dir::Exit(Ty::unit()), span)?;
+        ControlFlow::Continue(())
     }
 }

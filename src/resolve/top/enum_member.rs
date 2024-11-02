@@ -1,6 +1,6 @@
 use crate::{
+    db::decl::{Decl, DeclKind},
     parser::top::enum_member::EnumMember,
-    project::decl::{Decl, DeclKind},
     resolve::state::ResolveState,
 };
 
@@ -15,7 +15,7 @@ impl EnumMember {
             name.0,
             name.1,
             kind,
-            state.file_data,
+            Some(state.file_data),
             state.module_path(),
         )
     }

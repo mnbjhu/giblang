@@ -1,5 +1,5 @@
-use ariadne::Source;
-use ariadne::{ColorGenerator, Label, Report, ReportKind};
+use ariadne::{Color, Source};
+use ariadne::{Label, Report, ReportKind};
 
 use crate::check::check_project;
 use crate::db::err::Diagnostic;
@@ -16,19 +16,24 @@ pub fn build() {
 }
 
 pub fn print_error(db: &dyn Db, error: &Diagnostic) {
-    let mut colors = ColorGenerator::new();
     let source = Source::from(error.file.text(db));
+    let red = Color::Red;
 
-    let b = colors.next();
-
-    let name = error.path.to_str().unwrap();
+    let name = error
+        .path
+        .to_str()
+        .unwrap()
+        .strip_prefix(&db.root())
+        .unwrap()
+        .strip_prefix('/')
+        .unwrap();
     let mut builder = Report::build(ReportKind::Error, name, error.span.start)
         // .with_code(code)
         .with_message(error.message.to_string());
 
     builder = builder.with_label(
         Label::new((name, error.span.into_range()))
-            .with_color(b)
+            .with_color(red)
             .with_message(error.message.to_string()),
     );
     let report = builder.finish();

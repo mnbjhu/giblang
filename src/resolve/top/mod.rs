@@ -1,4 +1,4 @@
-use crate::{parser::top::Top, project::decl::Decl};
+use crate::{db::decl::Decl, parser::top::Top};
 
 use super::state::ResolveState;
 
@@ -16,6 +16,7 @@ impl Top {
         let name = self.get_name();
         if let Some(name) = name {
             state.path.push(name.to_string());
+            state.enter_scope();
         }
         let res = match self {
             Top::Func(f) => Some(f.resolve(state)),
@@ -30,41 +31,8 @@ impl Top {
         };
         if name.is_some() {
             state.path.pop();
+            state.exit_scope();
         }
         res
     }
 }
-
-// #[cfg(test)]
-// mod tests {
-//     use crate::{check::ty::tests::parse_ty, project::Project};
-//
-//     #[test]
-//     fn resolve_top() {
-//         let mut project = Project::new();
-//         project.insert_file(
-//             "test.gib".to_string(),
-//             r"
-//             struct Foo {
-//                 x: i32,
-//             }
-//             trait Bar
-//             impl Bar for Foo
-//             "
-//             .to_string(),
-//         );
-//
-//         let errors = project.resolve();
-//         assert!(errors.is_empty());
-//
-//         let foo = project
-//             .get_path(&["test", "Foo"])
-//             .expect("Failed to resolve Foo");
-//         let impls = project.get_impls(foo);
-//         assert_eq!(impls.len(), 1);
-//
-//         let resolved_impl = impls[0];
-//         assert_eq!(resolved_impl.from, parse_ty(&project, "Foo"));
-//         assert_eq!(resolved_impl.to, parse_ty(&project, "Bar"));
-//     }
-// }

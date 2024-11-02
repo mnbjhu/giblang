@@ -1,23 +1,46 @@
-use crate::{check::state::CheckState, parser::expr::match_arm::MatchArm, ty::Ty};
+use std::ops::ControlFlow;
 
-impl<'db> MatchArm {
-    pub fn check(&self, state: &mut CheckState<'_, 'db>, ty: Ty<'db>) -> Ty<'db> {
+use crate::{
+    check::{state::CheckState, Check, ControlIter, Dir},
+    item::AstItem,
+    parser::expr::match_arm::MatchArm,
+    ty::Ty,
+    util::Span,
+};
+
+impl<'ast, 'db, Iter: ControlIter<'ast, 'db>> Check<'ast, 'db, Iter, Ty<'db>, &Ty<'db>>
+    for MatchArm
+{
+    fn check(
+        &'ast self,
+        state: &mut CheckState<'db>,
+        control: &mut Iter,
+        span: Span,
+        ty: &Ty<'db>,
+    ) -> ControlFlow<(&'ast dyn AstItem, Ty<'db>), Ty<'db>> {
         state.enter_scope();
-        self.pattern.0.check(state, ty);
-        let ty = self.expr.0.check(state);
+        control.act(self, state, Dir::Enter, span)?;
+        self.pattern.0.check(state, control, self.pattern.1, ty)?;
+        let ty = self.expr.0.check(state, control, self.expr.1, ())?;
+        control.act(self, state, Dir::Exit(ty.clone()), span)?;
         state.exit_scope();
-        ty
+        ControlFlow::Continue(ty)
     }
 
-    pub fn expected_instance_of(
-        &self,
+    fn expect(
+        &'ast self,
+        state: &mut CheckState<'db>,
+        control: &mut Iter,
         expected: &Ty<'db>,
-        state: &mut CheckState<'_, 'db>,
-        ty: Ty<'db>,
-    ) {
+        span: Span,
+        ty: &Ty<'db>,
+    ) -> ControlFlow<(&'ast dyn AstItem, Ty<'db>), Ty<'db>> {
         state.enter_scope();
-        self.pattern.0.check(state, ty);
-        self.expr.0.expect_instance_of(expected, state, self.expr.1);
+        control.act(self, state, Dir::Enter, span)?;
+        self.pattern.0.check(state, control, span, ty)?;
+        let ty = self.expr.0.expect(state, control, expected, span, ())?;
+        control.act(self, state, Dir::Exit(ty.clone()), span)?;
         state.exit_scope();
+        ControlFlow::Continue(expected.clone())
     }
 }

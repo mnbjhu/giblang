@@ -1,31 +1,53 @@
-use crate::{check::state::CheckState, parser::expr::code_block::CodeBlock, ty::Ty, util::Span};
+use std::ops::ControlFlow;
 
-pub fn check_code_block<'db>(state: &mut CheckState<'_, 'db>, block: &CodeBlock) -> Ty<'db> {
-    state.enter_scope();
-    let mut ret = Ty::unit();
-    for (stmt, _) in block {
-        ret = stmt.check(state);
-    }
-    state.exit_scope();
-    ret
-}
+use crate::{
+    check::{state::CheckState, Check, ControlIter, Dir},
+    item::AstItem,
+    parser::expr::code_block::CodeBlock,
+    ty::Ty,
+    util::Span,
+};
 
-pub fn check_code_block_is<'db>(
-    state: &mut CheckState<'_, 'db>,
-    expected: &Ty<'db>,
-    block: &CodeBlock,
-    span: Span,
-) {
-    if block.is_empty() {
-        Ty::unit().expect_is_instance_of(expected, state, false, span);
-        return;
+impl<'ast, 'db, Iter: ControlIter<'ast, 'db>> Check<'ast, 'db, Iter> for CodeBlock {
+    fn check(
+        &'ast self,
+        state: &mut CheckState<'db>,
+        control: &mut Iter,
+        span: Span,
+        (): (),
+    ) -> ControlFlow<(&'ast dyn AstItem, Ty<'db>), Ty<'db>> {
+        state.enter_scope();
+        control.act(self, state, Dir::Enter, span)?;
+        let mut ret = Ty::unit();
+        for stmt in self {
+            ret = stmt.0.check(state, control, stmt.1, ())?;
+        }
+        state.exit_scope();
+        ControlFlow::Continue(ret)
     }
-    state.enter_scope();
-    for (stmt, _) in &block[0..block.len() - 1] {
-        stmt.check(state);
-    }
-    let last = block.last().unwrap();
 
-    last.0.expect_is_instance(expected, state, last.1);
-    state.exit_scope();
+    fn expect(
+        &'ast self,
+        state: &mut CheckState<'db>,
+        control: &mut Iter,
+        expected: &Ty<'db>,
+        span: Span,
+        (): (),
+    ) -> ControlFlow<(&'ast dyn AstItem, Ty<'db>), Ty<'db>> {
+        if expected.is_unit() {
+            return self.check(state, control, span, ());
+        }
+        if self.is_empty() {
+            Ty::unit().expect_is_instance_of(expected, state, false, span);
+            return ControlFlow::Continue(Ty::unit());
+        }
+        state.enter_scope();
+        for stmt in &self[0..self.len() - 1] {
+            stmt.0.check(state, control, stmt.1, ())?;
+        }
+        let last = self.last().unwrap();
+        let ty = last.0.expect(state, control, expected, last.1, ())?;
+        state.exit_scope();
+        ControlFlow::Continue(ty)
+    }
 }

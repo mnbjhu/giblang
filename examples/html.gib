@@ -1,0 +1,74 @@
+use std::panic
+use std::String
+
+trait HtmlBuilder {
+    fn Self.body(builder: HtmlBuilder.() -> ()) {}
+    fn Self.div(builder: HtmlBuilder.() -> ()) {}
+    fn Self.text(text: String) {}
+}
+
+struct HtmlBuilderImpl
+
+impl HtmlBuilder for HtmlBuilderImpl {
+    fn Self.body(builder: HtmlBuilder.() -> ()) {
+        panic("Not implemented")
+    }
+}
+
+fn html(builder: HtmlBuilder.() -> ()) {
+    panic("Not implemented")
+}
+
+fn with[T](builder: T, block: T.() -> ()) {
+    builder.block()
+}
+
+struct Test {
+    name: String
+}
+
+impl TestString for Test {
+    fn Self.my_print() {
+        std::print(self.name)
+    }
+}
+
+trait TestString {
+    fn Self.my_print()
+}
+
+fn with_test(test: Test, block: Test.() -> ()) {
+    test.block()
+}
+
+fn main() {
+    let test = Test("Test")
+    test.my_print()
+    with_test(
+        test,
+        {
+            let test = my_print()
+            test
+            name
+            self.name
+            my_print()
+        }
+    )
+    with(
+        test,
+        {
+            my_print()
+            name
+        }
+    )
+    html {
+        body {
+            div {
+                text("Hello")
+                div {
+                    text("World")
+                }
+            }
+        }
+    }
+}

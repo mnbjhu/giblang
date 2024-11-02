@@ -1,0 +1,66 @@
+use std::String
+use std::Float
+use std::Int
+use std::panic
+
+struct ExampleStruct {
+    name: String,
+    count: Int
+}
+
+enum ExampleEnum   {
+    One,
+    Two(Int),
+    Three {
+        name: String,
+        count: Int
+    }
+}
+
+struct Box[T](T)
+
+trait ExampleTrait {
+    fn static(): String
+    fn Self.member() {}
+}
+
+impl ExampleTrait for ExampleStruct {
+    fn static(): String {
+        "Todo"
+    }
+    fn Self.member()
+}
+
+trait ToString {
+    fn Self.to_string()
+}
+
+struct Vec[T]
+
+impl[T] Vec[T] {
+    fn new(): Self {
+        panic("Not implemented")
+    }
+    fn Self.push(item: T) {
+        item
+    }
+}
+
+fn main() {
+    let three = 1.add(2).add(3)
+    let half = 0.25.add(0.25)
+}
+
+trait Addable {
+    fn Self.add(other: Self): Self {
+        panic("Not implemented")
+    }
+}
+
+impl Addable for Int {
+    fn Self.add(other: Int): Int
+}
+
+impl Addable for Float {
+    fn Self.add(other: Float): Float
+}

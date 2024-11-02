@@ -158,10 +158,10 @@ fn semantic_tokens_full(
     async move {
         let file = db.input(&msg.text_document.uri.to_file_path().unwrap());
         let project = resolve_project(&db, db.vfs.unwrap());
-        let file_data = parse_file(&db, file);
+        let ast = parse_file(&db, file);
         let mut state = CheckState::from_file(&db, file, project);
         state.should_error = false;
-        let names = file_data.semantic_tokens(&db, &mut state);
+        let names = ast.semantic_tokens(&db, &mut state);
         Ok(Some(async_lsp::lsp_types::SemanticTokensResult::Tokens(
             get_semantic_tokens(names, file.text(&db)).unwrap_or_default(),
         )))
@@ -196,8 +196,8 @@ fn get_hover(mut db: SourceDatabase, msg: &HoverParams) -> Option<Hover> {
     let type_vars = check_file(&db, file, project);
     let mut state = CheckState::from_file(&db, file, project);
     state.should_error = false;
-    let found = ast.at_offset(&db, &mut state, offset);
-    if let Some(hover) = found?.hover(&mut state, offset, &type_vars) {
+    let (found, ty) = ast.at_offset(&db, &mut state, offset)?;
+    if let Some(hover) = found.hover(&mut state, offset, &type_vars, &ty) {
         return Some(Hover {
             contents: HoverContents::Scalar(MarkedString::String(hover)),
             range: None,
@@ -220,10 +220,9 @@ fn get_completions(mut db: SourceDatabase, msg: &CompletionParams) -> Option<Com
     let project = resolve_project(&db, db.vfs.unwrap());
     let mut state = CheckState::from_file(&db, file, project);
     state.should_error = false;
-    let found = ast.at_offset(&db, &mut state, offset);
-    let mut completions = found
-        .map(|found| found.completions(&mut state, offset))
-        .unwrap_or_default();
+    let type_vars = check_file(&db, file, project);
+    let (found, ty) = ast.at_offset(&db, &mut state, offset)?;
+    let mut completions = found.completions(&mut state, offset, &type_vars, &ty);
     let kw_completions = ast
         .expected(state.db)
         .iter()

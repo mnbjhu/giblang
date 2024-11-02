@@ -8,15 +8,11 @@ use crate::{
 };
 
 impl<'db> VarDecl<'db> {
-    pub fn hover(
-        &self,
-        state: &mut CheckState<'_, 'db>,
-        type_vars: &HashMap<u32, Ty<'db>>,
-    ) -> String {
+    pub fn hover(&self, state: &mut CheckState<'db>, type_vars: &HashMap<u32, Ty<'db>>) -> String {
         format!(
             "{}: {}",
             self.name,
-            self.ty.get_name_with_types(state, type_vars)
+            self.ty.get_name(state, Some(type_vars))
         )
     }
 
@@ -28,7 +24,7 @@ impl<'db> VarDecl<'db> {
         vec![CompletionItem {
             label: self.name.clone(),
             kind: Some(CompletionItemKind::VARIABLE),
-            detail: Some(self.ty.get_name_with_types(state, type_vars)),
+            detail: Some(self.ty.get_name(state, Some(type_vars))),
             ..Default::default()
         }]
     }

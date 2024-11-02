@@ -2,34 +2,19 @@ use async_lsp::lsp_types::{DocumentSymbol, SymbolKind};
 
 use crate::{
     check::{state::CheckState, SemanticToken, TokenKind},
-    item::{common::type_::ContainsOffset, AstItem},
+    item::AstItem,
     parser::top::enum_member::EnumMember,
     range::span_to_range_str,
+    ty::Ty,
     util::Span,
 };
 
 impl AstItem for EnumMember {
-    fn at_offset<'me>(
-        &'me self,
-        state: &mut crate::check::state::CheckState,
-        offset: usize,
-    ) -> &'me dyn AstItem
-    where
-        Self: Sized,
-    {
-        if self.body.1.contains_offset(offset) {
-            self.body.0.at_offset(state, offset)
-        } else {
-            self
-        }
-    }
-
-    fn tokens(&self, state: &mut CheckState, tokens: &mut Vec<SemanticToken>) {
+    fn tokens(&self, _: &mut CheckState, tokens: &mut Vec<SemanticToken>, _: &Ty<'_>) {
         tokens.push(SemanticToken {
             span: self.name.1,
             kind: TokenKind::Member,
         });
-        self.body.0.tokens(state, tokens);
     }
 
     fn pretty<'b, D, A>(&'b self, allocator: &'b D) -> pretty::DocBuilder<'b, D, A>

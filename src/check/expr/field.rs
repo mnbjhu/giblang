@@ -1,21 +1,29 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, ops::ControlFlow};
 
 use crate::{
-    check::state::CheckState,
+    check::{state::CheckState, Check, ControlIter, Dir},
+    db::decl::{struct_::StructDecl, DeclKind},
+    item::AstItem,
     parser::expr::field::Field,
-    project::decl::{struct_::StructDecl, DeclKind},
     ty::Ty,
     util::Span,
 };
 
-impl<'db> Field {
-    pub fn check(&self, state: &mut CheckState<'_, 'db>) -> Ty<'db> {
-        let struct_ty = self.struct_.0.check(state);
+impl<'ast, 'db, Iter: ControlIter<'ast, 'db>> Check<'ast, 'db, Iter> for Field {
+    fn check(
+        &'ast self,
+        state: &mut CheckState<'db>,
+        control: &mut Iter,
+        span: Span,
+        (): (),
+    ) -> ControlFlow<(&'ast dyn AstItem, Ty<'db>), Ty<'db>> {
+        control.act(self, state, Dir::Enter, span)?;
+        let struct_ty = self.struct_.0.check(state, control, self.struct_.1, ())?;
         if self.name.0.is_empty() {
-            return Ty::Unknown;
+            return ControlFlow::Continue(Ty::Unknown);
         }
         if let Ty::Named { name, args } = struct_ty {
-            let decl = state.project.get_decl(state.db, name);
+            let decl = state.try_get_decl_path(name);
             if let Some(decl) = decl {
                 if let DeclKind::Struct { body, generics } = decl.kind(state.db) {
                     let params = generics
@@ -27,7 +35,9 @@ impl<'db> Field {
                         StructDecl::Fields(fields) => {
                             if let Some(field) = fields.iter().find(|field| field.0 == self.name.0)
                             {
-                                return field.1.parameterize(&params);
+                                let ty = field.1.parameterize(&params);
+                                control.act(self, state, Dir::Exit(ty.clone()), span)?;
+                                return ControlFlow::Continue(ty);
                             }
                             state.simple_error(
                                 &format!(
@@ -46,7 +56,9 @@ impl<'db> Field {
                                         self.name.1,
                                     );
                                 }
-                                return tys[index].parameterize(&params);
+                                let ty = tys[index].parameterize(&params);
+                                control.act(self, state, Dir::Exit(ty.clone()), span)?;
+                                return ControlFlow::Continue(ty);
                             }
                             state.simple_error("Expected integer index", self.name.1);
                         }
@@ -65,16 +77,20 @@ impl<'db> Field {
                 }
             }
         }
-        Ty::Unknown
+        control.act(self, state, Dir::Exit(Ty::Unknown), span)?;
+        ControlFlow::Continue(Ty::Unknown)
     }
 
-    pub fn expected_instance_of(
-        &self,
+    fn expect(
+        &'ast self,
+        state: &mut CheckState<'db>,
+        control: &mut Iter,
         expected: &Ty<'db>,
-        state: &mut CheckState<'_, 'db>,
         span: Span,
-    ) {
-        self.check(state)
-            .expect_is_instance_of(expected, state, false, span);
+        (): (),
+    ) -> ControlFlow<(&'ast dyn AstItem, Ty<'db>), Ty<'db>> {
+        let ty: Ty<'db> = self.check(state, control, span, ())?;
+        ty.expect_is_instance_of(expected, state, false, span);
+        ControlFlow::Continue(ty)
     }
 }

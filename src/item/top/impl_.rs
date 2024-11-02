@@ -1,57 +1,16 @@
+use std::ops::ControlFlow;
+
 use async_lsp::lsp_types::{DocumentSymbol, SymbolKind};
 
 use crate::{
-    check::state::CheckState,
-    item::{common::type_::ContainsOffset, AstItem},
+    check::{state::CheckState, Check as _},
+    item::AstItem,
     parser::top::impl_::Impl,
     range::span_to_range_str,
     util::{Span, Spanned},
 };
 
 impl AstItem for Impl {
-    fn tokens(
-        &self,
-        state: &mut crate::check::state::CheckState,
-        tokens: &mut Vec<crate::check::SemanticToken>,
-    ) {
-        self.generics.0.tokens(state, tokens);
-        self.for_.0.tokens(state, tokens);
-        self.trait_.0.tokens(state, tokens);
-        for (func, _) in &self.body {
-            func.tokens(state, tokens);
-        }
-    }
-
-    fn at_offset<'me>(
-        &'me self,
-        state: &mut crate::check::state::CheckState,
-        offset: usize,
-    ) -> &'me dyn AstItem
-    where
-        Self: Sized,
-    {
-        if self.generics.1.contains_offset(offset) {
-            return self.generics.0.at_offset(state, offset);
-        }
-        self.generics.0.check(state);
-        if self.for_.1.contains_offset(offset) {
-            return self.for_.0.at_offset(state, offset);
-        }
-        let for_ = self.for_.0.check(state);
-        state.add_self_ty(for_, self.for_.1);
-        if self.trait_.1.contains_offset(offset) {
-            return self.trait_.0.at_offset(state, offset);
-        }
-        self.trait_.0.check(state);
-        for (func, span) in &self.body {
-            if span.contains_offset(offset) {
-                return func.at_offset(state, offset);
-            }
-            func.check(state);
-        }
-        self
-    }
-
     fn pretty<'b, D, A>(&'b self, allocator: &'b D) -> pretty::DocBuilder<'b, D, A>
     where
         Self: Sized,
@@ -59,14 +18,21 @@ impl AstItem for Impl {
         D::Doc: Clone,
         A: Clone,
     {
+        let trait_ = if let Some(trait_) = &self.trait_ {
+            trait_
+                .0
+                .pretty(allocator)
+                .append(allocator.space())
+                .append("for")
+                .append(allocator.space())
+        } else {
+            allocator.nil()
+        };
         allocator
             .text("impl")
             .append(self.generics.0.pretty(allocator))
             .append(allocator.space())
-            .append(self.trait_.0.pretty(allocator))
-            .append(allocator.space())
-            .append("for")
-            .append(allocator.space())
+            .append(trait_)
             .append(self.for_.0.pretty(allocator))
             .append(allocator.space())
             .append(pretty_trait_body(allocator, &self.body))
@@ -106,10 +72,26 @@ impl Impl {
         let range = span_to_range_str(span.into(), txt);
         let selection_range = span_to_range_str(self.for_.1.into(), txt);
         let mut symbols = Vec::new();
-        self.generics.0.check(state);
-        let trait_ = self.trait_.0.check(state).get_name(state);
-        let for_ = self.for_.0.check(state).get_name(state);
-        let name = format!("impl {trait_} for {for_}");
+        let _ = self.generics.0.check(state, &mut (), self.generics.1, ());
+        let name = if let Some(trait_) = self.trait_.as_ref() {
+            let ControlFlow::Continue(trait_) = trait_.0.check(state, &mut (), trait_.1, ()) else {
+                panic!("Unexpected ControlFlow::Break");
+            };
+            let ControlFlow::Continue(for_) = self.for_.0.check(state, &mut (), self.for_.1, ())
+            else {
+                panic!("Unexpected ControlFlow::Break");
+            };
+            let trait_ = trait_.get_name(state, None);
+            let for_ = for_.get_name(state, None);
+            format!("impl {trait_} for {for_}")
+        } else {
+            let ControlFlow::Continue(for_) = self.for_.0.check(state, &mut (), self.for_.1, ())
+            else {
+                panic!("Unexpected ControlFlow::Break");
+            };
+            let for_ = for_.get_name(state, None);
+            format!("impl for {for_}")
+        };
         for (func, span) in &self.body {
             symbols.push(func.document_symbol(state, *span));
         }

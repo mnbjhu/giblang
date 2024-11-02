@@ -6,7 +6,7 @@ use crate::{
     check::err::{CheckError, Error},
     db::{
         input::{Db, SourceFile},
-        modules::ModulePath,
+        path::ModulePath,
     },
     parser::{common::variance::Variance, expr::qualified_name::SpannedQualifiedName, parse_file},
     ty::{Generic, Ty},

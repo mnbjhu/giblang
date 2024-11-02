@@ -1,9 +1,8 @@
 use async_lsp::lsp_types::{DocumentSymbol, SymbolKind};
 
 use crate::{
-    check::{state::CheckState, SemanticToken, TokenKind},
-    db::modules::ModulePath,
-    item::{common::type_::ContainsOffset, AstItem},
+    check::{state::CheckState, Check as _, SemanticToken, TokenKind},
+    item::AstItem,
     parser::top::trait_::Trait,
     range::span_to_range_str,
     ty::Ty,
@@ -13,38 +12,14 @@ use crate::{
 use super::impl_::pretty_trait_body;
 
 impl AstItem for Trait {
-    fn at_offset<'me>(&'me self, state: &mut CheckState, offset: usize) -> &'me dyn AstItem
-    where
-        Self: Sized,
-    {
-        if self.generics.1.contains_offset(offset) {
-            return self.generics.0.at_offset(state, offset);
-        }
-        let args = self.generics.0.check(state);
-        let name = ModulePath::new(state.db, state.path.clone());
-        let self_ty = Ty::Named { name, args };
-        state.add_self_ty(self_ty, self.name.1);
-        for (func, span) in &self.body {
-            if span.contains_offset(offset) {
-                return func.at_offset(state, offset);
-            }
-        }
-        self
-    }
-
-    fn tokens(&self, state: &mut CheckState, tokens: &mut Vec<SemanticToken>) {
+    fn tokens(&self, _: &mut CheckState, tokens: &mut Vec<SemanticToken>, _: &Ty<'_>) {
         tokens.push(SemanticToken {
             span: self.name.1,
             kind: TokenKind::Trait,
         });
-        self.generics.0.tokens(state, tokens);
-        for func in &self.body {
-            func.0.tokens(state, tokens);
-        }
     }
     fn pretty<'b, D, A>(&'b self, allocator: &'b D) -> pretty::DocBuilder<'b, D, A>
     where
-        Self: Sized,
         D: pretty::DocAllocator<'b, A>,
         D::Doc: Clone,
         A: Clone,
@@ -64,7 +39,7 @@ impl Trait {
         let txt = state.file_data.text(state.db);
         let range = span_to_range_str(span.into(), txt);
         let selection_range = span_to_range_str(self.name.1.into(), txt);
-        self.generics.0.check(state);
+        let _ = self.generics.0.check(state, &mut (), self.generics.1, ());
         DocumentSymbol {
             name: self.name.0.clone(),
             detail: Some("trait".to_string()),

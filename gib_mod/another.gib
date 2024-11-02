@@ -10,14 +10,6 @@ trait Display {
     }
 }
 
-trait Unwrap[T] {
-    fn Self.unwrap(): T {}
-}
-
-impl[T] Unwrap[T] for std::Option[T] {
-    fn Self.unwrap(): T {}
-}
-
 fn main() {}
 
 enum MyEnum   {

@@ -1,4 +1,4 @@
-use chumsky::{primitive::just, IterParser, Parser};
+use chumsky::{primitive::just, recovery::via_parser, IterParser, Parser};
 
 use crate::{
     kw,
@@ -10,6 +10,7 @@ use crate::{
             type_::{named_parser, type_parser, NamedType},
         },
         stmt::Stmt,
+        top_recovery,
     },
     util::Spanned,
     AstParser,
@@ -20,7 +21,7 @@ use super::func::{func_parser, Func};
 #[derive(Debug, PartialEq, Clone, Eq)]
 pub struct Impl {
     pub generics: Spanned<GenericArgs>,
-    pub trait_: Spanned<NamedType>,
+    pub trait_: Option<Spanned<NamedType>>,
     pub for_: Spanned<NamedType>,
     pub body: Vec<Spanned<Func>>,
 }
@@ -33,8 +34,11 @@ pub fn impl_parser<'tokens, 'src: 'tokens>(stmt: AstParser!(Stmt)) -> AstParser!
 
     let body = func_parser(stmt)
         .map_with(|s, e| (s, e.span()))
+        .map(Option::Some)
+        .recover_with(via_parser(top_recovery().map(|()| None)))
         .separated_by(just(newline()))
-        .collect()
+        .collect::<Vec<_>>()
+        .map(|v| v.into_iter().flatten().collect())
         .delimited_by(
             just(punct('{')).then(optional_newline()),
             optional_newline().then(just(punct('}'))),
@@ -44,7 +48,7 @@ pub fn impl_parser<'tokens, 'src: 'tokens>(stmt: AstParser!(Stmt)) -> AstParser!
 
     just(kw!(impl))
         .ignore_then(generic_args_parser().map_with(|g, e| (g, e.span())))
-        .then(trait_)
+        .then(trait_.or_not())
         .then(for_)
         .then(body)
         .map(|(((generics, trait_), for_), body)| Impl {

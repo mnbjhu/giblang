@@ -3,13 +3,12 @@ use cli::Command;
 
 mod check;
 mod cli;
-pub mod db;
-pub mod item;
+mod db;
+mod item;
 mod lexer;
-pub mod lsp;
-pub mod parser;
-pub mod project;
-pub mod range;
+mod lsp;
+mod parser;
+mod range;
 mod resolve;
 mod ty;
 mod util;
@@ -17,4 +16,14 @@ mod util;
 #[tokio::main]
 async fn main() {
     Command::parse().run().await;
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::cli::build::build;
+
+    #[test]
+    fn test_build() {
+        build();
+    }
 }

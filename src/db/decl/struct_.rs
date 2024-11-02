@@ -32,9 +32,4 @@ impl<'db> StructDecl<'db> {
             StructDecl::None => None,
         }
     }
-
-    #[must_use]
-    pub fn is_none(&self) -> bool {
-        matches!(self, StructDecl::None)
-    }
 }

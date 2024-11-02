@@ -1,22 +1,15 @@
+use std::ops::ControlFlow;
+
 use crate::{
-    check::state::CheckState,
-    db::{input::Db, modules::ModulePath},
+    check::{state::CheckState, Check, ControlIter, Dir},
+    db::{input::Db, path::ModulePath},
+    item::AstItem,
     lexer::literal::Literal,
     ty::Ty,
     util::Span,
 };
 
 impl Literal {
-    pub fn expect_instance_of<'db>(
-        &self,
-        expected: &Ty<'db>,
-        state: &mut CheckState<'_, 'db>,
-        span: Span,
-    ) {
-        let actual = self.to_ty(state.db);
-        actual.expect_is_instance_of(expected, state, false, span);
-    }
-
     pub fn to_ty<'db>(&self, db: &'db dyn Db) -> Ty<'db> {
         match self {
             Literal::String(_) => Ty::Named {
@@ -40,5 +33,35 @@ impl Literal {
                 args: vec![],
             },
         }
+    }
+}
+
+impl<'ast, 'db, Iter: ControlIter<'ast, 'db>> Check<'ast, 'db, Iter> for Literal {
+    fn check(
+        &'ast self,
+        state: &mut CheckState<'db>,
+        control: &mut Iter,
+        span: Span,
+        (): (),
+    ) -> ControlFlow<(&'ast dyn AstItem, Ty<'db>), Ty<'db>> {
+        control.act(self, state, Dir::Enter, span);
+        let actual = self.to_ty(state.db);
+        control.act(self, state, Dir::Exit(actual.clone()), span);
+        ControlFlow::Continue(actual)
+    }
+
+    fn expect(
+        &'ast self,
+        state: &mut CheckState<'db>,
+        control: &mut Iter,
+        expected: &Ty<'db>,
+        span: Span,
+        (): (),
+    ) -> ControlFlow<(&'ast dyn AstItem, Ty<'db>), Ty<'db>> {
+        control.act(self, state, Dir::Enter, span);
+        let actual = self.to_ty(state.db);
+        actual.expect_is_instance_of(expected, state, false, span);
+        control.act(self, state, Dir::Exit(actual.clone()), span);
+        ControlFlow::Continue(actual)
     }
 }

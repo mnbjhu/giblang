@@ -1,14 +1,16 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, ops::ControlFlow, ptr::eq};
 
 use salsa::Update;
+use state::CheckState;
 
 use crate::{
     db::{
+        decl::{impl_::ImplForDecl, Project},
         input::{Db, SourceFile, Vfs, VfsInner},
-        modules::ModulePath,
+        path::ModulePath,
     },
-    parser::parse_file,
-    project::{ImplDecl, Project},
+    item::{common::type_::ContainsOffset, AstItem},
+    parser::{parse_file, Ast},
     resolve::{resolve_impls_vfs, resolve_vfs},
     ty::Ty,
     util::Span,
@@ -16,12 +18,51 @@ use crate::{
 
 mod common;
 pub mod err;
-mod expr;
+pub mod expr;
 pub mod state;
 mod stmt;
-mod top;
+pub mod top;
 pub mod ty;
 mod type_state;
+
+pub trait Check<'ast, 'db, Iter: ControlIter<'ast, 'db>, T = Ty<'db>, A = ()> {
+    #[must_use]
+    fn check(
+        &'ast self,
+        state: &mut CheckState<'db>,
+        control: &mut Iter,
+        span: Span,
+        args: A,
+    ) -> ControlFlow<(&'ast dyn AstItem, Ty<'db>), T>;
+
+    #[must_use]
+    fn expect(
+        &'ast self,
+        state: &mut CheckState<'db>,
+        control: &mut Iter,
+        _: &Ty<'db>,
+        span: Span,
+        args: A,
+    ) -> ControlFlow<(&'ast dyn AstItem, Ty<'db>), T> {
+        self.check(state, control, span, args)
+    }
+}
+
+pub trait ControlIter<'ast, 'db> {
+    fn act(
+        &mut self,
+        item: &'ast dyn AstItem,
+        state: &mut CheckState,
+        dir: Dir<'db>,
+        span: Span,
+    ) -> ControlFlow<(&'ast dyn AstItem, Ty<'db>)>;
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Dir<'db> {
+    Enter,
+    Exit(Ty<'db>),
+}
 
 #[derive(Debug, Clone, Update)]
 pub enum TokenKind {
@@ -46,7 +87,7 @@ pub struct SemanticToken {
 pub fn resolve_project<'db>(db: &'db dyn Db, vfs: Vfs) -> Project<'db> {
     let decls = resolve_vfs(db, vfs, ModulePath::new(db, Vec::new()));
     let impls = resolve_impls_vfs(db, vfs);
-    let mut impl_map = HashMap::<ModulePath, Vec<ImplDecl>>::new();
+    let mut impl_map = HashMap::<ModulePath, Vec<ImplForDecl>>::new();
     for impl_ in impls {
         let Ty::Named { name, .. } = impl_.from_ty(db) else {
             panic!("Impls must be named types")
@@ -60,6 +101,18 @@ pub fn resolve_project<'db>(db: &'db dyn Db, vfs: Vfs) -> Project<'db> {
     Project::new(db, decls, impl_map)
 }
 
+impl<'ast, 'db> ControlIter<'ast, 'db> for () {
+    fn act(
+        &mut self,
+        _: &'ast dyn AstItem,
+        _: &mut CheckState,
+        _: Dir,
+        _: Span,
+    ) -> ControlFlow<(&'ast dyn AstItem, Ty<'db>)> {
+        ControlFlow::Continue(())
+    }
+}
+
 #[salsa::tracked]
 pub fn check_file<'db>(
     db: &'db dyn Db,
@@ -68,10 +121,9 @@ pub fn check_file<'db>(
 ) -> HashMap<u32, Ty<'db>> {
     let mut state = state::CheckState::from_file(db, file, project);
     let ast = parse_file(db, file);
-    for top in ast.tops(db) {
-        top.0.check(&mut state);
+    for (top, span) in ast.tops(db) {
+        let _ = top.check(&mut state, &mut (), *span, ());
     }
-    state.resolve_type_vars();
     state.get_type_vars()
 }
 
@@ -92,4 +144,93 @@ pub fn check_vfs<'db>(db: &'db dyn Db, vfs: Vfs, project: Project<'db>) {
 pub fn check_project<'db>(db: &'db dyn Db, vfs: Vfs) {
     let project = resolve_project(db, vfs);
     check_vfs(db, vfs, project);
+}
+
+pub struct AtOffsetIter<'ast> {
+    offset: usize,
+    last: Option<&'ast dyn AstItem>,
+    ty: Ty<'ast>,
+}
+
+impl<'ast, 'db: 'ast> ControlIter<'ast, 'db> for AtOffsetIter<'ast> {
+    fn act(
+        &mut self,
+        item: &'ast dyn AstItem,
+        _: &mut CheckState,
+        dir: Dir<'db>,
+        span: Span,
+    ) -> ControlFlow<(&'ast dyn AstItem, Ty<'db>)> {
+        match dir {
+            Dir::Enter => {
+                if span.contains_offset(self.offset) {
+                    self.last = Some(item);
+                }
+                ControlFlow::Continue(())
+            }
+            Dir::Exit(ty) => {
+                if let Some(last) = self.last {
+                    if eq(last, item) {
+                        self.ty = ty.clone();
+                        return ControlFlow::Break((last, ty));
+                    }
+                }
+                ControlFlow::Continue(())
+            }
+        }
+    }
+}
+
+pub struct SemanticTokensIter {
+    pub tokens: Vec<SemanticToken>,
+}
+
+impl<'ast, 'db: 'ast> ControlIter<'ast, 'db> for SemanticTokensIter {
+    fn act(
+        &mut self,
+        item: &'ast dyn AstItem,
+        state: &mut CheckState,
+        dir: Dir<'db>,
+        _: Span,
+    ) -> ControlFlow<(&'ast dyn AstItem, Ty<'db>)> {
+        match dir {
+            Dir::Enter => ControlFlow::Continue(()),
+            Dir::Exit(ty) => {
+                item.tokens(state, &mut self.tokens, &ty);
+                ControlFlow::Continue(())
+            }
+        }
+    }
+}
+
+impl<'ast, 'db> Ast<'db> {
+    pub fn at_offset(
+        &'ast self,
+        db: &'db dyn Db,
+        state: &mut CheckState<'db>,
+        offset: usize,
+    ) -> Option<(&dyn AstItem, Ty<'db>)> {
+        let mut iter = AtOffsetIter {
+            offset,
+            last: None,
+            ty: Ty::Unknown,
+        };
+        for top in self.tops(db) {
+            if let ControlFlow::Break(found) = top.0.check(state, &mut iter, top.1, ()) {
+                return Some(found);
+            }
+        }
+        None
+    }
+
+    pub fn semantic_tokens(
+        &'ast self,
+        db: &'db dyn Db,
+        state: &mut CheckState<'db>,
+    ) -> Vec<SemanticToken> {
+        let mut iter = SemanticTokensIter { tokens: Vec::new() };
+        for top in self.tops(db) {
+            let _ = top.0.check(state, &mut iter, top.1, ());
+        }
+        iter.tokens
+    }
 }

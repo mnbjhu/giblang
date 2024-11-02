@@ -1,9 +1,7 @@
 use std::{collections::HashMap, fmt::Debug};
 
 use async_lsp::lsp_types::CompletionItem;
-use common::type_::ContainsOffset;
 use pretty::{DocAllocator, DocBuilder};
-use salsa::Database;
 
 use crate::{
     check::{state::CheckState, SemanticToken},
@@ -21,37 +19,29 @@ pub mod stmt;
 pub mod top;
 
 pub trait AstItem: Debug {
-    fn at_offset<'me>(
-        &'me self,
-        _state: &mut CheckState<'_, '_>,
-        _offset: usize,
-    ) -> &'me dyn AstItem
-    where
-        Self: Sized,
-    {
-        todo!()
-    }
-
-    fn tokens(&self, _state: &mut CheckState, _tokens: &mut Vec<SemanticToken>) {}
+    fn tokens(&self, _state: &mut CheckState, _tokens: &mut Vec<SemanticToken>, _: &Ty<'_>) {}
 
     fn hover<'db>(
         &self,
-        _state: &mut CheckState<'_, 'db>,
+        _state: &mut CheckState<'db>,
         _offset: usize,
         _type_vars: &HashMap<u32, Ty<'db>>,
+        _ty: &Ty<'db>,
     ) -> Option<String> {
         None
     }
 
-    fn goto_def(
-        &self,
-        _state: &mut CheckState<'_, '_>,
-        _offset: usize,
-    ) -> Option<(SourceFile, Span)> {
+    fn goto_def(&self, _state: &mut CheckState<'_>, _offset: usize) -> Option<(SourceFile, Span)> {
         None
     }
 
-    fn completions(&self, _state: &mut CheckState, _offset: usize) -> Vec<CompletionItem> {
+    fn completions(
+        &self,
+        _state: &mut CheckState,
+        _offset: usize,
+        _: &HashMap<u32, Ty<'_>>,
+        _ty: &Ty<'_>,
+    ) -> Vec<CompletionItem> {
         vec![]
     }
 
@@ -63,57 +53,7 @@ pub trait AstItem: Debug {
         A: Clone;
 }
 
-impl<'db> Ast<'db> {
-    pub fn at_offset<'ty, 'me, 'state>(
-        &'me self,
-        db: &'db dyn Database,
-        state: &'state mut CheckState<'ty, 'db>,
-        offset: usize,
-    ) -> Option<&'me dyn AstItem>
-    where
-        Self: Sized,
-    {
-        for (item, span) in self.tops(db) {
-            if span.contains_offset(offset) {
-                return Some(item.at_offset(state, offset));
-            }
-            item.check(state);
-        }
-        None
-    }
-
-    pub fn semantic_tokens<'ty, 'me, 'state>(
-        &'me self,
-        db: &'db dyn Database,
-        state: &'state mut CheckState<'ty, 'db>,
-    ) -> Vec<SemanticToken>
-    where
-        Self: Sized,
-    {
-        let mut tokens = vec![];
-        for item in self.tops(db) {
-            item.0.tokens(state, &mut tokens);
-        }
-        tokens
-    }
-
-    pub fn completions<'ty, 'me, 'state>(
-        &'me self,
-        db: &'db dyn Database,
-        state: &'state mut CheckState<'ty, 'db>,
-        offset: usize,
-    ) -> Vec<CompletionItem>
-    where
-        Self: Sized,
-    {
-        for (item, span) in self.tops(db) {
-            if span.contains_offset(offset) {
-                return item.completions(state, offset);
-            }
-        }
-        vec![]
-    }
-}
+impl<'db> Ast<'db> {}
 pub fn pretty_format<'b, 'db, D, A>(
     ast: &'b [Spanned<Top>],
     allocator: &'b D,
