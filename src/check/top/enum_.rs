@@ -22,7 +22,7 @@ impl<'ast, 'db, Iter: ControlIter<'ast, 'db>> Check<'ast, 'db, Iter, (),> for En
         self.generics.0.check(state, control, self.generics.1, ())?;
         state.path.push(self.name.0.to_string());
         for member in &self.members {
-            member.0.body.0.check(state, control, member.0.body.1, ())?;
+            member.0.check(state, control, member.1, ())?;
         }
         state.path.pop();
         control.act(self, state, Dir::Exit(Ty::unit()), span)?;

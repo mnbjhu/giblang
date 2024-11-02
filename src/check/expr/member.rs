@@ -35,10 +35,9 @@ impl<'ast, 'db, Iter: ControlIter<'ast, 'db>> Check<'ast, 'db, Iter> for MemberC
             ret,
             receiver,
         } = func_ty;
-        if let Some(rec) = receiver {
-            self.rec.0.expect(state, control, &rec, self.rec.1, ())?;
+        if let Some(expected) = receiver {
+            rec.expect_is_instance_of(&expected, state, false, self.rec.1);
         }
-
         if expected_args.len() != self.args.len() {
             state.simple_error(
                 &format!(

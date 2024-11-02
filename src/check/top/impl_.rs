@@ -11,7 +11,7 @@ use crate::{
 
 use super::Check;
 
-impl<'ast, 'db, Iter: ControlIter<'ast, 'db>> Check<'ast, 'db, Iter, (),> for Impl {
+impl<'ast, 'db, Iter: ControlIter<'ast, 'db>> Check<'ast, 'db, Iter, ()> for Impl {
     fn check(
         &'ast self,
         state: &mut CheckState<'db>,
@@ -39,31 +39,32 @@ impl<'ast, 'db, Iter: ControlIter<'ast, 'db>> Check<'ast, 'db, Iter, (),> for Im
                     let mut params = HashMap::new();
                     trait_decl_ty.imply_generic_args(&trait_ty, &mut params);
                     let mut found = Vec::new();
-                    for func in &self.body {
-                        let expected = body.iter().find_map(|mod_| {
-                            if mod_.name(state.db) == func.0.name.0 {
-                                Some(mod_.into_func(state.db))
+                    for (func, span) in &self.body {
+                        let expected = body.iter().find_map(|decl| {
+                            if decl.name(state.db) == func.name.0 {
+                                Some(decl.into_func(state.db))
                             } else {
                                 None
                             }
                         });
                         if let Some(expected) = expected {
                             found.push(expected);
-                            func.0.check_matches(expected, state, &params, control);
+                            func.check_matches(expected, state, &params, control, *span);
                         } else {
+                            func.check(state, control, *span, true)?;
                             state.simple_error(
                                 &format!(
                                     "No function with name '{}' found on trait {}",
-                                    func.0.name.0,
+                                    func.name.0,
                                     name.name(state.db).join("::")
                                 ),
-                                func.0.name.1,
+                                func.name.1,
                             );
                         }
                     }
                     let mut missing = Vec::new();
-                    for mod_ in body {
-                        let func = mod_.into_func(state.db);
+                    for decl in body {
+                        let func = decl.into_func(state.db);
                         if !found.contains(&func) && func.required {
                             missing.push(func);
                         }

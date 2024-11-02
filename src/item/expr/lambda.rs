@@ -13,7 +13,7 @@ impl AstItem for Lambda {
     {
         let separator = allocator.text(",").append(allocator.line());
         allocator
-            .text(" {")
+            .text("{")
             .append(
                 allocator
                     .line()
@@ -27,7 +27,7 @@ impl AstItem for Lambda {
                     .append(if self.args.is_empty() {
                         allocator.nil()
                     } else {
-                        allocator.text(" -> ")
+                        allocator.text(" ->")
                     })
                     .append(allocator.hardline())
                     .append(allocator.intersperse(

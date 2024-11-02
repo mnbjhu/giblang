@@ -19,14 +19,14 @@ use crate::{
 
 use super::{
     err::{unresolved::Unresolved, unresolved_type_var::UnboundTypeVar, Error, IntoWithDb},
-    type_state::TypeState,
+    type_state::TypeState, TokenKind,
 };
 
 #[derive(Debug, Clone)]
 pub struct VarDecl<'db> {
     pub name: String,
     pub ty: Ty<'db>,
-    pub is_param: bool,
+    pub kind: TokenKind,
     pub span: Span,
 }
 
@@ -183,11 +183,11 @@ impl<'ty, 'db: 'ty> CheckState<'db> {
         self.generics.last_mut().unwrap().insert(name, ty);
     }
 
-    pub fn insert_variable(&mut self, name: String, ty: Ty<'db>, param: bool, span: Span) {
+    pub fn insert_variable(&mut self, name: String, ty: Ty<'db>, kind: TokenKind, span: Span) {
         let var = VarDecl {
             name: name.clone(),
             ty,
-            is_param: param,
+            kind,
             span,
         };
         self.variables.last_mut().unwrap().insert(name, var);

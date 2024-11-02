@@ -13,22 +13,24 @@ impl<'ast, 'db, Iter: ControlIter<'ast, 'db>> Check<'ast, 'db, Iter> for NamedTy
         &'ast self,
         state: &mut CheckState<'db>,
         control: &mut Iter,
-        span: Span,
+        _: Span,
         (): (),
     ) -> ControlFlow<(&'ast dyn AstItem, Ty<'db>), Ty<'db>> {
-        control.act(self, state, Dir::Enter, span)?;
+        let name_span = Span::new(self.name[0].1.start, self.name[self.name.len() - 1].1.end);
+        control.act(&self.name, state, Dir::Enter, name_span)?;
         if self.name.len() == 1 {
             if self.name[0].0 == "Any" {
-                control.act(self, state, Dir::Exit(Ty::Any), span)?;
+                control.act(&self.name, state, Dir::Exit(Ty::Any), name_span)?;
                 return ControlFlow::Continue(Ty::Any);
             }
             if self.name[0].0 == "Nothing" {
-                control.act(self, state, Dir::Exit(Ty::Nothing), span)?;
+                control.act(&self.name, state, Dir::Exit(Ty::Nothing), name_span)?;
                 return ControlFlow::Continue(Ty::Nothing);
             }
             if let Some(generic) = state.get_generic(&self.name[0].0).cloned() {
-                control.act(self, state, Dir::Exit(Ty::Generic(generic.clone())), span)?;
-                return ControlFlow::Continue(Ty::Generic(generic));
+                let ty = Ty::Generic(generic);
+                control.act(&self.name, state, Dir::Exit(ty.clone()), name_span)?;
+                return ControlFlow::Continue(ty);
             }
         };
         if let Ok(decl) = state.get_decl_with_error(&self.name) {
@@ -40,10 +42,10 @@ impl<'ast, 'db, Iter: ControlIter<'ast, 'db>> Check<'ast, 'db, Iter> for NamedTy
                 name: decl.path(state.db),
                 args,
             };
-            control.act(self, state, Dir::Exit(ty.clone()), span)?;
+            control.act(&self.name, state, Dir::Exit(ty.clone()), name_span)?;
             return ControlFlow::Continue(ty);
         };
-        control.act(self, state, Dir::Exit(Ty::Unknown), span)?;
+        control.act(&self.name, state, Dir::Exit(Ty::Unknown), name_span)?;
         ControlFlow::Continue(Ty::Unknown)
     }
 }

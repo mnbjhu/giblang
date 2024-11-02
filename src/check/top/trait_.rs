@@ -1,7 +1,7 @@
 use std::ops::ControlFlow;
 
 use crate::{
-    check::{state::CheckState, Check, ControlIter, Dir},
+    check::{state::CheckState, Check, ControlIter, Dir, TokenKind},
     item::AstItem,
     parser::{common::variance::Variance, top::trait_::Trait},
     ty::{Generic, Ty},
@@ -18,7 +18,7 @@ impl<'db> CheckState<'db> {
         self.insert_generic("Self".to_string(), generic);
     }
     pub fn add_self_param(&mut self, ty: Ty<'db>, span: Span) {
-        self.insert_variable("self".to_string(), ty, true, span);
+        self.insert_variable("self".to_string(), ty, TokenKind::Param, span);
     }
 }
 

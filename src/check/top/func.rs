@@ -23,6 +23,7 @@ impl<'ast, 'db> Func {
         }
     }
 
+    #[allow(clippy::too_many_lines)]
     pub fn check_matches<Iter: ControlIter<'ast, 'db>>(
         &'ast self,
         trait_decl: &Function<'db>,
@@ -30,7 +31,9 @@ impl<'ast, 'db> Func {
         // FROM THE TRAIT
         params: &HashMap<String, Ty<'db>>,
         control: &mut Iter,
+        span: Span,
     ) -> ControlFlow<(&'ast dyn AstItem, Ty<'db>)> {
+        control.act(self, state, Dir::Enter, span)?;
         let generics = self.generics.0.check(state, control, self.generics.1, ())?;
         let spanned_decl_generics = generics
             .iter()
@@ -68,6 +71,14 @@ impl<'ast, 'db> Func {
             );
         }
 
+        let receiver = if let Some(r) = &self.receiver {
+            let ty = r.0.check(state, control, r.1, ())?;
+            state.add_self_param(ty.clone(), r.1);
+            Some(ty)
+        } else {
+            None
+        };
+
         let mut args = Vec::new();
         for arg in &self.args {
             args.push(arg.0.check(state, control, arg.1, ())?);
@@ -87,8 +98,9 @@ impl<'ast, 'db> Func {
             Ty::unit()
         };
 
-        if let Some(ret) = &self.ret {
+        let ret = if let Some(ret) = &self.ret {
             ret_ty.expect_is_instance_of(&trait_decl.ret.parameterize(params), state, false, ret.1);
+            ret_ty
         } else if !trait_decl.ret.is_unit() {
             state.simple_error(
                 &format!(
@@ -97,13 +109,11 @@ impl<'ast, 'db> Func {
                 ),
                 self.name.1,
             );
+            Ty::unit()
+        } else {
+            Ty::Unknown
         };
 
-        let receiver = if let Some(r) = &self.receiver {
-            Some(r.0.check(state, control, r.1, ())?)
-        } else {
-            None
-        };
         match (
             &receiver,
             trait_decl.receiver.as_ref().map(|r| r.parameterize(params)),
@@ -125,11 +135,24 @@ impl<'ast, 'db> Func {
                 );
             }
         }
+        let body_span = if let Some(body) = &self.body {
+            if body.is_empty() {
+                self.name.1
+            } else {
+                Span::new(body[0].1.start, body.last().unwrap().1.end)
+            }
+        } else {
+            self.name.1
+        };
+        if let Some(body) = &self.body {
+            body.expect(state, control, &ret, body_span, ())?;
+        }
+        control.act(self, state, Dir::Exit(Ty::unit()), span)?;
         ControlFlow::Continue(())
     }
 }
 
-impl<'ast, 'db, Iter: ControlIter<'ast, 'db>> Check<'ast, 'db, Iter, (), bool,> for Func {
+impl<'ast, 'db, Iter: ControlIter<'ast, 'db>> Check<'ast, 'db, Iter, (), bool> for Func {
     fn check(
         &'ast self,
         state: &mut CheckState<'db>,
@@ -146,17 +169,20 @@ impl<'ast, 'db, Iter: ControlIter<'ast, 'db>> Check<'ast, 'db, Iter, (), bool,> 
         for arg in &self.args {
             arg.0.check(state, control, arg.1, ())?;
         }
-        if self.ret.is_some() && !allow_empty {
-            let expected = self.ret.as_ref().unwrap().0.check(
-                state,
-                control,
-                self.ret.as_ref().unwrap().1,
-                (),
-            )?;
-            if let Some(body) = &self.body {
+        let expected = if let Some(ret) = &self.ret {
+            ret.0.check(state, control, ret.1, ())?
+        } else {
+            Ty::unit()
+        };
+        if !allow_empty || self.body.is_some() {
+            if expected.is_unit() {
+                if let Some(body) = &self.body {
+                    body.check(state, control, span, ())?;
+                }
+            } else if let Some(body) = &self.body {
                 body.expect(state, control, &expected, span, ())?;
             } else {
-                Ty::unit().expect_is_instance_of(&expected, state, false, span);
+                Ty::unit().expect_is_instance_of(&expected, state, false, self.name.1);
             }
         } else if let Some(body) = &self.body {
             body.check(state, control, span, ())?;

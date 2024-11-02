@@ -33,7 +33,7 @@ impl<'db> Ty<'db> {
         name: &Spanned<String>,
         state: &mut CheckState<'db>,
     ) -> Option<FuncTy<'db>> {
-        let mut funcs = get_sub_tys(self, state)
+        let mut funcs = get_sub_tys(self, state, name.1)
             .iter()
             .filter_map(|ty| ty.get_func(name, state, self))
             .collect::<Vec<_>>();
@@ -51,8 +51,8 @@ impl<'db> Ty<'db> {
         }
     }
 
-    pub fn member_funcs(&self, state: &mut CheckState<'db>) -> Vec<(String, FuncTy<'db>)> {
-        let mut funcs = get_sub_tys(self, state)
+    pub fn member_funcs(&self, state: &mut CheckState<'db>, span: Span) -> Vec<(String, FuncTy<'db>)> {
+        let mut funcs = get_sub_tys(self, state, span)
             .iter()
             .flat_map(|t| t.get_funcs(state))
             .collect::<Vec<_>>();

@@ -1,13 +1,17 @@
 use std::collections::HashMap;
 
-use async_lsp::lsp_types::CompletionItem;
+use async_lsp::lsp_types::{CompletionItem, CompletionItemKind};
 
 use crate::{
-    check::{err::unresolved::Unresolved, state::CheckState},
+    check::{
+        err::unresolved::Unresolved,
+        state::{CheckState, VarDecl},
+        SemanticToken, TokenKind,
+    },
     item::{common::type_::ContainsOffset, definitions::ident::IdentDef, AstItem},
     parser::expr::qualified_name::SpannedQualifiedName,
     ty::Ty,
-    util::Spanned,
+    util::{Span, Spanned},
 };
 
 impl AstItem for SpannedQualifiedName {
@@ -23,7 +27,9 @@ impl AstItem for SpannedQualifiedName {
             .position(|(_, span)| span.contains_offset(offset))?;
         let path = &self[..=index];
         let found = state.get_ident_def(path);
-        let Ok(found) = found else { return Some("Not Found".to_string()) };
+        let Ok(found) = found else {
+            return Some("Not Found".to_string());
+        };
         match found {
             IdentDef::Variable(var) => Some(var.hover(state, type_vars)),
             IdentDef::Generic(g) => Some(g.hover(state)),
@@ -88,6 +94,22 @@ impl AstItem for SpannedQualifiedName {
         let parts = self.iter().map(|(name, _)| allocator.text(name));
         allocator.intersperse(parts, sep)
     }
+
+    fn tokens(&self, state: &mut CheckState, tokens: &mut Vec<SemanticToken>, _: &Ty<'_>) {
+        for i in 1..=self.len() {
+            let def = state.get_ident_def(&self[..i]);
+            if let Ok(def) = def {
+                tokens.push(SemanticToken {
+                    span: self[i - 1].1,
+                    kind: match def {
+                        IdentDef::Variable(var) => var.kind,
+                        IdentDef::Generic(_) => TokenKind::Generic,
+                        IdentDef::Decl(decl) => decl.get_kind(state.db),
+                    },
+                });
+            }
+        }
+    }
 }
 
 fn get_ident_completions(
@@ -111,6 +133,25 @@ fn get_ident_completions(
             }
         };
     }
+    if let Some(self_param) = state.get_variable("self") {
+        for (name, func_ty) in self_param.ty.member_funcs(state, Span::splat(0)) {
+            completions.push(CompletionItem {
+                label: name.clone(),
+                kind: Some(CompletionItemKind::METHOD),
+                detail: Some(func_ty.get_name(state, Some(type_vars))),
+                ..Default::default()
+            });
+        }
+
+        for (name, ty) in self_param.ty.fields(state) {
+            completions.push(CompletionItem {
+                label: name.clone(),
+                kind: Some(CompletionItemKind::FIELD),
+                detail: Some(ty.get_name(state, Some(type_vars))),
+                ..Default::default()
+            });
+        }
+    }
     completions.extend(
         state
             .project
@@ -126,6 +167,36 @@ impl<'db> CheckState<'db> {
     ) -> Result<IdentDef<'db>, Unresolved> {
         if ident.len() == 1 {
             let name = &ident[0];
+            if let Some(self_param) = self.get_variable("self") {
+                if let Some(field) = self_param
+                    .ty
+                    .fields(self)
+                    .iter()
+                    .find(|(n, _)| n == &name.0)
+                {
+                    return Ok(IdentDef::Variable(VarDecl {
+                        name: name.0.clone(),
+                        ty: field.1.clone(),
+                        span: name.1,
+                        kind: TokenKind::Property,
+                    }));
+                }
+                if let Some(func) = self_param
+                    .ty
+                    .member_funcs(self, name.1)
+                    .iter()
+                    .find(|(n, _)| n == &name.0)
+                {
+                    return Ok(IdentDef::Variable(
+                        VarDecl {
+                            name: name.0.clone(),
+                            ty: Ty::Function(func.1.clone()),
+                            span: name.1,
+                            kind: TokenKind::Func,
+                        },
+                    ));
+                }
+            }
             if let Some(var) = self.get_variable(&name.0) {
                 return Ok(IdentDef::Variable(var));
             }

@@ -1,7 +1,7 @@
 use std::ops::ControlFlow;
 
 use crate::{
-    check::{state::CheckState, Check, ControlIter, Dir}, item::AstItem, parser::top::{struct_body::StructBody, struct_field::StructField}, ty::Ty, util::Span
+    check::{state::CheckState, Check, ControlIter, Dir}, item::AstItem, parser::top::{struct_body::StructBody}, ty::Ty, util::Span
 };
 
 impl<'db, 'ast, Iter: ControlIter<'ast, 'db>> Check<'ast, 'db, Iter, (),> for StructBody {
@@ -21,8 +21,8 @@ impl<'db, 'ast, Iter: ControlIter<'ast, 'db>> Check<'ast, 'db, Iter, (),> for St
                 }
             }
             StructBody::Fields(fields) => {
-                for (StructField { ty, .. }, _) in fields {
-                    ty.0.check(state, control, ty.1, ())?;
+                for (field, span) in fields {
+                    field.check(state, control, *span, ())?;
                 }
             }
         };

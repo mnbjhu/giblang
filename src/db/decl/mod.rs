@@ -150,7 +150,7 @@ impl<'db> Decl<'db> {
         let ty = self
             .default_named_ty(state)
             .inst(state, span);
-        let mut funcs = get_sub_tys(&ty, state)
+        let mut funcs = get_sub_tys(&ty, state, span)
             .iter()
             .flat_map(|t| t.get_funcs(state))
             .collect::<Vec<_>>();

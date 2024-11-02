@@ -57,7 +57,7 @@ impl AstItem for Field {
             panic!("Unexpected ControlFlow::Break in Field::completions");
         };
         let mut completions = Vec::new();
-        for (name, func_ty) in rec.member_funcs(state) {
+        for (name, func_ty) in rec.member_funcs(state, self.name.1) {
             completions.push(CompletionItem {
                 label: name.clone(),
                 kind: Some(CompletionItemKind::METHOD),

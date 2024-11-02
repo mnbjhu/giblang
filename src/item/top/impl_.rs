@@ -85,7 +85,8 @@ impl Impl {
             let for_ = for_.get_name(state, None);
             format!("impl {trait_} for {for_}")
         } else {
-            let ControlFlow::Continue(for_) = self.for_.0.check(state, &mut (), self.for_.1, ()) else {
+            let ControlFlow::Continue(for_) = self.for_.0.check(state, &mut (), self.for_.1, ())
+            else {
                 panic!("Unexpected ControlFlow::Break");
             };
             let for_ = for_.get_name(state, None);

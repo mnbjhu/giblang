@@ -9,7 +9,10 @@ use std::panic
 use std::Bool
 
 trait Test {
-    fn another()
+    fn another[T]() {
+        let test = 123
+        println(test)
+    }
 }
 
 struct Box[T](T)
@@ -17,6 +20,8 @@ struct Box[T](T)
 trait New {
     fn new(): Self
 }
+
+fn test() {}
 
 impl[T] New for Box[T] {
     fn new(): Box[T] {
@@ -42,47 +47,12 @@ impl From[Int] for String {
 
 impl From[String] for Int {
     fn from(value: String): Int {
-        "Hello"
+        123
     }
-}
-
-fn test(thing: Test) {
-    let other = 123
-    let test = std::Vec::new()
-    test.push(other)
-    let some = Option::Some(123)
-    let transform =  { x: Int -> 
-        x.add(x)
-    }
-    let some_test: Option[Int].() -> Int =  { 
-        self.unwrap()
-    }
-    let another_test: (Option[Int]) -> Int =  { it -> 
-        it.unwrap()
-    }
-    let test = some.unwrap()
-    let inner = some.expect("Test")
 }
 
 impl[T] std::Option[T] {
-    fn Self.unwrap(): T {
-        match self {
-            Option::Some(inner) => inner,
-            Option::None => panic("Called unwrap on None")
-        }
-    }
-    fn Self.expect(text: String): T {
-        match self {
-            Option::Some(res) => res,
-            Option::None => panic(text)
-        }
-    }
-    fn Self.map[U:  String](f: (T) -> U): Option[U] {
-        match self {
-            Option::Some(inner) => Option::Some(f(inner)),
-            Option::None => Option::None
-        }
-    }
+
 }
 
 struct Basic {
@@ -93,15 +63,6 @@ struct Basic {
 fn thingy(x: Option[String]) {
     let basic = Basic(123, "hello")
     let some_basic = Option::Some(basic)
-}
-
-impl Basic {
-    fn hello() {
-        println("Hello")
-    }
-    fn complex[T](x: T) {
-        println("Complex")
-    }
 }
 
 fn test3(thing: Int) {
@@ -131,15 +92,23 @@ trait ToString {
 }
 
 trait Clone {
-    fn clone(): Self {}
+    fn Self.clone(): Self
 }
 
 impl Clone for Basic {
-    fn clone(): Basic {}
+    fn Self.clone(): Basic {
+        let test = ""
+        self
+    }
 }
 
 impl ToString for Option[String] {
-    fn Self.to_string(): String {}
+    fn Self.to_string(): String {
+        match self {
+            Option::Some(res) => res,
+            Option::None => "None"
+        }
+    }
 }
 
 trait Into[T] {
@@ -151,7 +120,12 @@ trait From[T] {
 }
 
 impl From[String] for Basic {
-    fn from(value: String): Self
+    fn from(value: String): Self {
+        Basic(123, value)
+    }
+    fn broken(test: String) {
+        println("Hello")
+    }
 }
 
 impl Into[String] for Basic {

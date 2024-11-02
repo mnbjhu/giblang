@@ -26,6 +26,7 @@ impl<'ast, 'db, Iter: ControlIter<'ast, 'db>> Check<'ast, 'db, Iter> for Call {
             for arg in &self.args {
                 arg.0.check(state, control, arg.1, ())?;
             }
+            control.act(self, state, Dir::Exit(Ty::Unknown), span)?;
             return ControlFlow::Continue(Ty::Unknown);
         }
         let func_ty = name_ty.try_get_func_ty(state, self.name.1);
@@ -36,11 +37,15 @@ impl<'ast, 'db, Iter: ControlIter<'ast, 'db>> Check<'ast, 'db, Iter> for Call {
                 receiver,
             } = &func_ty;
             if let Some(receiver) = receiver {
-                state.error(CheckError::MissingReceiver(MissingReceiver {
-                    span: self.name.1,
-                    file: state.file_data,
-                    expected: receiver.get_name(state, None),
-                }));
+                if let Some(self_ty) = state.get_variable("self") {
+                    self_ty.ty.expect_is_instance_of(receiver, state, false, self.name.1);
+                } else {
+                    state.error(CheckError::MissingReceiver(MissingReceiver {
+                        span: self.name.1,
+                        file: state.file_data,
+                        expected: receiver.get_name(state, None),
+                    }));
+                }
             }
             if expected_args.len() != self.args.len() {
                 state.error(CheckError::UnexpectedArgs(UnexpectedArgs {
@@ -50,9 +55,6 @@ impl<'ast, 'db, Iter: ControlIter<'ast, 'db>> Check<'ast, 'db, Iter> for Call {
                     file: state.file_data,
                     func: func_ty.get_name(state, None),
                 }));
-            }
-            for ((arg, span), expected) in self.args.iter().zip(expected_args) {
-                arg.expect(state, control, expected, *span, ())?;
             }
             for ((arg, span), expected) in self.args.iter().zip(expected_args) {
                 arg.expect(state, control, expected, *span, ())?;

@@ -4,7 +4,7 @@ use crate::{
     item::AstItem, parser::top::Top, ty::Ty, util::Span
 };
 
-use super::{err::CheckError, state::CheckState, Check, ControlIter};
+use super::{err::CheckError, state::CheckState, Check, ControlIter, Dir};
 
 pub mod enum_;
 pub mod func;
@@ -12,7 +12,9 @@ pub mod func_arg;
 pub mod impl_;
 pub mod struct_;
 pub mod struct_body;
+pub mod struct_field;
 pub mod trait_;
+pub mod member;
 
 impl<'ast, 'db, Iter: ControlIter<'ast, 'db>> Check<'ast, 'db, Iter, ()> for Top {
     fn check(
@@ -26,6 +28,8 @@ impl<'ast, 'db, Iter: ControlIter<'ast, 'db>> Check<'ast, 'db, Iter, ()> for Top
         match &self {
             Top::Use(u) => {
                 let res = state.import(u);
+                control.act(u, state, Dir::Enter, span)?;
+                control.act(u, state, Dir::Exit(Ty::unit()), span)?;
                 if let Err(e) = res {
                     state.error(CheckError::Unresolved(e));
                 }

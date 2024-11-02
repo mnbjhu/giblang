@@ -69,7 +69,6 @@ pub enum TokenKind {
     Var,
     Param,
     Generic,
-    #[allow(dead_code)]
     Module,
     Struct,
     Enum,

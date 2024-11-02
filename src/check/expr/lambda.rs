@@ -1,7 +1,7 @@
 use std::ops::ControlFlow;
 
 use crate::{
-    check::{state::CheckState, Check, ControlIter, Dir},
+    check::{state::CheckState, Check, ControlIter, Dir, TokenKind},
     item::AstItem,
     parser::expr::lambda::{Lambda, LambdaParam},
     ty::{FuncTy, Ty},
@@ -54,7 +54,7 @@ impl<'ast, 'db, Iter: ControlIter<'ast, 'db>> Check<'ast, 'db, Iter> for Lambda 
                 }
             }
             if self.args.is_empty() && expected.args.len() == 1 {
-                state.insert_variable("it".to_string(), expected.args[0].clone(), true, span);
+                state.insert_variable("it".to_string(), expected.args[0].clone(), TokenKind::Var, span);
             }
             if let Some(receiver) = &expected.receiver {
                 state.add_self_param(receiver.as_ref().clone(), span);

@@ -4,10 +4,7 @@ use async_lsp::lsp_types::{CompletionItem, CompletionItemKind};
 
 use crate::{
     check::{state::CheckState, Check as _, SemanticToken, TokenKind},
-    item::{
-        common::generics::brackets,
-        AstItem,
-    },
+    item::{common::generics::brackets, AstItem},
     parser::expr::member::MemberCall,
     ty::Ty,
 };
@@ -46,7 +43,7 @@ impl AstItem for MemberCall {
         type_vars: &HashMap<u32, Ty<'db>>,
         _: &Ty<'_>,
     ) -> Option<String> {
-        let ControlFlow::Continue(rec)= self.rec.0.check(state, &mut (), self.rec.1, ()) else {
+        let ControlFlow::Continue(rec) = self.rec.0.check(state, &mut (), self.rec.1, ()) else {
             panic!("Unexpected ControlFlow::Break in Field::hover");
         };
         let func_ty = rec.get_member_func(&self.name, state)?;
@@ -64,11 +61,11 @@ impl AstItem for MemberCall {
         type_vars: &HashMap<u32, Ty>,
         _: &Ty,
     ) -> Vec<CompletionItem> {
-        let ControlFlow::Continue(rec )= self.rec.0.check(state, &mut (), self.rec.1, ()) else {
+        let ControlFlow::Continue(rec) = self.rec.0.check(state, &mut (), self.rec.1, ()) else {
             panic!("Unexpected ControlFlow::Break in Field::completions");
         };
         let mut completions = Vec::new();
-        for (name, func_ty) in rec.member_funcs(state) {
+        for (name, func_ty) in rec.member_funcs(state, self.name.1) {
             completions.push(CompletionItem {
                 label: name.clone(),
                 kind: Some(CompletionItemKind::METHOD),

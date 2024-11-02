@@ -1,11 +1,11 @@
 use std::{collections::HashMap, ops::ControlFlow};
 
 use crate::{
-    check::{err::CheckError, state::CheckState, Check, ControlIter, Dir},
+    check::{err::CheckError, state::CheckState, Check, ControlIter, Dir, TokenKind},
     db::decl::{struct_::StructDecl, DeclKind},
     item::AstItem,
     parser::common::pattern::{Pattern, StructFieldPattern},
-    ty::Ty,
+    ty::{Generic, Ty},
     util::Span,
 };
 
@@ -19,24 +19,32 @@ impl<'ast, 'db, Iter: ControlIter<'ast, 'db>> Check<'ast, 'db, Iter, (), &Ty<'db
     ) -> ControlFlow<(&'ast dyn AstItem, Ty<'db>), ()> {
         control.act(self, state, Dir::Enter, span);
         if let Pattern::Name(name) = self {
-            state.insert_variable(name.0.to_string(), ty.clone(), false, name.1);
+            state.insert_variable(name.0.to_string(), ty.clone(), TokenKind::Var, name.1);
             control.act(self, state, Dir::Exit(ty.clone()), span);
             return ControlFlow::Continue(());
         }
         let name = self.name();
+        let name_span = Span::new(name[0].1.start, name.last().unwrap().1.end);
+        control.act(name, state, Dir::Enter, name_span);
+        control.act(name, state, Dir::Exit(Ty::unit()), name_span);
         let decl = state.get_decl_with_error(name);
         match decl {
             Ok(decl) => {
                 let kind = decl.kind(state.db);
                 if let DeclKind::Member { body } | DeclKind::Struct { body, .. } = kind {
                     // TODO: THIS NEEDS TESTING - Remove block to fallback
-                    let ty = if let Ty::TypeVar { .. } = &ty {
+                    let mut ty = if let Ty::TypeVar { .. } = &ty {
                         let new = decl.get_named_ty(state).inst(state, name.last().unwrap().1);
                         ty.expect_is_instance_of(&new, state, false, name.last().unwrap().1);
                         new
                     } else {
                         ty.clone()
                     };
+                    if let Ty::Generic(Generic{ name, super_, .. }) = ty.clone() {
+                        if name.0 == "Self" {
+                            ty = super_.as_ref().clone();
+                        }
+                    }
                     if let Ty::Named {
                         name: expected_name,
                         args,
@@ -122,7 +130,7 @@ impl<'ast, 'db, Iter: ControlIter<'ast, 'db>> Check<'ast, 'db, Iter, (), &HashMa
         match self {
             StructFieldPattern::Implied(name) => {
                 if let Some(ty) = fields.get(&name.0) {
-                    state.insert_variable(name.0.to_string(), ty.clone(), false, name.1);
+                    state.insert_variable(name.0.to_string(), ty.clone(), TokenKind::Var, name.1);
                 } else {
                     state.simple_error(&format!("Field '{}' not found", name.0), span);
                 }

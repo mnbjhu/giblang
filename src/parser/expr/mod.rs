@@ -85,14 +85,14 @@ pub fn expr_parser<'tokens, 'src: 'tokens>(stmt: AstParser!(Stmt)) -> AstParser!
         .or(bracketed)
         .or(tuple);
 
-        let call = call_parser(atom.clone(), expr.clone()).map(Expr::Call);
+        let call = call_parser(atom.clone(), expr.clone(), lambda.clone()).map(Expr::Call);
         let atom = choice((call, atom));
 
         let access = atom
             .clone()
             .map_with(|ex, e| (ex, e.span()))
             .foldl_with(
-                access_parser(atom.clone()).repeated(),
+                access_parser(expr.clone()).repeated(),
                 |ex, acc, e| match acc {
                     Access::Field(name) => (
                         Expr::Field(Field {
