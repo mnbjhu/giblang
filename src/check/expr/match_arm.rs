@@ -4,10 +4,13 @@ use crate::{
     check::{state::CheckState, Check, ControlIter, Dir},
     item::AstItem,
     parser::expr::match_arm::MatchArm,
-    ty::Ty, util::Span,
+    ty::Ty,
+    util::Span,
 };
 
-impl<'ast, 'db, Iter: ControlIter<'ast, 'db>> Check<'ast, 'db, Iter, Ty<'db>, &Ty<'db>> for MatchArm {
+impl<'ast, 'db, Iter: ControlIter<'ast, 'db>> Check<'ast, 'db, Iter, Ty<'db>, &Ty<'db>>
+    for MatchArm
+{
     fn check(
         &'ast self,
         state: &mut CheckState<'db>,

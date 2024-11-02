@@ -1,10 +1,14 @@
 use std::ops::ControlFlow;
 
 use crate::{
-    check::{state::CheckState, Check, ControlIter, Dir}, item::AstItem, parser::top::{struct_body::StructBody}, ty::Ty, util::Span
+    check::{state::CheckState, Check, ControlIter, Dir},
+    item::AstItem,
+    parser::top::struct_body::StructBody,
+    ty::Ty,
+    util::Span,
 };
 
-impl<'db, 'ast, Iter: ControlIter<'ast, 'db>> Check<'ast, 'db, Iter, (),> for StructBody {
+impl<'db, 'ast, Iter: ControlIter<'ast, 'db>> Check<'ast, 'db, Iter, ()> for StructBody {
     fn check(
         &'ast self,
         state: &mut CheckState<'db>,

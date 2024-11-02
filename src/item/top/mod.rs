@@ -1,8 +1,6 @@
 use async_lsp::lsp_types::DocumentSymbol;
 
-use crate::{
-    check::state::CheckState, parser::top::Top, util::Span
-};
+use crate::{check::state::CheckState, parser::top::Top, util::Span};
 
 use super::AstItem;
 
@@ -18,7 +16,6 @@ pub mod trait_;
 pub mod use_;
 
 impl AstItem for Top {
-
     fn pretty<'b, D, A>(&'b self, allocator: &'b D) -> pretty::DocBuilder<'b, D, A>
     where
         Self: Sized,

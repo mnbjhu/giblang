@@ -1,7 +1,4 @@
-use crate::{
-    item::AstItem,
-    parser::expr::op::Op,
-};
+use crate::{item::AstItem, parser::expr::op::Op};
 
 impl AstItem for Op {
     fn pretty<'b, D, A>(&'b self, allocator: &'b D) -> pretty::DocBuilder<'b, D, A>
@@ -20,5 +17,4 @@ impl AstItem for Op {
             .append(allocator.space())
             .append(self.right.as_ref().0.pretty(allocator))
     }
-
 }

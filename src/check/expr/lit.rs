@@ -1,7 +1,12 @@
 use std::ops::ControlFlow;
 
 use crate::{
-    check::{state::CheckState, Check, ControlIter, Dir}, db::{input::Db, path::ModulePath}, item::AstItem, lexer::literal::Literal, ty::Ty, util::Span
+    check::{state::CheckState, Check, ControlIter, Dir},
+    db::{input::Db, path::ModulePath},
+    item::AstItem,
+    lexer::literal::Literal,
+    ty::Ty,
+    util::Span,
 };
 
 impl Literal {

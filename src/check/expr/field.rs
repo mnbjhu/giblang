@@ -9,7 +9,7 @@ use crate::{
     util::Span,
 };
 
-impl<'ast, 'db, Iter: ControlIter<'ast, 'db>> Check<'ast, 'db, Iter,> for Field {
+impl<'ast, 'db, Iter: ControlIter<'ast, 'db>> Check<'ast, 'db, Iter> for Field {
     fn check(
         &'ast self,
         state: &mut CheckState<'db>,

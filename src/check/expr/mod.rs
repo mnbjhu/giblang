@@ -1,11 +1,6 @@
 use std::ops::ControlFlow;
 
-use crate::{
-    item::AstItem,
-    parser::expr::Expr,
-    ty::Ty,
-    util::Span,
-};
+use crate::{item::AstItem, parser::expr::Expr, ty::Ty, util::Span};
 
 use super::{state::CheckState, Check, ControlIter};
 
@@ -67,9 +62,7 @@ impl<'ast, 'db, Iter: ControlIter<'ast, 'db>> Check<'ast, 'db, Iter> for Expr {
             Expr::MemberCall(member) => member.expect(state, control, expected, span, ()),
             Expr::Field(field) => field.expect(state, control, expected, span, ()),
             Expr::Lambda(lambda) => lambda.expect(state, control, expected, span, ()),
-            Expr::Error => {
-                ControlFlow::Continue(Ty::Unknown)
-            }
+            Expr::Error => ControlFlow::Continue(Ty::Unknown),
         }
     }
 }

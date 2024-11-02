@@ -1,8 +1,5 @@
 use crate::{
-    item::{
-        common::generics::brackets_big,
-        AstItem,
-    },
+    item::{common::generics::brackets_big, AstItem},
     parser::expr::match_::Match,
 };
 

@@ -3,12 +3,12 @@ use salsa::Update;
 use crate::{db::path::ModulePath, parser::common::variance::Variance, util::Spanned};
 
 pub mod func;
-pub mod sub_tys;
 pub mod imply;
 pub mod inst;
 pub mod is_instance;
 pub mod name;
 pub mod parameterize;
+pub mod sub_tys;
 
 #[derive(Clone, Debug, PartialEq, Default, Update, Hash, Eq)]
 pub enum Ty<'db> {

@@ -1,14 +1,17 @@
 use std::ops::ControlFlow;
 
 use crate::{
-    check::state::CheckState, item::AstItem, parser::common::type_::Type, ty::{FuncTy, Generic, Ty}, util::Span
+    check::state::CheckState,
+    item::AstItem,
+    parser::common::type_::Type,
+    ty::{FuncTy, Generic, Ty},
+    util::Span,
 };
 
 use super::{Check, ControlIter, Dir};
 pub mod named;
 
 impl Type {
-
     pub fn expect_is_bound_by<'ast, 'db, Iter: ControlIter<'ast, 'db>>(
         &'ast self,
         bound: &Generic<'db>,
@@ -57,7 +60,12 @@ impl<'ast, 'db, Iter: ControlIter<'ast, 'db>> Check<'ast, 'db, Iter> for Type {
                 ret,
             } => {
                 let receiver = if let Some(receiver) = receiver {
-                    Some(Box::new(receiver.0.check(state, control, receiver.1, ())?))
+                    Some(Box::new(receiver.0.check(
+                        state,
+                        control,
+                        receiver.1,
+                        (),
+                    )?))
                 } else {
                     None
                 };
@@ -66,11 +74,11 @@ impl<'ast, 'db, Iter: ControlIter<'ast, 'db>> Check<'ast, 'db, Iter> for Type {
                     arg_tys.push(arg.check(state, control, *span, ())?);
                 }
                 Ty::Function(FuncTy {
-                            receiver,
-                            args: arg_tys,
-                            ret: Box::new(ret.0.check(state, control, ret.1, ())?),
-                        })
-            },
+                    receiver,
+                    args: arg_tys,
+                    ret: Box::new(ret.0.check(state, control, ret.1, ())?),
+                })
+            }
             Type::Wildcard(s) => {
                 let id = state.type_state.new_type_var(*s, state.file_data);
                 Ty::TypeVar { id }

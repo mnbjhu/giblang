@@ -53,7 +53,8 @@ impl AstItem for Field {
         type_vars: &HashMap<u32, Ty<'_>>,
         _: &Ty<'_>,
     ) -> Vec<CompletionItem> {
-        let ControlFlow::Continue(rec )= self.struct_.0.check(state, &mut (), self.struct_.1, ()) else {
+        let ControlFlow::Continue(rec) = self.struct_.0.check(state, &mut (), self.struct_.1, ())
+        else {
             panic!("Unexpected ControlFlow::Break in Field::completions");
         };
         let mut completions = Vec::new();

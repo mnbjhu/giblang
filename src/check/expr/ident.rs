@@ -25,12 +25,22 @@ impl<'ast, 'db, Iter: ControlIter<'ast, 'db>> Check<'ast, 'db, Iter> for Spanned
         let name = self.last().unwrap();
         if self.len() == 1 {
             if let Some(self_param) = state.get_variable("self") {
-                if let Some(field) = self_param.ty.fields(state).iter().find(|(n, _)| n == &name.0) {
+                if let Some(field) = self_param
+                    .ty
+                    .fields(state)
+                    .iter()
+                    .find(|(n, _)| n == &name.0)
+                {
                     let ty = field.1.clone();
                     control.act(self, state, Dir::Exit(ty.clone()), span)?;
                     return ControlFlow::Continue(ty);
                 }
-                if let Some(func) = self_param.ty.member_funcs(state, name.1).iter().find(|(n, _)| n == &name.0) {
+                if let Some(func) = self_param
+                    .ty
+                    .member_funcs(state, name.1)
+                    .iter()
+                    .find(|(n, _)| n == &name.0)
+                {
                     let ty = Ty::Function(func.1.clone());
                     control.act(self, state, Dir::Exit(ty.clone()), span)?;
                     return ControlFlow::Continue(ty);

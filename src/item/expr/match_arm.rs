@@ -1,7 +1,4 @@
-use crate::{
-    item::AstItem,
-    parser::expr::match_arm::MatchArm,
-};
+use crate::{item::AstItem, parser::expr::match_arm::MatchArm};
 
 impl AstItem for MatchArm {
     fn pretty<'b, D, A>(&'b self, allocator: &'b D) -> pretty::DocBuilder<'b, D, A>

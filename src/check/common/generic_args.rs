@@ -1,6 +1,12 @@
 use std::ops::ControlFlow;
 
-use crate::{check::{state::CheckState, Check, ControlIter}, item::AstItem, parser::common::generic_args::GenericArgs, ty::Ty, util::Span};
+use crate::{
+    check::{state::CheckState, Check, ControlIter},
+    item::AstItem,
+    parser::common::generic_args::GenericArgs,
+    ty::Ty,
+    util::Span,
+};
 
 impl<'ast, 'db, Iter: ControlIter<'ast, 'db>> Check<'ast, 'db, Iter, Vec<Ty<'db>>> for GenericArgs {
     fn check(

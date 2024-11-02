@@ -38,7 +38,9 @@ impl<'ast, 'db, Iter: ControlIter<'ast, 'db>> Check<'ast, 'db, Iter> for Call {
             } = &func_ty;
             if let Some(receiver) = receiver {
                 if let Some(self_ty) = state.get_variable("self") {
-                    self_ty.ty.expect_is_instance_of(receiver, state, false, self.name.1);
+                    self_ty
+                        .ty
+                        .expect_is_instance_of(receiver, state, false, self.name.1);
                 } else {
                     state.error(CheckError::MissingReceiver(MissingReceiver {
                         span: self.name.1,

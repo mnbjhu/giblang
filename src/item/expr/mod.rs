@@ -3,10 +3,7 @@ use crate::{
     util::Spanned,
 };
 
-use super::{
-    common::generics::brackets,
-    AstItem,
-};
+use super::{common::generics::brackets, AstItem};
 
 pub mod block;
 pub mod call;

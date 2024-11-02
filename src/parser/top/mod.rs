@@ -1,11 +1,7 @@
 use chumsky::{primitive::choice, Parser};
 use salsa::Update;
 
-use crate::{
-    parser::stmt::stmt_parser,
-    util::Span,
-    AstParser,
-};
+use crate::{parser::stmt::stmt_parser, util::Span, AstParser};
 
 use self::{enum_::Enum, func::Func, struct_::Struct, trait_::Trait};
 

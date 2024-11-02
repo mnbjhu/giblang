@@ -1,7 +1,4 @@
-use crate::{
-    item::AstItem,
-    parser::stmt::let_::LetStatement,
-};
+use crate::{item::AstItem, parser::stmt::let_::LetStatement};
 
 impl AstItem for LetStatement {
     fn pretty<'b, D, A>(&'b self, allocator: &'b D) -> pretty::DocBuilder<'b, D, A>

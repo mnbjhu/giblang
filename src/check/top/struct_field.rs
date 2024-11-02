@@ -1,6 +1,11 @@
 use std::ops::ControlFlow;
 
-use crate::{check::{state::CheckState, Check, ControlIter, Dir}, item::AstItem, parser::top::struct_field::StructField, ty::Ty};
+use crate::{
+    check::{state::CheckState, Check, ControlIter, Dir},
+    item::AstItem,
+    parser::top::struct_field::StructField,
+    ty::Ty,
+};
 
 impl<'ast, 'db, Iter: ControlIter<'ast, 'db>> Check<'ast, 'db, Iter, ()> for StructField {
     fn check(

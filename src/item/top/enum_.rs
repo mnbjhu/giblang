@@ -4,10 +4,7 @@ use async_lsp::lsp_types::{DocumentSymbol, SymbolKind};
 
 use crate::{
     check::{state::CheckState, SemanticToken, TokenKind},
-    item::{
-        common::generics::braces,
-        AstItem,
-    },
+    item::{common::generics::braces, AstItem},
     parser::top::enum_::Enum,
     range::span_to_range_str,
     ty::Ty,
@@ -15,10 +12,16 @@ use crate::{
 };
 
 impl AstItem for Enum {
-    fn hover(&self, _: &mut CheckState, _: usize, _: &HashMap<u32, Ty<'_>>, _: &Ty<'_>) -> Option<String> {
+    fn hover(
+        &self,
+        _: &mut CheckState,
+        _: usize,
+        _: &HashMap<u32, Ty<'_>>,
+        _: &Ty<'_>,
+    ) -> Option<String> {
         Some(format!("Enum {}", self.name.0))
     }
-fn tokens(&self, _: &mut CheckState, tokens: &mut Vec<SemanticToken>, _: &Ty<'_>) {
+    fn tokens(&self, _: &mut CheckState, tokens: &mut Vec<SemanticToken>, _: &Ty<'_>) {
         tokens.push(SemanticToken {
             span: self.name.1,
             kind: TokenKind::Enum,

@@ -1,4 +1,7 @@
-use crate::{item::{common::generics::braces, AstItem}, parser::expr::code_block::CodeBlock};
+use crate::{
+    item::{common::generics::braces, AstItem},
+    parser::expr::code_block::CodeBlock,
+};
 
 impl AstItem for CodeBlock {
     fn pretty<'b, D, A>(&'b self, allocator: &'b D) -> pretty::DocBuilder<'b, D, A>
@@ -6,7 +9,8 @@ impl AstItem for CodeBlock {
         Self: Sized,
         D: pretty::DocAllocator<'b, A>,
         D::Doc: Clone,
-        A: Clone {
+        A: Clone,
+    {
         braces(allocator, self)
     }
 }

@@ -20,7 +20,6 @@ impl AstItem for Trait {
     }
     fn pretty<'b, D, A>(&'b self, allocator: &'b D) -> pretty::DocBuilder<'b, D, A>
     where
-
         D: pretty::DocAllocator<'b, A>,
         D::Doc: Clone,
         A: Clone,
@@ -40,7 +39,7 @@ impl Trait {
         let txt = state.file_data.text(state.db);
         let range = span_to_range_str(span.into(), txt);
         let selection_range = span_to_range_str(self.name.1.into(), txt);
-        let _ =  self.generics.0.check(state, &mut (), self.generics.1, ());
+        let _ = self.generics.0.check(state, &mut (), self.generics.1, ());
         DocumentSymbol {
             name: self.name.0.clone(),
             detail: Some("trait".to_string()),

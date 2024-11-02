@@ -40,7 +40,7 @@ impl<'ast, 'db, Iter: ControlIter<'ast, 'db>> Check<'ast, 'db, Iter, (), &Ty<'db
                     } else {
                         ty.clone()
                     };
-                    if let Ty::Generic(Generic{ name, super_, .. }) = ty.clone() {
+                    if let Ty::Generic(Generic { name, super_, .. }) = ty.clone() {
                         if name.0 == "Self" {
                             ty = super_.as_ref().clone();
                         }
@@ -88,7 +88,12 @@ impl<'ast, 'db, Iter: ControlIter<'ast, 'db>> Check<'ast, 'db, Iter, (), &Ty<'db
                             (Pattern::UnitStruct(_), StructDecl::None) => {}
                             (Pattern::TupleStruct { fields, .. }, StructDecl::Tuple(tys)) => {
                                 for (field, ty) in fields.iter().zip(tys) {
-                                    field.0.check(state, control, field.1, &ty.parameterize(&generics))?;
+                                    field.0.check(
+                                        state,
+                                        control,
+                                        field.1,
+                                        &ty.parameterize(&generics),
+                                    )?;
                                 }
                             }
                             (Pattern::Name(_), _) => unreachable!(),
@@ -119,7 +124,9 @@ impl<'ast, 'db, Iter: ControlIter<'ast, 'db>> Check<'ast, 'db, Iter, (), &Ty<'db
     }
 }
 
-impl<'ast, 'db, Iter: ControlIter<'ast, 'db>> Check<'ast, 'db, Iter, (), &HashMap<String, Ty<'db>>> for StructFieldPattern {
+impl<'ast, 'db, Iter: ControlIter<'ast, 'db>> Check<'ast, 'db, Iter, (), &HashMap<String, Ty<'db>>>
+    for StructFieldPattern
+{
     fn check(
         &'ast self,
         state: &mut CheckState<'db>,

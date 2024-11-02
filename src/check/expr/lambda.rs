@@ -54,7 +54,12 @@ impl<'ast, 'db, Iter: ControlIter<'ast, 'db>> Check<'ast, 'db, Iter> for Lambda 
                 }
             }
             if self.args.is_empty() && expected.args.len() == 1 {
-                state.insert_variable("it".to_string(), expected.args[0].clone(), TokenKind::Var, span);
+                state.insert_variable(
+                    "it".to_string(),
+                    expected.args[0].clone(),
+                    TokenKind::Var,
+                    span,
+                );
             }
             if let Some(receiver) = &expected.receiver {
                 state.add_self_param(receiver.as_ref().clone(), span);
@@ -114,7 +119,7 @@ impl<'ast, 'db, Iter: ControlIter<'ast, 'db>> Check<'ast, 'db, Iter> for LambdaP
     ) -> ControlFlow<(&'ast dyn AstItem, Ty<'db>), Ty<'db>> {
         control.act(self, state, Dir::Enter, span)?;
         let ty = if let Some(ty) = &self.ty {
-            let explicit = ty.0.check(state, control , ty.1, ())?;
+            let explicit = ty.0.check(state, control, ty.1, ())?;
             explicit.expect_is_instance_of(expected, state, true, ty.1);
             self.pattern
                 .0

@@ -22,7 +22,7 @@ impl<'db> CheckState<'db> {
     }
 }
 
-impl<'ast, 'db, Iter: ControlIter<'ast, 'db>> Check<'ast, 'db, Iter, (),> for Trait {
+impl<'ast, 'db, Iter: ControlIter<'ast, 'db>> Check<'ast, 'db, Iter, ()> for Trait {
     fn check(
         &'ast self,
         state: &mut CheckState<'db>,

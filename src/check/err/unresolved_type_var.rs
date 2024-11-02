@@ -16,7 +16,7 @@ pub struct UnboundTypeVar {
 
 impl UnboundTypeVar {
     pub fn message() -> String {
-            "Cannot imply type for type variable".to_string()
+        "Cannot imply type for type variable".to_string()
     }
 }
 

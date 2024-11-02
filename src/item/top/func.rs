@@ -3,15 +3,15 @@ use std::collections::HashMap;
 use async_lsp::lsp_types::{DocumentSymbol, SymbolKind};
 
 use crate::{
-    check::{state::CheckState, SemanticToken, TokenKind}, item::{
-        common::generics::brackets,
-        expr::pretty_codeblock,
-        AstItem,
-    }, parser::top::func::Func, range::span_to_range_str, ty::Ty, util::Span
+    check::{state::CheckState, SemanticToken, TokenKind},
+    item::{common::generics::brackets, expr::pretty_codeblock, AstItem},
+    parser::top::func::Func,
+    range::span_to_range_str,
+    ty::Ty,
+    util::Span,
 };
 
 impl AstItem for Func {
-
     fn tokens(&self, _: &mut CheckState, tokens: &mut Vec<SemanticToken>, _: &Ty<'_>) {
         tokens.push(SemanticToken {
             span: self.name.1,
@@ -19,7 +19,13 @@ impl AstItem for Func {
         });
     }
 
-    fn hover(&self, _: &mut CheckState, _: usize, _: &HashMap<u32, Ty<'_>>, _: &Ty<'_>) -> Option<String> {
+    fn hover(
+        &self,
+        _: &mut CheckState,
+        _: usize,
+        _: &HashMap<u32, Ty<'_>>,
+        _: &Ty<'_>,
+    ) -> Option<String> {
         Some(format!("Function {}", self.name.0))
     }
 

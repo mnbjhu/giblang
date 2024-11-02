@@ -1,6 +1,12 @@
 use std::ops::ControlFlow;
 
-use crate::{check::{state::CheckState, Check, ControlIter}, item::AstItem, parser::expr::op::Op, ty::Ty, util::Span};
+use crate::{
+    check::{state::CheckState, Check, ControlIter},
+    item::AstItem,
+    parser::expr::op::Op,
+    ty::Ty,
+    util::Span,
+};
 
 impl<'ast, 'db, Iter: ControlIter<'ast, 'db>> Check<'ast, 'db, Iter> for Op {
     fn check(

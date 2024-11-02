@@ -18,8 +18,9 @@ pub fn call_parser<'tokens, 'src: 'tokens>(
     expr: AstParser!(Expr),
     lambda: AstParser!(Expr),
 ) -> AstParser!(Call) {
-
-    let lambda_only = atom.clone().map(Box::new)
+    let lambda_only = atom
+        .clone()
+        .map(Box::new)
         .map_with(|ex, e| (ex, e.span()))
         .then(lambda.clone().map_with(|ex, e| (ex, e.span())).clone())
         .map(|(name, lambda)| {
@@ -34,9 +35,11 @@ pub fn call_parser<'tokens, 'src: 'tokens>(
         .delimited_by(
             just(punct('(')).then(optional_newline()),
             optional_newline().then(just(punct(')'))),
-        ).then(lambda.map_with(|ex, e| (ex, e.span())).or_not());
+        )
+        .then(lambda.map_with(|ex, e| (ex, e.span())).or_not());
 
-    let call = atom.map(Box::new)
+    let call = atom
+        .map(Box::new)
         .map_with(|ex, e| (ex, e.span()))
         .then(args)
         .map(|(name, (mut args, lambda))| {
@@ -46,5 +49,4 @@ pub fn call_parser<'tokens, 'src: 'tokens>(
             Call { name, args }
         });
     lambda_only.or(call)
-
 }

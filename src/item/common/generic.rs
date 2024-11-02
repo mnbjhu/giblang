@@ -18,7 +18,12 @@ impl AstItem for GenericArg {
         Some(state.get_generic(&self.name.0).unwrap().hover(state))
     }
 
-    fn tokens(&self, _: &mut CheckState, tokens: &mut Vec<crate::check::SemanticToken>, _: &Ty<'_>) {
+    fn tokens(
+        &self,
+        _: &mut CheckState,
+        tokens: &mut Vec<crate::check::SemanticToken>,
+        _: &Ty<'_>,
+    ) {
         tokens.push(crate::check::SemanticToken {
             span: self.name.1,
             kind: TokenKind::Generic,

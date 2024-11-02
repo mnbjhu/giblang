@@ -193,9 +193,7 @@ impl<'ast, 'db: 'ast> ControlIter<'ast, 'db> for SemanticTokensIter {
         _: Span,
     ) -> ControlFlow<(&'ast dyn AstItem, Ty<'db>)> {
         match dir {
-            Dir::Enter => {
-                ControlFlow::Continue(())
-            }
+            Dir::Enter => ControlFlow::Continue(()),
             Dir::Exit(ty) => {
                 item.tokens(state, &mut self.tokens, &ty);
                 ControlFlow::Continue(())
@@ -203,8 +201,6 @@ impl<'ast, 'db: 'ast> ControlIter<'ast, 'db> for SemanticTokensIter {
         }
     }
 }
-
-
 
 impl<'ast, 'db> Ast<'db> {
     pub fn at_offset(
@@ -238,5 +234,3 @@ impl<'ast, 'db> Ast<'db> {
         iter.tokens
     }
 }
-
-

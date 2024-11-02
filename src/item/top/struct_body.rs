@@ -38,7 +38,8 @@ impl StructBody {
                 for (field, span) in fields {
                     let range = span_to_range_str((*span).into(), txt);
                     let selection_range = span_to_range_str((*span).into(), txt);
-                    let ControlFlow::Continue(field) = field.check(state, &mut (), *span, ()) else {
+                    let ControlFlow::Continue(field) = field.check(state, &mut (), *span, ())
+                    else {
                         panic!("Unexpected ControlFlow::Break");
                     };
                     let field = field.get_name(state, None);

@@ -2,7 +2,6 @@ use crate::{check::state::CheckState, util::Span};
 
 use super::Ty;
 
-
 pub fn get_sub_tys<'db>(name: &Ty<'db>, state: &mut CheckState<'db>, span: Span) -> Vec<Ty<'db>> {
     let name = name.clone().expect_resolved(state, span);
     match name {
@@ -21,7 +20,6 @@ pub fn get_sub_tys<'db>(name: &Ty<'db>, state: &mut CheckState<'db>, span: Span)
         _ => vec![],
     }
 }
-
 
 impl<'db> Ty<'db> {
     pub fn expect_resolved(self, state: &mut CheckState<'db>, span: Span) -> Ty<'db> {

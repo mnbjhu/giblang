@@ -10,7 +10,7 @@ use crate::{
 
 use super::Check;
 
-impl<'ast, 'db, Iter: ControlIter<'ast, 'db>> Check<'ast, 'db, Iter, (),> for Enum {
+impl<'ast, 'db, Iter: ControlIter<'ast, 'db>> Check<'ast, 'db, Iter, ()> for Enum {
     fn check(
         &'ast self,
         state: &mut CheckState<'db>,

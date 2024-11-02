@@ -187,14 +187,12 @@ impl<'db> CheckState<'db> {
                     .iter()
                     .find(|(n, _)| n == &name.0)
                 {
-                    return Ok(IdentDef::Variable(
-                        VarDecl {
-                            name: name.0.clone(),
-                            ty: Ty::Function(func.1.clone()),
-                            span: name.1,
-                            kind: TokenKind::Func,
-                        },
-                    ));
+                    return Ok(IdentDef::Variable(VarDecl {
+                        name: name.0.clone(),
+                        ty: Ty::Function(func.1.clone()),
+                        span: name.1,
+                        kind: TokenKind::Func,
+                    }));
                 }
             }
             if let Some(var) = self.get_variable(&name.0) {

@@ -10,11 +10,7 @@ pub mod impl_;
 pub mod struct_;
 
 use crate::{
-    check::{
-        err::unresolved::Unresolved,
-        state::CheckState,
-        TokenKind,
-    },
+    check::{err::unresolved::Unresolved, state::CheckState, TokenKind},
     ty::{sub_tys::get_sub_tys, FuncTy, Generic, Ty},
     util::{Span, Spanned},
 };
@@ -147,9 +143,7 @@ impl<'db> Decl<'db> {
         ) {
             return Vec::new();
         }
-        let ty = self
-            .default_named_ty(state)
-            .inst(state, span);
+        let ty = self.default_named_ty(state).inst(state, span);
         let mut funcs = get_sub_tys(&ty, state, span)
             .iter()
             .flat_map(|t| t.get_funcs(state))
@@ -195,7 +189,11 @@ impl<'db> Decl<'db> {
         Some(current)
     }
 
-    pub fn try_get_path(self, state: &CheckState<'db>, path: &[Spanned<String>]) -> Result<Decl<'db>, Unresolved> {
+    pub fn try_get_path(
+        self,
+        state: &CheckState<'db>,
+        path: &[Spanned<String>],
+    ) -> Result<Decl<'db>, Unresolved> {
         let mut current = self;
         for name in path {
             if let Some(decl) = current.get(state.db, &name.0) {

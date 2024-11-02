@@ -26,8 +26,15 @@ impl<'db> Ty<'db> {
 impl<'db> FuncTy<'db> {
     pub fn parameterize(&self, generics: &HashMap<String, Ty<'db>>) -> FuncTy<'db> {
         FuncTy {
-            receiver: self.receiver.as_ref().map(|r| Box::new(r.parameterize(generics))),
-            args: self.args.iter().map(|ty| ty.parameterize(generics)).collect(),
+            receiver: self
+                .receiver
+                .as_ref()
+                .map(|r| Box::new(r.parameterize(generics))),
+            args: self
+                .args
+                .iter()
+                .map(|ty| ty.parameterize(generics))
+                .collect(),
             ret: Box::new(self.ret.parameterize(generics)),
         }
     }

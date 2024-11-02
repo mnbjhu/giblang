@@ -8,7 +8,7 @@ use crate::{
     util::Span,
 };
 
-impl<'ast, 'db, Iter: ControlIter<'ast, 'db>> Check<'ast, 'db, Iter, (),> for Struct {
+impl<'ast, 'db, Iter: ControlIter<'ast, 'db>> Check<'ast, 'db, Iter, ()> for Struct {
     fn check(
         &'ast self,
         state: &mut CheckState<'db>,

@@ -1,7 +1,4 @@
-use crate::{
-    item::AstItem, parser::common::generic_args::GenericArgs,
-    util::Spanned,
-};
+use crate::{item::AstItem, parser::common::generic_args::GenericArgs, util::Spanned};
 
 impl AstItem for GenericArgs {
     fn pretty<'b, D, A>(&'b self, allocator: &'b D) -> pretty::DocBuilder<'b, D, A>

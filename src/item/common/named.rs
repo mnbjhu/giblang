@@ -1,7 +1,4 @@
-use crate::{
-    item::AstItem,
-    parser::common::type_::NamedType,
-};
+use crate::{item::AstItem, parser::common::type_::NamedType};
 
 use super::generics::brackets;
 

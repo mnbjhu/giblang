@@ -19,7 +19,8 @@ use crate::{
 
 use super::{
     err::{unresolved::Unresolved, unresolved_type_var::UnboundTypeVar, Error, IntoWithDb},
-    type_state::TypeState, TokenKind,
+    type_state::TypeState,
+    TokenKind,
 };
 
 #[derive(Debug, Clone)]

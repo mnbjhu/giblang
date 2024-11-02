@@ -1,8 +1,6 @@
 use std::ops::ControlFlow;
 
-use crate::{
-    item::AstItem, parser::top::Top, ty::Ty, util::Span
-};
+use crate::{item::AstItem, parser::top::Top, ty::Ty, util::Span};
 
 use super::{err::CheckError, state::CheckState, Check, ControlIter, Dir};
 
@@ -10,11 +8,11 @@ pub mod enum_;
 pub mod func;
 pub mod func_arg;
 pub mod impl_;
+pub mod member;
 pub mod struct_;
 pub mod struct_body;
 pub mod struct_field;
 pub mod trait_;
-pub mod member;
 
 impl<'ast, 'db, Iter: ControlIter<'ast, 'db>> Check<'ast, 'db, Iter, ()> for Top {
     fn check(

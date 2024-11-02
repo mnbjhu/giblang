@@ -1,10 +1,14 @@
 use std::ops::ControlFlow;
 
 use crate::{
-    check::{state::CheckState, Check, ControlIter}, item::AstItem, parser::stmt::let_::LetStatement, ty::Ty, util::Span
+    check::{state::CheckState, Check, ControlIter},
+    item::AstItem,
+    parser::stmt::let_::LetStatement,
+    ty::Ty,
+    util::Span,
 };
 
-impl<'ast, 'db, Iter: ControlIter<'ast, 'db>> Check<'ast, 'db, Iter, (),> for LetStatement {
+impl<'ast, 'db, Iter: ControlIter<'ast, 'db>> Check<'ast, 'db, Iter, ()> for LetStatement {
     fn check(
         &'ast self,
         state: &mut CheckState<'db>,
@@ -25,4 +29,3 @@ impl<'ast, 'db, Iter: ControlIter<'ast, 'db>> Check<'ast, 'db, Iter, (),> for Le
         ControlFlow::Continue(())
     }
 }
-

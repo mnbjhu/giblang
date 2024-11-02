@@ -3,7 +3,8 @@ use std::collections::HashMap;
 use crate::{
     check::{state::CheckState, SemanticToken, TokenKind},
     item::AstItem,
-    parser::common::pattern::{Pattern, StructFieldPattern}, ty::Ty,
+    parser::common::pattern::{Pattern, StructFieldPattern},
+    ty::Ty,
 };
 
 use super::{generics::brackets, type_::ContainsOffset};

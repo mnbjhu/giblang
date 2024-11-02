@@ -44,14 +44,20 @@ impl<'db> Ty<'db> {
         } else if funcs.len() == 1 {
             let func = funcs[0].inst(&mut HashMap::new(), state, name.1);
             Some(func)
-        } else if let ControlFlow::Continue(Ty::Function(func_ty)) = vec![name.clone()].check(state, &mut (), name.1, ()) {
+        } else if let ControlFlow::Continue(Ty::Function(func_ty)) =
+            vec![name.clone()].check(state, &mut (), name.1, ())
+        {
             Some(func_ty)
         } else {
             None
         }
     }
 
-    pub fn member_funcs(&self, state: &mut CheckState<'db>, span: Span) -> Vec<(String, FuncTy<'db>)> {
+    pub fn member_funcs(
+        &self,
+        state: &mut CheckState<'db>,
+        span: Span,
+    ) -> Vec<(String, FuncTy<'db>)> {
         let mut funcs = get_sub_tys(self, state, span)
             .iter()
             .flat_map(|t| t.get_funcs(state))
