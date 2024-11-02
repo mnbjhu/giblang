@@ -9,6 +9,7 @@ use crate::{
     util::Span,
 };
 
+#[allow(clippy::too_many_lines)]
 impl<'ast, 'db, Iter: ControlIter<'ast, 'db>> Check<'ast, 'db, Iter, (), &Ty<'db>> for Pattern {
     fn check(
         &'ast self,
