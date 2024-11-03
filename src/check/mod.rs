@@ -2,6 +2,7 @@ use std::{collections::HashMap, ops::ControlFlow, ptr::eq};
 
 use salsa::Update;
 use state::CheckState;
+use tracing::error;
 
 use crate::{
     db::{
@@ -49,6 +50,7 @@ pub trait Check<'ast, 'db, Iter: ControlIter<'ast, 'db>, T = Ty<'db>, A = ()> {
 }
 
 pub trait ControlIter<'ast, 'db> {
+    #[must_use]
     fn act(
         &mut self,
         item: &'ast dyn AstItem,
@@ -149,7 +151,6 @@ pub fn check_project<'db>(db: &'db dyn Db, vfs: Vfs) {
 pub struct AtOffsetIter<'ast> {
     offset: usize,
     last: Option<&'ast dyn AstItem>,
-    ty: Ty<'ast>,
 }
 
 impl<'ast, 'db: 'ast> ControlIter<'ast, 'db> for AtOffsetIter<'ast> {
@@ -163,14 +164,22 @@ impl<'ast, 'db: 'ast> ControlIter<'ast, 'db> for AtOffsetIter<'ast> {
         match dir {
             Dir::Enter => {
                 if span.contains_offset(self.offset) {
+                    error!(
+                        "Found in offset item: {} at span {:?}",
+                        item.item_name(),
+                        span
+                    );
                     self.last = Some(item);
                 }
                 ControlFlow::Continue(())
             }
             Dir::Exit(ty) => {
                 if let Some(last) = self.last {
+                    if last.item_name() == item.item_name() {
+                        error!("Exiting item {}, Checking: {:p} == {:p}", item.item_name(), last, item);
+                    }
                     if eq(last, item) {
-                        self.ty = ty.clone();
+                        error!("Found!");
                         return ControlFlow::Break((last, ty));
                     }
                 }
@@ -209,11 +218,7 @@ impl<'ast, 'db> Ast<'db> {
         state: &mut CheckState<'db>,
         offset: usize,
     ) -> Option<(&dyn AstItem, Ty<'db>)> {
-        let mut iter = AtOffsetIter {
-            offset,
-            last: None,
-            ty: Ty::Unknown,
-        };
+        let mut iter = AtOffsetIter { offset, last: None };
         for top in self.tops(db) {
             if let ControlFlow::Break(found) = top.0.check(state, &mut iter, top.1, ()) {
                 return Some(found);

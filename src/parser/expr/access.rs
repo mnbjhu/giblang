@@ -23,7 +23,10 @@ pub enum Access {
     Field(Spanned<String>),
 }
 
-pub fn access_parser<'tokens, 'src: 'tokens>(expr: AstParser!(Expr)) -> AstParser!(Access) {
+pub fn access_parser<'tokens, 'src: 'tokens>(
+    expr: AstParser!(Expr),
+    lambda: AstParser!(Expr),
+) -> AstParser!(Access) {
     let args = expr
         .map_with(|ex, e| (ex, e.span()))
         .separated_by(just(punct(',')).padded_by(optional_newline()))
@@ -31,10 +34,19 @@ pub fn access_parser<'tokens, 'src: 'tokens>(expr: AstParser!(Expr)) -> AstParse
         .delimited_by(
             just(punct('(')).then(optional_newline()),
             optional_newline().then(just(punct(')'))),
-        );
+        )
+        .then(lambda.clone().map_with(|ex, e| (ex, e.span())).or_not())
+        .map(|(mut args, l)| {
+            if let Some(l) = l {
+                args.push(l);
+            }
+            args
+        });
+
+    let lambda_only = lambda.map_with(|ex, e| vec![(ex, e.span())]);
     let member = just(punct('.'))
         .ignore_then(spanned_ident_parser())
-        .then(args)
+        .then(lambda_only.or(args))
         .map(|(name, args)| Access::Member { name, args });
     let field = just(punct('.'))
         .ignore_then(spanned_ident_parser())

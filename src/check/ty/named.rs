@@ -1,7 +1,7 @@
 use std::ops::ControlFlow;
 
 use crate::{
-    check::{state::CheckState, Check, ControlIter, Dir},
+    check::{err::CheckError, state::CheckState, Check, ControlIter, Dir},
     item::AstItem,
     parser::common::type_::NamedType,
     ty::Ty,
@@ -33,19 +33,24 @@ impl<'ast, 'db, Iter: ControlIter<'ast, 'db>> Check<'ast, 'db, Iter> for NamedTy
                 return ControlFlow::Continue(ty);
             }
         };
-        if let Ok(decl) = state.get_decl_with_error(&self.name) {
-            let mut args = vec![];
-            for (arg, gen) in self.args.iter().zip(decl.generics(state.db)) {
-                args.push(arg.0.expect_is_bound_by(&gen, state, arg.1, control)?);
+        match state.get_decl_with_error(&self.name) {
+            Ok(decl) => {
+                let mut args = vec![];
+                for (arg, gen) in self.args.iter().zip(decl.generics(state.db)) {
+                    args.push(arg.0.expect_is_bound_by(&gen, state, arg.1, control)?);
+                }
+                let ty = Ty::Named {
+                    name: decl.path(state.db),
+                    args,
+                };
+                control.act(&self.name, state, Dir::Exit(ty.clone()), name_span)?;
+                ControlFlow::Continue(ty)
             }
-            let ty = Ty::Named {
-                name: decl.path(state.db),
-                args,
-            };
-            control.act(&self.name, state, Dir::Exit(ty.clone()), name_span)?;
-            return ControlFlow::Continue(ty);
-        };
-        control.act(&self.name, state, Dir::Exit(Ty::Unknown), name_span)?;
-        ControlFlow::Continue(Ty::Unknown)
+            Err(err) => {
+                state.error(CheckError::Unresolved(err));
+                control.act(&self.name, state, Dir::Exit(Ty::Unknown), name_span)?;
+                ControlFlow::Continue(Ty::Unknown)
+            }
+        }
     }
 }

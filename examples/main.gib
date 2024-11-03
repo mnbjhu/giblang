@@ -1,0 +1,15 @@
+use std::println
+
+impl TestTrait for TestStruct {
+    fn test() {
+        println("Hello")
+    }
+}
+
+struct TestStruct {
+
+}
+
+trait TestTrait {
+    fn test()
+}

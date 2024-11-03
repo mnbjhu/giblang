@@ -283,7 +283,7 @@ fn expect_named_is_instance_of_named<'db>(
         }) = first.imply_named_sub_ty(*other_name, state)
         {
             // TODO: Check this unwrap
-            let decl = state.get_decl(*name);
+            let decl = state.try_get_decl_path(*name).unwrap();
             let generics = decl.generics(state.db);
             for ((g, arg), other) in generics.iter().zip(implied_args).zip(other_args) {
                 let variance = g.variance;

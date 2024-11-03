@@ -12,6 +12,7 @@ use super::{Check, ControlIter, Dir};
 pub mod named;
 
 impl Type {
+    #[must_use]
     pub fn expect_is_bound_by<'ast, 'db, Iter: ControlIter<'ast, 'db>>(
         &'ast self,
         bound: &Generic<'db>,
@@ -37,7 +38,7 @@ impl<'ast, 'db, Iter: ControlIter<'ast, 'db>> Check<'ast, 'db, Iter> for Type {
         span: Span,
         (): (),
     ) -> ControlFlow<(&'ast dyn AstItem, Ty<'db>), Ty<'db>> {
-        control.act(self, state, Dir::Enter, span);
+        control.act(self, state, Dir::Enter, span)?;
         let ty = match &self {
             Type::Named(named) => named.check(state, control, span, ())?,
             Type::Tuple(tup) => {
@@ -84,7 +85,7 @@ impl<'ast, 'db, Iter: ControlIter<'ast, 'db>> Check<'ast, 'db, Iter> for Type {
                 Ty::TypeVar { id }
             }
         };
-        control.act(self, state, Dir::Exit(ty.clone()), span);
+        control.act(self, state, Dir::Exit(ty.clone()), span)?;
         ControlFlow::Continue(ty)
     }
 }

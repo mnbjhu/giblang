@@ -19,6 +19,7 @@ pub mod stmt;
 pub mod top;
 
 pub trait AstItem: Debug {
+    fn item_name(&self) -> &'static str;
     fn tokens(&self, _state: &mut CheckState, _tokens: &mut Vec<SemanticToken>, _: &Ty<'_>) {}
 
     fn hover<'db>(

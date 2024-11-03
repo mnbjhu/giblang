@@ -12,6 +12,9 @@ use crate::{
 use super::impl_::pretty_trait_body;
 
 impl AstItem for Trait {
+    fn item_name(&self) -> &'static str {
+        "trait"
+    }
     fn tokens(&self, _: &mut CheckState, tokens: &mut Vec<SemanticToken>, _: &Ty<'_>) {
         tokens.push(SemanticToken {
             span: self.name.1,

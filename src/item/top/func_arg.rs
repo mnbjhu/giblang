@@ -8,6 +8,9 @@ use crate::{
 };
 
 impl AstItem for FunctionArg {
+    fn item_name(&self) -> &'static str {
+        "func_arg"
+    }
     fn tokens(&self, _: &mut CheckState, tokens: &mut Vec<SemanticToken>, _: &Ty<'_>) {
         tokens.push(SemanticToken {
             span: self.name.1,

@@ -49,7 +49,7 @@ impl<'ast, 'db, Iter: ControlIter<'ast, 'db>> Check<'ast, 'db, Iter, ()> for Imp
                         });
                         if let Some(expected) = expected {
                             found.push(expected);
-                            func.check_matches(expected, state, &params, control, *span);
+                            func.check_matches(expected, state, &params, control, *span)?;
                         } else {
                             func.check(state, control, *span, true)?;
                             state.simple_error(

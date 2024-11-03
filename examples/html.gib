@@ -5,6 +5,7 @@ trait HtmlBuilder {
     fn Self.body(builder: HtmlBuilder.() -> ()) {}
     fn Self.div(builder: HtmlBuilder.() -> ()) {}
     fn Self.text(text: String) {}
+    fn Self.input(name: String, builder: HtmlBuilder.() -> ()) {}
 }
 
 struct HtmlBuilderImpl
@@ -44,23 +45,17 @@ fn with_test(test: Test, block: Test.() -> ()) {
 fn main() {
     let test = Test("Test")
     test.my_print()
-    with_test(
-        test,
-        {
-            let test = my_print()
-            test
-            name
-            self.name
-            my_print()
-        }
-    )
-    with(
-        test,
-        {
-            my_print()
-            name
-        }
-    )
+    with_test(test) {
+        let test = my_print()
+        test
+        name
+        name
+        my_print()
+    }
+    with(test) {
+        my_print()
+        name
+    }
     html {
         body {
             div {
@@ -69,6 +64,16 @@ fn main() {
                     text("World")
                 }
             }
+            input("name") {
+                text("Name")
+            }
+        }
+    }
+    let builder = HtmlBuilderImpl
+    builder.body {
+        self
+        self.div {
+            text("Hello")
         }
     }
 }

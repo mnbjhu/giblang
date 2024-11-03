@@ -44,9 +44,9 @@ impl<'ast, 'db, Iter: ControlIter<'ast, 'db>> Check<'ast, 'db, Iter> for Literal
         span: Span,
         (): (),
     ) -> ControlFlow<(&'ast dyn AstItem, Ty<'db>), Ty<'db>> {
-        control.act(self, state, Dir::Enter, span);
+        control.act(self, state, Dir::Enter, span)?;
         let actual = self.to_ty(state.db);
-        control.act(self, state, Dir::Exit(actual.clone()), span);
+        control.act(self, state, Dir::Exit(actual.clone()), span)?;
         ControlFlow::Continue(actual)
     }
 
@@ -58,10 +58,10 @@ impl<'ast, 'db, Iter: ControlIter<'ast, 'db>> Check<'ast, 'db, Iter> for Literal
         span: Span,
         (): (),
     ) -> ControlFlow<(&'ast dyn AstItem, Ty<'db>), Ty<'db>> {
-        control.act(self, state, Dir::Enter, span);
+        control.act(self, state, Dir::Enter, span)?;
         let actual = self.to_ty(state.db);
         actual.expect_is_instance_of(expected, state, false, span);
-        control.act(self, state, Dir::Exit(actual.clone()), span);
+        control.act(self, state, Dir::Exit(actual.clone()), span)?;
         ControlFlow::Continue(actual)
     }
 }

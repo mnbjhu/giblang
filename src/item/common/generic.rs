@@ -8,6 +8,9 @@ use crate::{
 };
 
 impl AstItem for GenericArg {
+    fn item_name(&self) -> &'static str {
+        "generic_arg"
+    }
     fn hover(
         &self,
         state: &mut CheckState,

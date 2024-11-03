@@ -67,7 +67,8 @@ impl<'db> Ty<'db> {
     }
 
     pub fn fields(&self, state: &mut CheckState<'db>) -> Vec<(String, Ty<'db>)> {
-        let Ty::Named { name, args } = self else {
+
+        let Ty::Named { name, args } = &self.clone().try_resolve(state) else {
             return Vec::new();
         };
         let Some(decl) = state.try_get_decl_path(*name) else {

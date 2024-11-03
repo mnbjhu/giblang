@@ -10,6 +10,9 @@ use crate::{
 };
 
 impl AstItem for Struct {
+    fn item_name(&self) -> &'static str {
+        "struct"
+    }
     fn tokens(&self, _: &mut CheckState, tokens: &mut Vec<SemanticToken>, _: &Ty<'_>) {
         tokens.push(SemanticToken {
             span: self.name.1,

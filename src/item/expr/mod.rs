@@ -19,6 +19,9 @@ pub mod member_call;
 pub mod op;
 
 impl AstItem for Expr {
+    fn item_name(&self) -> &'static str {
+        "expr"
+    }
     fn pretty<'b, D, A>(&'b self, allocator: &'b D) -> pretty::DocBuilder<'b, D, A>
     where
         Self: Sized,

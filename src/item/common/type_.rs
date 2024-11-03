@@ -4,6 +4,9 @@ use crate::{parser::common::type_::Type, util::Span};
 use super::generics::{braces, brackets};
 
 impl AstItem for Type {
+    fn item_name(&self) -> &'static str {
+        "type"
+    }
     fn pretty<'b, D, A>(&'b self, allocator: &'b D) -> pretty::DocBuilder<'b, D, A>
     where
         Self: Sized,

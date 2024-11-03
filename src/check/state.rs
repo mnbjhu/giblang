@@ -254,10 +254,6 @@ impl<'ty, 'db: 'ty> CheckState<'db> {
         &self.imports
     }
 
-    pub fn get_decl(&self, name: ModulePath<'db>) -> Decl<'db> {
-        self.try_get_decl_path(name).expect("Decl not found")
-    }
-
     pub fn try_get_decl_path(&self, name: ModulePath<'db>) -> Option<Decl<'db>> {
         self.project.get_decl(self.db, name)
     }

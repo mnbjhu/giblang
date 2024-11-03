@@ -12,6 +12,9 @@ use crate::{
 };
 
 impl AstItem for Enum {
+    fn item_name(&self) -> &'static str {
+        "enum"
+    }
     fn hover(
         &self,
         _: &mut CheckState,

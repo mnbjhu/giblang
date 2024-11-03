@@ -11,6 +11,9 @@ use crate::{
 };
 
 impl AstItem for Impl {
+    fn item_name(&self) -> &'static str {
+        "impl"
+    }
     fn pretty<'b, D, A>(&'b self, allocator: &'b D) -> pretty::DocBuilder<'b, D, A>
     where
         Self: Sized,

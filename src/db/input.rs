@@ -133,6 +133,7 @@ impl Vfs {
                         Vec
                     }
                     fn Self.push(item: T)
+                    fn Self.get(index: Int): Option[T]
                 }
 
                 enum Option[T] {

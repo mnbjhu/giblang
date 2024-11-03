@@ -10,6 +10,9 @@ use crate::{
 use super::{generics::brackets, type_::ContainsOffset};
 
 impl AstItem for Pattern {
+    fn item_name(&self) -> &'static str {
+        "pattern"
+    }
     fn tokens(&self, _: &mut CheckState, tokens: &mut Vec<SemanticToken>, _: &Ty<'_>) {
         if let Pattern::Name(name) = self {
             tokens.push(SemanticToken {
@@ -58,6 +61,9 @@ impl AstItem for Pattern {
 }
 
 impl AstItem for StructFieldPattern {
+    fn item_name(&self) -> &'static str {
+        "struct_field_pattern"
+    }
     fn tokens(&self, _: &mut CheckState, tokens: &mut Vec<SemanticToken>, _: &Ty<'_>) {
         match self {
             StructFieldPattern::Implied(name) => {

@@ -4,12 +4,17 @@ use async_lsp::lsp_types::{CompletionItem, CompletionItemKind};
 
 use crate::{
     check::{state::CheckState, Check as _, SemanticToken, TokenKind},
-    item::{common::generics::brackets, AstItem},
+    item::AstItem,
     parser::expr::member::MemberCall,
     ty::Ty,
 };
 
+use super::call::pretty_args;
+
 impl AstItem for MemberCall {
+    fn item_name(&self) -> &'static str {
+        "member_call"
+    }
     fn pretty<'b, D, A>(&'b self, allocator: &'b D) -> pretty::DocBuilder<'b, D, A>
     where
         Self: Sized,
@@ -22,7 +27,7 @@ impl AstItem for MemberCall {
             .pretty(allocator)
             .append(".")
             .append(&self.name.0)
-            .append(brackets(allocator, "(", ")", &self.args))
+            .append(pretty_args(&self.args, allocator))
     }
 
     fn tokens(&self, state: &mut CheckState, tokens: &mut Vec<SemanticToken>, _: &Ty<'_>) {

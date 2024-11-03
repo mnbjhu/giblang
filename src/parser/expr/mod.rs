@@ -92,7 +92,7 @@ pub fn expr_parser<'tokens, 'src: 'tokens>(stmt: AstParser!(Stmt)) -> AstParser!
             .clone()
             .map_with(|ex, e| (ex, e.span()))
             .foldl_with(
-                access_parser(expr.clone()).repeated(),
+                access_parser(expr.clone(), lambda.clone()).repeated(),
                 |ex, acc, e| match acc {
                     Access::Field(name) => (
                         Expr::Field(Field {

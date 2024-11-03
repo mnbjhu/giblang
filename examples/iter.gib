@@ -1,0 +1,22 @@
+use std::Vec
+use std::Int
+use std::Option
+
+trait Iter[T] {
+    fn Self.next(): Option[T]
+}
+
+trait IntoIter[T] {
+    fn Self.iter(): Iter[T]
+}
+
+struct VecIter[T] {
+    vec: Vec[T],
+    count: Int
+}
+
+impl[T] Iter[T] for VecIter[T] {
+    fn Self.next(): Option[T] {
+        vec.get(count)
+    }
+}

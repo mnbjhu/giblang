@@ -18,16 +18,16 @@ impl<'ast, 'db, Iter: ControlIter<'ast, 'db>> Check<'ast, 'db, Iter, (), &Ty<'db
         span: Span,
         ty: &Ty<'db>,
     ) -> ControlFlow<(&'ast dyn AstItem, Ty<'db>), ()> {
-        control.act(self, state, Dir::Enter, span);
+        control.act(self, state, Dir::Enter, span)?;
         if let Pattern::Name(name) = self {
             state.insert_variable(name.0.to_string(), ty.clone(), TokenKind::Var, name.1);
-            control.act(self, state, Dir::Exit(ty.clone()), span);
+            control.act(self, state, Dir::Exit(ty.clone()), span)?;
             return ControlFlow::Continue(());
         }
         let name = self.name();
         let name_span = Span::new(name[0].1.start, name.last().unwrap().1.end);
-        control.act(name, state, Dir::Enter, name_span);
-        control.act(name, state, Dir::Exit(Ty::unit()), name_span);
+        control.act(name, state, Dir::Enter, name_span)?;
+        control.act(name, state, Dir::Exit(Ty::unit()), name_span)?;
         let decl = state.get_decl_with_error(name);
         match decl {
             Ok(decl) => {
@@ -60,15 +60,27 @@ impl<'ast, 'db, Iter: ControlIter<'ast, 'db>> Check<'ast, 'db, Iter, (), &Ty<'db
                             state.simple_error(
                                 &format!(
                                     "Expected struct '{}' but found '{}'",
-                                    state.get_decl(*expected_name).name(state.db),
-                                    state.get_decl(ty_decl_id).name(state.db)
+                                    state.try_get_decl_path(*expected_name).map_or(
+                                        format!(
+                                            "Error getting name {:?}",
+                                            expected_name.name(state.db)
+                                        ),
+                                        |t| t.name(state.db)
+                                    ),
+                                    state.try_get_decl_path(ty_decl_id).map_or(
+                                        format!(
+                                            "Error getting name {:?}",
+                                            ty_decl_id.name(state.db)
+                                        ),
+                                        |t| t.name(state.db)
+                                    ),
                                 ),
                                 name.last().unwrap().1,
                             );
-                            control.act(self, state, Dir::Exit(ty.clone()), span);
+                            control.act(self, state, Dir::Exit(ty.clone()), span)?;
                             return ControlFlow::Continue(());
                         }
-                        let parent_decl = state.get_decl(*expected_name);
+                        let parent_decl = state.try_get_decl_path(*expected_name).unwrap();
                         let generics = parent_decl
                             .generics(state.db)
                             .iter()
@@ -120,7 +132,7 @@ impl<'ast, 'db, Iter: ControlIter<'ast, 'db>> Check<'ast, 'db, Iter, (), &Ty<'db
                 state.error(CheckError::Unresolved(e));
             }
         }
-        control.act(self, state, Dir::Exit(ty.clone()), span);
+        control.act(self, state, Dir::Exit(ty.clone()), span)?;
         ControlFlow::Continue(())
     }
 }

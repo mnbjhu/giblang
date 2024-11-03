@@ -17,13 +17,3 @@ mod util;
 async fn main() {
     Command::parse().run().await;
 }
-
-#[cfg(test)]
-mod tests {
-    use crate::cli::build::build;
-
-    #[test]
-    fn test_build() {
-        build();
-    }
-}

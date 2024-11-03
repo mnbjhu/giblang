@@ -3,6 +3,7 @@ mod definition;
 mod diagnostics;
 mod document_symbols;
 mod fmt;
+mod hover;
 mod semantic_tokens;
 
 use std::future::Future;
@@ -13,14 +14,14 @@ use async_lsp::client_monitor::ClientProcessMonitorLayer;
 use async_lsp::concurrency::ConcurrencyLayer;
 use async_lsp::lsp_types::{
     notification, request, CompletionItem, CompletionItemKind, CompletionParams,
-    CompletionResponse, DidChangeTextDocumentParams, DidOpenTextDocumentParams, Hover,
-    HoverContents, HoverParams, MarkedString,
+    CompletionResponse, DidChangeTextDocumentParams, DidOpenTextDocumentParams,
 };
 use async_lsp::panic::CatchUnwindLayer;
 use async_lsp::router::Router;
 use async_lsp::server::LifecycleLayer;
 use async_lsp::tracing::TracingLayer;
 use async_lsp::ClientSocket;
+use hover::hover;
 use salsa::{AsDynDatabase, Setter as _};
 use semantic_tokens::get_semantic_tokens;
 use tower::ServiceBuilder;
@@ -65,10 +66,7 @@ pub async fn main_loop() {
         router
             .request::<request::Initialize, _>(initialize)
             .request::<request::SemanticTokensFullRequest, _>(semantic_tokens_full)
-            .request::<request::HoverRequest, _>(|st, msg| {
-                let db = st.db.clone();
-                async move { Ok(get_hover(db, &msg)) }
-            })
+            .request::<request::HoverRequest, _>(hover)
             .request::<request::Completion, _>(|st, msg| {
                 let db = st.db.clone();
                 async move { Ok(get_completions(db, &msg)) }
@@ -102,7 +100,7 @@ pub async fn main_loop() {
     });
 
     tracing_subscriber::fmt()
-        .with_max_level(Level::INFO)
+        .with_max_level(Level::ERROR)
         .with_ansi(false)
         .with_writer(std::io::stderr)
         .init();
@@ -176,34 +174,7 @@ fn initialize(
     #[allow(deprecated)]
     let root = params.root_path.clone().unwrap();
     st.db.init(root);
-    async move {
-        eprintln!("Initialize with {params:?}");
-        Ok(capabilities::capabilities())
-    }
-}
-
-fn get_hover(mut db: SourceDatabase, msg: &HoverParams) -> Option<Hover> {
-    let file = db.input(
-        &msg.text_document_position_params
-            .text_document
-            .uri
-            .to_file_path()
-            .unwrap(),
-    );
-    let offset = position_to_offset(msg.text_document_position_params.position, file.text(&db));
-    let project = resolve_project(&db, db.vfs.unwrap());
-    let ast = parse_file(&db, file);
-    let type_vars = check_file(&db, file, project);
-    let mut state = CheckState::from_file(&db, file, project);
-    state.should_error = false;
-    let (found, ty) = ast.at_offset(&db, &mut state, offset)?;
-    if let Some(hover) = found.hover(&mut state, offset, &type_vars, &ty) {
-        return Some(Hover {
-            contents: HoverContents::Scalar(MarkedString::String(hover)),
-            range: None,
-        });
-    }
-    None
+    async move { Ok(capabilities::capabilities()) }
 }
 
 #[allow(clippy::unnecessary_wraps)]

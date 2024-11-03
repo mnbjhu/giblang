@@ -34,4 +34,11 @@ impl<'db> Ty<'db> {
             _ => self,
         }
     }
+
+    pub fn try_resolve(self, state: &mut CheckState<'db>) -> Ty<'db> {
+        match self {
+            Ty::TypeVar { id } => state.get_resolved_type_var(id),
+            _ => self,
+        }
+    }
 }

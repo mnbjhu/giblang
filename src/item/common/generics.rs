@@ -1,6 +1,9 @@
 use crate::{item::AstItem, parser::common::generic_args::GenericArgs, util::Spanned};
 
 impl AstItem for GenericArgs {
+    fn item_name(&self) -> &'static str {
+        "generic_args"
+    }
     fn pretty<'b, D, A>(&'b self, allocator: &'b D) -> pretty::DocBuilder<'b, D, A>
     where
         Self: Sized,

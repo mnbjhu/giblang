@@ -4,6 +4,9 @@ use crate::{
 };
 
 impl AstItem for Lambda {
+    fn item_name(&self) -> &'static str {
+        "lambda"
+    }
     fn pretty<'b, D, A>(&'b self, allocator: &'b D) -> pretty::DocBuilder<'b, D, A>
     where
         Self: Sized,
@@ -43,6 +46,9 @@ impl AstItem for Lambda {
 }
 
 impl AstItem for LambdaParam {
+    fn item_name(&self) -> &'static str {
+        "lambda_param"
+    }
     fn pretty<'b, D, A>(&'b self, allocator: &'b D) -> pretty::DocBuilder<'b, D, A>
     where
         Self: Sized,

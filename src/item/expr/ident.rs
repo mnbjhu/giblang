@@ -15,6 +15,9 @@ use crate::{
 };
 
 impl AstItem for SpannedQualifiedName {
+    fn item_name(&self) -> &'static str {
+        "ident"
+    }
     fn hover<'db>(
         &self,
         state: &mut CheckState<'db>,

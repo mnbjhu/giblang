@@ -3,6 +3,9 @@ use std::collections::HashMap;
 use crate::{check::state::CheckState, item::AstItem, lexer::literal::Literal};
 
 impl AstItem for Literal {
+    fn item_name(&self) -> &'static str {
+        "literal"
+    }
     fn hover<'db>(
         &self,
         _: &mut CheckState<'db>,

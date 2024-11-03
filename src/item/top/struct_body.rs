@@ -13,6 +13,9 @@ use crate::{
 };
 
 impl AstItem for StructBody {
+    fn item_name(&self) -> &'static str {
+        "struct_body"
+    }
     fn pretty<'b, D, A>(&'b self, allocator: &'b D) -> pretty::DocBuilder<'b, D, A>
     where
         Self: Sized,

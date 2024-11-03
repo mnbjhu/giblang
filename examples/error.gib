@@ -1,8 +1,18 @@
 use std::Option
+use std::panic
 
 fn main() {
     let x: Option[_] = Option::None
     let y = x.unwrap()
     let Option::Some(z) = y
     1.add(z)
+}
+
+impl[T] Option[T] {
+    fn Self.unwrap(): T {
+        match self {
+            Option::Some(x) => x,
+            Option::None => panic("None")
+        }
+    }
 }

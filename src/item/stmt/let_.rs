@@ -1,6 +1,10 @@
 use crate::{item::AstItem, parser::stmt::let_::LetStatement};
 
 impl AstItem for LetStatement {
+
+    fn item_name(&self) -> &'static str {
+        "let"
+    }
     fn pretty<'b, D, A>(&'b self, allocator: &'b D) -> pretty::DocBuilder<'b, D, A>
     where
         Self: Sized,

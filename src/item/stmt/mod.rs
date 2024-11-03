@@ -4,6 +4,9 @@ use super::AstItem;
 
 pub mod let_;
 impl AstItem for Stmt {
+    fn item_name(&self) -> &'static str {
+        "stmt"
+    }
     fn pretty<'b, D, A>(&'b self, allocator: &'b D) -> pretty::DocBuilder<'b, D, A>
     where
         Self: Sized,

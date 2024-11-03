@@ -24,6 +24,7 @@ impl<'ast, 'db> Func {
     }
 
     #[allow(clippy::too_many_lines)]
+    #[must_use]
     pub fn check_matches<Iter: ControlIter<'ast, 'db>>(
         &'ast self,
         trait_decl: &Function<'db>,
@@ -73,7 +74,7 @@ impl<'ast, 'db> Func {
 
         let receiver = if let Some(r) = &self.receiver {
             let ty = r.0.check(state, control, r.1, ())?;
-            state.add_self_param(ty.clone(), r.1);
+            self.add_self_param(ty.clone(), state);
             Some(ty)
         } else {
             None
