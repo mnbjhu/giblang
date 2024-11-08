@@ -13,7 +13,7 @@ use crate::{
     item::{common::type_::ContainsOffset, AstItem},
     parser::{parse_file, Ast},
     resolve::{resolve_impls_vfs, resolve_vfs},
-    ty::Ty,
+    ty::{Named, Ty},
     util::Span,
 };
 
@@ -91,7 +91,7 @@ pub fn resolve_project<'db>(db: &'db dyn Db, vfs: Vfs) -> Project<'db> {
     let impls = resolve_impls_vfs(db, vfs);
     let mut impl_map = HashMap::<ModulePath, Vec<ImplForDecl>>::new();
     for impl_ in impls {
-        let Ty::Named { name, .. } = impl_.from_ty(db) else {
+        let Ty::Named(Named { name, .. }) = impl_.from_ty(db) else {
             panic!("Impls must be named types")
         };
         if let Some(existing) = impl_map.get_mut(&name) {
@@ -176,7 +176,12 @@ impl<'ast, 'db: 'ast> ControlIter<'ast, 'db> for AtOffsetIter<'ast> {
             Dir::Exit(ty) => {
                 if let Some(last) = self.last {
                     if last.item_name() == item.item_name() {
-                        error!("Exiting item {}, Checking: {:p} == {:p}", item.item_name(), last, item);
+                        error!(
+                            "Exiting item {}, Checking: {:p} == {:p}",
+                            item.item_name(),
+                            last,
+                            item
+                        );
                     }
                     if eq(last, item) {
                         error!("Found!");

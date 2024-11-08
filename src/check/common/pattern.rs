@@ -5,7 +5,7 @@ use crate::{
     db::decl::{struct_::StructDecl, DeclKind},
     item::AstItem,
     parser::common::pattern::{Pattern, StructFieldPattern},
-    ty::{Generic, Ty},
+    ty::{Generic, Named, Ty},
     util::Span,
 };
 
@@ -36,7 +36,7 @@ impl<'ast, 'db, Iter: ControlIter<'ast, 'db>> Check<'ast, 'db, Iter, (), &Ty<'db
                     // TODO: THIS NEEDS TESTING - Remove block to fallback
                     let mut ty = if let Ty::TypeVar { .. } = &ty {
                         let new = decl.get_named_ty(state).inst(state, name.last().unwrap().1);
-                        ty.expect_is_instance_of(&new, state, false, name.last().unwrap().1);
+                        ty.expect_is_instance_of(&new, state, name.last().unwrap().1);
                         new
                     } else {
                         ty.clone()
@@ -46,10 +46,10 @@ impl<'ast, 'db, Iter: ControlIter<'ast, 'db>> Check<'ast, 'db, Iter, (), &Ty<'db
                             ty = super_.as_ref().clone();
                         }
                     }
-                    if let Ty::Named {
+                    if let Ty::Named(Named {
                         name: expected_name,
                         args,
-                    } = &ty
+                    }) = &ty
                     {
                         let ty_decl_id = if let DeclKind::Member { .. } = kind {
                             decl.path(state.db).get_parent(state.db)

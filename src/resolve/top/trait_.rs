@@ -2,7 +2,7 @@ use crate::{
     db::{decl::DeclKind, path::ModulePath},
     parser::top::trait_::Trait,
     resolve::state::ResolveState,
-    ty::Ty,
+    ty::{Named, Ty},
 };
 
 use super::Decl;
@@ -11,10 +11,10 @@ impl Trait {
     pub fn resolve<'db>(&self, state: &mut ResolveState<'db>) -> Decl<'db> {
         let generics = self.generics.0.resolve(state);
         state.add_self_ty(
-            Ty::Named {
+            Ty::Named(Named {
                 name: ModulePath::new(state.db, state.path.clone()),
                 args: generics.iter().map(|g| Ty::Generic(g.clone())).collect(),
-            },
+            }),
             self.name.1,
         );
         let name = self.name.clone();

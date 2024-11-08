@@ -6,14 +6,14 @@ use crate::{
     util::{Span, Spanned},
 };
 
-use super::{sub_tys::get_sub_tys, FuncTy, Ty};
+use super::{sub_tys::get_sub_tys, FuncTy, Named, Ty};
 
 impl<'db> Ty<'db> {
     pub fn try_get_func_ty(&self, state: &mut CheckState<'db>, span: Span) -> Option<FuncTy<'db>> {
         if let Ty::Function(func_ty) = self {
             Some(func_ty.clone())
         } else if let Ty::Meta(ty) = self {
-            if let Ty::Named { name, .. } = ty.as_ref() {
+            if let Ty::Named(Named { name, .. }) = ty.as_ref() {
                 let decl = state.try_get_decl_path(*name);
                 if let Some(decl) = decl {
                     if let DeclKind::Struct { body, .. } = decl.kind(state.db) {
@@ -53,6 +53,40 @@ impl<'db> Ty<'db> {
         }
     }
 
+    pub fn get_matching_member_func(
+        &self,
+        name: &Spanned<String>,
+        state: &mut CheckState<'db>,
+        args: &Vec<Spanned<Ty<'db>>>,
+    ) -> Vec<FuncTy<'db>> {
+        let mut funcs = get_sub_tys(self, state, name.1)
+            .iter()
+            .filter_map(|ty| ty.get_func(name, state, self))
+            .collect::<Vec<_>>();
+        funcs.extend(self.get_func(name, state, self));
+        for (index, arg) in args.iter().enumerate() {
+            if funcs.len() <= 1 {
+                break;
+            }
+            if funcs.iter().any(|func| {
+                if let Some(expected) = func.args.get(index) {
+                    arg.0.check_is_instance_of(expected, state, arg.1)
+                } else {
+                    false
+                }
+            }) {
+                funcs.retain(|func| {
+                    if let Some(expected) = func.args.get(index) {
+                        arg.0.check_is_instance_of(expected, state, arg.1)
+                    } else {
+                        false
+                    }
+                });
+            }
+        }
+        funcs
+    }
+
     pub fn member_funcs(
         &self,
         state: &mut CheckState<'db>,
@@ -67,8 +101,7 @@ impl<'db> Ty<'db> {
     }
 
     pub fn fields(&self, state: &mut CheckState<'db>) -> Vec<(String, Ty<'db>)> {
-
-        let Ty::Named { name, args } = &self.clone().try_resolve(state) else {
+        let Ty::Named(Named { name, args }) = &self.clone().try_resolve(state) else {
             return Vec::new();
         };
         let Some(decl) = state.try_get_decl_path(*name) else {

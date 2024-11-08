@@ -90,7 +90,7 @@ impl<'ast, 'db> Func {
         spanned_decl_args
             .zip(trait_decl.args.iter().map(|arg| arg.1.parameterize(params)))
             .for_each(|((i, s), t)| {
-                i.1.expect_is_instance_of(&t, state, false, s);
+                i.1.expect_is_instance_of(&t, state, s);
             });
 
         let ret_ty = if let Some((ret, span)) = &self.ret {
@@ -100,7 +100,7 @@ impl<'ast, 'db> Func {
         };
 
         let ret = if let Some(ret) = &self.ret {
-            ret_ty.expect_is_instance_of(&trait_decl.ret.parameterize(params), state, false, ret.1);
+            ret_ty.expect_is_instance_of(&trait_decl.ret.parameterize(params), state, ret.1);
             ret_ty
         } else if !trait_decl.ret.is_unit() {
             state.simple_error(
@@ -120,7 +120,7 @@ impl<'ast, 'db> Func {
             trait_decl.receiver.as_ref().map(|r| r.parameterize(params)),
         ) {
             (Some(i), Some(t)) => {
-                i.expect_is_instance_of(&t, state, false, self.name.1);
+                i.expect_is_instance_of(&t, state, self.name.1);
             }
             (None, None) => {}
             (None, Some(ty)) => {
@@ -183,7 +183,7 @@ impl<'ast, 'db, Iter: ControlIter<'ast, 'db>> Check<'ast, 'db, Iter, (), bool> f
             } else if let Some(body) = &self.body {
                 body.expect(state, control, &expected, span, ())?;
             } else {
-                Ty::unit().expect_is_instance_of(&expected, state, false, self.name.1);
+                Ty::unit().expect_is_instance_of(&expected, state, self.name.1);
             }
         } else if let Some(body) = &self.body {
             body.check(state, control, span, ())?;

@@ -32,6 +32,9 @@ pub fn goto_definition(
         let found = ast.at_offset(&db, &mut state, offset);
         if let Some((found, _)) = found {
             if let Some((file, span)) = found.goto_def(&mut state, offset) {
+                if file.module_path(&db).name(&db).first().unwrap() == "std" {
+                    return Ok(None)
+                }
                 let range = span_to_range_str(span.into(), file.text(&db));
                 let url = Url::from_file_path(file.path(&db)).unwrap();
                 let location = Location { uri: url, range };

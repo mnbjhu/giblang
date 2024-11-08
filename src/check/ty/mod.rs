@@ -24,7 +24,7 @@ impl Type {
         if let Ty::TypeVar { id } = ty {
             state.type_state.add_bound(id, bound.clone());
         } else {
-            ty.expect_is_instance_of(&bound.super_, state, false, span);
+            ty.expect_is_instance_of(&bound.super_, state, span);
         }
         ControlFlow::Continue(ty)
     }

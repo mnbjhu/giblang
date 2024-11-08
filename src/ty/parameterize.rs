@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use super::{FuncTy, Generic, Ty};
+use super::{FuncTy, Generic, Named, Ty};
 
 // TODO: This should use unique ids instead of the String names for generic type args
 impl<'db> Ty<'db> {
@@ -10,10 +10,10 @@ impl<'db> Ty<'db> {
                 .get(&arg.name.0)
                 .cloned()
                 .unwrap_or(arg.super_.parameterize(generics)),
-            Ty::Named { name, args } => Ty::Named {
+            Ty::Named(Named { name, args }) => Ty::Named(Named {
                 name: *name,
                 args: args.iter().map(|ty| ty.parameterize(generics)).collect(),
-            },
+            }),
             Ty::Tuple(tys) => Ty::Tuple(tys.iter().map(|ty| ty.parameterize(generics)).collect()),
             Ty::Sum(tys) => Ty::Sum(tys.iter().map(|ty| ty.parameterize(generics)).collect()),
             Ty::Function(func) => Ty::Function(func.parameterize(generics)),

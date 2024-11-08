@@ -120,6 +120,11 @@ pub enum MaybeTypeVar<'db> {
     Pointer(u32),
 }
 
+pub struct Decision<'db> {
+    pub id: u32,
+    pub options: Vec<Ty<'db>>
+}
+
 impl<'db> MaybeTypeVar<'db> {
     fn unwrap(self) -> TypeVarData<'db> {
         match self {

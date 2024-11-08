@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::check::state::CheckState;
 
-use super::{FuncTy, Generic, Ty};
+use super::{FuncTy, Generic, Named, Ty};
 
 impl<'db> Ty<'db> {
     pub fn get_name(
@@ -14,7 +14,7 @@ impl<'db> Ty<'db> {
             Ty::Any => "Any".to_string(),
             Ty::Nothing => "Nothing".to_string(),
             Ty::Unknown => "Unknown".to_string(),
-            Ty::Named { name, args } => {
+            Ty::Named(Named { name, args }) => {
                 let decl = state.try_get_decl_path(*name);
                 // TODO: check unwrap
                 if decl.is_none() {

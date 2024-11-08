@@ -1,4 +1,8 @@
-use crate::{parser::common::type_::NamedType, resolve::state::ResolveState, ty::Ty};
+use crate::{
+    parser::common::type_::NamedType,
+    resolve::state::ResolveState,
+    ty::{Named, Ty},
+};
 
 impl NamedType {
     pub fn resolve<'db>(&self, state: &mut ResolveState<'db>) -> Ty<'db> {
@@ -13,10 +17,10 @@ impl NamedType {
             }
         };
         let decl = state.get_decl(&self.name);
-        Ty::Named {
+        Ty::Named(Named {
             name: decl,
             args: self.args.iter().map(|ty| ty.0.resolve(state)).collect(),
-        }
+        })
     }
 }
 

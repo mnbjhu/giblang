@@ -1,11 +1,11 @@
 use crate::{check::state::CheckState, util::Span};
 
-use super::Ty;
+use super::{Named, Ty};
 
 pub fn get_sub_tys<'db>(name: &Ty<'db>, state: &mut CheckState<'db>, span: Span) -> Vec<Ty<'db>> {
     let name = name.clone().expect_resolved(state, span);
     match name {
-        Ty::Named { name, .. } => state
+        Ty::Named(Named { name, .. }) => state
             .project
             .get_impls(state.db, name)
             .into_iter()

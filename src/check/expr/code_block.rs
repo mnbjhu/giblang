@@ -38,7 +38,7 @@ impl<'ast, 'db, Iter: ControlIter<'ast, 'db>> Check<'ast, 'db, Iter> for CodeBlo
             return self.check(state, control, span, ());
         }
         if self.is_empty() {
-            Ty::unit().expect_is_instance_of(expected, state, false, span);
+            Ty::unit().expect_is_instance_of(expected, state, span);
             return ControlFlow::Continue(Ty::unit());
         }
         state.enter_scope();

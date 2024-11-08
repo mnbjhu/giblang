@@ -70,7 +70,7 @@ impl<'ast, 'db, Iter: ControlIter<'ast, 'db>> Check<'ast, 'db, Iter> for Lambda 
             Ty::Function(expected.clone())
         } else {
             let ty = self.check(state, control, span, ())?;
-            ty.expect_is_instance_of(expected, state, false, span);
+            ty.expect_is_instance_of(expected, state, span);
             control.act(self, state, Dir::Exit(ty.clone()), span)?;
             ty
         };
@@ -120,7 +120,7 @@ impl<'ast, 'db, Iter: ControlIter<'ast, 'db>> Check<'ast, 'db, Iter> for LambdaP
         control.act(self, state, Dir::Enter, span)?;
         let ty = if let Some(ty) = &self.ty {
             let explicit = ty.0.check(state, control, ty.1, ())?;
-            explicit.expect_is_instance_of(expected, state, true, ty.1);
+            explicit.expect_is_instance_of(expected, state, ty.1);
             self.pattern
                 .0
                 .check(state, control, self.pattern.1, &explicit)?;

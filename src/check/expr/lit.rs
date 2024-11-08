@@ -5,33 +5,33 @@ use crate::{
     db::{input::Db, path::ModulePath},
     item::AstItem,
     lexer::literal::Literal,
-    ty::Ty,
+    ty::{Named, Ty},
     util::Span,
 };
 
 impl Literal {
     pub fn to_ty<'db>(&self, db: &'db dyn Db) -> Ty<'db> {
         match self {
-            Literal::String(_) => Ty::Named {
+            Literal::String(_) => Ty::Named(Named {
                 name: ModulePath::new(db, vec!["std".to_string(), "String".to_string()]),
                 args: vec![],
-            },
-            Literal::Int(_) => Ty::Named {
+            }),
+            Literal::Int(_) => Ty::Named(Named {
                 name: ModulePath::new(db, vec!["std".to_string(), "Int".to_string()]),
                 args: vec![],
-            },
-            Literal::Bool(_) => Ty::Named {
+            }),
+            Literal::Bool(_) => Ty::Named(Named {
                 name: ModulePath::new(db, vec!["std".to_string(), "Bool".to_string()]),
                 args: vec![],
-            },
-            Literal::Float(_) => Ty::Named {
+            }),
+            Literal::Float(_) => Ty::Named(Named {
                 name: ModulePath::new(db, vec!["std".to_string(), "Float".to_string()]),
                 args: vec![],
-            },
-            Literal::Char(_) => Ty::Named {
+            }),
+            Literal::Char(_) => Ty::Named(Named {
                 name: ModulePath::new(db, vec!["std".to_string(), "Char".to_string()]),
                 args: vec![],
-            },
+            }),
         }
     }
 }
@@ -60,7 +60,7 @@ impl<'ast, 'db, Iter: ControlIter<'ast, 'db>> Check<'ast, 'db, Iter> for Literal
     ) -> ControlFlow<(&'ast dyn AstItem, Ty<'db>), Ty<'db>> {
         control.act(self, state, Dir::Enter, span)?;
         let actual = self.to_ty(state.db);
-        actual.expect_is_instance_of(expected, state, false, span);
+        actual.expect_is_instance_of(expected, state, span);
         control.act(self, state, Dir::Exit(actual.clone()), span)?;
         ControlFlow::Continue(actual)
     }

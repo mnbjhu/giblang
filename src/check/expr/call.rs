@@ -40,7 +40,7 @@ impl<'ast, 'db, Iter: ControlIter<'ast, 'db>> Check<'ast, 'db, Iter> for Call {
                 if let Some(self_ty) = state.get_variable("self") {
                     self_ty
                         .ty
-                        .expect_is_instance_of(receiver, state, false, self.name.1);
+                        .expect_is_instance_of(receiver, state, self.name.1);
                 } else {
                     state.error(CheckError::MissingReceiver(MissingReceiver {
                         span: self.name.1,
@@ -89,7 +89,7 @@ impl<'ast, 'db, Iter: ControlIter<'ast, 'db>> Check<'ast, 'db, Iter> for Call {
         (): (),
     ) -> std::ops::ControlFlow<(&'ast dyn AstItem, Ty<'db>), Ty<'db>> {
         let ret = self.check(state, control, span, ())?;
-        ret.expect_is_instance_of(expected, state, false, span);
+        ret.expect_is_instance_of(expected, state, span);
         ControlFlow::Continue(ret)
     }
 }

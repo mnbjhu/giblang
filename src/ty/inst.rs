@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::{check::state::CheckState, util::Span};
 
-use super::{FuncTy, Ty};
+use super::{FuncTy, Named, Ty};
 
 impl<'db> Ty<'db> {
     pub fn inst(&self, state: &mut CheckState<'db>, span: Span) -> Ty<'db> {
@@ -29,13 +29,13 @@ impl<'db> Ty<'db> {
                 };
                 Ty::TypeVar { id }
             }
-            Ty::Named { name, args } => Ty::Named {
+            Ty::Named(Named { name, args }) => Ty::Named(Named {
                 name: *name,
                 args: args
                     .iter()
                     .map(|a| a.inst_inner(ids, state, span))
                     .collect(),
-            },
+            }),
             Ty::Tuple(t) => Ty::Tuple(t.iter().map(|t| t.inst_inner(ids, state, span)).collect()),
             Ty::Sum(s) => Ty::Sum(s.iter().map(|t| t.inst_inner(ids, state, span)).collect()),
             Ty::Function(func) => Ty::Function(func.inst_inner(ids, state, span)),

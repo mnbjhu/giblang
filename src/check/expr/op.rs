@@ -31,7 +31,7 @@ impl<'ast, 'db, Iter: ControlIter<'ast, 'db>> Check<'ast, 'db, Iter> for Op {
         (): (),
     ) -> ControlFlow<(&'ast dyn AstItem, Ty<'db>), Ty<'db>> {
         let actual = self.check(state, control, span, ())?;
-        actual.expect_is_instance_of(expected, state, false, span);
+        actual.expect_is_instance_of(expected, state, span);
         ControlFlow::Continue(Ty::Unknown)
     }
 }

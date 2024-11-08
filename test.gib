@@ -7,6 +7,7 @@ use std::Option
 use std::Result
 use std::panic
 use std::Bool
+use std::Option::Some
 
 trait Test {
     fn another[T]() {
@@ -62,11 +63,11 @@ struct Basic {
 
 fn thingy(x: Option[String]) {
     let basic = Basic(123, "hello")
-    let some_basic = Option::Some(basic)
+    let some_basic = Some(basic)
 }
 
 fn test3(thing: Int) {
-    let some = Option::Some(thing)
+    let some = Some(thing)
     some.unwrap()
 }
 
@@ -151,11 +152,4 @@ impl[T] Option[T] {
             Option::None => panic("Unwrapped None")
         }
     }
-}
-
-fn main() {
-    let x = Option::None
-    let y = x.unwrap()
-    let Option::Some(z) = y
-    1.add(z)
 }

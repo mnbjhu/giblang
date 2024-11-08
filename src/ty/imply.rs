@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use super::{FuncTy, Ty};
+use super::{FuncTy, Named, Ty};
 
 // TODO: Makes assumptions about correct generic args
 impl<'db> Ty<'db> {
@@ -10,11 +10,11 @@ impl<'db> Ty<'db> {
                 implied.insert(g.name.0.to_string(), other.clone());
             }
             (
-                Ty::Named { name, args },
-                Ty::Named {
+                Ty::Named (Named { name, args }),
+                Ty::Named (Named {
                     name: other_name,
                     args: other_args,
-                },
+                }),
             ) => {
                 if name == other_name && args.len() == other_args.len() {
                     for (s, o) in args.iter().zip(other_args) {

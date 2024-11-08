@@ -5,7 +5,7 @@ use crate::{
     db::decl::{struct_::StructDecl, DeclKind},
     item::AstItem,
     parser::expr::field::Field,
-    ty::Ty,
+    ty::{Named, Ty},
     util::Span,
 };
 
@@ -22,7 +22,7 @@ impl<'ast, 'db, Iter: ControlIter<'ast, 'db>> Check<'ast, 'db, Iter> for Field {
         if self.name.0.is_empty() {
             return ControlFlow::Continue(Ty::Unknown);
         }
-        if let Ty::Named { name, args } = struct_ty {
+        if let Ty::Named(Named { name, args }) = struct_ty {
             let decl = state.try_get_decl_path(name);
             if let Some(decl) = decl {
                 if let DeclKind::Struct { body, generics } = decl.kind(state.db) {
@@ -90,7 +90,7 @@ impl<'ast, 'db, Iter: ControlIter<'ast, 'db>> Check<'ast, 'db, Iter> for Field {
         (): (),
     ) -> ControlFlow<(&'ast dyn AstItem, Ty<'db>), Ty<'db>> {
         let ty: Ty<'db> = self.check(state, control, span, ())?;
-        ty.expect_is_instance_of(expected, state, false, span);
+        ty.expect_is_instance_of(expected, state, span);
         ControlFlow::Continue(ty)
     }
 }

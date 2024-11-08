@@ -79,7 +79,7 @@ impl<'ty, 'db: 'ty> CheckState<'db> {
         }
         let var = self.type_state.get_type_var_mut(id);
         if let Some(resolved) = var.resolved.clone() {
-            resolved.expect_is_instance_of(&ty, self, false, span);
+            resolved.expect_is_instance_of(&ty, self, span);
             return;
         }
         var.resolved = Some(ty);
@@ -92,7 +92,7 @@ impl<'ty, 'db: 'ty> CheckState<'db> {
         }
         let var = self.type_state.get_type_var_mut(id);
         if let Some(resolved) = var.resolved.clone() {
-            ty.expect_is_instance_of(&resolved, self, false, span);
+            ty.expect_is_instance_of(&resolved, self, span);
             return;
         }
         var.resolved = Some(ty);

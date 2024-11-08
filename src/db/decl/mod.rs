@@ -11,7 +11,7 @@ pub mod struct_;
 
 use crate::{
     check::{err::unresolved::Unresolved, state::CheckState, TokenKind},
-    ty::{sub_tys::get_sub_tys, FuncTy, Generic, Ty},
+    ty::{sub_tys::get_sub_tys, FuncTy, Generic, Named, Ty},
     util::{Span, Spanned},
 };
 
@@ -109,7 +109,7 @@ impl<'db> Decl<'db> {
     }
 
     pub fn default_named_ty(self, state: &CheckState<'db>) -> Ty<'db> {
-        Ty::Named {
+        Ty::Named(Named {
             name: self.path(state.db),
             args: self
                 .generics(state.db)
@@ -117,7 +117,7 @@ impl<'db> Decl<'db> {
                 .cloned()
                 .map(Ty::Generic)
                 .collect(),
-        }
+        })
     }
 
     pub fn get_named_ty(self, state: &CheckState<'db>) -> Ty<'db> {

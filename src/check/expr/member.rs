@@ -17,8 +17,9 @@ impl<'ast, 'db, Iter: ControlIter<'ast, 'db>> Check<'ast, 'db, Iter> for MemberC
         (): (),
     ) -> ControlFlow<(&'ast dyn AstItem, Ty<'db>), Ty<'db>> {
         control.act(self, state, Dir::Enter, span)?;
-        let rec = self.rec.0.check(state, control, self.rec.1, ())?;
-        let Some(func_ty) = rec.get_member_func(&self.name, state) else {
+        let rec: Ty = self.rec.0.check(state, control, self.rec.1, ())?;
+        let funcs = rec.get_member_func(&self.name, state);
+        let Some(func_ty) = funcs else {
             state.simple_error(
                 &format!(
                     "No function {} found for type {}",
@@ -36,7 +37,7 @@ impl<'ast, 'db, Iter: ControlIter<'ast, 'db>> Check<'ast, 'db, Iter> for MemberC
             receiver,
         } = func_ty;
         if let Some(expected) = receiver {
-            rec.expect_is_instance_of(&expected, state, false, self.rec.1);
+            rec.expect_is_instance_of(&expected, state, self.rec.1);
         }
         if expected_args.len() != self.args.len() {
             state.simple_error(
@@ -66,7 +67,7 @@ impl<'ast, 'db, Iter: ControlIter<'ast, 'db>> Check<'ast, 'db, Iter> for MemberC
         (): (),
     ) -> ControlFlow<(&'ast dyn AstItem, Ty<'db>), Ty<'db>> {
         let ty = self.check(state, control, span, ())?;
-        ty.expect_is_instance_of(expected, state, false, span);
+        ty.expect_is_instance_of(expected, state, span);
         ControlFlow::Continue(ty)
     }
 }

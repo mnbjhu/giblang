@@ -6,6 +6,7 @@ pub mod func;
 pub mod imply;
 pub mod inst;
 pub mod is_instance;
+pub mod is_instance_new;
 pub mod name;
 pub mod parameterize;
 pub mod sub_tys;
@@ -15,10 +16,7 @@ pub enum Ty<'db> {
     Any,
     #[default]
     Unknown,
-    Named {
-        name: ModulePath<'db>,
-        args: Vec<Ty<'db>>,
-    },
+    Named(Named<'db>),
     TypeVar {
         id: u32,
     },
@@ -28,6 +26,13 @@ pub enum Ty<'db> {
     Tuple(Vec<Ty<'db>>),
     Sum(Vec<Ty<'db>>),
     Nothing,
+}
+
+
+#[derive(Clone, Debug, Eq, PartialEq, Update, Hash)]
+pub struct Named<'db> {
+    pub name: ModulePath<'db>,
+    pub args: Vec<Ty<'db>>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Update, Hash)]

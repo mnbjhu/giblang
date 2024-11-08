@@ -5,7 +5,7 @@ use crate::{
     db::decl::DeclKind,
     item::AstItem,
     parser::top::impl_::Impl,
-    ty::Ty,
+    ty::{Named, Ty},
     util::Span,
 };
 
@@ -25,17 +25,17 @@ impl<'ast, 'db, Iter: ControlIter<'ast, 'db>> Check<'ast, 'db, Iter, ()> for Imp
         state.add_self_ty(&for_, self.for_.1);
         if let Some(trait_) = &self.trait_ {
             let trait_ty = trait_.0.check(state, control, trait_.1, ())?;
-            if let Ty::Named { name, .. } = &trait_ty {
+            if let Ty::Named(Named { name, .. }) = &trait_ty {
                 if let DeclKind::Trait { body, generics, .. } = state
                     .project
                     .get_decl(state.db, *name)
                     .unwrap()
                     .kind(state.db)
                 {
-                    let trait_decl_ty = Ty::Named {
+                    let trait_decl_ty = Ty::Named(Named {
                         name: *name,
                         args: generics.iter().map(|g| Ty::Generic(g.clone())).collect(),
-                    };
+                    });
                     let mut params = HashMap::new();
                     trait_decl_ty.imply_generic_args(&trait_ty, &mut params);
                     let mut found = Vec::new();

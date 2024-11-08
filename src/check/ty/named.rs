@@ -4,7 +4,7 @@ use crate::{
     check::{err::CheckError, state::CheckState, Check, ControlIter, Dir},
     item::AstItem,
     parser::common::type_::NamedType,
-    ty::Ty,
+    ty::{Named, Ty},
     util::Span,
 };
 
@@ -39,10 +39,10 @@ impl<'ast, 'db, Iter: ControlIter<'ast, 'db>> Check<'ast, 'db, Iter> for NamedTy
                 for (arg, gen) in self.args.iter().zip(decl.generics(state.db)) {
                     args.push(arg.0.expect_is_bound_by(&gen, state, arg.1, control)?);
                 }
-                let ty = Ty::Named {
+                let ty = Ty::Named(Named {
                     name: decl.path(state.db),
                     args,
-                };
+                });
                 control.act(&self.name, state, Dir::Exit(ty.clone()), name_span)?;
                 ControlFlow::Continue(ty)
             }
