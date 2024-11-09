@@ -22,6 +22,7 @@ impl Func {
             args,
             ret,
             required: self.body.is_none(),
+            body: self.body.clone().unwrap_or_default(),
         });
         Decl::new(
             state.db,

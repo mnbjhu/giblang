@@ -1,6 +1,7 @@
 use clap::Parser as _;
 use cli::Command;
 
+mod run;
 mod check;
 mod cli;
 mod db;

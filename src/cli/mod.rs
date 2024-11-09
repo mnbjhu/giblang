@@ -1,5 +1,6 @@
 pub mod build;
 pub mod exports;
+pub mod run;
 pub mod file_tree;
 pub mod fmt;
 pub mod lex;
@@ -15,6 +16,7 @@ use fmt::fmt;
 use lex::lex;
 use module_tree::module_tree;
 use parse::parse;
+use run::run;
 
 use crate::lsp::main_loop;
 
@@ -32,8 +34,11 @@ pub enum Command {
         path: PathBuf,
     },
 
-    /// Parses a source file
+    /// Builds the project
     Build,
+
+    /// Runs the project
+    Run,
 
     /// Shows a tree of the exports
     Exports,
@@ -65,6 +70,7 @@ impl Command {
             Command::ModuleTree => module_tree(),
             Command::Lex { path } => lex(path),
             Command::Fmt { path } => fmt(path),
+            Command::Run => run(),
         }
     }
 }
