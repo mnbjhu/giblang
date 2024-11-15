@@ -11,27 +11,6 @@ impl AstItem for StructField {
     fn item_name(&self) -> &'static str {
         "struct_field"
     }
-    fn tokens(&self, _: &mut CheckState, tokens: &mut Vec<SemanticToken>, _: &Ty<'_>) {
-        tokens.push(SemanticToken {
-            span: self.name.1,
-            kind: TokenKind::Property,
-        });
-    }
-
-    fn hover<'db>(
-        &self,
-        state: &mut CheckState<'db>,
-        _: usize,
-        type_vars: &HashMap<u32, Ty<'db>>,
-        ty: &Ty<'_>,
-    ) -> Option<String> {
-        Some(format!(
-            "{}: {}",
-            self.name.0,
-            ty.get_name(state, Some(type_vars))
-        ))
-    }
-
     fn pretty<'b, D, A>(&'b self, allocator: &'b D) -> pretty::DocBuilder<'b, D, A>
     where
         Self: Sized,

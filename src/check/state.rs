@@ -10,6 +10,7 @@ use crate::{
         path::ModulePath,
     },
     ir::common::pattern::SpannedQualifiedNameIR,
+    item::definitions::ident::IdentDef,
     parser::{
         common::variance::Variance,
         expr::qualified_name::{QualifiedName, SpannedQualifiedName},
@@ -35,7 +36,7 @@ pub struct VarDecl<'db> {
 
 pub struct CheckState<'db> {
     pub db: &'db dyn Db,
-    pub imports: HashMap<String, ModulePath<'db>>,
+    pub imports: HashMap<String, Decl<'db>>,
     generics: Vec<HashMap<String, Generic<'db>>>,
     variables: Vec<HashMap<String, VarDecl<'db>>>,
     pub file_data: SourceFile,
@@ -43,6 +44,7 @@ pub struct CheckState<'db> {
     pub type_state: TypeState<'db>,
     pub path: Vec<String>,
     pub should_error: bool,
+    pub file_decl: Decl<'db>,
 }
 
 impl<'ty, 'db: 'ty> CheckState<'db> {
@@ -51,6 +53,8 @@ impl<'ty, 'db: 'ty> CheckState<'db> {
         file_data: SourceFile,
         project: Project<'db>,
     ) -> CheckState<'db> {
+        let path = file_data.module_path(db);
+        let decl = project.get_decl(db, path.clone()).unwrap();
         let mut state = CheckState {
             db,
             imports: HashMap::new(),
@@ -59,16 +63,14 @@ impl<'ty, 'db: 'ty> CheckState<'db> {
             file_data,
             project,
             type_state: TypeState::default(),
-            path: file_data.module_path(db).name(db).clone(),
             should_error: true,
+            file_decl: decl,
+            path: path.name(db).clone(),
         };
-        let mut path = file_data.module_path(db).name(db).clone();
         let tops = parse_file(db, file_data).tops(db);
         for top in tops {
             if let Some(name) = top.0.get_name() {
-                path.push(name.to_string());
-                state.add_import(name.to_string(), path.clone());
-                path.pop();
+                state.add_local_import(name);
             }
         }
         state
@@ -124,8 +126,9 @@ impl<'ty, 'db: 'ty> CheckState<'db> {
         res
     }
 
-    pub fn add_import(&mut self, name: String, path: QualifiedName) {
-        self.imports.insert(name, ModulePath::new(self.db, path));
+    pub fn add_local_import(&mut self, name: &str) {
+        self.imports
+            .insert(name.into(), self.file_decl.get(self.db, &name).unwrap());
     }
 
     pub fn enter_scope(&mut self) {
@@ -161,12 +164,7 @@ impl<'ty, 'db: 'ty> CheckState<'db> {
         path: &[Spanned<String>],
     ) -> Result<Decl<'db>, Unresolved> {
         if let Some(import) = self.imports.get(&path[0].0).copied() {
-            let module = self
-                .project
-                .decls(self.db)
-                .get_path(self.db, import)
-                .unwrap();
-            module.try_get_path(self, &path[1..])
+            import.try_get_path(self, &path[1..])
         } else {
             self.project.decls(self.db).try_get_path(self, path)
         }
@@ -187,26 +185,21 @@ impl<'ty, 'db: 'ty> CheckState<'db> {
 
     pub fn get_ident_ir(&mut self, path: &[Spanned<String>]) -> SpannedQualifiedNameIR<'db> {
         if let Some(import) = self.imports.get(&path[0].0).copied() {
-            let module = self
-                .project
-                .decls(self.db)
-                .get_path(self.db, import)
-                .unwrap();
-            module.get_path_ir(self, &path[1..])
+            let mut found = import.get_path_ir(self, &path[1..]);
+            found.insert(0, (IdentDef::Decl(import), path[0].1));
+            found
         } else {
             self.project.decls(self.db).get_path_ir(self, path)
         }
     }
 
     pub fn import(&mut self, use_: &SpannedQualifiedName) -> Result<(), Unresolved> {
-        if let Err(e) = self.get_decl_with_error(use_) {
-            Err(e)
-        } else {
-            self.imports.insert(
-                use_.last().unwrap().0.clone(),
-                ModulePath::new(self.db, use_.iter().map(|(name, _)| name.clone()).collect()),
-            );
-            Ok(())
+        match self.get_decl_with_error(use_) {
+            Err(e) => Err(e),
+            Ok(decl) => {
+                self.imports.insert(use_.last().unwrap().0.clone(), decl);
+                Ok(())
+            }
         }
     }
 
@@ -280,7 +273,7 @@ impl<'ty, 'db: 'ty> CheckState<'db> {
         vars
     }
 
-    pub fn get_imports<'st>(&'st self) -> &'st HashMap<String, ModulePath<'db>> {
+    pub fn get_imports<'st>(&'st self) -> &'st HashMap<String, Decl<'db>> {
         &self.imports
     }
 

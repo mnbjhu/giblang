@@ -1,10 +1,10 @@
-use salsa::Update;
-
-use crate::{check::SemanticToken, ir::IrNode, item::common::type_::ContainsOffset, util::Spanned};
+use crate::{
+    check::SemanticToken,
+    ir::{ContainsOffset, IrNode},
+    util::Spanned,
+};
 
 use super::{ExprIR, ExprIRData};
-
-use std::ops::ControlFlow;
 
 use crate::{
     check::{

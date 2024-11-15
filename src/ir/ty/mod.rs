@@ -2,13 +2,12 @@ use named::NamedTypeIR;
 
 use crate::{
     check::{state::CheckState, SemanticToken, TokenKind},
-    item::common::type_::ContainsOffset,
     parser::common::type_::Type,
     ty::{FuncTy, Ty},
     util::{Span, Spanned},
 };
 
-use super::{IrNode, IrState};
+use super::{ContainsOffset, IrNode, IrState};
 
 pub mod named;
 

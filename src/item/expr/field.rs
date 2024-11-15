@@ -1,14 +1,4 @@
-use std::{collections::HashMap, ops::ControlFlow};
-
-use async_lsp::lsp_types::{CompletionItem, CompletionItemKind};
-
-use crate::{
-    check::{state::CheckState, SemanticToken, TokenKind},
-    item::AstItem,
-    parser::expr::field::Field,
-    ty::Ty,
-    util::Span,
-};
+use crate::{item::AstItem, parser::expr::field::Field};
 
 impl AstItem for Field {
     fn item_name(&self) -> &'static str {
@@ -26,33 +16,5 @@ impl AstItem for Field {
             .pretty(allocator)
             .append(".")
             .append(&self.name.0)
-    }
-
-    fn tokens(&self, _: &mut CheckState, tokens: &mut Vec<SemanticToken>, _: &Ty<'_>) {
-        tokens.push(SemanticToken {
-            span: self.name.1,
-            kind: TokenKind::Property,
-        });
-    }
-
-    fn hover<'db>(
-        &self,
-        state: &mut CheckState<'db>,
-        offset: usize,
-        type_vars: &std::collections::HashMap<u32, crate::ty::Ty<'db>>,
-        _: &crate::ty::Ty<'_>,
-    ) -> Option<String> {
-        todo!();
-        panic!("Unexpected ControlFlow::Break in Field::hover");
-    }
-
-    fn completions(
-        &self,
-        state: &mut CheckState,
-        _: usize,
-        type_vars: &HashMap<u32, Ty<'_>>,
-        _: &Ty<'_>,
-    ) -> Vec<CompletionItem> {
-        todo!();
     }
 }

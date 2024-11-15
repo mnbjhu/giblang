@@ -1,13 +1,10 @@
-use std::collections::HashMap;
-
 use async_lsp::lsp_types::{DocumentSymbol, SymbolKind};
 
 use crate::{
-    check::{state::CheckState, SemanticToken, TokenKind},
+    check::state::CheckState,
     item::{common::generics::braces, AstItem},
     parser::top::enum_::Enum,
     range::span_to_range_str,
-    ty::Ty,
     util::Span,
 };
 
@@ -15,22 +12,6 @@ impl AstItem for Enum {
     fn item_name(&self) -> &'static str {
         "enum"
     }
-    fn hover(
-        &self,
-        _: &mut CheckState,
-        _: usize,
-        _: &HashMap<u32, Ty<'_>>,
-        _: &Ty<'_>,
-    ) -> Option<String> {
-        Some(format!("Enum {}", self.name.0))
-    }
-    fn tokens(&self, _: &mut CheckState, tokens: &mut Vec<SemanticToken>, _: &Ty<'_>) {
-        tokens.push(SemanticToken {
-            span: self.name.1,
-            kind: TokenKind::Enum,
-        });
-    }
-
     fn pretty<'b, D, A>(&'b self, allocator: &'b D) -> pretty::DocBuilder<'b, D, A>
     where
         Self: Sized,

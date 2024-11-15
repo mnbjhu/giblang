@@ -9,9 +9,8 @@ use crate::{
             ExprIR, ExprIRData,
         },
         ty::TypeIR,
-        IrNode, IrState,
+        ContainsOffset, IrNode, IrState,
     },
-    item::common::type_::ContainsOffset,
     parser::top::func::Func,
     ty::Ty,
     util::Spanned,
@@ -114,6 +113,9 @@ impl<'db> IrNode<'db> for FuncIR<'db> {
             kind: TokenKind::Func,
         });
         self.generics.0.tokens(tokens, state);
+        for arg in &self.args {
+            arg.0.tokens(tokens, state);
+        }
         if let Some(ret) = &self.ret {
             ret.0.tokens(tokens, state);
         }

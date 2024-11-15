@@ -2,8 +2,7 @@ use salsa::Update;
 
 use crate::{
     check::state::CheckState,
-    ir::{common::pattern::PatternIR, expr::ExprIR, ty::TypeIR, IrNode},
-    item::common::type_::ContainsOffset,
+    ir::{common::pattern::PatternIR, expr::ExprIR, ty::TypeIR, ContainsOffset, IrNode},
     parser::stmt::let_::LetStatement,
     util::Spanned,
 };

@@ -1,7 +1,7 @@
 use crate::{
     check::{state::CheckState, SemanticToken, TokenKind},
-    ir::{IrNode, IrState},
-    item::{common::type_::ContainsOffset, definitions::ident::IdentDef},
+    ir::{ContainsOffset, IrNode, IrState},
+    item::definitions::ident::IdentDef,
     parser::expr::member::MemberCall,
     ty::{FuncTy, Ty},
     util::{Span, Spanned},

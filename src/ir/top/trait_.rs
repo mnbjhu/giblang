@@ -2,8 +2,7 @@ use chumsky::container::Container;
 
 use crate::{
     check::{state::CheckState, SemanticToken, TokenKind},
-    ir::{common::generic_args::GenericArgsIR, IrNode},
-    item::common::type_::ContainsOffset,
+    ir::{common::generic_args::GenericArgsIR, ContainsOffset, IrNode},
     parser::top::trait_::Trait,
     ty::{Named, Ty},
     util::Spanned,

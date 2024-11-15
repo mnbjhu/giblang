@@ -1,9 +1,6 @@
-use salsa::Update;
-
 use crate::{
     check::state::CheckState,
-    ir::IrNode,
-    item::common::type_::ContainsOffset,
+    ir::{ContainsOffset, IrNode},
     parser::expr::match_::Match,
     ty::Ty,
     util::{Span, Spanned},

@@ -11,7 +11,7 @@ use crate::{
         path::ModulePath,
     },
     ir::FileIR,
-    item::{common::type_::ContainsOffset, AstItem},
+    item::AstItem,
     parser::{parse_file, Ast},
     resolve::{resolve_impls_vfs, resolve_vfs},
     ty::{Named, Ty},
@@ -27,46 +27,6 @@ pub mod state;
 // pub mod top;
 // pub mod ty;
 mod type_state;
-
-// pub trait Check<'ast, 'db, Iter: ControlIter<'ast, 'db>, T = Ty<'db>, A = ()> {
-//     #[must_use]
-//     fn check(
-//         &'ast self,
-//         state: &mut CheckState<'db>,
-//         control: &mut Iter,
-//         span: Span,
-//         args: A,
-//     ) -> ControlFlow<(&'ast dyn AstItem, Ty<'db>), T>;
-//
-//     #[must_use]
-//     fn expect(
-//         &'ast self,
-//         state: &mut CheckState<'db>,
-//         control: &mut Iter,
-//         _: &Ty<'db>,
-//         span: Span,
-//         args: A,
-//     ) -> ControlFlow<(&'ast dyn AstItem, Ty<'db>), T> {
-//         self.check(state, control, span, args)
-//     }
-// }
-//
-pub trait ControlIter<'ast, 'db> {
-    #[must_use]
-    fn act(
-        &mut self,
-        item: &'ast dyn AstItem,
-        state: &mut CheckState,
-        dir: Dir<'db>,
-        span: Span,
-    ) -> ControlFlow<(&'ast dyn AstItem, Ty<'db>)>;
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Dir<'db> {
-    Enter,
-    Exit(Ty<'db>),
-}
 
 #[derive(Debug, PartialEq, Clone, Update, Eq)]
 pub enum TokenKind {
@@ -103,18 +63,6 @@ pub fn resolve_project<'db>(db: &'db dyn Db, vfs: Vfs) -> Project<'db> {
         }
     }
     Project::new(db, decls, impl_map)
-}
-
-impl<'ast, 'db> ControlIter<'ast, 'db> for () {
-    fn act(
-        &mut self,
-        _: &'ast dyn AstItem,
-        _: &mut CheckState,
-        _: Dir,
-        _: Span,
-    ) -> ControlFlow<(&'ast dyn AstItem, Ty<'db>)> {
-        ControlFlow::Continue(())
-    }
 }
 
 #[salsa::tracked]
@@ -156,65 +104,6 @@ pub struct AtOffsetIter<'ast> {
     last: Option<&'ast dyn AstItem>,
 }
 
-impl<'ast, 'db: 'ast> ControlIter<'ast, 'db> for AtOffsetIter<'ast> {
-    fn act(
-        &mut self,
-        item: &'ast dyn AstItem,
-        _: &mut CheckState,
-        dir: Dir<'db>,
-        span: Span,
-    ) -> ControlFlow<(&'ast dyn AstItem, Ty<'db>)> {
-        match dir {
-            Dir::Enter => {
-                if span.contains_offset(self.offset) {
-                    error!(
-                        "Found in offset item: {} at span {:?}",
-                        item.item_name(),
-                        span
-                    );
-                    self.last = Some(item);
-                }
-                ControlFlow::Continue(())
-            }
-            Dir::Exit(ty) => {
-                if let Some(last) = self.last {
-                    if last.item_name() == item.item_name() {
-                        error!(
-                            "Exiting item {}, Checking: {:p} == {:p}",
-                            item.item_name(),
-                            last,
-                            item
-                        );
-                    }
-                    if eq(last, item) {
-                        error!("Found!");
-                        return ControlFlow::Break((last, ty));
-                    }
-                }
-                ControlFlow::Continue(())
-            }
-        }
-    }
-}
-
 pub struct SemanticTokensIter {
     pub tokens: Vec<SemanticToken>,
-}
-
-impl<'ast, 'db: 'ast> ControlIter<'ast, 'db> for SemanticTokensIter {
-    fn act(
-        &mut self,
-        item: &'ast dyn AstItem,
-        state: &mut CheckState,
-        dir: Dir<'db>,
-        _: Span,
-    ) -> ControlFlow<(&'ast dyn AstItem, Ty<'db>)> {
-        match dir {
-            Dir::Enter => ControlFlow::Continue(()),
-            Dir::Exit(ty) => {
-                item.tokens(state, &mut self.tokens, &ty);
-                ControlFlow::Continue(())
-            }
-        }
-    }
 }

@@ -1,7 +1,5 @@
 use std::collections::HashMap;
 
-use salsa::Update;
-
 use crate::{
     check::{
         state::{CheckState, VarDecl},
@@ -10,9 +8,8 @@ use crate::{
     ir::{
         common::pattern::PatternIR,
         ty::{TypeIR, TypeIRData},
-        IrNode, IrState,
+        ContainsOffset, IrNode, IrState,
     },
-    item::common::type_::ContainsOffset,
     parser::expr::lambda::{Lambda, LambdaParam},
     ty::{FuncTy, Generic, Ty},
     util::{Span, Spanned},

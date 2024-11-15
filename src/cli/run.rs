@@ -3,7 +3,6 @@ use std::{collections::HashMap, ops::ControlFlow};
 use crate::{
     check::{
         build_state::BuildState, check_project, check_vfs, resolve_project, state::CheckState,
-        ControlIter,
     },
     db::{
         decl::Project,
@@ -61,23 +60,10 @@ impl<'db> Vfs {
     }
 }
 
-impl<'ast, 'db> ControlIter<'ast, 'db> for BuildIter {
-    fn act(
-        &mut self,
-        item: &'ast dyn AstItem,
-        state: &mut CheckState,
-        dir: crate::check::Dir<'db>,
-        _: crate::util::Span,
-    ) -> std::ops::ControlFlow<(&'ast dyn AstItem, crate::ty::Ty<'db>)> {
-        item.build(state, &mut self.builder, dir);
-        ControlFlow::Continue(())
-    }
-}
-
 impl<'db> Ast<'db> {
     pub fn build(self, db: &'db dyn Db, state: &mut CheckState<'db>) -> HashMap<u32, FuncDef> {
         let mut iter = BuildIter::default();
         todo!();
-        iter.builder.funcs.into_iter().collect()
+        // iter.builder.funcs.into_iter().collect()
     }
 }

@@ -3,8 +3,8 @@ use std::collections::HashMap;
 use crate::{
     check::{err::CheckError, state::CheckState, SemanticToken, TokenKind},
     db::decl::{struct_::StructDecl, DeclKind},
-    ir::IrNode,
-    item::{common::type_::ContainsOffset, definitions::ident::IdentDef},
+    ir::{ContainsOffset, IrNode},
+    item::definitions::ident::IdentDef,
     parser::common::pattern::{Pattern, StructFieldPattern},
     ty::{Generic, Named, Ty},
     util::{Span, Spanned},

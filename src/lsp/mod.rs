@@ -30,8 +30,7 @@ use tracing::{info, Level};
 use crate::check::state::CheckState;
 use crate::check::{check_file, resolve_project};
 use crate::db::input::{Db, SourceDatabase};
-use crate::ir::{IrNode, IrState};
-use crate::item::common::type_::ContainsOffset;
+use crate::ir::{ContainsOffset as _, IrNode, IrState};
 use crate::parser::parse_file;
 use crate::range::position_to_offset;
 

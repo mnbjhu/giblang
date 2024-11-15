@@ -1,7 +1,6 @@
 use crate::{
     check::state::CheckState,
-    ir::{common::generic_args::GenericArgsIR, ty::TypeIR, IrNode},
-    item::common::type_::ContainsOffset,
+    ir::{common::generic_args::GenericArgsIR, ty::TypeIR, ContainsOffset, IrNode},
     parser::top::impl_::Impl,
     util::Spanned,
 };

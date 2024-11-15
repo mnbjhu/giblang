@@ -1,7 +1,6 @@
 use crate::{
     check::{err::CheckError, state::CheckState, SemanticToken},
-    ir::{common::pattern::SpannedQualifiedNameIR, IrNode, IrState},
-    item::common::type_::ContainsOffset as _,
+    ir::{common::pattern::SpannedQualifiedNameIR, ContainsOffset, IrNode, IrState},
     parser::common::type_::NamedType,
     ty::{Named, Ty},
     util::{Span, Spanned},

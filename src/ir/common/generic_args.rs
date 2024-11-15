@@ -1,7 +1,6 @@
 use crate::{
     check::{state::CheckState, SemanticToken},
-    ir::{IrNode, IrState},
-    item::common::type_::ContainsOffset as _,
+    ir::{ContainsOffset, IrNode, IrState},
     parser::common::generic_args::GenericArgs,
     util::Spanned,
 };

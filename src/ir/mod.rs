@@ -4,10 +4,9 @@ use top::TopIR;
 
 use crate::{
     check::{state::VarDecl, SemanticToken},
-    db::{input::Db, path::ModulePath},
-    item::common::type_::ContainsOffset as _,
+    db::{decl::Decl, input::Db},
     ty::{Generic, Ty},
-    util::Spanned,
+    util::{Span, Spanned},
 };
 
 pub mod common;
@@ -21,7 +20,7 @@ pub struct FileIR<'db> {
     #[no_eq]
     #[return_ref]
     pub tops: Vec<Spanned<TopIR<'db>>>,
-    pub imports: HashMap<String, ModulePath<'db>>,
+    pub imports: HashMap<String, Decl<'db>>,
     pub type_vars: HashMap<u32, Ty<'db>>,
 }
 
@@ -95,5 +94,15 @@ impl<'db> IrNode<'db> for FileIR<'db> {
         for (top, _) in self.tops(state.db) {
             top.tokens(tokens, state);
         }
+    }
+}
+
+pub trait ContainsOffset {
+    fn contains_offset(&self, offset: usize) -> bool;
+}
+
+impl ContainsOffset for Span {
+    fn contains_offset(&self, offset: usize) -> bool {
+        self.start <= offset && offset <= self.end
     }
 }

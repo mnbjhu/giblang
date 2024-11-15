@@ -1,12 +1,9 @@
 use std::collections::HashMap;
 
-use salsa::Update;
-
 use crate::{
     check::{state::CheckState, SemanticToken, TokenKind},
     db::decl::{struct_::StructDecl, DeclKind},
-    ir::{IrNode, IrState},
-    item::common::type_::ContainsOffset as _,
+    ir::{ContainsOffset, IrNode, IrState},
     parser::expr::field::Field,
     ty::{Named, Ty},
     util::{Span, Spanned},

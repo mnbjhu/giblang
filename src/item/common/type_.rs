@@ -36,13 +36,3 @@ impl AstItem for Type {
         }
     }
 }
-
-pub trait ContainsOffset {
-    fn contains_offset(&self, offset: usize) -> bool;
-}
-
-impl ContainsOffset for Span {
-    fn contains_offset(&self, offset: usize) -> bool {
-        self.start <= offset && offset <= self.end
-    }
-}

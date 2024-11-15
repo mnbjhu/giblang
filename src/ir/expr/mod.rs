@@ -6,18 +6,16 @@ use lambda::LambdaIR;
 use match_::MatchIR;
 use member::MemberCallIR;
 use op::OpIR;
-use salsa::Update;
 use tuple::{check_tuple, expect_tuple};
 
 use crate::{
     check::state::CheckState,
-    item::common::type_::ContainsOffset,
     parser::expr::Expr,
     ty::Ty,
     util::{Span, Spanned},
 };
 
-use super::{common::pattern::SpannedQualifiedNameIR, IrNode};
+use super::{common::pattern::SpannedQualifiedNameIR, ContainsOffset, IrNode};
 
 pub mod block;
 pub mod call;

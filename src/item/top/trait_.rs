@@ -15,12 +15,6 @@ impl AstItem for Trait {
     fn item_name(&self) -> &'static str {
         "trait"
     }
-    fn tokens(&self, _: &mut CheckState, tokens: &mut Vec<SemanticToken>, _: &Ty<'_>) {
-        tokens.push(SemanticToken {
-            span: self.name.1,
-            kind: TokenKind::Trait,
-        });
-    }
     fn pretty<'b, D, A>(&'b self, allocator: &'b D) -> pretty::DocBuilder<'b, D, A>
     where
         D: pretty::DocAllocator<'b, A>,

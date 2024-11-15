@@ -5,8 +5,8 @@ use crate::{
         SemanticToken, TokenKind,
     },
     db::{decl::DeclKind, input::Db},
-    ir::{common::pattern::SpannedQualifiedNameIR, IrNode, IrState},
-    item::{common::type_::ContainsOffset, definitions::ident::IdentDef},
+    ir::{common::pattern::SpannedQualifiedNameIR, ContainsOffset as _, IrNode, IrState},
+    item::definitions::ident::IdentDef,
     ty::Ty,
     util::{Span, Spanned},
 };

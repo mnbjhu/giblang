@@ -1,9 +1,6 @@
-use salsa::Update;
-
 use crate::{
     check::{state::CheckState, SemanticToken, TokenKind},
-    ir::{ty::TypeIR, IrNode, IrState},
-    item::common::type_::ContainsOffset,
+    ir::{ty::TypeIR, ContainsOffset, IrNode, IrState},
     parser::top::arg::FunctionArg,
     util::Spanned,
 };

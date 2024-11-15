@@ -1,25 +1,14 @@
 use async_lsp::lsp_types::{DocumentSymbol, SymbolKind};
 
 use crate::{
-    check::{state::CheckState, SemanticToken, TokenKind},
-    item::AstItem,
-    parser::top::enum_member::EnumMember,
-    range::span_to_range_str,
-    ty::Ty,
-    util::Span,
+    check::state::CheckState, item::AstItem, parser::top::enum_member::EnumMember,
+    range::span_to_range_str, util::Span,
 };
 
 impl AstItem for EnumMember {
     fn item_name(&self) -> &'static str {
         "enum_member"
     }
-    fn tokens(&self, _: &mut CheckState, tokens: &mut Vec<SemanticToken>, _: &Ty<'_>) {
-        tokens.push(SemanticToken {
-            span: self.name.1,
-            kind: TokenKind::Member,
-        });
-    }
-
     fn pretty<'b, D, A>(&'b self, allocator: &'b D) -> pretty::DocBuilder<'b, D, A>
     where
         Self: Sized,
