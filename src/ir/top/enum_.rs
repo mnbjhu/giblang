@@ -53,6 +53,6 @@ impl<'db> IrNode<'db> for EnumIR<'db> {
         tokens.push(SemanticToken {
             span: self.name.1,
             kind: TokenKind::Enum,
-        })
+        });
     }
 }

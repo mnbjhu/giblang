@@ -43,7 +43,7 @@ impl<'db> Ty<'db> {
             }
             (Ty::Generic(Generic { super_, .. }), _) => {
                 // TODO: Fix error messages for generic types
-                return super_.expect_is(other, state, span);
+                super_.expect_is(other, state, span)
             }
             (_, Ty::Generic(Generic { super_, name, .. })) => {
                 if name.0 == "Self" {

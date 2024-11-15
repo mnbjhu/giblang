@@ -29,8 +29,7 @@ pub fn check_block<'db>(block: &CodeBlock, state: &mut CheckState<'db>) -> ExprI
     let (vars, generics) = state.exit_scope();
     let ty = stmts
         .last()
-        .map(|stmt| stmt.0.get_ty())
-        .unwrap_or(Ty::unit());
+        .map_or(Ty::unit(), |stmt| stmt.0.get_ty());
     ExprIR {
         data: ExprIRData::CodeBlock(CodeBlockIR {
             vars,

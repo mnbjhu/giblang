@@ -54,7 +54,7 @@ impl<'ty, 'db: 'ty> CheckState<'db> {
         project: Project<'db>,
     ) -> CheckState<'db> {
         let path = file_data.module_path(db);
-        let decl = project.get_decl(db, path.clone()).unwrap();
+        let decl = project.get_decl(db, path).unwrap();
         let mut state = CheckState {
             db,
             imports: HashMap::new(),
@@ -128,7 +128,7 @@ impl<'ty, 'db: 'ty> CheckState<'db> {
 
     pub fn add_local_import(&mut self, name: &str) {
         self.imports
-            .insert(name.into(), self.file_decl.get(self.db, &name).unwrap());
+            .insert(name.into(), self.file_decl.get(self.db, name).unwrap());
     }
 
     pub fn enter_scope(&mut self) {

@@ -52,7 +52,7 @@ fn get_ident_completions(
     if let Some(self_param) = state.get_variable("self") {
         for (name, func_ty) in self_param.ty.member_funcs(state, Span::splat(0)) {
             completions.push(CompletionItem {
-                label: name.clone().name(state.db),
+                label: name.name(state.db),
                 kind: Some(CompletionItemKind::METHOD),
                 detail: Some(func_ty.get_name(state, Some(type_vars))),
                 ..Default::default()

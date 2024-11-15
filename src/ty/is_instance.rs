@@ -123,7 +123,7 @@ impl<'db> Ty<'db> {
             }
             (Ty::Generic(Generic { super_, .. }), _) => {
                 // TODO: Fix error messages for generic types
-                return super_.check_is_instance_of(other, state, span);
+                super_.check_is_instance_of(other, state, span)
             }
             (_, Ty::Generic(Generic { super_, name, .. })) => {
                 if name.0 == "Self" {

@@ -35,12 +35,7 @@ impl<'db> Impl {
                 (ir, *span)
             })
             .collect();
-        ImplIR {
-            trait_,
-            for_,
-            generics,
-            body,
-        }
+        ImplIR { generics, trait_, for_, body }
     }
 }
 
