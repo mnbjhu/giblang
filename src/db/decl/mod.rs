@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use chumsky::container::Container;
 use func::Function;
 use impl_::ImplForDecl;
 use salsa::Update;
@@ -11,6 +12,7 @@ pub mod struct_;
 
 use crate::{
     check::{err::unresolved::Unresolved, state::CheckState, TokenKind},
+    item::definitions::ident::IdentDef,
     ty::{sub_tys::get_sub_tys, FuncTy, Generic, Named, Ty},
     util::{Span, Spanned},
 };
@@ -136,7 +138,7 @@ impl<'db> Decl<'db> {
         self,
         state: &mut CheckState<'db>,
         span: Span,
-    ) -> Vec<(String, FuncTy<'db>)> {
+    ) -> Vec<(Decl<'db>, FuncTy<'db>)> {
         if !matches!(
             self.kind(state.db),
             DeclKind::Trait { .. } | DeclKind::Enum { .. } | DeclKind::Struct { .. }
@@ -187,6 +189,24 @@ impl<'db> Decl<'db> {
             current = current.get(db, name)?;
         }
         Some(current)
+    }
+
+    pub fn get_path_ir(
+        self,
+        state: &CheckState<'db>,
+        path: &[Spanned<String>],
+    ) -> Vec<Spanned<IdentDef<'db>>> {
+        let mut current = self;
+        let mut found = vec![];
+        for name in path {
+            if let Some(decl) = current.get(state.db, &name.0) {
+                found.push((IdentDef::Decl(decl), name.1));
+                current = decl;
+            } else {
+                return found;
+            }
+        }
+        found
     }
 
     pub fn try_get_path(

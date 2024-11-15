@@ -1,6 +1,19 @@
+use std::{collections::HashMap, ops::ControlFlow};
+
 use crate::{
-    check::{check_project, check_vfs, resolve_project},
-    db::{decl::DeclKind, err::Diagnostic, input::SourceDatabase, path::ModulePath},
+    check::{
+        build_state::BuildState, check_project, check_vfs, resolve_project, state::CheckState,
+        ControlIter,
+    },
+    db::{
+        decl::Project,
+        err::Diagnostic,
+        input::{Db, SourceDatabase, Vfs, VfsInner},
+    },
+    item::AstItem,
+    parser::{parse_file, Ast},
+    run::state::{FuncDef, ProgramState},
+    util::Span,
 };
 
 use super::build::print_error;
@@ -16,12 +29,55 @@ pub fn run() {
         print_error(&db, diag);
     }
     if diags.is_empty() {
-        let main = project.get_decl(
-            &db,
-            ModulePath::new(&db, vec!["main".to_string(), "main".to_string()]),
-        ).expect("Expected a main function at `main::main`");
-        let DeclKind::Function(main) = main.kind(&db) else {
-            panic!("Expected `main::main` to be a function")
-        };
+        let funcs = db.vfs.unwrap().build(&db, project);
+        let main = funcs.get(&0).expect("no main function");
+        let mut prog = ProgramState::new(&main.body, 0);
+        prog.run(&funcs);
+    }
+}
+
+#[derive(Default)]
+pub struct BuildIter {
+    pub builder: BuildState,
+}
+
+impl<'db> Vfs {
+    pub fn build(&self, db: &'db dyn Db, project: Project<'db>) -> HashMap<u32, FuncDef> {
+        match self.inner(db) {
+            VfsInner::Dir(files) => {
+                let mut funcs = HashMap::new();
+                for file in files {
+                    let file_funcs = file.build(db, project);
+                    funcs.extend(file_funcs);
+                }
+                funcs
+            }
+            VfsInner::File(file) => {
+                let ast = parse_file(db, *file);
+                let mut state = CheckState::from_file(db, *file, project);
+                ast.build(db, &mut state)
+            }
+        }
+    }
+}
+
+impl<'ast, 'db> ControlIter<'ast, 'db> for BuildIter {
+    fn act(
+        &mut self,
+        item: &'ast dyn AstItem,
+        state: &mut CheckState,
+        dir: crate::check::Dir<'db>,
+        _: crate::util::Span,
+    ) -> std::ops::ControlFlow<(&'ast dyn AstItem, crate::ty::Ty<'db>)> {
+        item.build(state, &mut self.builder, dir);
+        ControlFlow::Continue(())
+    }
+}
+
+impl<'db> Ast<'db> {
+    pub fn build(self, db: &'db dyn Db, state: &mut CheckState<'db>) -> HashMap<u32, FuncDef> {
+        let mut iter = BuildIter::default();
+        todo!();
+        iter.builder.funcs.into_iter().collect()
     }
 }

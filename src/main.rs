@@ -1,16 +1,17 @@
 use clap::Parser as _;
 use cli::Command;
 
-mod run;
 mod check;
 mod cli;
 mod db;
+mod ir;
 mod item;
 mod lexer;
 mod lsp;
 mod parser;
 mod range;
 mod resolve;
+mod run;
 mod ty;
 mod util;
 

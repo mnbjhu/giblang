@@ -25,7 +25,7 @@ impl<'ast, 'db, Iter: ControlIter<'ast, 'db>> Check<'ast, 'db, Iter> for Expr {
         (): (),
     ) -> ControlFlow<(&'ast dyn AstItem, Ty<'db>), Ty<'db>> {
         match self {
-            Expr::Literal(lit) => ControlFlow::Continue(lit.to_ty(state.db)),
+            Expr::Literal(lit) => lit.check(state, control, span, ()),
             Expr::Ident(ident) => ident.check(state, control, span, ()),
             Expr::CodeBlock(block) => block.check(state, control, span, ()),
             // TODO: Actually think about generics

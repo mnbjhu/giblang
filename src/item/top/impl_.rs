@@ -3,7 +3,7 @@ use std::ops::ControlFlow;
 use async_lsp::lsp_types::{DocumentSymbol, SymbolKind};
 
 use crate::{
-    check::{state::CheckState, Check as _},
+    check::state::CheckState,
     item::AstItem,
     parser::top::impl_::Impl,
     range::span_to_range_str,
@@ -75,24 +75,16 @@ impl Impl {
         let range = span_to_range_str(span.into(), txt);
         let selection_range = span_to_range_str(self.for_.1.into(), txt);
         let mut symbols = Vec::new();
-        let _ = self.generics.0.check(state, &mut (), self.generics.1, ());
+        let _ = self.generics.0.check(state);
         let name = if let Some(trait_) = self.trait_.as_ref() {
-            let ControlFlow::Continue(trait_) = trait_.0.check(state, &mut (), trait_.1, ()) else {
-                panic!("Unexpected ControlFlow::Break");
-            };
-            let ControlFlow::Continue(for_) = self.for_.0.check(state, &mut (), self.for_.1, ())
-            else {
-                panic!("Unexpected ControlFlow::Break");
-            };
-            let trait_ = trait_.get_name(state, None);
-            let for_ = for_.get_name(state, None);
+            let trait_ = trait_.0.check(state);
+            let for_ = self.for_.0.check(state);
+            let trait_ = trait_.ty.get_name(state, None);
+            let for_ = for_.ty.get_name(state, None);
             format!("impl {trait_} for {for_}")
         } else {
-            let ControlFlow::Continue(for_) = self.for_.0.check(state, &mut (), self.for_.1, ())
-            else {
-                panic!("Unexpected ControlFlow::Break");
-            };
-            let for_ = for_.get_name(state, None);
+            let for_ = self.for_.0.check(state);
+            let for_ = for_.ty.get_name(state, None);
             format!("impl for {for_}")
         };
         for (func, span) in &self.body {

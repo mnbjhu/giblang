@@ -2,9 +2,11 @@ use broom::{trace::Trace, Handle};
 use state::ProgramState;
 
 pub mod bytecode;
+pub mod text;
 pub mod state;
 pub mod scope;
 
+#[derive(PartialEq)]
 pub enum Object {
     Unit,
     Int(i32),
@@ -19,10 +21,6 @@ impl Trace<Self> for Object {
     fn trace(&self, tracer: &mut broom::prelude::Tracer<Self>) {
         if let Object::Vec(_, items) = self { items.trace(tracer) }
     }
-}
-
-pub trait Run {
-    fn run(&self, state: &mut ProgramState) -> Handle<Object>;
 }
 
 pub trait DebugText {

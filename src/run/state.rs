@@ -1,4 +1,4 @@
-use std::{ops::ControlFlow, usize};
+use std::{collections::HashMap, ops::ControlFlow, usize};
 
 use broom::{Handle, Heap};
 
@@ -29,10 +29,10 @@ impl From<Literal> for Object {
 }
 
 impl<'code> ProgramState<'code> {
-    pub fn new(code: &'code [ByteCode]) -> Self {
+    pub fn new(code: &'code [ByteCode], id: u32) -> Self {
         Self {
             heap: Heap::default(),
-            scopes: vec![Scope::from_code(code)],
+            scopes: vec![Scope::from_code(code, id)],
         }
     }
 
@@ -44,19 +44,32 @@ impl<'code> ProgramState<'code> {
         self.scopes.last_mut().expect("Call stack underflow")
     }
 
-    pub fn run(&mut self, funcs: &'code [FuncDef]) {
+    pub fn run(&mut self, funcs: &'code HashMap<u32, FuncDef>) {
         while !self.scopes.is_empty() {
             let instr = self.next_instr();
+            // println!("Executing: {instr:?} {}", self.stack_trace());
             self.execute(instr, funcs);
         }
     }
 
     pub fn pop(&mut self) -> Handle<Object> {
-        self.scope_mut().stack.pop().expect("Stack underflow")
+        if let Some(found) = self.scope_mut().stack.pop() {
+            found
+        } else {
+            panic!("Stack underflow: {}", self.stack_trace())
+        }
+    }
+
+    pub fn stack_trace(&self) -> String {
+        self.scopes
+            .iter()
+            .map(|scope| format!("{}:{}", scope.id, scope.index - 1))
+            .collect::<Vec<_>>()
+            .join("/")
     }
 
     pub fn new_local(&mut self, refr: Handle<Object>) {
-        self.scope_mut().locals.push(refr)
+        self.scope_mut().locals.push(refr);
     }
 
     pub fn set_local(&mut self, id: u32, refr: Handle<Object>) {
@@ -82,15 +95,28 @@ impl<'code> ProgramState<'code> {
 
 #[cfg(test)]
 mod tests {
-    use crate::{db::input::SourceDatabase, lexer::literal::Literal, run::bytecode::ByteCode};
+    use std::collections::HashMap;
+
+    use crate::{lexer::literal::Literal, run::bytecode::ByteCode};
     use ByteCode::*;
 
-    use super::ProgramState;
+    use super::{FuncDef, ProgramState};
 
     #[test]
     fn test_basic() {
         let code = vec![Push(Literal::String("Hello".to_string())), Panic];
-        let mut prog = ProgramState::new(&code);
-        prog.run(&[]);
+        let mut prog = ProgramState::new(&code, 0);
+        prog.run(&HashMap::new());
+    }
+
+    #[test]
+    fn test_func() {
+        let body = vec![Push(Literal::String("Hello Func".to_string())), Panic];
+        let hello = FuncDef { args: 0, body };
+        let code = vec![Push(Literal::String("Hello".to_string())), Print, Call(0)];
+        let mut funcs = HashMap::new();
+        funcs.insert(0, hello);
+        let mut prog = ProgramState::new(&code, 0);
+        prog.run(&funcs);
     }
 }

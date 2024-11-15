@@ -1,6 +1,6 @@
 use std::{collections::HashMap, vec};
 
-use salsa::Accumulator;
+use salsa::{Accumulator, Update};
 
 use crate::{
     check::err::{simple::Simple, CheckError},
@@ -9,7 +9,9 @@ use crate::{
         input::{Db, SourceFile},
         path::ModulePath,
     },
+    ir::common::pattern::SpannedQualifiedNameIR,
     parser::{
+        common::variance::Variance,
         expr::qualified_name::{QualifiedName, SpannedQualifiedName},
         parse_file,
     },
@@ -23,7 +25,7 @@ use super::{
     TokenKind,
 };
 
-#[derive(Debug, Clone)]
+#[derive(Debug, PartialEq, Clone, Update, Eq)]
 pub struct VarDecl<'db> {
     pub name: String,
     pub ty: Ty<'db>,
@@ -33,7 +35,7 @@ pub struct VarDecl<'db> {
 
 pub struct CheckState<'db> {
     pub db: &'db dyn Db,
-    imports: HashMap<String, ModulePath<'db>>,
+    pub imports: HashMap<String, ModulePath<'db>>,
     generics: Vec<HashMap<String, Generic<'db>>>,
     variables: Vec<HashMap<String, VarDecl<'db>>>,
     pub file_data: SourceFile,
@@ -131,9 +133,11 @@ impl<'ty, 'db: 'ty> CheckState<'db> {
         self.generics.push(HashMap::new());
     }
 
-    pub fn exit_scope(&mut self) {
-        self.variables.pop();
-        self.generics.pop();
+    #[must_use]
+    pub fn exit_scope(&mut self) -> (HashMap<String, VarDecl<'db>>, HashMap<String, Generic<'db>>) {
+        let vars = self.variables.pop().unwrap();
+        let generics = self.generics.pop().unwrap();
+        (vars, generics)
     }
 
     pub fn simple_error(&mut self, message: &str, span: Span) {
@@ -165,6 +169,32 @@ impl<'ty, 'db: 'ty> CheckState<'db> {
             module.try_get_path(self, &path[1..])
         } else {
             self.project.decls(self.db).try_get_path(self, path)
+        }
+    }
+
+    pub fn add_self_ty(&mut self, super_: &Ty<'db>, span: Span) {
+        let generic = Generic {
+            name: ("Self".to_string(), span),
+            variance: Variance::Invariant,
+            super_: Box::new(super_.clone()),
+        };
+        self.insert_generic("Self".to_string(), generic);
+    }
+
+    pub fn add_self_param(&mut self, ty: Ty<'db>, span: Span) {
+        self.insert_variable("self".to_string(), ty, TokenKind::Param, span);
+    }
+
+    pub fn get_ident_ir(&mut self, path: &[Spanned<String>]) -> SpannedQualifiedNameIR<'db> {
+        if let Some(import) = self.imports.get(&path[0].0).copied() {
+            let module = self
+                .project
+                .decls(self.db)
+                .get_path(self.db, import)
+                .unwrap();
+            module.get_path_ir(self, &path[1..])
+        } else {
+            self.project.decls(self.db).get_path_ir(self, path)
         }
     }
 

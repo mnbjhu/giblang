@@ -6,7 +6,7 @@ use crate::{
         state::CheckState,
     },
     db::{
-        decl::{impl_::ImplForDecl, DeclKind},
+        decl::{impl_::ImplForDecl, Decl, DeclKind},
         path::ModulePath,
     },
     parser::common::variance::Variance,
@@ -63,9 +63,7 @@ impl<'db> Ty<'db> {
                 }
                 self.eq(other)
             }
-            (Ty::Function(ty), Ty::Function(other)) => {
-                ty.expect_is_instance_of(other, state, span)
-            }
+            (Ty::Function(ty), Ty::Function(other)) => ty.expect_is_instance_of(other, state, span),
             _ => false,
         };
         if !res {
@@ -133,9 +131,7 @@ impl<'db> Ty<'db> {
                 }
                 self.eq(other)
             }
-            (Ty::Function(ty), Ty::Function(other)) => {
-                ty.check_is_instance_of(other, state, span)
-            }
+            (Ty::Function(ty), Ty::Function(other)) => ty.check_is_instance_of(other, state, span),
             _ => false,
         }
     }
@@ -268,7 +264,7 @@ impl<'db> Ty<'db> {
         }
     }
 
-    pub fn get_funcs(&self, state: &mut CheckState<'db>) -> Vec<(String, FuncTy<'db>)> {
+    pub fn get_funcs(&self, state: &mut CheckState<'db>) -> Vec<(Decl<'db>, FuncTy<'db>)> {
         let mut funcs = Vec::new();
         if let Ty::Named(Named { name, .. }) = self {
             if let Some(DeclKind::Trait { body, .. }) =
@@ -278,7 +274,7 @@ impl<'db> Ty<'db> {
                     let Ty::Function(func) = func_decl.get_ty(state) else {
                         panic!("Expected function");
                     };
-                    (func_decl.name(state.db), func)
+                    (*func_decl, func)
                 }));
             }
             let impls = state
@@ -302,7 +298,7 @@ impl<'db> Ty<'db> {
                             let DeclKind::Function(func) = f.kind(state.db) else {
                                 panic!("Expected function");
                             };
-                            (f.name(state.db), func.get_ty().parameterize(&implied))
+                            (*f, func.get_ty().parameterize(&implied))
                         })
                         .collect::<Vec<_>>()
                 });
@@ -407,7 +403,9 @@ fn check_named_is_instance_of_named<'db>(
                 let variance = g.variance;
                 match variance {
                     Variance::Invariant => {
-                        if !arg.check_is_instance_of(other, state, span) || !other.check_is_instance_of(&arg, state, span) {
+                        if !arg.check_is_instance_of(other, state, span)
+                            || !other.check_is_instance_of(&arg, state, span)
+                        {
                             return false;
                         }
                     }
@@ -422,7 +420,7 @@ fn check_named_is_instance_of_named<'db>(
                         }
                     }
                 }
-            };
+            }
             true
         } else {
             false

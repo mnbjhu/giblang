@@ -1,6 +1,11 @@
 use std::collections::HashMap;
 
-use crate::{check::state::CheckState, item::AstItem, lexer::literal::Literal};
+use crate::{
+    check::{build_state::BuildState, state::CheckState, Dir},
+    item::AstItem,
+    lexer::literal::Literal,
+    run::bytecode::ByteCode,
+};
 
 impl AstItem for Literal {
     fn item_name(&self) -> &'static str {
@@ -42,6 +47,12 @@ impl AstItem for Literal {
                     allocator.text("false")
                 }
             }
+        }
+    }
+
+    fn build(&self, state: &mut CheckState<'_>, builder: &mut BuildState, dir: Dir) {
+        if let Dir::Enter = dir {
+            builder.add(ByteCode::Push(self.clone()));
         }
     }
 }

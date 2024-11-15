@@ -4,7 +4,7 @@ use async_lsp::lsp_types::CompletionItem;
 use pretty::{DocAllocator, DocBuilder};
 
 use crate::{
-    check::{state::CheckState, SemanticToken},
+    check::{build_state::BuildState, state::CheckState, Dir, SemanticToken},
     db::input::SourceFile,
     parser::{top::Top, Ast},
     ty::Ty,
@@ -52,6 +52,8 @@ pub trait AstItem: Debug {
         D: DocAllocator<'b, A>,
         D::Doc: Clone,
         A: Clone;
+
+    fn build(&self, state: &mut CheckState<'_>, builder: &mut BuildState, dir: Dir) {}
 }
 
 impl<'db> Ast<'db> {}

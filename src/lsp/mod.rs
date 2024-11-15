@@ -30,6 +30,7 @@ use tracing::{info, Level};
 use crate::check::state::CheckState;
 use crate::check::{check_file, resolve_project};
 use crate::db::input::{Db, SourceDatabase};
+use crate::ir::{IrNode, IrState};
 use crate::item::common::type_::ContainsOffset;
 use crate::parser::parse_file;
 use crate::range::position_to_offset;
@@ -156,12 +157,12 @@ fn semantic_tokens_full(
     async move {
         let file = db.input(&msg.text_document.uri.to_file_path().unwrap());
         let project = resolve_project(&db, db.vfs.unwrap());
-        let ast = parse_file(&db, file);
-        let mut state = CheckState::from_file(&db, file, project);
-        state.should_error = false;
-        let names = ast.semantic_tokens(&db, &mut state);
+        let mut state = IrState::new(&db);
+        let ir = check_file(&db, file, project);
+        let mut tokens = vec![];
+        ir.tokens(&mut tokens, &mut state);
         Ok(Some(async_lsp::lsp_types::SemanticTokensResult::Tokens(
-            get_semantic_tokens(names, file.text(&db)).unwrap_or_default(),
+            get_semantic_tokens(tokens, file.text(&db)).unwrap_or_default(),
         )))
     }
 }
@@ -191,9 +192,11 @@ fn get_completions(mut db: SourceDatabase, msg: &CompletionParams) -> Option<Com
     let project = resolve_project(&db, db.vfs.unwrap());
     let mut state = CheckState::from_file(&db, file, project);
     state.should_error = false;
-    let type_vars = check_file(&db, file, project);
-    let (found, ty) = ast.at_offset(&db, &mut state, offset)?;
-    let mut completions = found.completions(&mut state, offset, &type_vars, &ty);
+    let ir = check_file(&db, file, project);
+    // TODO: Implement completions
+    // let (found, ty) = ast.at_offset(&db, &mut state, offset)?;
+    // let mut completions = found.completions(&mut state, offset, &type_vars, &ty);
+    let mut completions = vec![];
     let kw_completions = ast
         .expected(state.db)
         .iter()

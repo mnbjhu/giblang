@@ -8,20 +8,6 @@ use crate::{
     util::Span,
 };
 
-impl<'db> CheckState<'db> {
-    pub fn add_self_ty(&mut self, super_: &Ty<'db>, span: Span) {
-        let generic = Generic {
-            name: ("Self".to_string(), span),
-            variance: Variance::Invariant,
-            super_: Box::new(super_.clone()),
-        };
-        self.insert_generic("Self".to_string(), generic);
-    }
-    pub fn add_self_param(&mut self, ty: Ty<'db>, span: Span) {
-        self.insert_variable("self".to_string(), ty, TokenKind::Param, span);
-    }
-}
-
 impl<'ast, 'db, Iter: ControlIter<'ast, 'db>> Check<'ast, 'db, Iter, ()> for Trait {
     fn check(
         &'ast self,

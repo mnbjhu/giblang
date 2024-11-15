@@ -1,7 +1,7 @@
 use async_lsp::lsp_types::{DocumentSymbol, SymbolKind};
 
 use crate::{
-    check::{state::CheckState, Check, SemanticToken, TokenKind},
+    check::{state::CheckState, SemanticToken, TokenKind},
     item::AstItem,
     parser::top::struct_::Struct,
     range::span_to_range_str,
@@ -41,7 +41,7 @@ impl Struct {
         let txt = state.file_data.text(state.db);
         let range = span_to_range_str(span.into(), txt);
         let selection_range = span_to_range_str(self.name.1.into(), txt);
-        let _ = self.generics.0.check(state, &mut (), self.generics.1, ());
+        let _ = self.generics.0.check(state);
         DocumentSymbol {
             name: self.name.0.clone(),
             detail: Some("struct".to_string()),

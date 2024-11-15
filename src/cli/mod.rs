@@ -1,15 +1,17 @@
 pub mod build;
+pub mod byte_code_text;
 pub mod exports;
-pub mod run;
 pub mod file_tree;
 pub mod fmt;
 pub mod lex;
 pub mod module_tree;
 pub mod parse;
+pub mod run;
 
 use std::path::PathBuf;
 
 use build::build;
+use byte_code_text::byte_code_text;
 use exports::exports;
 use file_tree::file_tree;
 use fmt::fmt;
@@ -57,6 +59,12 @@ pub enum Command {
         /// The path to the source file
         path: PathBuf,
     },
+
+    /// Execute bytecode text format
+    ByteCodeText {
+        /// The path to the source file
+        path: PathBuf,
+    },
 }
 
 impl Command {
@@ -71,6 +79,7 @@ impl Command {
             Command::Lex { path } => lex(path),
             Command::Fmt { path } => fmt(path),
             Command::Run => run(),
+            Command::ByteCodeText { path } => byte_code_text(path),
         }
     }
 }

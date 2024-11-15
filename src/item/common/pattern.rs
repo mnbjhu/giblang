@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::{
-    check::{state::CheckState, SemanticToken, TokenKind},
+    check::{build_state::BuildState, state::CheckState, Dir, SemanticToken, TokenKind},
     item::AstItem,
     parser::common::pattern::{Pattern, StructFieldPattern},
     ty::Ty,
@@ -13,6 +13,7 @@ impl AstItem for Pattern {
     fn item_name(&self) -> &'static str {
         "pattern"
     }
+
     fn tokens(&self, _: &mut CheckState, tokens: &mut Vec<SemanticToken>, _: &Ty<'_>) {
         if let Pattern::Name(name) = self {
             tokens.push(SemanticToken {
@@ -56,6 +57,12 @@ impl AstItem for Pattern {
                 let content = brackets(allocator, "(", ")", fields);
                 name.pretty(allocator).append(content)
             }
+        }
+    }
+
+    fn build(&self, state: &mut CheckState<'_>, builder: &mut BuildState, dir: Dir) {
+        if let (Pattern::Name(name), Dir::Enter) = (self, dir) {
+            builder.add_var(name.0.to_string());
         }
     }
 }

@@ -3,7 +3,7 @@ use std::ops::ControlFlow;
 use async_lsp::lsp_types::DocumentSymbol;
 
 use crate::{
-    check::{state::CheckState, Check as _},
+    check::state::CheckState,
     item::{
         common::generics::{braces, brackets},
         AstItem,
@@ -41,11 +41,8 @@ impl StructBody {
                 for (field, span) in fields {
                     let range = span_to_range_str((*span).into(), txt);
                     let selection_range = span_to_range_str((*span).into(), txt);
-                    let ControlFlow::Continue(field) = field.check(state, &mut (), *span, ())
-                    else {
-                        panic!("Unexpected ControlFlow::Break");
-                    };
-                    let field = field.get_name(state, None);
+                    let field = field.check(state);
+                    let field = field.ty.get_name(state, None);
                     symbols.push(DocumentSymbol {
                         name: field,
                         detail: None,
@@ -63,11 +60,7 @@ impl StructBody {
                     let range = span_to_range_str((*span).into(), txt);
                     let selection_range = span_to_range_str((*span).into(), txt);
 
-                    let ControlFlow::Continue(ty) =
-                        field.ty.0.check(state, &mut (), field.ty.1, ())
-                    else {
-                        panic!("Unexpected ControlFlow::Break");
-                    };
+                    let ty = field.ty.0.check(state).ty;
                     let ty = ty.get_name(state, None);
                     let name = format!("{}: {}", field.name.0, ty);
                     symbols.push(DocumentSymbol {

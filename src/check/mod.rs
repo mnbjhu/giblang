@@ -10,6 +10,7 @@ use crate::{
         input::{Db, SourceFile, Vfs, VfsInner},
         path::ModulePath,
     },
+    ir::FileIR,
     item::{common::type_::ContainsOffset, AstItem},
     parser::{parse_file, Ast},
     resolve::{resolve_impls_vfs, resolve_vfs},
@@ -17,38 +18,39 @@ use crate::{
     util::Span,
 };
 
-mod common;
+pub mod build_state;
+// mod common;
 pub mod err;
-pub mod expr;
+// pub mod expr;
 pub mod state;
-mod stmt;
-pub mod top;
-pub mod ty;
+// mod stmt;
+// pub mod top;
+// pub mod ty;
 mod type_state;
 
-pub trait Check<'ast, 'db, Iter: ControlIter<'ast, 'db>, T = Ty<'db>, A = ()> {
-    #[must_use]
-    fn check(
-        &'ast self,
-        state: &mut CheckState<'db>,
-        control: &mut Iter,
-        span: Span,
-        args: A,
-    ) -> ControlFlow<(&'ast dyn AstItem, Ty<'db>), T>;
-
-    #[must_use]
-    fn expect(
-        &'ast self,
-        state: &mut CheckState<'db>,
-        control: &mut Iter,
-        _: &Ty<'db>,
-        span: Span,
-        args: A,
-    ) -> ControlFlow<(&'ast dyn AstItem, Ty<'db>), T> {
-        self.check(state, control, span, args)
-    }
-}
-
+// pub trait Check<'ast, 'db, Iter: ControlIter<'ast, 'db>, T = Ty<'db>, A = ()> {
+//     #[must_use]
+//     fn check(
+//         &'ast self,
+//         state: &mut CheckState<'db>,
+//         control: &mut Iter,
+//         span: Span,
+//         args: A,
+//     ) -> ControlFlow<(&'ast dyn AstItem, Ty<'db>), T>;
+//
+//     #[must_use]
+//     fn expect(
+//         &'ast self,
+//         state: &mut CheckState<'db>,
+//         control: &mut Iter,
+//         _: &Ty<'db>,
+//         span: Span,
+//         args: A,
+//     ) -> ControlFlow<(&'ast dyn AstItem, Ty<'db>), T> {
+//         self.check(state, control, span, args)
+//     }
+// }
+//
 pub trait ControlIter<'ast, 'db> {
     #[must_use]
     fn act(
@@ -66,7 +68,7 @@ pub enum Dir<'db> {
     Exit(Ty<'db>),
 }
 
-#[derive(Debug, Clone, Update)]
+#[derive(Debug, PartialEq, Clone, Update, Eq)]
 pub enum TokenKind {
     Var,
     Param,
@@ -116,17 +118,18 @@ impl<'ast, 'db> ControlIter<'ast, 'db> for () {
 }
 
 #[salsa::tracked]
-pub fn check_file<'db>(
-    db: &'db dyn Db,
-    file: SourceFile,
-    project: Project<'db>,
-) -> HashMap<u32, Ty<'db>> {
+pub fn check_file<'db>(db: &'db dyn Db, file: SourceFile, project: Project<'db>) -> FileIR<'db> {
     let mut state = state::CheckState::from_file(db, file, project);
     let ast = parse_file(db, file);
-    for (top, span) in ast.tops(db) {
-        let _ = top.check(&mut state, &mut (), *span, ());
-    }
-    state.get_type_vars()
+    let tops = ast
+        .tops(db)
+        .iter()
+        .map(|(top, span)| (top.check(&mut state), *span))
+        .collect();
+
+    let type_vars = state.get_type_vars();
+    let imports = state.imports;
+    FileIR::new(db, tops, imports, type_vars)
 }
 
 #[salsa::tracked]
@@ -213,34 +216,5 @@ impl<'ast, 'db: 'ast> ControlIter<'ast, 'db> for SemanticTokensIter {
                 ControlFlow::Continue(())
             }
         }
-    }
-}
-
-impl<'ast, 'db> Ast<'db> {
-    pub fn at_offset(
-        &'ast self,
-        db: &'db dyn Db,
-        state: &mut CheckState<'db>,
-        offset: usize,
-    ) -> Option<(&dyn AstItem, Ty<'db>)> {
-        let mut iter = AtOffsetIter { offset, last: None };
-        for top in self.tops(db) {
-            if let ControlFlow::Break(found) = top.0.check(state, &mut iter, top.1, ()) {
-                return Some(found);
-            }
-        }
-        None
-    }
-
-    pub fn semantic_tokens(
-        &'ast self,
-        db: &'db dyn Db,
-        state: &mut CheckState<'db>,
-    ) -> Vec<SemanticToken> {
-        let mut iter = SemanticTokensIter { tokens: Vec::new() };
-        for top in self.tops(db) {
-            let _ = top.0.check(state, &mut iter, top.1, ());
-        }
-        iter.tokens
     }
 }

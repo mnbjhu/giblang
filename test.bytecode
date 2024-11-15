@@ -1,0 +1,29 @@
+func 1, 0
+  push "Hello, World!"
+  print
+  return
+func 2, 1
+  param 0
+  push 1
+  eq
+  goto 11
+  param 0
+  push 1
+  sub
+  call 2
+  param 0
+  mul
+  return
+  push 1
+  return
+func 3, 0
+  push "Hello, World!"
+  push 123
+  construct 69, 2
+  print
+  return
+func 0, 0
+  push 5
+  call 2
+  print
+  return

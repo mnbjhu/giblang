@@ -31,11 +31,9 @@ impl<'ast, 'db> Func {
         state: &mut CheckState<'db>,
         // FROM THE TRAIT
         params: &HashMap<String, Ty<'db>>,
-        control: &mut Iter,
         span: Span,
-    ) -> ControlFlow<(&'ast dyn AstItem, Ty<'db>)> {
-        control.act(self, state, Dir::Enter, span)?;
-        let generics = self.generics.0.check(state, control, self.generics.1, ())?;
+    ) {
+        let generics = self.generics.0.check(state);
         let spanned_decl_generics = generics
             .iter()
             .map(|g| {
@@ -73,7 +71,7 @@ impl<'ast, 'db> Func {
         }
 
         let receiver = if let Some(r) = &self.receiver {
-            let ty = r.0.check(state, control, r.1, ())?;
+            let ty = r.0.check(state);
             self.add_self_param(ty.clone(), state);
             Some(ty)
         } else {
@@ -82,7 +80,7 @@ impl<'ast, 'db> Func {
 
         let mut args = Vec::new();
         for arg in &self.args {
-            args.push(arg.0.check(state, control, arg.1, ())?);
+            args.push(arg.0.check(state));
         }
 
         let spanned_decl_args = args.iter().zip(self.args.iter().map(|(arg, _)| arg.ty.1));
@@ -94,7 +92,7 @@ impl<'ast, 'db> Func {
             });
 
         let ret_ty = if let Some((ret, span)) = &self.ret {
-            ret.check(state, control, *span, ())?
+            ret.check(state)
         } else {
             Ty::unit()
         };
@@ -161,6 +159,7 @@ impl<'ast, 'db, Iter: ControlIter<'ast, 'db>> Check<'ast, 'db, Iter, (), bool> f
         span: Span,
         allow_empty: bool,
     ) -> ControlFlow<(&'ast dyn AstItem, Ty<'db>), ()> {
+        state.path.push(self.name.0.to_string());
         control.act(self, state, Dir::Enter, span)?;
         self.generics.0.check(state, control, self.generics.1, ())?;
         if let Some(rec) = &self.receiver {
@@ -189,6 +188,7 @@ impl<'ast, 'db, Iter: ControlIter<'ast, 'db>> Check<'ast, 'db, Iter, (), bool> f
             body.check(state, control, span, ())?;
         }
         control.act(self, state, Dir::Exit(Ty::unit()), span)?;
+        state.path.pop();
         ControlFlow::Continue(())
     }
 }

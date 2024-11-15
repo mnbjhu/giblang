@@ -22,7 +22,7 @@ trait New {
     fn new(): Self
 }
 
-fn test() {}
+fn test(): String {}
 
 impl[T] New for Box[T] {
     fn new(): Box[T] {

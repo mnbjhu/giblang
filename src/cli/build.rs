@@ -1,17 +1,39 @@
+use std::fs;
+use std::io::Write;
+
 use ariadne::{Color, Source};
 use ariadne::{Label, Report, ReportKind};
 
-use crate::check::check_project;
+use crate::check::{check_project, check_vfs, resolve_project};
 use crate::db::err::Diagnostic;
 use crate::db::input::{Db, SourceDatabase};
+use crate::run::state::ProgramState;
 
 pub fn build() {
     let pwd = std::env::current_dir().unwrap();
     let mut db = SourceDatabase::default();
     db.init(pwd.to_string_lossy().to_string());
+    let project = resolve_project(&db, db.vfs.unwrap());
+    check_vfs(&db, db.vfs.unwrap(), project);
     let diags: Vec<Diagnostic> = check_project::accumulated::<Diagnostic>(&db, db.vfs.unwrap());
     for diag in &diags {
         print_error(&db, diag);
+    }
+    if diags.is_empty() {
+        let out_file = pwd.join("out");
+        let mut out = fs::File::create(out_file.clone())
+            .or_else(|_| {
+                fs::remove_file(out_file.clone()).unwrap();
+                fs::File::create(out_file)
+            })
+            .unwrap();
+        let funcs = db.vfs.unwrap().build(&db, project);
+        for (id, func) in funcs {
+            writeln!(out, "func {id}, {}", func.args).unwrap();
+            for op in func.body {
+                writeln!(out, "{op}").unwrap();
+            }
+        }
     }
 }
 

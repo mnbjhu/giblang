@@ -10,6 +10,7 @@ use crate::{
     },
     item::{common::type_::ContainsOffset, definitions::ident::IdentDef, AstItem},
     parser::expr::qualified_name::SpannedQualifiedName,
+    run::bytecode::ByteCode,
     ty::Ty,
     util::{Span, Spanned},
 };
@@ -18,6 +19,7 @@ impl AstItem for SpannedQualifiedName {
     fn item_name(&self) -> &'static str {
         "ident"
     }
+
     fn hover<'db>(
         &self,
         state: &mut CheckState<'db>,
@@ -37,6 +39,7 @@ impl AstItem for SpannedQualifiedName {
             IdentDef::Variable(var) => Some(var.hover(state, type_vars)),
             IdentDef::Generic(g) => Some(g.hover(state)),
             IdentDef::Decl(decl) => Some(decl.hover(state)),
+            IdentDef::Unresolved => Some("Unresolved".to_string()),
         }
     }
 
@@ -83,6 +86,7 @@ impl AstItem for SpannedQualifiedName {
             IdentDef::Variable(var) => Some((state.file_data, var.span)),
             IdentDef::Generic(g) => Some((state.file_data, g.name.1)),
             IdentDef::Decl(decl) => Some((decl.file(state.db), decl.span(state.db))),
+            IdentDef::Unresolved => None,
         }
     }
 
@@ -102,15 +106,44 @@ impl AstItem for SpannedQualifiedName {
         for i in 1..=self.len() {
             let def = state.get_ident_def(&self[..i]);
             if let Ok(def) = def {
+                if let IdentDef::Unresolved = def {
+                    continue;
+                };
                 tokens.push(SemanticToken {
                     span: self[i - 1].1,
                     kind: match def {
                         IdentDef::Variable(var) => var.kind,
                         IdentDef::Generic(_) => TokenKind::Generic,
                         IdentDef::Decl(decl) => decl.get_kind(state.db),
+                        IdentDef::Unresolved => unreachable!(),
                     },
                 });
             }
+        }
+    }
+
+    fn build(
+        &self,
+        state: &mut CheckState<'_>,
+        builder: &mut crate::check::build_state::BuildState,
+        dir: crate::check::Dir,
+    ) {
+        match dir {
+            crate::check::Dir::Enter => {
+                let found = state.get_ident_def(self);
+                if let Ok(found) = found {
+                    match found {
+                        IdentDef::Variable(var) => {
+                            let id = builder.get_var(&var.name).unwrap();
+                            builder.add(ByteCode::GetLocal(id));
+                        }
+                        _ => {
+                            // TODO: Check properly
+                        }
+                    }
+                }
+            }
+            crate::check::Dir::Exit(_) => {}
         }
     }
 }
@@ -139,7 +172,7 @@ fn get_ident_completions(
     if let Some(self_param) = state.get_variable("self") {
         for (name, func_ty) in self_param.ty.member_funcs(state, Span::splat(0)) {
             completions.push(CompletionItem {
-                label: name.clone(),
+                label: name.clone().name(state.db),
                 kind: Some(CompletionItemKind::METHOD),
                 detail: Some(func_ty.get_name(state, Some(type_vars))),
                 ..Default::default()
@@ -188,7 +221,7 @@ impl<'db> CheckState<'db> {
                     .ty
                     .member_funcs(self, name.1)
                     .iter()
-                    .find(|(n, _)| n == &name.0)
+                    .find(|(n, _)| n.name(self.db) == name.0)
                 {
                     return Ok(IdentDef::Variable(VarDecl {
                         name: name.0.clone(),
