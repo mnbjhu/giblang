@@ -4,7 +4,11 @@ use top::TopIR;
 
 use crate::{
     check::{state::VarDecl, SemanticToken},
-    db::{decl::Decl, input::Db},
+    db::{
+        decl::{Decl, Project},
+        input::Db,
+        path::ModulePath,
+    },
     ty::{Generic, Ty},
     util::{Span, Spanned},
 };
@@ -36,14 +40,18 @@ pub struct IrState<'db> {
     pub generics: Vec<HashMap<String, Generic<'db>>>,
     pub variables: Vec<HashMap<String, VarDecl<'db>>>,
     pub db: &'db dyn Db,
+    pub project: Project<'db>,
+    pub type_vars: HashMap<u32, Ty<'db>>,
 }
 
 impl<'db> IrState<'db> {
-    pub fn new(db: &'db dyn Db) -> Self {
+    pub fn new(db: &'db dyn Db, project: Project<'db>, type_vars: HashMap<u32, Ty<'db>>) -> Self {
         IrState {
             generics: vec![],
             variables: vec![],
             db,
+            project,
+            type_vars,
         }
     }
 
@@ -77,6 +85,9 @@ impl<'db> IrState<'db> {
             }
         }
         None
+    }
+    pub fn try_get_decl_path(&self, name: ModulePath<'db>) -> Option<Decl<'db>> {
+        self.project.get_decl(self.db, name)
     }
 }
 

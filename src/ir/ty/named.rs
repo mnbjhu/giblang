@@ -3,7 +3,7 @@ use crate::{
     ir::{common::pattern::SpannedQualifiedNameIR, ContainsOffset, IrNode, IrState},
     parser::common::type_::NamedType,
     ty::{Named, Ty},
-    util::Spanned,
+    util::{Span, Spanned},
 };
 
 use super::{TypeIR, TypeIRData};
@@ -79,6 +79,11 @@ impl<'db> NamedType {
 
 impl<'db> IrNode<'db> for NamedTypeIR<'db> {
     fn at_offset(&self, offset: usize, state: &mut crate::ir::IrState<'db>) -> &dyn IrNode {
+        let ident_span: Span =
+            (self.name.first().unwrap().1.start..self.name.last().unwrap().1.end).into();
+        if ident_span.contains_offset(offset) {
+            return self.name.at_offset(offset, state);
+        }
         for (arg, span) in &self.args {
             if span.contains_offset(offset) {
                 return arg.at_offset(offset, state);

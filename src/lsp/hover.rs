@@ -27,8 +27,8 @@ pub fn hover(
         );
         let offset = position_to_offset(msg.text_document_position_params.position, file.text(&db));
         let project = resolve_project(&db, db.vfs.unwrap());
-        let mut state = IrState::new(&db);
         let ir = check_file(&db, file, project);
+        let mut state = IrState::new(&db, project, ir.type_vars(&db));
         let node = ir.at_offset(offset, &mut state);
         if let Some(msg) = node.hover(offset, &mut state) {
             Ok(Some(Hover {

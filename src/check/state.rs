@@ -11,11 +11,7 @@ use crate::{
     },
     ir::common::pattern::SpannedQualifiedNameIR,
     item::definitions::ident::IdentDef,
-    parser::{
-        common::variance::Variance,
-        expr::qualified_name::SpannedQualifiedName,
-        parse_file,
-    },
+    parser::{common::variance::Variance, expr::qualified_name::SpannedQualifiedName, parse_file},
     ty::{Generic, Ty},
     util::{Span, Spanned},
 };
@@ -180,7 +176,13 @@ impl<'ty, 'db: 'ty> CheckState<'db> {
     }
 
     pub fn add_self_param(&mut self, ty: Ty<'db>, span: Span) {
-        self.insert_variable("self".to_string(), ty, TokenKind::Param, span);
+        if let Ty::Generic(g) = ty {
+            if g.name.0 == "Self" {
+                self.insert_variable("self".to_string(), *g.super_, TokenKind::Param, span);
+            }
+        } else {
+            self.insert_variable("self".to_string(), ty, TokenKind::Param, span);
+        }
     }
 
     pub fn get_ident_ir(&mut self, path: &[Spanned<String>]) -> SpannedQualifiedNameIR<'db> {
@@ -190,6 +192,21 @@ impl<'ty, 'db: 'ty> CheckState<'db> {
             found
         } else {
             self.project.decls(self.db).get_path_ir(self, path)
+        }
+    }
+
+    pub fn get_ident_ir_with_error(
+        &mut self,
+        path: &[Spanned<String>],
+    ) -> SpannedQualifiedNameIR<'db> {
+        if let Some(import) = self.imports.get(&path[0].0).copied() {
+            let mut found = import.get_path_ir_with_error(self, &path[1..]);
+            found.insert(0, (IdentDef::Decl(import), path[0].1));
+            found
+        } else {
+            self.project
+                .decls(self.db)
+                .get_path_ir_with_error(self, path)
         }
     }
 

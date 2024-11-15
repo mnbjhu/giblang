@@ -20,7 +20,7 @@ pub struct MatchArmIR<'db> {
 impl<'db> MatchArm {
     pub fn check(&self, state: &mut CheckState<'db>, ty: &Ty<'db>) -> MatchArmIR<'db> {
         state.enter_scope();
-        let pattern = (self.pattern.0.check(state, ty), self.pattern.1);
+        let pattern = (self.pattern.0.expect(state, ty), self.pattern.1);
         let expr = Box::new((self.expr.0.check(state), self.expr.1));
         let (vars, generics) = state.exit_scope();
         MatchArmIR {
@@ -39,7 +39,7 @@ impl<'db> MatchArm {
         ty: &Ty<'db>,
     ) -> MatchArmIR<'db> {
         state.enter_scope();
-        let pattern = (self.pattern.0.check(state, ty), self.pattern.1);
+        let pattern = (self.pattern.0.expect(state, ty), self.pattern.1);
         let expr = Box::new((self.expr.0.expect(state, expected, span), self.expr.1));
         let (vars, generics) = state.exit_scope();
         MatchArmIR {

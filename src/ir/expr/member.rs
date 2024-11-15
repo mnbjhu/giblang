@@ -44,11 +44,14 @@ impl<'db> MemberCall {
                 ty: Ty::Unknown,
             };
         };
-        let FuncTy {
-            args: expected_args,
-            ret,
-            receiver,
-        } = func_ty;
+        let (
+            def,
+            FuncTy {
+                args: expected_args,
+                ret,
+                receiver,
+            },
+        ) = func_ty;
         if let Some(expected) = receiver {
             rec.0.ty.expect_is_instance_of(&expected, state, self.rec.1);
         }
@@ -75,8 +78,7 @@ impl<'db> MemberCall {
                 receiver: rec,
                 name: self.name.clone(),
                 args,
-                // TODO: Provide decl
-                def: IdentDef::Unresolved,
+                def,
             }),
             ty,
         }
@@ -111,10 +113,14 @@ impl<'db> IrNode<'db> for MemberCallIR<'db> {
         self.receiver.0.tokens(tokens, state);
         tokens.push(SemanticToken {
             span: self.name.1,
-            kind: TokenKind::Member,
+            kind: TokenKind::Func,
         });
         for arg in &self.args {
             arg.0.tokens(tokens, state);
         }
+    }
+
+    fn hover(&self, _: usize, state: &mut IrState<'db>) -> Option<String> {
+        Some(self.def.hover(state))
     }
 }

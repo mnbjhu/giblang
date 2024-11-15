@@ -25,9 +25,6 @@ impl<'db> Call {
     pub fn check(&self, state: &mut CheckState<'db>) -> ExprIR<'db> {
         let name_ir = self.name.0.check(state);
         if let Ty::Unknown = name_ir.ty {
-            for arg in &self.args {
-                arg.0.check(state);
-            }
             return ExprIR {
                 data: ExprIRData::Call(CallIR {
                     expr: Box::new((name_ir, self.name.1)),
@@ -69,18 +66,15 @@ impl<'db> Call {
                     func: func_ty.get_name(state, None),
                 }));
             }
+            let mut args = vec![];
             for ((arg, span), expected) in self.args.iter().zip(expected_args) {
-                arg.expect(state, expected, *span);
+                args.push((arg.expect(state, expected, *span), *span));
             }
             let ty = ret.as_ref().clone();
             return ExprIR {
                 data: ExprIRData::Call(CallIR {
                     expr: Box::new((name_ir, self.name.1)),
-                    args: self
-                        .args
-                        .iter()
-                        .map(|arg| (arg.0.check(state), arg.1))
-                        .collect(),
+                    args,
                 }),
                 ty,
             };

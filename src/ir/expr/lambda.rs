@@ -147,7 +147,7 @@ impl<'db> LambdaParam {
     pub fn check(&self, state: &mut CheckState<'db>, span: Span) -> LambdaParamIR<'db> {
         if let Some(ty) = &self.ty {
             let expected = ty.0.check(state);
-            let pattern = (self.pattern.0.check(state, &expected.ty), self.pattern.1);
+            let pattern = (self.pattern.0.expect(state, &expected.ty), self.pattern.1);
             LambdaParamIR {
                 pattern,
                 ty: (expected, ty.1),
@@ -157,7 +157,7 @@ impl<'db> LambdaParam {
                 .type_state
                 .new_type_var(self.pattern.1, state.file_data);
             let type_var = Ty::TypeVar { id };
-            let pattern = (self.pattern.0.check(state, &type_var), self.pattern.1);
+            let pattern = (self.pattern.0.expect(state, &type_var), self.pattern.1);
 
             LambdaParamIR {
                 pattern,

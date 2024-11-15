@@ -1,4 +1,3 @@
-
 use crate::{
     check::state::CheckState,
     ir::{common::pattern::PatternIR, expr::ExprIR, ty::TypeIR, ContainsOffset, IrNode},
@@ -27,7 +26,7 @@ impl<'db> LetStatement {
         } else {
             (self.value.0.check(state), self.value.1)
         };
-        let pattern = (self.pattern.0.check(state, &expr.0.ty), self.pattern.1);
+        let pattern = (self.pattern.0.expect(state, &expr.0.ty), self.pattern.1);
         LetIR {
             pattern,
             expr: Box::new(expr),

@@ -9,6 +9,7 @@ use crate::{
         decl::{impl_::ImplForDecl, Decl, DeclKind},
         path::ModulePath,
     },
+    item::definitions::ident::IdentDef,
     parser::common::variance::Variance,
     ty::Ty,
     util::{Span, Spanned},
@@ -200,7 +201,7 @@ impl<'db> Ty<'db> {
         name: &Spanned<String>,
         state: &mut CheckState<'db>,
         self_ty: &Ty<'db>,
-    ) -> Option<FuncTy<'db>> {
+    ) -> Option<(IdentDef<'db>, FuncTy<'db>)> {
         if let Ty::Named(Named { name: id, args }) = self {
             if let Some(DeclKind::Trait { body, generics }) =
                 state.try_get_decl_path(*id).map(|d| d.kind(state.db))
@@ -218,18 +219,18 @@ impl<'db> Ty<'db> {
                     .iter()
                     .find(|func| func.name(state.db) == name.0)
                     .map(|func| {
-                        let Ty::Function(func) =
+                        let Ty::Function(ty) =
                             func.get_ty(state).parameterize(&params).inst(state, name.1)
                         else {
                             panic!("Expected function");
                         };
-                        func
+                        (IdentDef::Decl(*func), ty)
                     });
                 if let Some(found) = found {
                     return Some(found);
                 }
             };
-            let impl_funcs = state
+            let mut impl_funcs = state
                 .project
                 .get_impls(state.db, *id)
                 .into_iter()
@@ -249,16 +250,15 @@ impl<'db> Ty<'db> {
                         if func.name(state.db) != name.0 {
                             continue;
                         }
-                        let parameterized = func.get_ty(state).parameterize(&implied);
-                        funcs.push(parameterized);
+                        let ty = func.get_ty(state).parameterize(&implied);
+                        if let Ty::Function(ty) = ty {
+                            funcs.push((IdentDef::Decl(func), ty));
+                        }
                     }
                     funcs
                 })
                 .collect::<Vec<_>>();
-            let Some(Ty::Function(func)) = impl_funcs.first() else {
-                return None;
-            };
-            Some(func.clone())
+            impl_funcs.pop()
         } else {
             None
         }

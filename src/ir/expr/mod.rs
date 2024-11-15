@@ -15,7 +15,7 @@ use crate::{
     util::{Span, Spanned},
 };
 
-use super::{common::pattern::SpannedQualifiedNameIR, ContainsOffset, IrNode};
+use super::{common::pattern::SpannedQualifiedNameIR, ContainsOffset, IrNode, IrState};
 
 pub mod block;
 pub mod call;
@@ -102,7 +102,7 @@ impl<'db> Expr {
 impl<'db> IrNode<'db> for ExprIR<'db> {
     fn at_offset(&self, offset: usize, state: &mut super::IrState<'db>) -> &dyn IrNode {
         match &self.data {
-            ExprIRData::Literal => self,
+            ExprIRData::Literal | ExprIRData::Error => self,
             ExprIRData::Field(field) => field.at_offset(offset, state),
             ExprIRData::Ident(ident) => ident.at_offset(offset, state),
             ExprIRData::CodeBlock(block) => block.at_offset(offset, state),
@@ -119,7 +119,6 @@ impl<'db> IrNode<'db> for ExprIR<'db> {
             }
             ExprIRData::Op(op) => op.at_offset(offset, state),
             ExprIRData::Lambda(lambda) => lambda.at_offset(offset, state),
-            ExprIRData::Error => self,
         }
     }
 
@@ -129,7 +128,7 @@ impl<'db> IrNode<'db> for ExprIR<'db> {
         state: &mut super::IrState<'db>,
     ) {
         match &self.data {
-            ExprIRData::Literal => {}
+            ExprIRData::Literal | ExprIRData::Error => {}
             ExprIRData::Field(field) => field.tokens(tokens, state),
             ExprIRData::Ident(ident) => ident.tokens(tokens, state),
             ExprIRData::CodeBlock(block) => block.tokens(tokens, state),
@@ -143,7 +142,10 @@ impl<'db> IrNode<'db> for ExprIR<'db> {
             }
             ExprIRData::Op(op) => op.tokens(tokens, state),
             ExprIRData::Lambda(lambda) => lambda.tokens(tokens, state),
-            ExprIRData::Error => {}
         }
+    }
+
+    fn hover(&self, _: usize, state: &mut IrState<'db>) -> Option<String> {
+        Some(self.ty.get_ir_name(state))
     }
 }

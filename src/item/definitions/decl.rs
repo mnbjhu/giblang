@@ -2,21 +2,28 @@ use async_lsp::lsp_types::{CompletionItem, CompletionItemKind};
 
 use crate::{
     check::state::CheckState,
-    db::decl::{func::Function, Decl, DeclKind},
+    db::{
+        decl::{func::Function, Decl, DeclKind},
+        input::Db,
+    },
 };
 
-impl Decl<'_> {
-    pub fn hover(self, state: &mut CheckState) -> String {
+impl<'db> Decl<'db> {
+    pub fn hover(self, state: &mut CheckState<'db>) -> String {
         let path_name = self.path(state.db).name(state.db).join("::");
-        let kind = match self.kind(state.db) {
+        let kind = self.get_kind_name(state.db);
+        format!("{kind} {path_name}")
+    }
+
+    pub fn get_kind_name(self, db: &'db dyn Db) -> &'static str {
+        match self.kind(db) {
             DeclKind::Struct { .. } => "struct",
             DeclKind::Trait { .. } => "trait",
             DeclKind::Enum { .. } => "enum",
             DeclKind::Member { .. } => "member",
             DeclKind::Function(Function { .. }) => "function",
             DeclKind::Module(_) => "module",
-        };
-        format!("{kind} {path_name}")
+        }
     }
 
     #[must_use]

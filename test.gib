@@ -22,10 +22,12 @@ trait New {
     fn new(): Self
 }
 
-fn test(): String {}
+fn test(): String {
+    "Hello"
+}
 
 impl[T] New for Box[T] {
-    fn new(): Box[T] {
+    fn new(x: T): Box[T] {
         Box(x)
     }
 }
@@ -148,8 +150,8 @@ impl Eq for Basic {
 impl[T] Option[T] {
     fn Self.unwrap(): T {
         match self {
-            Option::Some(res) => res,
-            Option::None => panic("Unwrapped None")
+            Option::None => panic("Unwrapped None"),
+            Option::Some(res) => res
         }
     }
 }

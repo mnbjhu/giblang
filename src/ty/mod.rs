@@ -5,6 +5,7 @@ use crate::{db::path::ModulePath, parser::common::variance::Variance, util::Span
 pub mod func;
 pub mod imply;
 pub mod inst;
+pub mod ir_name;
 pub mod is_instance;
 pub mod is_instance_new;
 pub mod name;
@@ -27,7 +28,6 @@ pub enum Ty<'db> {
     Sum(Vec<Ty<'db>>),
     Nothing,
 }
-
 
 #[derive(Clone, Debug, Eq, PartialEq, Update, Hash)]
 pub struct Named<'db> {

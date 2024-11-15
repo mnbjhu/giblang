@@ -3,7 +3,8 @@ use std::collections::HashMap;
 use crate::{
     check::state::CheckState,
     db::decl::{struct_::StructDecl, Decl, DeclKind},
-    ir::expr::ident::check_ident,
+    ir::expr::{ident::check_ident, ExprIRData},
+    item::definitions::ident::IdentDef,
     util::{Span, Spanned},
 };
 
@@ -33,7 +34,7 @@ impl<'db> Ty<'db> {
         &self,
         name: &Spanned<String>,
         state: &mut CheckState<'db>,
-    ) -> Option<FuncTy<'db>> {
+    ) -> Option<(IdentDef<'db>, FuncTy<'db>)> {
         let mut funcs = get_sub_tys(self, state, name.1)
             .iter()
             .filter_map(|ty| ty.get_func(name, state, self))
@@ -43,12 +44,22 @@ impl<'db> Ty<'db> {
             state.simple_error(&format!("Ambiguous call to function {}", &name.0), name.1);
             None
         } else if funcs.len() == 1 {
-            let func = funcs[0].inst(&mut HashMap::new(), state, name.1);
+            let func = (
+                funcs[0].0.clone(),
+                funcs[0].1.inst(&mut HashMap::new(), state, name.1),
+            );
             Some(func)
-        } else if let Ty::Function(func_ty) = check_ident(&[name.clone()], state).ty {
-            Some(func_ty)
         } else {
-            None
+            let ident = check_ident(&[name.clone()], state);
+            let ExprIRData::Ident(segs) = ident.data else {
+                panic!("Expected ident...")
+            };
+            let def = segs.last().unwrap().0.clone();
+            if let Ty::Function(func_ty) = ident.ty {
+                Some((def, func_ty))
+            } else {
+                None
+            }
         }
     }
 
@@ -57,7 +68,7 @@ impl<'db> Ty<'db> {
         name: &Spanned<String>,
         state: &mut CheckState<'db>,
         args: &Vec<Spanned<Ty<'db>>>,
-    ) -> Vec<FuncTy<'db>> {
+    ) -> Vec<(IdentDef<'db>, FuncTy<'db>)> {
         let mut funcs = get_sub_tys(self, state, name.1)
             .iter()
             .filter_map(|ty| ty.get_func(name, state, self))
@@ -68,14 +79,14 @@ impl<'db> Ty<'db> {
                 break;
             }
             if funcs.iter().any(|func| {
-                if let Some(expected) = func.args.get(index) {
+                if let Some(expected) = func.1.args.get(index) {
                     arg.0.check_is_instance_of(expected, state, arg.1)
                 } else {
                     false
                 }
             }) {
                 funcs.retain(|func| {
-                    if let Some(expected) = func.args.get(index) {
+                    if let Some(expected) = func.1.args.get(index) {
                         arg.0.check_is_instance_of(expected, state, arg.1)
                     } else {
                         false

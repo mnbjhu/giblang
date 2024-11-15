@@ -155,7 +155,7 @@ impl<'db> IrNode<'db> for SpannedQualifiedNameIR<'db> {
     fn hover(&self, offset: usize, state: &mut IrState<'db>) -> Option<String> {
         let seg = self.iter().find(|(_, span)| span.contains_offset(offset));
         if let Some((def, _)) = seg {
-            def.hover(state)
+            Some(def.hover(state))
         } else {
             None
         }
@@ -163,12 +163,16 @@ impl<'db> IrNode<'db> for SpannedQualifiedNameIR<'db> {
 }
 
 impl<'db> IdentDef<'db> {
-    pub fn hover(&self, state: &mut IrState<'db>) -> Option<String> {
+    pub fn hover(&self, state: &mut IrState<'db>) -> String {
         match self {
-            IdentDef::Variable(var) => Some(format!("Variable: {}", var.name)),
-            IdentDef::Decl(decl) => Some(format!("Declaration: {}", decl.name(state.db))),
-            IdentDef::Generic(generic) => Some(format!("Generic: {}", generic.name.0)),
-            IdentDef::Unresolved => None,
+            IdentDef::Variable(var) => format!("{}: {}", var.name, var.ty.get_ir_name(state)),
+            IdentDef::Decl(decl) => {
+                format!("{} {}", decl.get_kind_name(state.db), decl.name(state.db))
+            }
+            IdentDef::Generic(generic) => {
+                format!("{}: {}", generic.name.0, generic.super_.get_ir_name(state))
+            }
+            IdentDef::Unresolved => "Unresolved".to_string(),
         }
     }
 }

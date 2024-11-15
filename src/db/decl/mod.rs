@@ -11,7 +11,11 @@ pub mod impl_;
 pub mod struct_;
 
 use crate::{
-    check::{err::unresolved::Unresolved, state::CheckState, TokenKind},
+    check::{
+        err::{unresolved::Unresolved, CheckError},
+        state::CheckState,
+        TokenKind,
+    },
     item::definitions::ident::IdentDef,
     ty::{sub_tys::get_sub_tys, FuncTy, Generic, Named, Ty},
     util::{Span, Spanned},
@@ -203,6 +207,28 @@ impl<'db> Decl<'db> {
                 found.push((IdentDef::Decl(decl), name.1));
                 current = decl;
             } else {
+                return found;
+            }
+        }
+        found
+    }
+
+    pub fn get_path_ir_with_error(
+        self,
+        state: &mut CheckState<'db>,
+        path: &[Spanned<String>],
+    ) -> Vec<Spanned<IdentDef<'db>>> {
+        let mut current = self;
+        let mut found = vec![];
+        for name in path {
+            if let Some(decl) = current.get(state.db, &name.0) {
+                found.push((IdentDef::Decl(decl), name.1));
+                current = decl;
+            } else {
+                state.error(CheckError::Unresolved(Unresolved {
+                    name: name.clone(),
+                    file: state.file_data,
+                }));
                 return found;
             }
         }
