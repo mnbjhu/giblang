@@ -1,4 +1,4 @@
-use std::{collections::HashMap, ops::ControlFlow};
+use std::collections::HashMap;
 
 use crate::{
     check::{
@@ -9,10 +9,8 @@ use crate::{
         err::Diagnostic,
         input::{Db, SourceDatabase, Vfs, VfsInner},
     },
-    item::AstItem,
     parser::{parse_file, Ast},
     run::state::{FuncDef, ProgramState},
-    util::Span,
 };
 
 use super::build::print_error;
@@ -62,7 +60,7 @@ impl<'db> Vfs {
 
 impl<'db> Ast<'db> {
     pub fn build(self, db: &'db dyn Db, state: &mut CheckState<'db>) -> HashMap<u32, FuncDef> {
-        let mut iter = BuildIter::default();
+        let iter = BuildIter::default();
         todo!();
         // iter.builder.funcs.into_iter().collect()
     }

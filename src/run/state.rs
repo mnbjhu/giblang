@@ -1,4 +1,4 @@
-use std::{collections::HashMap, ops::ControlFlow, usize};
+use std::{collections::HashMap, usize};
 
 use broom::{Handle, Heap};
 

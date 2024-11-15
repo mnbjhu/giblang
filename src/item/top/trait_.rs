@@ -1,11 +1,10 @@
 use async_lsp::lsp_types::{DocumentSymbol, SymbolKind};
 
 use crate::{
-    check::{state::CheckState, SemanticToken, TokenKind},
+    check::state::CheckState,
     item::AstItem,
     parser::top::trait_::Trait,
     range::span_to_range_str,
-    ty::Ty,
     util::Span,
 };
 

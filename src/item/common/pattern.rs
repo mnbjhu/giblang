@@ -1,10 +1,7 @@
-use std::collections::HashMap;
 
 use crate::{
-    check::{build_state::BuildState, state::CheckState, SemanticToken, TokenKind},
     item::AstItem,
     parser::common::pattern::{Pattern, StructFieldPattern},
-    ty::Ty,
 };
 
 use super::generics::brackets;

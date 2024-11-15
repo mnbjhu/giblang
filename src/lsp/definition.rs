@@ -1,12 +1,12 @@
 use std::future::Future;
 
-use async_lsp::lsp_types::{GotoDefinitionParams, GotoDefinitionResponse, Location, Url};
+use async_lsp::lsp_types::{GotoDefinitionParams, GotoDefinitionResponse};
 
 use crate::{
     check::{resolve_project, state::CheckState},
     db::input::Db as _,
     parser::parse_file,
-    range::{position_to_offset, span_to_range_str},
+    range::position_to_offset,
 };
 
 use super::ServerState;

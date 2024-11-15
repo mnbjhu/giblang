@@ -3,7 +3,7 @@ use crate::{
     ir::{common::pattern::SpannedQualifiedNameIR, ContainsOffset, IrNode, IrState},
     parser::common::type_::NamedType,
     ty::{Named, Ty},
-    util::{Span, Spanned},
+    util::Spanned,
 };
 
 use super::{TypeIR, TypeIRData};

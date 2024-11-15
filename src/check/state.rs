@@ -13,7 +13,7 @@ use crate::{
     item::definitions::ident::IdentDef,
     parser::{
         common::variance::Variance,
-        expr::qualified_name::{QualifiedName, SpannedQualifiedName},
+        expr::qualified_name::SpannedQualifiedName,
         parse_file,
     },
     ty::{Generic, Ty},

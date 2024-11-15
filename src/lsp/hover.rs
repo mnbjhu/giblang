@@ -1,15 +1,11 @@
 use std::future::Future;
 
-use async_lsp::{
-    lsp_types::{Hover, HoverContents, MarkedString, MessageType, ShowMessageParams},
-    LanguageClient,
-};
+use async_lsp::lsp_types::{Hover, HoverContents, MarkedString};
 
 use crate::{
-    check::{check_file, resolve_project, state::CheckState},
+    check::{check_file, resolve_project},
     db::input::Db as _,
     ir::{IrNode, IrState},
-    parser::parse_file,
     range::position_to_offset,
 };
 

@@ -5,12 +5,10 @@ use async_lsp::lsp_types::{CompletionItem, CompletionItemKind};
 use crate::{
     check::{
         err::unresolved::Unresolved,
-        state::{CheckState, VarDecl},
-        SemanticToken, TokenKind,
+        state::{CheckState, VarDecl}, TokenKind,
     },
     item::{definitions::ident::IdentDef, AstItem},
     parser::expr::qualified_name::SpannedQualifiedName,
-    run::bytecode::ByteCode,
     ty::Ty,
     util::{Span, Spanned},
 };

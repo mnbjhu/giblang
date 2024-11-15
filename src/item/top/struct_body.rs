@@ -1,4 +1,3 @@
-use std::ops::ControlFlow;
 
 use async_lsp::lsp_types::DocumentSymbol;
 

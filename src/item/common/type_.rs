@@ -1,5 +1,5 @@
 use crate::item::AstItem;
-use crate::{parser::common::type_::Type, util::Span};
+use crate::parser::common::type_::Type;
 
 use super::generics::{braces, brackets};
 

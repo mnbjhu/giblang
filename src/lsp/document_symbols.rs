@@ -2,11 +2,6 @@ use std::future::Future;
 
 use async_lsp::lsp_types::DocumentSymbolResponse;
 
-use crate::{
-    check::{resolve_project, state::CheckState},
-    db::input::Db,
-    parser::parse_file,
-};
 
 use super::ServerState;
 
@@ -14,7 +9,7 @@ pub fn get_document_symbols(
     st: &mut ServerState,
     msg: async_lsp::lsp_types::DocumentSymbolParams,
 ) -> impl Future<Output = Result<Option<DocumentSymbolResponse>, async_lsp::ResponseError>> {
-    let mut db = st.db.clone();
+    let db = st.db.clone();
     async move {
         // let path = msg.text_document.uri.to_file_path().unwrap();
         // let file = db.input(&path);

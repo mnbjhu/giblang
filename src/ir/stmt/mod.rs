@@ -1,5 +1,4 @@
 use let_::LetIR;
-use salsa::Update;
 
 use crate::{
     check::{state::CheckState, SemanticToken},

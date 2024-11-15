@@ -1,10 +1,7 @@
-use std::collections::HashMap;
 
 use crate::{
-    check::{state::CheckState, SemanticToken, TokenKind},
     item::AstItem,
     parser::top::struct_field::StructField,
-    ty::Ty,
 };
 
 impl AstItem for StructField {

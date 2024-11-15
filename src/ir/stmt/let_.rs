@@ -1,4 +1,3 @@
-use salsa::Update;
 
 use crate::{
     check::state::CheckState,

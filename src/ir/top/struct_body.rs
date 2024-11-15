@@ -1,8 +1,7 @@
 use crate::{
     check::state::CheckState,
     ir::{ty::TypeIR, ContainsOffset, IrNode},
-    item::AstItem,
-    parser::top::{struct_::Struct, struct_body::StructBody},
+    parser::top::struct_body::StructBody,
     util::Spanned,
 };
 

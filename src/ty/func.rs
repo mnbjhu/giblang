@@ -1,4 +1,4 @@
-use std::{collections::HashMap, ops::ControlFlow};
+use std::collections::HashMap;
 
 use crate::{
     check::state::CheckState,

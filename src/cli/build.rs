@@ -7,7 +7,6 @@ use ariadne::{Label, Report, ReportKind};
 use crate::check::{check_project, check_vfs, resolve_project};
 use crate::db::err::Diagnostic;
 use crate::db::input::{Db, SourceDatabase};
-use crate::run::state::ProgramState;
 
 pub fn build() {
     let pwd = std::env::current_dir().unwrap();

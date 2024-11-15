@@ -1,10 +1,9 @@
-use std::{collections::HashMap, vec};
+use std::vec;
 
 use crate::{
     db::{
         err::{Diagnostic, Level},
         input::{Db, SourceFile},
-        path::ModulePath,
     },
     lexer::{
         keyword::Keyword,

@@ -1,8 +1,6 @@
-use std::{collections::HashMap, ops::ControlFlow, ptr::eq};
+use std::collections::HashMap;
 
 use salsa::Update;
-use state::CheckState;
-use tracing::error;
 
 use crate::{
     db::{
@@ -12,7 +10,7 @@ use crate::{
     },
     ir::FileIR,
     item::AstItem,
-    parser::{parse_file, Ast},
+    parser::parse_file,
     resolve::{resolve_impls_vfs, resolve_vfs},
     ty::{Named, Ty},
     util::Span,
