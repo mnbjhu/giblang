@@ -1,6 +1,11 @@
+use salsa::plumbing::AsId;
+
 use crate::{
-    check::SemanticToken,
+    check::{build_state::BuildState, SemanticToken},
+    db::decl::DeclKind,
     ir::{ContainsOffset, IrNode},
+    item::definitions::ident::IdentDef,
+    run::bytecode::ByteCode,
     util::Spanned,
 };
 
@@ -130,5 +135,33 @@ impl<'db> IrNode<'db> for CallIR<'db> {
         for arg in &self.args {
             arg.0.tokens(tokens, state);
         }
+    }
+}
+
+impl<'db> CallIR<'db> {
+    pub fn build(&self, state: &mut BuildState<'db>) -> Vec<ByteCode> {
+        let mut code = vec![];
+        for arg in &self.args {
+            code.extend(arg.0.build(state));
+        }
+        match &self.expr.0.data {
+            ExprIRData::Ident(ident) => match ident.last().unwrap().0 {
+                IdentDef::Variable(_) => todo!(),
+                IdentDef::Generic(_) => todo!(),
+                IdentDef::Decl(decl) => match decl.kind(state.db) {
+                    DeclKind::Function(_) => code.push(ByteCode::Call(decl.as_id().as_u32())),
+                    DeclKind::Struct { body, .. } | DeclKind::Member { body, .. } => {
+                        code.push(ByteCode::Construct {
+                            id: decl.as_id().as_u32(),
+                            len: body.arg_count(),
+                        });
+                    }
+                    _ => todo!(),
+                },
+                IdentDef::Unresolved => todo!(),
+            },
+            _ => todo!(),
+        };
+        code
     }
 }

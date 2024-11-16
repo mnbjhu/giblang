@@ -1,18 +1,22 @@
 use std::collections::HashMap;
 
 use crate::{
-    db::{decl::Decl, input::Db},
+    db::{
+        decl::Decl,
+        input::{Db, SourceFile},
+    },
     ty::{Generic, Ty},
 };
 
 #[salsa::tracked]
-#[derive()]
 pub struct ImplForDecl<'db> {
+    #[id]
+    pub id: u32,
+    pub file: SourceFile,
     pub generics: Vec<Generic<'db>>,
-    #[id]
     pub from_ty: Ty<'db>,
-    #[id]
     pub to_ty: Option<Ty<'db>>,
+    #[return_ref]
     pub functions: Vec<Decl<'db>>,
 }
 

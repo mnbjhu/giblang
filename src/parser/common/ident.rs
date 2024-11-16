@@ -10,7 +10,7 @@ pub fn ident_parser<'tokens, 'src: 'tokens, 'db: 'tokens>() -> impl Parser<
     'tokens,
     ParserInput<'tokens, 'src>,
     String,
-    extra::Full<Rich<'tokens, Token, Span>, (), ()>,
+    extra::Full<Rich<'tokens, Token, Span>, u32, ()>,
 > + Clone
        + 'tokens {
     select! {
@@ -23,7 +23,7 @@ pub fn spanned_ident_parser<'tokens, 'src: 'tokens, 'db: 'tokens>() -> impl Pars
     'tokens,
     ParserInput<'tokens, 'src>,
     Spanned<String>,
-    extra::Full<Rich<'tokens, Token, Span>, (), ()>,
+    extra::Full<Rich<'tokens, Token, Span>, u32, ()>,
 > + Clone
        + 'tokens {
     ident_parser().map_with(|i, e| (i, e.span()))

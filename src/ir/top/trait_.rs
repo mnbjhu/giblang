@@ -20,10 +20,10 @@ pub struct TraitIR<'db> {
 impl<'db> Trait {
     pub fn check(&self, state: &mut CheckState<'db>) -> TraitIR<'db> {
         let generics = (self.generics.0.check(state), self.generics.1);
-        let id = state.local_id(self.name.0.to_string());
+        let decl = state.current_decl();
         state.add_self_ty(
             &Ty::Named(Named {
-                name: id,
+                name: decl.path(state.db),
                 args: generics.0 .0.iter().map(|gen| gen.0.get_ty()).collect(),
             }),
             self.name.1,

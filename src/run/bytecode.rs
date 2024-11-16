@@ -1,7 +1,5 @@
 use std::{collections::HashMap, fmt::Display};
 
-use chumsky::container::Container;
-
 use crate::{lexer::literal::Literal, run::DebugText};
 
 use super::{
@@ -13,17 +11,21 @@ use super::{
 #[derive(Clone, Debug, PartialEq)]
 pub enum ByteCode {
     Push(Literal),
+    Copy,
     Pop,
     Print,
     Panic,
     Construct { id: u32, len: u32 },
     Call(u32),
     Return,
+    Index(u32),
     NewLocal,
     GetLocal(u32),
     SetLocal(u32),
     Param(u32),
     Goto(u32),
+    Jmp(i32),
+    Id,
     Add,
     Mul,
     Sub,
@@ -31,6 +33,7 @@ pub enum ByteCode {
     And,
     Not,
     Eq,
+    Match(u32),
 }
 
 #[allow(clippy::too_many_lines)]
@@ -43,6 +46,30 @@ impl<'code> ProgramState<'code> {
             }
             ByteCode::Pop => {
                 self.pop();
+            }
+            ByteCode::Id => {
+                let refr = self.peak();
+                let obj = self.heap.get(refr).unwrap();
+                if let Object::Vec(id, _) = obj {
+                    let res = self.heap.insert(Object::Int(*id as i32));
+                    self.push(res.into());
+                } else {
+                    panic!("Expected vec")
+                }
+            }
+            ByteCode::Match(expected) => {
+                let refr = self.peak();
+                let obj = self.heap.get(refr).unwrap();
+                if let Object::Vec(id, _) = obj {
+                    let res = self.heap.insert(Object::Bool(id == expected));
+                    self.push(res.into());
+                } else {
+                    panic!("Expected vec")
+                }
+            }
+            ByteCode::Copy => {
+                let refr = self.peak();
+                self.push(refr);
             }
             ByteCode::Print => {
                 print!("{}", self.pop().get_text(self));
@@ -95,6 +122,16 @@ impl<'code> ProgramState<'code> {
             ByteCode::SetLocal(id) => {
                 let refr = self.pop();
                 self.set_local(*id, refr);
+            }
+            ByteCode::Jmp(diff) => {
+                let cond = self.pop();
+                if let Object::Bool(cond) = self.heap.get(cond).unwrap() {
+                    if *cond {
+                        self.scope_mut().index = (self.scope().index as i32 + diff) as usize;
+                    }
+                } else {
+                    panic!("Expected condition to be a boolean")
+                }
             }
             ByteCode::Goto(line) => {
                 let cond = self.pop();
@@ -207,6 +244,16 @@ impl<'code> ProgramState<'code> {
                     }
                 }
             }
+            ByteCode::Index(index) => {
+                let vec = self.pop();
+                let data = self.heap.get(vec).unwrap();
+                if let Object::Vec(_, data) = data {
+                    let res = data[*index as usize];
+                    self.push(res);
+                } else {
+                    panic!("Cannot index non-vec")
+                }
+            }
         };
     }
 }
@@ -219,6 +266,7 @@ impl Display for ByteCode {
             ByteCode::Print => write!(f, "print"),
             ByteCode::Panic => write!(f, "panic"),
             ByteCode::Construct { id, len } => write!(f, "construct {id}, {len}"),
+            ByteCode::Index(index) => write!(f, "index {index}"),
             ByteCode::Call(id) => write!(f, "call {id}"),
             ByteCode::Return => write!(f, "return"),
             ByteCode::NewLocal => write!(f, "new"),
@@ -233,6 +281,10 @@ impl Display for ByteCode {
             ByteCode::And => write!(f, "and"),
             ByteCode::Not => write!(f, "not"),
             ByteCode::Eq => write!(f, "eq"),
+            ByteCode::Copy => write!(f, "copy"),
+            ByteCode::Jmp(diff) => write!(f, "jmp {diff}"),
+            ByteCode::Id => write!(f, "id"),
+            ByteCode::Match(id) => write!(f, "match {id}"),
         }
     }
 }

@@ -1,5 +1,6 @@
 use block::{check_block, CodeBlockIR};
 use call::CallIR;
+use chumsky::container::Container;
 use field::FieldIR;
 use ident::{check_ident, expect_ident};
 use lambda::LambdaIR;
@@ -9,8 +10,11 @@ use op::OpIR;
 use tuple::{check_tuple, expect_tuple};
 
 use crate::{
-    check::state::CheckState,
+    check::{build_state::BuildState, state::CheckState},
+    item::definitions::ident::IdentDef,
+    lexer::literal::Literal,
     parser::expr::Expr,
+    run::bytecode::ByteCode,
     ty::Ty,
     util::{Span, Spanned},
 };
@@ -38,7 +42,7 @@ pub struct ExprIR<'db> {
 
 #[derive(Debug, PartialEq, Clone, Eq)]
 pub enum ExprIRData<'db> {
-    Literal,
+    Literal(Literal),
     Field(FieldIR<'db>),
     Ident(SpannedQualifiedNameIR<'db>),
     CodeBlock(CodeBlockIR<'db>),
@@ -55,7 +59,7 @@ impl<'db> Expr {
     pub fn check(&self, state: &mut CheckState<'db>) -> ExprIR<'db> {
         match self {
             Expr::Literal(lit) => ExprIR {
-                data: ExprIRData::Literal,
+                data: ExprIRData::Literal(lit.clone()),
                 ty: lit.to_ty(state.db),
             },
             Expr::Field(field) => field.check(state),
@@ -78,7 +82,7 @@ impl<'db> Expr {
     pub fn expect(&self, state: &mut CheckState<'db>, ty: &Ty<'db>, span: Span) -> ExprIR<'db> {
         match self {
             Expr::Literal(lit) => ExprIR {
-                data: ExprIRData::Literal,
+                data: ExprIRData::Literal(lit.clone()),
                 ty: lit.to_ty(state.db),
             },
             Expr::Field(field) => field.expect(state, ty, span),
@@ -102,7 +106,7 @@ impl<'db> Expr {
 impl<'db> IrNode<'db> for ExprIR<'db> {
     fn at_offset(&self, offset: usize, state: &mut super::IrState<'db>) -> &dyn IrNode {
         match &self.data {
-            ExprIRData::Literal | ExprIRData::Error => self,
+            ExprIRData::Literal(_) | ExprIRData::Error => self,
             ExprIRData::Field(field) => field.at_offset(offset, state),
             ExprIRData::Ident(ident) => ident.at_offset(offset, state),
             ExprIRData::CodeBlock(block) => block.at_offset(offset, state),
@@ -128,7 +132,7 @@ impl<'db> IrNode<'db> for ExprIR<'db> {
         state: &mut super::IrState<'db>,
     ) {
         match &self.data {
-            ExprIRData::Literal | ExprIRData::Error => {}
+            ExprIRData::Literal(_) | ExprIRData::Error => {}
             ExprIRData::Field(field) => field.tokens(tokens, state),
             ExprIRData::Ident(ident) => ident.tokens(tokens, state),
             ExprIRData::CodeBlock(block) => block.tokens(tokens, state),
@@ -147,5 +151,49 @@ impl<'db> IrNode<'db> for ExprIR<'db> {
 
     fn hover(&self, _: usize, state: &mut IrState<'db>) -> Option<String> {
         Some(self.ty.get_ir_name(state))
+    }
+}
+
+impl<'db> ExprIR<'db> {
+    pub fn build(&self, state: &mut BuildState<'db>) -> Vec<ByteCode> {
+        match &self.data {
+            ExprIRData::Literal(lit) => vec![ByteCode::Push(lit.clone())],
+            ExprIRData::Field(field) => field.build(state),
+            ExprIRData::Ident(ident) => match &ident.last().unwrap().0 {
+                IdentDef::Variable(var) => {
+                    let var = state.get_var(&var.name).unwrap();
+                    vec![ByteCode::GetLocal(var)]
+                }
+                IdentDef::Generic(_) => todo!(),
+                IdentDef::Decl(_) => todo!(),
+                IdentDef::Unresolved => unreachable!(),
+            },
+            ExprIRData::CodeBlock(CodeBlockIR { stmts, .. }) => {
+                state.enter_scope();
+                let code = stmts
+                    .iter()
+                    .flat_map(|(stmt, _)| stmt.build(state))
+                    .collect();
+                state.exit_scope();
+                code
+            }
+            ExprIRData::Call(call) => call.build(state),
+            ExprIRData::MemberCall(member_call) => todo!(),
+            ExprIRData::Match(match_) => todo!(),
+            ExprIRData::Tuple(tuple) => {
+                let mut code = tuple
+                    .iter()
+                    .flat_map(|e| e.0.build(state))
+                    .collect::<Vec<_>>();
+                code.push(ByteCode::Construct {
+                    id: 0,
+                    len: code.len() as u32,
+                });
+                code
+            }
+            ExprIRData::Op(op) => op.build(state),
+            ExprIRData::Lambda(lambda) => todo!(),
+            ExprIRData::Error => unreachable!(),
+        }
     }
 }

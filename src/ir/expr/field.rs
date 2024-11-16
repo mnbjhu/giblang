@@ -1,10 +1,11 @@
 use std::collections::HashMap;
 
 use crate::{
-    check::{state::CheckState, SemanticToken, TokenKind},
-    db::decl::{struct_::StructDecl, DeclKind},
+    check::{build_state::BuildState, state::CheckState, SemanticToken, TokenKind},
+    db::decl::{struct_::StructDecl, Decl, DeclKind},
     ir::{ContainsOffset, IrNode, IrState},
     parser::expr::field::Field,
+    run::bytecode::ByteCode,
     ty::{Named, Ty},
     util::{Span, Spanned},
 };
@@ -15,6 +16,7 @@ use super::{ExprIR, ExprIRData};
 pub struct FieldIR<'db> {
     pub name: Spanned<String>,
     pub struct_: Box<Spanned<ExprIR<'db>>>,
+    pub decl: Option<Decl<'db>>,
 }
 
 impl<'db> Field {
@@ -25,6 +27,7 @@ impl<'db> Field {
                 data: ExprIRData::Field(FieldIR {
                     name: self.name.clone(),
                     struct_: Box::new((struct_ty, self.struct_.1)),
+                    decl: None,
                 }),
                 ty: Ty::Unknown,
             };
@@ -47,6 +50,7 @@ impl<'db> Field {
                                     data: ExprIRData::Field(FieldIR {
                                         name: self.name.clone(),
                                         struct_: Box::new((struct_ty, self.struct_.1)),
+                                        decl: Some(decl),
                                     }),
                                     ty,
                                 };
@@ -73,6 +77,7 @@ impl<'db> Field {
                                     data: ExprIRData::Field(FieldIR {
                                         name: self.name.clone(),
                                         struct_: Box::new((struct_ty, self.struct_.1)),
+                                        decl: Some(decl),
                                     }),
                                     ty,
                                 };
@@ -98,6 +103,7 @@ impl<'db> Field {
             data: ExprIRData::Field(FieldIR {
                 name: self.name.clone(),
                 struct_: Box::new((struct_ty, self.struct_.1)),
+                decl: None,
             }),
             ty: Ty::Unknown,
         }
@@ -128,5 +134,27 @@ impl<'db> IrNode<'db> for FieldIR<'db> {
             kind: TokenKind::Property,
             span: self.name.1,
         });
+    }
+}
+
+impl<'db> FieldIR<'db> {
+    pub fn build(&self, state: &mut BuildState<'db>) -> Vec<ByteCode> {
+        let mut code = self.struct_.0.build(state);
+        let DeclKind::Struct { body, .. } = self.decl.unwrap().kind(state.db) else {
+            panic!("Expected struct")
+        };
+        match body {
+            StructDecl::Fields(fields) => {
+                let mut field = fields
+                    .iter()
+                    .position(|field| field.0 == self.name.0)
+                    .unwrap();
+                field = fields.len() - field - 1;
+                code.push(ByteCode::Index(field as u32));
+            }
+            StructDecl::Tuple(_) => todo!(),
+            StructDecl::None => panic!("A unit struct has no fields"),
+        }
+        code
     }
 }

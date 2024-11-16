@@ -1,7 +1,9 @@
 use crate::{
-    check::state::CheckState,
+    check::{build_state::BuildState, state::CheckState},
+    db::input::Db,
     ir::{common::pattern::PatternIR, expr::ExprIR, ty::TypeIR, ContainsOffset, IrNode},
     parser::stmt::let_::LetStatement,
+    run::bytecode::ByteCode,
     util::Spanned,
 };
 #[derive(Debug, PartialEq, Clone, Eq)]
@@ -61,5 +63,14 @@ impl<'db> IrNode<'db> for LetIR<'db> {
             ty.0.tokens(tokens, state);
         }
         self.expr.0.tokens(tokens, state);
+    }
+}
+
+impl<'db> LetIR<'db> {
+    pub fn build(&self, state: &mut BuildState<'db>) -> Vec<ByteCode> {
+        let mut code = vec![];
+        code.extend(self.expr.0.build(state));
+        code.extend(self.pattern.0.build(state));
+        code
     }
 }

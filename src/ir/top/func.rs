@@ -1,7 +1,6 @@
-use chumsky::container::Container;
-
 use crate::{
-    check::{state::CheckState, SemanticToken, TokenKind},
+    check::{build_state::BuildState, state::CheckState, SemanticToken, TokenKind},
+    db::decl::Decl,
     ir::{
         common::generic_args::GenericArgsIR,
         expr::{
@@ -12,9 +11,11 @@ use crate::{
         ContainsOffset, IrNode, IrState,
     },
     parser::top::func::Func,
+    run::{bytecode::ByteCode, state::FuncDef},
     ty::Ty,
     util::Spanned,
 };
+use salsa::plumbing::AsId;
 
 use super::arg::FunctionArgIR;
 
@@ -26,11 +27,12 @@ pub struct FuncIR<'db> {
     pub generics: Spanned<GenericArgsIR<'db>>,
     pub ret: Option<Spanned<TypeIR<'db>>>,
     pub body: CodeBlockIR<'db>,
+    pub decl: Decl<'db>,
 }
 
 impl<'db> Func {
     pub fn check(&self, state: &mut CheckState<'db>, allow_empty: bool) -> FuncIR<'db> {
-        state.path.push(self.name.0.to_string());
+        let decl = state.current_decl();
         let generics = (self.generics.0.check(state), self.generics.1);
         let receiver = self.receiver.as_ref().map(|(rec, span)| {
             let ir = rec.check(state);
@@ -64,7 +66,6 @@ impl<'db> Func {
         else {
             panic!("Expected a block")
         };
-        state.path.pop();
         FuncIR {
             receiver,
             name: self.name.clone(),
@@ -72,6 +73,7 @@ impl<'db> Func {
             generics,
             ret,
             body,
+            decl,
         }
     }
 }
@@ -120,5 +122,41 @@ impl<'db> IrNode<'db> for FuncIR<'db> {
             ret.0.tokens(tokens, state);
         }
         self.body.tokens(tokens, state);
+    }
+}
+
+impl<'db> FuncIR<'db> {
+    pub fn build(&self, state: &mut BuildState<'db>) -> (u32, FuncDef) {
+        state.clear();
+        for param in &self.args {
+            state.add_param(param.0.name.0.clone());
+        }
+        let id = if self.name.0 == "main" {
+            0
+        } else {
+            self.decl.as_id().as_u32()
+        };
+        let path = self.decl.path(state.db).name(state.db);
+        let mut body = if path[0] == "std" {
+            match path[1].as_str() {
+                "print" => vec![ByteCode::Param(0), ByteCode::Print],
+                "panic" => vec![ByteCode::Param(0), ByteCode::Panic],
+                _ => vec![],
+            }
+        } else {
+            self.body
+                .stmts
+                .iter()
+                .flat_map(|(stmt, _)| stmt.build(state))
+                .collect()
+        };
+        body.push(ByteCode::Return);
+        (
+            id,
+            FuncDef {
+                args: self.args.len() as u32,
+                body,
+            },
+        )
     }
 }

@@ -1,5 +1,3 @@
-use chumsky::container::Container;
-
 use crate::{
     check::{state::CheckState, SemanticToken, TokenKind},
     ir::{ContainsOffset, IrNode},

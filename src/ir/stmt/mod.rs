@@ -1,8 +1,9 @@
 use let_::LetIR;
 
 use crate::{
-    check::{state::CheckState, SemanticToken},
+    check::{build_state::BuildState, state::CheckState, SemanticToken},
     parser::stmt::Stmt,
+    run::bytecode::ByteCode,
     ty::Ty,
     util::Span,
 };
@@ -73,6 +74,15 @@ impl<'db> IrNode<'db> for StmtIR<'db> {
         match self {
             StmtIR::Expr(e) => e.tokens(tokens, state),
             StmtIR::Let(l) => l.tokens(tokens, state),
+        }
+    }
+}
+
+impl<'db> StmtIR<'db> {
+    pub fn build(&self, state: &mut BuildState<'db>) -> Vec<ByteCode> {
+        match self {
+            StmtIR::Expr(e) => e.build(state),
+            StmtIR::Let(l) => l.build(state),
         }
     }
 }

@@ -5,8 +5,10 @@ use struct_::StructIR;
 use trait_::TraitIR;
 
 use crate::{
-    check::{err::CheckError, state::CheckState},
+    check::{build_state::BuildState, err::CheckError, state::CheckState},
+    db::input::Db,
     parser::top::Top,
+    run::state::FuncDef,
 };
 
 use super::{common::pattern::SpannedQualifiedNameIR, IrNode, IrState};
@@ -34,6 +36,10 @@ pub enum TopIR<'db> {
 impl<'db> Top {
     pub fn check(&self, state: &mut CheckState<'db>) -> TopIR<'db> {
         state.enter_scope();
+        let name = self.get_name();
+        if let Some(name) = name {
+            state.enter_decl(name);
+        }
         let ir = match &self {
             Top::Use(u) => {
                 let name = state.get_ident_ir(u);
@@ -49,7 +55,10 @@ impl<'db> Top {
             Top::Func(f) => TopIR::Func(f.check(state, false)),
             Top::Impl(i) => TopIR::Impl(i.check(state)),
         };
-        state.exit_scope();
+        if name.is_some() {
+            state.exit_decl();
+        }
+        let _ = state.exit_scope();
         ir
     }
 }
@@ -74,6 +83,16 @@ impl<'db> IrNode<'db> for TopIR<'db> {
             TopIR::Trait(t) => t.tokens(tokens, state),
             TopIR::Impl(i) => i.tokens(tokens, state),
             TopIR::Use(u) => u.tokens(tokens, state),
+        }
+    }
+}
+
+impl<'db> TopIR<'db> {
+    pub fn build(&self, state: &mut BuildState<'db>) -> Option<(u32, FuncDef)> {
+        // TODO: Add constructors for other types
+        match self {
+            TopIR::Func(f) => Some(f.build(state)),
+            _ => None,
         }
     }
 }

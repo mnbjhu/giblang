@@ -13,6 +13,14 @@ impl Impl {
             functions.push(decl);
             state.exit_scope();
         }
-        ImplForDecl::new(state.db, generics, from, to, functions)
+        ImplForDecl::new(
+            state.db,
+            self.id,
+            state.file_data,
+            generics,
+            from,
+            to,
+            functions,
+        )
     }
 }

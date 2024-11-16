@@ -60,6 +60,14 @@ impl<'code> ProgramState<'code> {
         }
     }
 
+    pub fn peak(&self) -> Handle<Object> {
+        if let Some(found) = self.scope().stack.last() {
+            *found
+        } else {
+            panic!("Stack underflow: {}", self.stack_trace())
+        }
+    }
+
     pub fn stack_trace(&self) -> String {
         self.scopes
             .iter()

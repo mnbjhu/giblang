@@ -1,15 +1,12 @@
 use std::collections::HashMap;
 
 use crate::{
-    check::{
-        build_state::BuildState, check_project, check_vfs, resolve_project, state::CheckState,
-    },
+    check::{build_state::BuildState, check_file, check_project, check_vfs, resolve_project},
     db::{
         decl::Project,
         err::Diagnostic,
         input::{Db, SourceDatabase, Vfs, VfsInner},
     },
-    parser::{parse_file, Ast},
     run::state::{FuncDef, ProgramState},
 };
 
@@ -33,13 +30,8 @@ pub fn run() {
     }
 }
 
-#[derive(Default)]
-pub struct BuildIter {
-    pub builder: BuildState,
-}
-
 impl<'db> Vfs {
-    pub fn build(&self, db: &'db dyn Db, project: Project<'db>) -> HashMap<u32, FuncDef> {
+    pub fn build(self, db: &'db dyn Db, project: Project<'db>) -> HashMap<u32, FuncDef> {
         match self.inner(db) {
             VfsInner::Dir(files) => {
                 let mut funcs = HashMap::new();
@@ -50,18 +42,10 @@ impl<'db> Vfs {
                 funcs
             }
             VfsInner::File(file) => {
-                let ast = parse_file(db, *file);
-                let mut state = CheckState::from_file(db, *file, project);
-                ast.build(db, &mut state)
+                let ir = check_file(db, *file, project);
+                let mut state = BuildState::new(db);
+                ir.build(&mut state)
             }
         }
-    }
-}
-
-impl<'db> Ast<'db> {
-    pub fn build(self, db: &'db dyn Db, state: &mut CheckState<'db>) -> HashMap<u32, FuncDef> {
-        let iter = BuildIter::default();
-        todo!();
-        // iter.builder.funcs.into_iter().collect()
     }
 }

@@ -252,7 +252,7 @@ impl<'db> Ty<'db> {
                         }
                         let ty = func.get_ty(state).parameterize(&implied);
                         if let Ty::Function(ty) = ty {
-                            funcs.push((IdentDef::Decl(func), ty));
+                            funcs.push((IdentDef::Decl(*func), ty));
                         }
                     }
                     funcs

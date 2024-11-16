@@ -15,7 +15,6 @@ pub struct EnumIR<'db> {
 }
 impl<'db> Enum {
     pub fn check(&self, state: &mut CheckState<'db>) -> EnumIR<'db> {
-        state.path.push(self.name.0.to_string());
         let generics = (self.generics.0.check(state), self.generics.1);
         let members = self
             .members
@@ -23,7 +22,6 @@ impl<'db> Enum {
             .map(|(member, span)| (member.check(state), *span))
             .collect();
 
-        state.path.pop();
         EnumIR {
             name: self.name.clone(),
             generics,

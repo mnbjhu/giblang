@@ -3,12 +3,13 @@ use std::collections::HashMap;
 use top::TopIR;
 
 use crate::{
-    check::{state::VarDecl, SemanticToken},
+    check::{build_state::BuildState, state::VarDecl, SemanticToken},
     db::{
         decl::{Decl, Project},
         input::Db,
         path::ModulePath,
     },
+    run::state::FuncDef,
     ty::{Generic, Ty},
     util::{Span, Spanned},
 };
@@ -31,6 +32,7 @@ pub struct FileIR<'db> {
 pub trait IrNode<'db> {
     fn at_offset(&self, offset: usize, state: &mut IrState<'db>) -> &dyn IrNode;
     fn tokens(&self, tokens: &mut Vec<SemanticToken>, state: &mut IrState<'db>);
+    #[allow(unused)]
     fn hover(&self, offset: usize, state: &mut IrState<'db>) -> Option<String> {
         None
     }
@@ -64,30 +66,17 @@ impl<'db> IrState<'db> {
         self.generics.push(generics);
     }
 
-    pub fn exit_scope(&mut self) {
-        self.variables.pop().unwrap();
-        self.generics.pop().unwrap();
-    }
-
-    pub fn get_generic(&self, name: &str) -> Option<&Generic<'db>> {
-        for generics in self.generics.iter().rev() {
-            if let Some(g) = generics.get(name) {
-                return Some(g);
-            }
-        }
-        None
-    }
-
-    pub fn get_variable(&self, name: &str) -> Option<VarDecl<'db>> {
-        for variables in self.variables.iter().rev() {
-            if let Some(v) = variables.get(name) {
-                return Some(v.clone());
-            }
-        }
-        None
-    }
     pub fn try_get_decl_path(&self, name: ModulePath<'db>) -> Option<Decl<'db>> {
         self.project.get_decl(self.db, name)
+    }
+}
+
+impl<'db> FileIR<'db> {
+    pub fn build(self, state: &mut BuildState<'db>) -> HashMap<u32, FuncDef> {
+        self.tops(state.db)
+            .iter()
+            .filter_map(|(top, _)| top.build(state))
+            .collect()
     }
 }
 

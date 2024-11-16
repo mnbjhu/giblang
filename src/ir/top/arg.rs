@@ -11,8 +11,6 @@ pub struct FunctionArgIR<'db> {
     pub ty: Spanned<TypeIR<'db>>,
 }
 
-type FunctionArgs<'db> = Vec<Spanned<FunctionArgIR<'db>>>;
-
 impl<'db> FunctionArg {
     pub fn check(&self, state: &mut CheckState<'db>) -> FunctionArgIR<'db> {
         let ty = (self.ty.0.check(state), self.ty.1);

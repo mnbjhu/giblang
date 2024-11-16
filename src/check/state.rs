@@ -1,5 +1,6 @@
 use std::{collections::HashMap, vec};
 
+use chumsky::container::Container;
 use salsa::{Accumulator, Update};
 
 use crate::{
@@ -38,9 +39,8 @@ pub struct CheckState<'db> {
     pub file_data: SourceFile,
     pub project: Project<'db>,
     pub type_state: TypeState<'db>,
-    pub path: Vec<String>,
     pub should_error: bool,
-    pub file_decl: Decl<'db>,
+    pub decl_stack: Vec<Decl<'db>>,
 }
 
 impl<'ty, 'db: 'ty> CheckState<'db> {
@@ -60,8 +60,7 @@ impl<'ty, 'db: 'ty> CheckState<'db> {
             project,
             type_state: TypeState::default(),
             should_error: true,
-            file_decl: decl,
-            path: path.name(db).clone(),
+            decl_stack: vec![decl],
         };
         let tops = parse_file(db, file_data).tops(db);
         for top in tops {
@@ -123,13 +122,30 @@ impl<'ty, 'db: 'ty> CheckState<'db> {
     }
 
     pub fn add_local_import(&mut self, name: &str) {
-        self.imports
-            .insert(name.into(), self.file_decl.get(self.db, name).unwrap());
+        self.imports.insert(name.into(), self.local_decl(name));
+    }
+
+    pub fn local_decl(&self, name: &str) -> Decl<'db> {
+        self.current_decl().get(self.db, name).unwrap_or_else(|| {
+            panic!(
+                "Local decl not found: {} in {:#?}",
+                name,
+                self.current_decl()
+            )
+        })
     }
 
     pub fn enter_scope(&mut self) {
         self.variables.push(HashMap::new());
         self.generics.push(HashMap::new());
+    }
+
+    pub fn current_decl(&self) -> Decl<'db> {
+        self.decl_stack.last().copied().unwrap()
+    }
+
+    pub fn file_decl(&self) -> Decl<'db> {
+        self.decl_stack.first().copied().unwrap()
     }
 
     #[must_use]
@@ -148,7 +164,15 @@ impl<'ty, 'db: 'ty> CheckState<'db> {
     }
 
     pub fn error(&mut self, error: CheckError) {
-        if self.should_error && self.path.first().unwrap() != "std" {
+        if self.should_error
+            && self
+                .file_decl()
+                .path(self.db)
+                .name(self.db)
+                .first()
+                .unwrap()
+                != "std"
+        {
             Error { inner: error }
                 .into_with_db(self.db)
                 .accumulate(self.db);
@@ -264,12 +288,6 @@ impl<'ty, 'db: 'ty> CheckState<'db> {
         self.type_state.get_type_var(id).resolved.clone()
     }
 
-    pub fn local_id(&self, name: String) -> ModulePath<'db> {
-        let mut path = self.path.clone();
-        path.push(name);
-        ModulePath::new(self.db, path)
-    }
-
     pub fn get_variables(&self) -> HashMap<String, VarDecl<'db>> {
         let mut vars = HashMap::new();
         for scope in &self.variables {
@@ -292,6 +310,14 @@ impl<'ty, 'db: 'ty> CheckState<'db> {
 
     pub fn get_imports<'st>(&'st self) -> &'st HashMap<String, Decl<'db>> {
         &self.imports
+    }
+
+    pub fn enter_decl(&mut self, name: &str) {
+        self.decl_stack.push(self.local_decl(name));
+    }
+
+    pub fn exit_decl(&mut self) {
+        self.decl_stack.pop();
     }
 
     pub fn try_get_decl_path(&self, name: ModulePath<'db>) -> Option<Decl<'db>> {

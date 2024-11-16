@@ -1,34 +1,54 @@
 use std::collections::HashMap;
 
-use crate::run::{bytecode::ByteCode, state::FuncDef};
+use crate::db::input::Db;
 
-#[derive(Default)]
-pub struct BuildState {
-    pub funcs: Vec<(u32, FuncDef)>,
-    pub vars: HashMap<String, u32>,
+pub struct BuildState<'db> {
+    pub vars: Vec<HashMap<String, u32>>,
+    pub params: HashMap<String, u32>,
     pub var_count: u32,
+    pub db: &'db dyn Db,
 }
 
-impl BuildState {
-    pub fn add(&mut self, code: ByteCode) {
-        self.funcs.last_mut().unwrap().1.body.push(code);
-    }
-
-    pub fn add_func(&mut self, id: u32, func: FuncDef) {
-        self.var_count = 0;
-        self.vars.clear();
-        self.funcs.push((id, func));
+impl<'db> BuildState<'db> {
+    pub fn new(db: &'db dyn Db) -> Self {
+        BuildState {
+            vars: vec![],
+            params: HashMap::new(),
+            var_count: 0,
+            db,
+        }
     }
 
     pub fn add_var(&mut self, name: String) -> u32 {
         let var = self.var_count;
         self.var_count += 1;
-        self.vars.insert(name, var);
-        self.add(ByteCode::NewLocal);
+        self.vars.last_mut().unwrap().insert(name, var);
         var
     }
 
     pub fn get_var(&self, name: &str) -> Option<u32> {
-        self.vars.get(name).copied()
+        self.vars
+            .iter()
+            .rev()
+            .find_map(|vars| vars.get(name).copied())
+    }
+
+    pub fn clear(&mut self) {
+        self.vars.clear();
+        self.params.clear();
+        self.var_count = 0;
+        self.enter_scope();
+    }
+
+    pub fn enter_scope(&mut self) {
+        self.vars.push(HashMap::new());
+    }
+
+    pub fn exit_scope(&mut self) {
+        self.vars.pop();
+    }
+
+    pub fn add_param(&mut self, name: String) {
+        self.params.insert(name, self.params.len() as u32);
     }
 }

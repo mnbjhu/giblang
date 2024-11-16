@@ -123,7 +123,7 @@ impl Vfs {
                 struct Any
 
                 fn panic(message: String): Nothing
-                fn print(text: String)
+                fn print(data: Any)
                 fn println(text: String)
 
                 struct Vec[T]

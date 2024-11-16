@@ -17,6 +17,14 @@ pub struct ImplIR<'db> {
 
 impl<'db> Impl {
     pub fn check(&self, state: &mut CheckState<'db>) -> ImplIR<'db> {
+        let decl = state
+            .project
+            .impl_map(state.db)
+            .values()
+            .flatten()
+            .find(|decl| decl.file(state.db) == state.file_data && decl.id(state.db) == self.id)
+            .copied()
+            .unwrap();
         let generics = (self.generics.0.check(state), self.generics.1);
         let for_ = (self.for_.0.check(state), self.for_.1);
         let trait_ = self
@@ -28,14 +36,22 @@ impl<'db> Impl {
         let body = self
             .body
             .iter()
-            .map(|(func, span)| {
+            .enumerate()
+            .map(|(index, (func, span))| {
                 state.enter_scope();
+                state.decl_stack.push(decl.functions(state.db)[index]);
                 let ir = func.check(state, false);
-                state.exit_scope();
+                let _ = state.exit_scope();
+                state.exit_decl();
                 (ir, *span)
             })
             .collect();
-        ImplIR { generics, trait_, for_, body }
+        ImplIR {
+            generics,
+            trait_,
+            for_,
+            body,
+        }
     }
 }
 

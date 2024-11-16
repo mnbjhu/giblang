@@ -1,7 +1,8 @@
 use crate::{
-    check::state::CheckState,
+    check::{build_state::BuildState, state::CheckState},
     ir::{ContainsOffset, IrNode},
     parser::expr::op::{Op, OpKind},
+    run::bytecode::ByteCode,
     ty::Ty,
     util::{Span, Spanned},
 };
@@ -60,5 +61,18 @@ impl<'db> IrNode<'db> for OpIR<'db> {
     ) {
         self.left.0.tokens(tokens, state);
         self.right.0.tokens(tokens, state);
+    }
+}
+
+impl<'db> OpIR<'db> {
+    pub fn build(&self, state: &mut BuildState<'db>) -> Vec<ByteCode> {
+        match &self.kind {
+            OpKind::Add => vec![ByteCode::Add],
+            OpKind::Sub => vec![ByteCode::Sub],
+            OpKind::Mul => vec![ByteCode::Mul],
+            OpKind::Div => todo!(),
+            OpKind::Eq => vec![ByteCode::Eq],
+            OpKind::Neq => vec![ByteCode::Eq, ByteCode::Not],
+        }
     }
 }

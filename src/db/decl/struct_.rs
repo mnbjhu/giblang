@@ -32,4 +32,12 @@ impl<'db> StructDecl<'db> {
             StructDecl::None => None,
         }
     }
+
+    pub fn arg_count(&self) -> u32 {
+        match self {
+            StructDecl::Fields(fields) => fields.len() as u32,
+            StructDecl::Tuple(fields) => fields.len() as u32,
+            StructDecl::None => 0,
+        }
+    }
 }
