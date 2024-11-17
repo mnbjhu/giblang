@@ -4,7 +4,7 @@ use broom::{Handle, Heap};
 
 use crate::{lexer::literal::Literal, run::DebugText as _};
 
-use super::{bytecode::ByteCode, scope::Scope, Object};
+use super::{bytecode::ByteCode, scope::Scope, Object, StackItem};
 
 pub struct ProgramState<'code> {
     pub heap: Heap<Object>,
@@ -17,14 +17,14 @@ pub struct FuncDef {
     pub body: Vec<ByteCode>,
 }
 
-impl From<Literal> for Object {
+impl From<Literal> for StackItem {
     fn from(val: Literal) -> Self {
         match val {
-            Literal::Int(int) => Object::Int(int.parse().unwrap()),
-            Literal::Float(float) => Object::Float(float.parse().unwrap()),
-            Literal::String(s) => Object::String(s),
-            Literal::Bool(b) => Object::Bool(b),
-            Literal::Char(c) => Object::Char(c),
+            Literal::Int(int) => StackItem::Int(int.parse().unwrap()),
+            Literal::Float(float) => StackItem::Float(float.parse().unwrap()),
+            Literal::String(s) => StackItem::String(s),
+            Literal::Bool(b) => StackItem::Bool(b),
+            Literal::Char(c) => StackItem::Char(c),
         }
     }
 }
@@ -64,7 +64,7 @@ impl<'code> ProgramState<'code> {
         }
     }
 
-    pub fn pop(&mut self) -> Handle<Object> {
+    pub fn pop(&mut self) -> StackItem {
         if let Some(found) = self.scope_mut().stack.pop() {
             found
         } else {
@@ -72,9 +72,9 @@ impl<'code> ProgramState<'code> {
         }
     }
 
-    pub fn peak(&self) -> Handle<Object> {
+    pub fn peak<'stack>(&'stack self) -> &'stack StackItem {
         if let Some(found) = self.scope().stack.last() {
-            *found
+            found
         } else {
             panic!("Stack underflow: {}", self.stack_trace())
         }
@@ -88,23 +88,23 @@ impl<'code> ProgramState<'code> {
             .join("/")
     }
 
-    pub fn new_local(&mut self, id: u32, refr: Handle<Object>) {
+    pub fn new_local(&mut self, id: u32, refr: StackItem) {
         self.scope_mut().locals.insert(id, refr);
     }
 
-    pub fn set_local(&mut self, id: u32, refr: Handle<Object>) {
+    pub fn set_local(&mut self, id: u32, refr: StackItem) {
         self.scope_mut().locals.insert(id, refr);
     }
 
-    pub fn get_local(&mut self, id: u32) -> Handle<Object> {
-        self.scope().locals[&id]
+    pub fn get_local(&mut self, id: u32) -> StackItem {
+        self.scope().locals[&id].clone()
     }
 
-    pub fn get_param(&self, id: u32) -> Handle<Object> {
-        self.scope().args[id as usize]
+    pub fn get_param(&self, id: u32) -> StackItem {
+        self.scope().args[id as usize].clone()
     }
 
-    pub fn push(&mut self, refr: Handle<Object>) {
+    pub fn push(&mut self, refr: StackItem) {
         self.scope_mut().stack.push(refr);
     }
 

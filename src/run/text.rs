@@ -53,6 +53,7 @@ pub enum ByteCodeKeyword {
     Je,
     Jne,
     Index,
+    SetIndex,
 }
 
 pub fn byte_code_lexer<'src>(
@@ -89,6 +90,7 @@ pub fn byte_code_lexer<'src>(
         "jmp" => ByteCodeToken::Keyword(ByteCodeKeyword::Jmp),
         "copy" => ByteCodeToken::Keyword(ByteCodeKeyword::Copy),
         "index" => ByteCodeToken::Keyword(ByteCodeKeyword::Index),
+        "set_index" => ByteCodeToken::Keyword(ByteCodeKeyword::SetIndex),
         "true" => ByteCodeToken::Literal(Literal::Bool(true)),
         "false" => ByteCodeToken::Literal(Literal::Bool(false)),
         _ => ByteCodeToken::Ident(ident.to_string()),
@@ -200,6 +202,7 @@ impl Display for ByteCodeKeyword {
             ByteCodeKeyword::Jne => write!(f, "jne"),
             ByteCodeKeyword::Copy => write!(f, "copy"),
             ByteCodeKeyword::Index => write!(f, "index"),
+            ByteCodeKeyword::SetIndex => write!(f, "set_index"),
         }
     }
 }
@@ -281,6 +284,9 @@ pub fn bc_op_parser<'tokens, 'src: 'tokens>() -> impl Parser<
     let index = keyword(ByteCodeKeyword::Index)
         .ignore_then(num)
         .map(ByteCode::Index);
+    let set_index = keyword(ByteCodeKeyword::SetIndex)
+        .ignore_then(num)
+        .map(ByteCode::SetIndex);
 
     let int = just(ByteCodeToken::Op("-".to_string()))
         .or_not()
@@ -318,7 +324,7 @@ pub fn bc_op_parser<'tokens, 'src: 'tokens>() -> impl Parser<
 
     choice((
         pop, push, print, panic, construct, call, ret, new_local, get_local, set_local, goto,
-        param, mul, add, sub, or, and, eq, not, match_, jmp, je, jne, copy, index,
+        param, mul, add, sub, or, and, eq, not, match_, jmp, je, jne, copy, index, set_index,
     ))
 }
 

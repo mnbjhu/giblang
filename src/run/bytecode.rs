@@ -5,7 +5,7 @@ use crate::{lexer::literal::Literal, run::DebugText};
 use super::{
     scope::Scope,
     state::{FuncDef, ProgramState},
-    Object,
+    Object, StackItem,
 };
 
 #[derive(Clone, Debug, PartialEq)]
@@ -19,6 +19,7 @@ pub enum ByteCode {
     Call(u32),
     Return,
     Index(u32),
+    SetIndex(u32),
     NewLocal(u32),
     GetLocal(u32),
     SetLocal(u32),
@@ -43,35 +44,30 @@ impl<'code> ProgramState<'code> {
     pub fn execute(&mut self, code: &'code ByteCode, funcs: &'code HashMap<u32, FuncDef>) {
         match code {
             ByteCode::Push(lit) => {
-                let refr = self.heap.insert(lit.clone().into());
-                self.push(refr.into());
+                self.push(lit.clone().into());
             }
             ByteCode::Pop => {
                 self.pop();
             }
             ByteCode::Id => {
-                let refr = self.peak();
-                let obj = self.heap.get(refr).unwrap();
-                if let Object::Vec(id, _) = obj {
-                    let res = self.heap.insert(Object::Int(*id as i32));
-                    self.push(res.into());
+                if let StackItem::Vec(id, _) = self.peak() {
+                    let res = StackItem::Int(*id as i32);
+                    self.push(res);
                 } else {
                     panic!("Expected vec")
                 }
             }
             ByteCode::Match(expected) => {
-                let refr = self.pop();
-                let obj = self.heap.get(refr).unwrap();
-                if let Object::Vec(id, _) = obj {
-                    let res = self.heap.insert(Object::Bool(id == expected));
-                    self.push(res.into());
+                if let StackItem::Vec(id, _) = self.pop() {
+                    let res = StackItem::Bool(id == *expected);
+                    self.push(res);
                 } else {
                     panic!("Expected vec")
                 }
             }
             ByteCode::Copy => {
                 let refr = self.peak();
-                self.push(refr);
+                self.push(refr.clone());
             }
             ByteCode::Print => {
                 print!("{}", self.pop().get_text(self));
@@ -109,9 +105,9 @@ impl<'code> ProgramState<'code> {
                 for _ in 0..*len {
                     args.push(self.pop());
                 }
-                let obj = Object::Vec(*id, args);
-                let refr = self.heap.insert(obj);
-                self.push(refr.into());
+                let refr = self.heap.insert(Object(args));
+                let res = StackItem::Vec(*id, refr.into());
+                self.push(res);
             }
             ByteCode::NewLocal(id) => {
                 let refr = self.pop();
@@ -126,9 +122,8 @@ impl<'code> ProgramState<'code> {
                 self.set_local(*id, refr);
             }
             ByteCode::Je(diff) => {
-                let cond = self.pop();
-                if let Object::Bool(cond) = self.heap.get(cond).unwrap() {
-                    if *cond {
+                if let StackItem::Bool(cond) = self.pop() {
+                    if cond {
                         self.scope_mut().index = (self.scope().index as i32 + diff - 1) as usize;
                     }
                 } else {
@@ -136,8 +131,7 @@ impl<'code> ProgramState<'code> {
                 }
             }
             ByteCode::Jne(diff) => {
-                let cond = self.pop();
-                if let Object::Bool(cond) = self.heap.get(cond).unwrap() {
+                if let StackItem::Bool(cond) = self.pop() {
                     if !cond {
                         self.scope_mut().index = (self.scope().index as i32 + diff - 1) as usize;
                     }
@@ -149,9 +143,8 @@ impl<'code> ProgramState<'code> {
                 self.scope_mut().index = (self.scope().index as i32 + diff - 1) as usize;
             }
             ByteCode::Goto(line) => {
-                let cond = self.pop();
-                if let Object::Bool(cond) = self.heap.get(cond).unwrap() {
-                    if *cond {
+                if let StackItem::Bool(cond) = self.pop() {
+                    if cond {
                         self.scope_mut().index = *line as usize;
                     }
                 } else {
@@ -165,14 +158,14 @@ impl<'code> ProgramState<'code> {
             ByteCode::Mul => {
                 let b = self.pop();
                 let a = self.pop();
-                match (self.heap.get(a).unwrap(), self.heap.get(b).unwrap()) {
-                    (Object::Int(a), Object::Int(b)) => {
-                        let res = self.heap.insert(Object::Int(a * b));
-                        self.push(res.into());
+                match (a, b) {
+                    (StackItem::Int(a), StackItem::Int(b)) => {
+                        let res = StackItem::Int(a * b);
+                        self.push(res);
                     }
-                    (Object::Float(a), Object::Float(b)) => {
-                        let res = self.heap.insert(Object::Float(a * b));
-                        self.push(res.into());
+                    (StackItem::Float(a), StackItem::Float(b)) => {
+                        let res = StackItem::Float(a * b);
+                        self.push(res);
                     }
                     _ => {
                         panic!("Cannot 'mul' non-numbers")
@@ -182,18 +175,18 @@ impl<'code> ProgramState<'code> {
             ByteCode::Add => {
                 let b = self.pop();
                 let a = self.pop();
-                match (self.heap.get(a).unwrap(), self.heap.get(b).unwrap()) {
-                    (Object::Int(a), Object::Int(b)) => {
-                        let res = self.heap.insert(Object::Int(a + b));
-                        self.push(res.into());
+                match (a, b) {
+                    (StackItem::Int(a), StackItem::Int(b)) => {
+                        let res = StackItem::Int(a + b);
+                        self.push(res);
                     }
-                    (Object::Float(a), Object::Float(b)) => {
-                        let res = self.heap.insert(Object::Float(a + b));
-                        self.push(res.into());
+                    (StackItem::Float(a), StackItem::Float(b)) => {
+                        let res = StackItem::Float(a + b);
+                        self.push(res);
                     }
-                    (Object::String(a), Object::String(b)) => {
-                        let res = self.heap.insert(Object::String(format!("{a}{b}")));
-                        self.push(res.into());
+                    (StackItem::String(a), StackItem::String(b)) => {
+                        let res = StackItem::String(format!("{a}{b}"));
+                        self.push(res);
                     }
                     _ => {
                         panic!("Can only add numbers or strings")
@@ -203,14 +196,14 @@ impl<'code> ProgramState<'code> {
             ByteCode::Sub => {
                 let b = self.pop();
                 let a = self.pop();
-                match (self.heap.get(a).unwrap(), self.heap.get(b).unwrap()) {
-                    (Object::Int(a), Object::Int(b)) => {
-                        let res = self.heap.insert(Object::Int(a - b));
-                        self.push(res.into());
+                match (a, b) {
+                    (StackItem::Int(a), StackItem::Int(b)) => {
+                        let res = StackItem::Int(a - b);
+                        self.push(res);
                     }
-                    (Object::Float(a), Object::Float(b)) => {
-                        let res = self.heap.insert(Object::Float(a - b));
-                        self.push(res.into());
+                    (StackItem::Float(a), StackItem::Float(b)) => {
+                        let res = StackItem::Float(a - b);
+                        self.push(res);
                     }
                     _ => {
                         panic!("Cannot 'sub' non-numbers")
@@ -220,10 +213,10 @@ impl<'code> ProgramState<'code> {
             ByteCode::And => {
                 let b = self.pop();
                 let a = self.pop();
-                match (self.heap.get(a).unwrap(), self.heap.get(b).unwrap()) {
-                    (Object::Bool(a), Object::Bool(b)) => {
-                        let res = self.heap.insert(Object::Bool(*a && *b));
-                        self.push(res.into());
+                match (a, b) {
+                    (StackItem::Bool(a), StackItem::Bool(b)) => {
+                        let res = StackItem::Bool(a && b);
+                        self.push(res);
                     }
                     _ => {
                         panic!("Cannot 'and' non-bools")
@@ -233,10 +226,10 @@ impl<'code> ProgramState<'code> {
             ByteCode::Or => {
                 let b = self.pop();
                 let a = self.pop();
-                match (self.heap.get(a).unwrap(), self.heap.get(b).unwrap()) {
-                    (Object::Bool(a), Object::Bool(b)) => {
-                        let res = self.heap.insert(Object::Bool(*a || *b));
-                        self.push(res.into());
+                match (a, b) {
+                    (StackItem::Bool(a), StackItem::Bool(b)) => {
+                        let res = StackItem::Bool(a || b);
+                        self.push(res);
                     }
                     _ => {
                         panic!("Cannot 'or' non-bools")
@@ -246,32 +239,34 @@ impl<'code> ProgramState<'code> {
             ByteCode::Eq => {
                 let b = self.pop();
                 let a = self.pop();
-                let a = self.heap.get(a).unwrap();
-                let b = self.heap.get(b).unwrap();
-                let res = self.heap.insert(Object::Bool(a == b));
-                self.push(res.into());
+                let res = StackItem::Bool(a == b);
+                self.push(res);
             }
-            ByteCode::Not => {
-                let a = self.pop();
-                match self.heap.get(a).unwrap() {
-                    Object::Bool(a) => {
-                        let res = self.heap.insert(Object::Bool(!a));
-                        self.push(res.into());
-                    }
-                    _ => {
-                        panic!("Cannot 'or' non-bools")
-                    }
-                }
-            }
-            ByteCode::Index(index) => {
-                let vec = self.pop();
-                let data = self.heap.get(vec).unwrap();
-                if let Object::Vec(_, data) = data {
-                    let res = data[*index as usize];
+            ByteCode::Not => match self.pop() {
+                StackItem::Bool(a) => {
+                    let res = StackItem::Bool(!a);
                     self.push(res);
-                } else {
-                    panic!("Cannot index non-vec")
                 }
+                _ => {
+                    panic!("Cannot 'or' non-bools")
+                }
+            },
+            ByteCode::Index(index) => {
+                let StackItem::Vec(_, refr) = self.pop() else {
+                    panic!("Cannot index non-vec")
+                };
+                let data = self.heap.get(refr).unwrap();
+                let res = &data.0[*index as usize];
+                self.push(res.clone());
+            }
+            ByteCode::SetIndex(index) => {
+                let value = self.pop();
+                let vec = self.pop();
+                let StackItem::Vec(_, refr) = &vec else {
+                    panic!("Cannot index non-vec")
+                };
+                let data = self.heap.get_mut(*refr).unwrap();
+                data.0[*index as usize] = value;
             }
         };
     }
@@ -286,6 +281,7 @@ impl Display for ByteCode {
             ByteCode::Panic => write!(f, "panic"),
             ByteCode::Construct { id, len } => write!(f, "construct {id}, {len}"),
             ByteCode::Index(index) => write!(f, "index {index}"),
+            ByteCode::SetIndex(index) => write!(f, "set_index {index}"),
             ByteCode::Call(id) => write!(f, "call {id}"),
             ByteCode::Return => write!(f, "return"),
             ByteCode::NewLocal(id) => write!(f, "new {id}"),

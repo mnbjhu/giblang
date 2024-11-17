@@ -1,5 +1,8 @@
+use chumsky::container::Container;
+
 use crate::{
     check::{build_state::BuildState, state::CheckState},
+    db::decl::{struct_::StructDecl, Decl, DeclKind},
     ir::{
         expr::{ExprIR, ExprIRData},
         ContainsOffset, IrNode,
@@ -56,12 +59,30 @@ impl<'db> IrNode<'db> for AssignIR<'db> {
     }
 }
 
+impl<'db> Decl<'db> {
+    pub fn get_field_index(self, name: &str, state: &mut BuildState<'db>) -> u32 {
+        let DeclKind::Struct {
+            body: StructDecl::Fields(decl_fields),
+            ..
+        } = self.kind(state.db)
+        else {
+            panic!("Expected struct")
+        };
+        let mut index = decl_fields.iter().position(|(f, _)| f == name).unwrap();
+        index = decl_fields.len() - index - 1;
+        index as u32
+    }
+}
+
 impl<'db> AssignIR<'db> {
     pub fn build(&self, state: &mut BuildState<'db>) -> Vec<ByteCode> {
         match &self.refr.0.data {
             ExprIRData::Field(field) => {
-                let mut code = self.refr.0.build(state);
-                todo!()
+                let index = field.decl.unwrap().get_field_index(&field.name.0, state);
+                let mut code = field.struct_.0.build(state);
+                code.extend(self.value.0.build(state));
+                code.push(ByteCode::SetIndex(index));
+                code
             }
             ExprIRData::Ident(name) => match &name.last().unwrap().0 {
                 IdentDef::Variable(var) => {

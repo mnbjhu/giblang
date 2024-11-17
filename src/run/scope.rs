@@ -2,12 +2,12 @@ use std::collections::HashMap;
 
 use broom::Handle;
 
-use super::{bytecode::ByteCode, Object};
+use super::{bytecode::ByteCode, StackItem};
 
 pub struct Scope<'code> {
-    pub args: Vec<Handle<Object>>,
-    pub locals: HashMap<u32, Handle<Object>>,
-    pub stack: Vec<Handle<Object>>,
+    pub args: Vec<StackItem>,
+    pub locals: HashMap<u32, StackItem>,
+    pub stack: Vec<StackItem>,
     pub code: &'code [ByteCode],
     pub index: usize,
     pub id: u32,

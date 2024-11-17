@@ -1,6 +1,5 @@
 use crate::{
     check::{build_state::BuildState, state::CheckState},
-    db::input::Db,
     ir::{common::pattern::PatternIR, expr::ExprIR, ty::TypeIR, ContainsOffset, IrNode},
     parser::stmt::let_::LetStatement,
     run::bytecode::ByteCode,
