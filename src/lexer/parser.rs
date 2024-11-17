@@ -25,6 +25,7 @@ pub fn lexer<'src>(
         "match" => Token::Keyword(Keyword::Match),
         "if" => Token::Keyword(Keyword::If),
         "else" => Token::Keyword(Keyword::Else),
+        "while" => Token::Keyword(Keyword::While),
         "true" => Token::Literal(Literal::Bool(true)),
         "false" => Token::Literal(Literal::Bool(false)),
         _ => Token::Ident(ident.to_string()),

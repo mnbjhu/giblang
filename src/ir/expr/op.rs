@@ -66,13 +66,16 @@ impl<'db> IrNode<'db> for OpIR<'db> {
 
 impl<'db> OpIR<'db> {
     pub fn build(&self, state: &mut BuildState<'db>) -> Vec<ByteCode> {
+        let mut code = self.left.0.build(state);
+        code.extend(self.right.0.build(state));
         match &self.kind {
-            OpKind::Add => vec![ByteCode::Add],
-            OpKind::Sub => vec![ByteCode::Sub],
-            OpKind::Mul => vec![ByteCode::Mul],
+            OpKind::Add => code.push(ByteCode::Add),
+            OpKind::Sub => code.push(ByteCode::Sub),
+            OpKind::Mul => code.push(ByteCode::Mul),
             OpKind::Div => todo!(),
-            OpKind::Eq => vec![ByteCode::Eq],
-            OpKind::Neq => vec![ByteCode::Eq, ByteCode::Not],
-        }
+            OpKind::Eq => code.push(ByteCode::Eq),
+            OpKind::Neq => code.extend([ByteCode::Eq, ByteCode::Not]),
+        };
+        code
     }
 }

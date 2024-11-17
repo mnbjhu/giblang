@@ -1,3 +1,5 @@
+use salsa::Database;
+
 use crate::{
     db::{input::Db, path::ModulePath},
     lexer::literal::Literal,
@@ -15,10 +17,7 @@ impl Literal {
                 name: ModulePath::new(db, vec!["std".to_string(), "Int".to_string()]),
                 args: vec![],
             }),
-            Literal::Bool(_) => Ty::Named(Named {
-                name: ModulePath::new(db, vec!["std".to_string(), "Bool".to_string()]),
-                args: vec![],
-            }),
+            Literal::Bool(_) => Ty::bool(db),
             Literal::Float(_) => Ty::Named(Named {
                 name: ModulePath::new(db, vec!["std".to_string(), "Float".to_string()]),
                 args: vec![],
@@ -28,5 +27,14 @@ impl Literal {
                 args: vec![],
             }),
         }
+    }
+}
+
+impl<'db> Ty<'db> {
+    pub fn bool(db: &'db dyn Db) -> Self {
+        Ty::Named(Named {
+            name: ModulePath::new(db, vec!["std".to_string(), "Bool".to_string()]),
+            args: vec![],
+        })
     }
 }

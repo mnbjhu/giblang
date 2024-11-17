@@ -15,6 +15,7 @@ pub enum Keyword {
     Match,
     If,
     Else,
+    While,
 }
 
 impl Display for Keyword {
@@ -33,6 +34,7 @@ impl Display for Keyword {
             Keyword::Match => write!(f, "match"),
             Keyword::If => write!(f, "if"),
             Keyword::Else => write!(f, "else"),
+            Keyword::While => write!(f, "while"),
         }
     }
 }
@@ -77,6 +79,9 @@ macro_rules! kw {
     };
     (else) => {
         $crate::lexer::token::Token::Keyword($crate::lexer::keyword::Keyword::Else)
+    };
+    (while) => {
+        $crate::lexer::token::Token::Keyword($crate::lexer::keyword::Keyword::While)
     };
 }
 

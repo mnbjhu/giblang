@@ -1,4 +1,5 @@
-use access::{access_parser, Access};
+use access::{access_parser, basic_access_parser, Access};
+use call::basic_call_parser;
 use chumsky::{
     primitive::{choice, just},
     recursive::recursive,
@@ -8,6 +9,7 @@ use field::Field;
 
 use lambda::{lambda_parser, Lambda};
 use op::{op_parser, Op};
+use while_::{while_parser, While};
 
 use crate::{
     lexer::{
@@ -40,6 +42,7 @@ pub mod match_arm;
 pub mod member;
 pub mod op;
 pub mod qualified_name;
+pub mod while_;
 
 #[derive(Clone, PartialEq, Debug, Eq)]
 pub enum Expr {
@@ -54,6 +57,7 @@ pub enum Expr {
     IfElse(IfElse),
     Op(Op),
     Lambda(Lambda),
+    While(While),
     Error,
 }
 
@@ -72,7 +76,8 @@ pub fn expr_parser<'tokens, 'src: 'tokens>(stmt: AstParser!(Stmt)) -> AstParser!
                 just(punct('(')).then(optional_newline()),
                 optional_newline().then(just(punct(')'))),
             )
-            .map(Expr::Tuple);
+            .map(Expr::Tuple)
+            .boxed();
 
         let bracketed = expr
             .clone()
@@ -86,7 +91,35 @@ pub fn expr_parser<'tokens, 'src: 'tokens>(stmt: AstParser!(Stmt)) -> AstParser!
         .or(tuple);
 
         let call = call_parser(atom.clone(), expr.clone(), lambda.clone()).map(Expr::Call);
+        let basic_call = basic_call_parser(atom.clone(), expr.clone()).map(Expr::Call);
+        let basic_atom = choice((basic_call, atom.clone()));
         let atom = choice((call, atom));
+
+        let basic_access = basic_atom
+            .clone()
+            .map_with(|ex, e| (ex, e.span()))
+            .foldl_with(
+                basic_access_parser(expr.clone()).repeated(),
+                |ex, acc, e| match acc {
+                    Access::Field(name) => (
+                        Expr::Field(Field {
+                            name,
+                            struct_: Box::new(ex),
+                        }),
+                        e.span(),
+                    ),
+                    Access::Member { name, args } => (
+                        Expr::MemberCall(MemberCall {
+                            rec: Box::new(ex),
+                            name,
+                            args,
+                        }),
+                        e.span(),
+                    ),
+                },
+            )
+            .map(|(ex, _)| ex)
+            .boxed();
 
         let access = atom
             .clone()
@@ -111,9 +144,11 @@ pub fn expr_parser<'tokens, 'src: 'tokens>(stmt: AstParser!(Stmt)) -> AstParser!
                     ),
                 },
             )
-            .map(|(ex, _)| ex);
+            .map(|(ex, _)| ex)
+            .boxed();
 
         let op = op_parser(access);
+        let basic_op = op_parser(basic_access);
 
         let match_ = match_parser(
             expr.clone(),
@@ -121,9 +156,11 @@ pub fn expr_parser<'tokens, 'src: 'tokens>(stmt: AstParser!(Stmt)) -> AstParser!
         )
         .map(Expr::Match);
 
-        let if_else = if_else_parser(expr, stmt).map(Expr::IfElse);
+        let while_ = while_parser(basic_op.clone(), stmt.clone());
 
-        choice((if_else, match_, lambda, op))
+        let if_else = if_else_parser(basic_op, stmt).map(Expr::IfElse);
+
+        choice((if_else, match_, while_, lambda, op)).boxed()
     })
 }
 

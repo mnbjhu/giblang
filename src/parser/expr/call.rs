@@ -50,3 +50,22 @@ pub fn call_parser<'tokens, 'src: 'tokens>(
         });
     lambda_only.or(call)
 }
+
+pub fn basic_call_parser<'tokens, 'src: 'tokens>(
+    atom: AstParser!(Expr),
+    expr: AstParser!(Expr),
+) -> AstParser!(Call) {
+    let args = expr
+        .map_with(|ex, e| (ex, e.span()))
+        .separated_by(just(punct(',')).padded_by(optional_newline()))
+        .allow_trailing()
+        .collect::<Vec<_>>()
+        .delimited_by(
+            just(punct('(')).then(optional_newline()),
+            optional_newline().then(just(punct(')'))),
+        );
+    atom.map(Box::new)
+        .map_with(|ex, e| (ex, e.span()))
+        .then(args)
+        .map(|(name, args)| Call { name, args })
+}

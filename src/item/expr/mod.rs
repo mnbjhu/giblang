@@ -17,6 +17,7 @@ pub mod match_;
 pub mod match_arm;
 pub mod member_call;
 pub mod op;
+pub mod while_;
 
 impl AstItem for Expr {
     fn item_name(&self) -> &'static str {
@@ -45,6 +46,7 @@ impl AstItem for Expr {
             Expr::Op(op) => op.pretty(allocator),
             Expr::Field(field) => field.pretty(allocator),
             Expr::Lambda(lambda) => lambda.pretty(allocator),
+            Expr::While(while_) => while_.pretty(allocator),
         }
     }
 }
