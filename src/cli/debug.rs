@@ -5,11 +5,9 @@ use crate::{run::text::byte_code_lexer, util::Span};
 use chumsky::input::Input as _;
 use chumsky::Parser as _;
 use dap::server::ServerOutput;
-use events::StoppedEventBody;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use std::{fs, path::Path};
-use types::{Breakpoint, OutputEventCategory, StoppedEventReason};
 
 use super::byte_code_text::{parse_byte_code_text, print_error};
 use std::fs::File;
@@ -75,7 +73,7 @@ fn start_dap(path: &Path) -> DynResult<()> {
                 dbg.state.scopes.push(Scope::from_code(&main.body, 0));
                 while !dbg.state.scopes.is_empty() {
                     let instr = dbg.state.next_instr();
-                    println!("Executing: {instr:?} {}", dbg.state.stack_trace());
+                    // println!("Executing: {instr:?} {}", dbg.state.stack_trace());
                     dbg.state.execute(instr, &dbg.funcs);
                 }
             });

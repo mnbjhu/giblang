@@ -80,7 +80,7 @@ impl<'db> IrNode<'db> for MatchArmIR<'db> {
 impl<'db> MatchIR<'db> {
     pub fn build(&self, state: &mut BuildState<'db>) -> Vec<ByteCode> {
         let mut code = self.expr.0.build(state);
-        let mut end = 0;
+        let mut end = 1;
         let mut arms = vec![];
         for arm in self.arms.iter().rev() {
             arms.push(arm.0.build(state, &mut end));
@@ -93,13 +93,13 @@ impl<'db> MatchIR<'db> {
 impl<'db> MatchArmIR<'db> {
     pub fn build(&self, state: &mut BuildState<'db>, end: &mut i32) -> Vec<ByteCode> {
         state.enter_scope();
-        let mut code = self.pattern.0.build_match(state, &mut 0);
+        let mut code = self.pattern.0.build_match(state, &mut 1);
         code.insert(0, ByteCode::Copy);
         let mut block = vec![];
         block.extend(self.pattern.0.build(state));
         block.extend(self.expr.0.build(state));
         block.extend([ByteCode::Jmp(*end)]);
-        code.extend([ByteCode::Jne(block.len() as i32)]);
+        code.extend([ByteCode::Jne(block.len() as i32 + 1)]);
         code.extend(block);
         *end += code.len() as i32;
         state.exit_scope();

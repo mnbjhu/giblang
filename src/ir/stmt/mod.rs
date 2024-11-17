@@ -1,3 +1,4 @@
+use assign::AssignIR;
 use let_::LetIR;
 
 use crate::{
@@ -10,19 +11,21 @@ use crate::{
 
 use super::{expr::ExprIR, IrNode, IrState};
 
+pub mod assign;
 pub mod let_;
 
 #[derive(Debug, PartialEq, Clone, Eq)]
 pub enum StmtIR<'db> {
     Expr(ExprIR<'db>),
     Let(LetIR<'db>),
+    Assign(AssignIR<'db>),
 }
 
 impl<'db> StmtIR<'db> {
     pub fn get_ty(&self) -> Ty<'db> {
         match self {
             StmtIR::Expr(e) => e.ty.clone(),
-            StmtIR::Let(_) => Ty::unit(),
+            StmtIR::Let(_) | StmtIR::Assign(_) => Ty::unit(),
         }
     }
 }
@@ -32,6 +35,7 @@ impl<'db> Stmt {
         match &self {
             Stmt::Let(l) => StmtIR::Let(l.check(state)),
             Stmt::Expr(e) => StmtIR::Expr(e.check(state)),
+            Stmt::Assign(e) => StmtIR::Assign(e.check(state)),
         }
     }
 
@@ -58,6 +62,21 @@ impl<'db> Stmt {
                 StmtIR::Let(ir)
             }
             Stmt::Expr(e) => StmtIR::Expr(e.expect(state, expected, span)),
+            Stmt::Assign(a) => {
+                let ir = a.check(state);
+                let actual = Ty::unit();
+                if !expected.eq(&actual) {
+                    state.simple_error(
+                        &format!(
+                            "Expected value to be of type '{}' but found '{}'",
+                            expected.get_name(state, None),
+                            actual.get_name(state, None),
+                        ),
+                        span,
+                    );
+                }
+                StmtIR::Assign(ir)
+            }
         }
     }
 }
@@ -67,6 +86,7 @@ impl<'db> IrNode<'db> for StmtIR<'db> {
         match self {
             StmtIR::Expr(e) => e.at_offset(offset, state),
             StmtIR::Let(l) => l.at_offset(offset, state),
+            StmtIR::Assign(a) => a.at_offset(offset, state),
         }
     }
 
@@ -74,6 +94,7 @@ impl<'db> IrNode<'db> for StmtIR<'db> {
         match self {
             StmtIR::Expr(e) => e.tokens(tokens, state),
             StmtIR::Let(l) => l.tokens(tokens, state),
+            StmtIR::Assign(a) => a.tokens(tokens, state),
         }
     }
 }
@@ -83,6 +104,7 @@ impl<'db> StmtIR<'db> {
         match self {
             StmtIR::Expr(e) => e.build(state),
             StmtIR::Let(l) => l.build(state),
+            StmtIR::Assign(a) => a.build(state),
         }
     }
 }

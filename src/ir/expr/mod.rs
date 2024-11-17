@@ -230,7 +230,7 @@ impl<'db> ExprIR<'db> {
             }
             ExprIRData::Op(op) => op.build(state),
             ExprIRData::Lambda(lambda) => todo!(),
-            ExprIRData::While(while_) => todo!(),
+            ExprIRData::While(while_) => while_.build(state),
             ExprIRData::Error => unreachable!(),
         }
     }

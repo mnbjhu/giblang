@@ -129,7 +129,7 @@ impl<'code> ProgramState<'code> {
                 let cond = self.pop();
                 if let Object::Bool(cond) = self.heap.get(cond).unwrap() {
                     if *cond {
-                        self.scope_mut().index = (self.scope().index as i32 + diff) as usize;
+                        self.scope_mut().index = (self.scope().index as i32 + diff - 1) as usize;
                     }
                 } else {
                     panic!("Expected condition to be a boolean")
@@ -139,14 +139,14 @@ impl<'code> ProgramState<'code> {
                 let cond = self.pop();
                 if let Object::Bool(cond) = self.heap.get(cond).unwrap() {
                     if !cond {
-                        self.scope_mut().index = (self.scope().index as i32 + diff) as usize;
+                        self.scope_mut().index = (self.scope().index as i32 + diff - 1) as usize;
                     }
                 } else {
                     panic!("Expected condition to be a boolean")
                 }
             }
             ByteCode::Jmp(diff) => {
-                self.scope_mut().index = (self.scope().index as i32 + diff) as usize;
+                self.scope_mut().index = (self.scope().index as i32 + diff - 1) as usize;
             }
             ByteCode::Goto(line) => {
                 let cond = self.pop();
@@ -191,8 +191,12 @@ impl<'code> ProgramState<'code> {
                         let res = self.heap.insert(Object::Float(a + b));
                         self.push(res.into());
                     }
+                    (Object::String(a), Object::String(b)) => {
+                        let res = self.heap.insert(Object::String(format!("{a}{b}")));
+                        self.push(res.into());
+                    }
                     _ => {
-                        panic!("Cannot 'add' non-numbers")
+                        panic!("Can only add numbers or strings")
                     }
                 }
             }

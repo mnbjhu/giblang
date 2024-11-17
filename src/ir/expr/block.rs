@@ -2,11 +2,13 @@ use std::collections::HashMap;
 
 use crate::{
     check::{
+        build_state::BuildState,
         state::{CheckState, VarDecl},
         SemanticToken,
     },
     ir::{stmt::StmtIR, ContainsOffset, IrNode, IrState},
     parser::expr::code_block::CodeBlock,
+    run::bytecode::ByteCode,
     ty::{Generic, Ty},
     util::{Span, Spanned},
 };
@@ -27,9 +29,7 @@ pub fn check_block<'db>(block: &CodeBlock, state: &mut CheckState<'db>) -> ExprI
         .map(|stmt| (stmt.0.check(state), stmt.1))
         .collect::<Vec<_>>();
     let (vars, generics) = state.exit_scope();
-    let ty = stmts
-        .last()
-        .map_or(Ty::unit(), |stmt| stmt.0.get_ty());
+    let ty = stmts.last().map_or(Ty::unit(), |stmt| stmt.0.get_ty());
     ExprIR {
         data: ExprIRData::CodeBlock(CodeBlockIR {
             vars,
@@ -94,5 +94,18 @@ impl<'db> IrNode<'db> for CodeBlockIR<'db> {
         for stmt in &self.stmts {
             stmt.0.tokens(tokens, state);
         }
+    }
+}
+
+impl<'db> CodeBlockIR<'db> {
+    pub fn build(&self, state: &mut BuildState<'db>) -> Vec<ByteCode> {
+        state.enter_scope();
+        let ir = self
+            .stmts
+            .iter()
+            .flat_map(|(stmt, _)| stmt.build(state))
+            .collect();
+        state.exit_scope();
+        ir
     }
 }

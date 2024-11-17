@@ -1,7 +1,8 @@
 use crate::{
-    check::state::CheckState,
+    check::{build_state::BuildState, state::CheckState},
     ir::{ContainsOffset, IrNode},
     parser::expr::while_::While,
+    run::bytecode::ByteCode,
     ty::Ty,
     util::Spanned,
 };
@@ -59,5 +60,18 @@ impl<'db> IrNode<'db> for WhileIR<'db> {
     ) {
         self.expr.0.tokens(tokens, state);
         self.block.0.tokens(tokens, state);
+    }
+}
+
+impl<'db> WhileIR<'db> {
+    pub fn build(&self, state: &mut BuildState<'db>) -> Vec<ByteCode> {
+        let mut expr = self.expr.0.build(state);
+        let body = self.block.0.build(state);
+        let break_ = body.len();
+        let continue_ = body.len() + expr.len();
+        expr.push(ByteCode::Jne(break_ as i32 + 2));
+        expr.extend(body);
+        expr.push(ByteCode::Jmp(-(continue_ as i32 + 1)));
+        expr
     }
 }

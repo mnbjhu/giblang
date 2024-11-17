@@ -389,7 +389,7 @@ impl<'db> PatternIR<'db> {
             *end += 2;
             code.push(f);
             if index != 0 {
-                code.push(vec![Je(2), Push(Literal::Bool(false)), Jmp(*end)]);
+                code.push(vec![Je(3), Push(Literal::Bool(false)), Jmp(*end)]);
                 *end += 3;
             }
         }
@@ -397,7 +397,7 @@ impl<'db> PatternIR<'db> {
             *end += 1;
             return vec![Match(id)];
         }
-        code.push(vec![Je(2), Push(Literal::Bool(false)), Jmp(*end)]);
+        code.push(vec![Je(3), Push(Literal::Bool(false)), Jmp(*end)]);
         *end += 4;
         code.push(vec![Match(id)]);
         code.iter().rev().flatten().cloned().collect()

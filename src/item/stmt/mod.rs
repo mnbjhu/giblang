@@ -2,7 +2,9 @@ use crate::parser::stmt::Stmt;
 
 use super::AstItem;
 
+pub mod assign;
 pub mod let_;
+
 impl AstItem for Stmt {
     fn item_name(&self) -> &'static str {
         "stmt"
@@ -17,6 +19,7 @@ impl AstItem for Stmt {
         match self {
             Stmt::Expr(e) => e.pretty(allocator),
             Stmt::Let(l) => l.pretty(allocator),
+            Stmt::Assign(a) => a.pretty(allocator),
         }
     }
 }
