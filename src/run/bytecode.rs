@@ -19,7 +19,7 @@ pub enum ByteCode {
     Call(u32),
     Return,
     Index(u32),
-    NewLocal,
+    NewLocal(u32),
     GetLocal(u32),
     SetLocal(u32),
     Param(u32),
@@ -87,7 +87,7 @@ impl<'code> ProgramState<'code> {
                 }
                 let scope = Scope {
                     args,
-                    locals: Vec::new(),
+                    locals: HashMap::new(),
                     stack: Vec::new(),
                     code: &func.body,
                     index: 0,
@@ -113,9 +113,9 @@ impl<'code> ProgramState<'code> {
                 let refr = self.heap.insert(obj);
                 self.push(refr.into());
             }
-            ByteCode::NewLocal => {
+            ByteCode::NewLocal(id) => {
                 let refr = self.pop();
-                self.new_local(refr);
+                self.new_local(*id, refr);
             }
             ByteCode::GetLocal(id) => {
                 let local = self.get_local(*id);
@@ -284,7 +284,7 @@ impl Display for ByteCode {
             ByteCode::Index(index) => write!(f, "index {index}"),
             ByteCode::Call(id) => write!(f, "call {id}"),
             ByteCode::Return => write!(f, "return"),
-            ByteCode::NewLocal => write!(f, "new"),
+            ByteCode::NewLocal(id) => write!(f, "new {id}"),
             ByteCode::GetLocal(id) => write!(f, "get {id}"),
             ByteCode::SetLocal(id) => write!(f, "set {id}"),
             ByteCode::Param(id) => write!(f, "param {id}"),

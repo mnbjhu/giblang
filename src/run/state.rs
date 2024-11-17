@@ -88,16 +88,16 @@ impl<'code> ProgramState<'code> {
             .join("/")
     }
 
-    pub fn new_local(&mut self, refr: Handle<Object>) {
-        self.scope_mut().locals.push(refr);
+    pub fn new_local(&mut self, id: u32, refr: Handle<Object>) {
+        self.scope_mut().locals.insert(id, refr);
     }
 
     pub fn set_local(&mut self, id: u32, refr: Handle<Object>) {
-        self.scope_mut().locals[id as usize] = refr;
+        self.scope_mut().locals.insert(id, refr);
     }
 
     pub fn get_local(&mut self, id: u32) -> Handle<Object> {
-        self.scope().locals[id as usize]
+        self.scope().locals[&id]
     }
 
     pub fn get_param(&self, id: u32) -> Handle<Object> {

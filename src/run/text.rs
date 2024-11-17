@@ -272,7 +272,6 @@ pub fn bc_op_parser<'tokens, 'src: 'tokens>() -> impl Parser<
     let or = keyword(ByteCodeKeyword::Or).map(|()| ByteCode::Or);
 
     let ret = keyword(ByteCodeKeyword::Return).map(|()| ByteCode::Return);
-    let new_local = keyword(ByteCodeKeyword::NewLocal).map(|()| ByteCode::NewLocal);
     let param = keyword(ByteCodeKeyword::Param)
         .ignore_then(num)
         .map(ByteCode::Param);
@@ -305,6 +304,9 @@ pub fn bc_op_parser<'tokens, 'src: 'tokens>() -> impl Parser<
     let get_local = keyword(ByteCodeKeyword::GetLocal)
         .ignore_then(num)
         .map(ByteCode::GetLocal);
+    let new_local = keyword(ByteCodeKeyword::NewLocal)
+        .ignore_then(num)
+        .map(ByteCode::NewLocal);
 
     let set_local = keyword(ByteCodeKeyword::SetLocal)
         .ignore_then(num)

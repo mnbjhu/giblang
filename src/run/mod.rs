@@ -21,7 +21,7 @@ pub enum Object {
 impl Trace<Self> for Object {
     fn trace(&self, tracer: &mut broom::prelude::Tracer<Self>) {
         if let Object::Vec(_, items) = self {
-            items.trace(tracer)
+            items.trace(tracer);
         }
     }
 }
