@@ -156,6 +156,7 @@ impl<'db> FuncIR<'db> {
             FuncDef {
                 args: self.args.len() as u32,
                 body,
+                offset: 0,
             },
         )
     }

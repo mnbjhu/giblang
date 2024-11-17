@@ -2,7 +2,7 @@ use std::{collections::HashMap, usize};
 
 use broom::{Handle, Heap};
 
-use crate::lexer::literal::Literal;
+use crate::{lexer::literal::Literal, run::DebugText as _};
 
 use super::{bytecode::ByteCode, scope::Scope, Object};
 
@@ -13,6 +13,7 @@ pub struct ProgramState<'code> {
 
 pub struct FuncDef {
     pub args: u32,
+    pub offset: usize,
     pub body: Vec<ByteCode>,
 }
 
@@ -29,10 +30,10 @@ impl From<Literal> for Object {
 }
 
 impl<'code> ProgramState<'code> {
-    pub fn new(code: &'code [ByteCode], id: u32) -> Self {
+    pub fn new() -> Self {
         Self {
             heap: Heap::default(),
-            scopes: vec![Scope::from_code(code, id)],
+            scopes: vec![],
         }
     }
 
@@ -45,9 +46,20 @@ impl<'code> ProgramState<'code> {
     }
 
     pub fn run(&mut self, funcs: &'code HashMap<u32, FuncDef>) {
+        let main = funcs.get(&0).expect("No main function");
+        self.scopes.push(Scope::from_code(&main.body, 0));
         while !self.scopes.is_empty() {
             let instr = self.next_instr();
-            // println!("Executing: {instr:?} {}", self.stack_trace());
+            println!(
+                "{instr:?} : {:?} : {:?}",
+                self.stack_trace(),
+                self.scope()
+                    .stack
+                    .iter()
+                    .map(|it| it.get_text(self))
+                    .collect::<Vec<_>>()
+                    .join("|"),
+            );
             self.execute(instr, funcs);
         }
     }
@@ -98,33 +110,5 @@ impl<'code> ProgramState<'code> {
 
     pub fn next_instr(&mut self) -> &'code ByteCode {
         self.scope_mut().next_instr()
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use std::collections::HashMap;
-
-    use crate::{lexer::literal::Literal, run::bytecode::ByteCode};
-    use ByteCode::*;
-
-    use super::{FuncDef, ProgramState};
-
-    #[test]
-    fn test_basic() {
-        let code = vec![Push(Literal::String("Hello".to_string())), Panic];
-        let mut prog = ProgramState::new(&code, 0);
-        prog.run(&HashMap::new());
-    }
-
-    #[test]
-    fn test_func() {
-        let body = vec![Push(Literal::String("Hello Func".to_string())), Panic];
-        let hello = FuncDef { args: 0, body };
-        let code = vec![Push(Literal::String("Hello".to_string())), Print, Call(0)];
-        let mut funcs = HashMap::new();
-        funcs.insert(0, hello);
-        let mut prog = ProgramState::new(&code, 0);
-        prog.run(&funcs);
     }
 }

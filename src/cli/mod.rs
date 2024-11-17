@@ -1,5 +1,6 @@
 pub mod build;
 pub mod byte_code_text;
+pub mod debug;
 pub mod exports;
 pub mod file_tree;
 pub mod fmt;
@@ -12,6 +13,7 @@ use std::path::PathBuf;
 
 use build::build;
 use byte_code_text::byte_code_text;
+use debug::debug;
 use exports::exports;
 use file_tree::file_tree;
 use fmt::fmt;
@@ -65,6 +67,12 @@ pub enum Command {
         /// The path to the source file
         path: PathBuf,
     },
+
+    /// Bytecode debugger
+    ByteCodeDebug {
+        /// The path to the source file
+        path: PathBuf,
+    },
 }
 
 impl Command {
@@ -80,6 +88,7 @@ impl Command {
             Command::Fmt { path } => fmt(path),
             Command::Run => run(),
             Command::ByteCodeText { path } => byte_code_text(path),
+            Command::ByteCodeDebug { path } => debug(path),
         }
     }
 }

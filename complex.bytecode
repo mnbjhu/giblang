@@ -11,11 +11,22 @@ func 5136, 0
   call 5126
   return
 func 0, 0
-  push "hello"
+  construct 5130, 0
   construct 5129, 1
   new
   get 0
-  match 5129
+
+  match 5129 // Pattern::Struct
+
+  je 2
+  push false
+  jmp 3
+
+  copy // StructFieldPattern
+  index 0
+
+  match 5129 // Pattern::Struct
+
   jne 6
     copy
     index 0

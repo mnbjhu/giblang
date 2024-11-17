@@ -4,6 +4,7 @@ use cli::Command;
 mod check;
 mod cli;
 mod db;
+mod go;
 mod ir;
 mod item;
 mod lexer;

@@ -1,7 +1,8 @@
+use std::collections::HashMap;
 use std::fmt::Display;
 use std::{fs, path::Path};
 
-use crate::run::state::ProgramState;
+use crate::run::state::{FuncDef, ProgramState};
 use crate::run::text::{bc_parser, byte_code_lexer};
 use crate::util::Span;
 use ariadne::{Color, Label, Report, ReportKind, Source};
@@ -23,15 +24,20 @@ pub fn byte_code_text(path: &Path) {
             print_error(&err, &text, path);
         }
         if let Some(funcs) = funcs {
-            let main = &funcs[&0];
-            let mut prog =
-                ProgramState::new(&main.body, (funcs.len() as u32).checked_sub(1).unwrap());
+            let mut prog = ProgramState::new();
             prog.run(&funcs);
         }
     }
 }
 
-fn print_error<T: Display>(error: &Rich<'_, T>, text: &str, path: &Path) {
+pub fn parse_byte_code_text(text: &str) -> Option<HashMap<u32, FuncDef>> {
+    let tokens = byte_code_lexer().parse(&text).into_output()?;
+    let parser_input = tokens.spanned(Span::splat(text.len()));
+    let funcs = bc_parser().parse(parser_input).into_output()?;
+    Some(funcs)
+}
+
+pub fn print_error<T: Display>(error: &Rich<'_, T>, text: &str, path: &Path) {
     let source = Source::from(text);
     let red = Color::Red;
     let name = path.to_str().unwrap().to_string();

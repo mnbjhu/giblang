@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, ops::Index};
 
 use chumsky::container::Container;
 use salsa::plumbing::AsId as _;
@@ -15,7 +15,7 @@ use crate::{
         common::pattern::{Pattern, StructFieldPattern},
         top::{struct_body::StructBody, struct_field::StructField},
     },
-    run::bytecode::ByteCode,
+    run::bytecode::ByteCode::{self, *},
     ty::{Generic, Named, Ty},
     util::Spanned,
 };
@@ -341,38 +341,66 @@ impl<'db> IrNode<'db> for StructFieldPatternIR<'db> {
 impl<'db> PatternIR<'db> {
     pub fn build_match(&self, state: &mut BuildState<'db>, end: &mut i32) -> Vec<ByteCode> {
         match self {
-            PatternIR::Name(_) => vec![ByteCode::Push(Literal::Bool(true))],
+            PatternIR::Name(_) => {
+                *end += 2;
+                vec![Pop, ByteCode::Push(Literal::Bool(true))]
+            }
             PatternIR::Struct { name, fields } => {
-                let IdentDef::Decl(decl) = name.last().unwrap().0 else {
-                    panic!("Expected struct")
-                };
-                let DeclKind::Struct {
-                    body: StructDecl::Fields(decl_fields),
-                    ..
-                } = decl.kind(state.db)
-                else {
-                    panic!("Expected struct")
-                };
-                let id = decl.as_id().as_u32();
-                let mut code = vec![];
-                for field in fields {
-                    let index = decl_fields
-                        .iter()
-                        .position(|(f, _)| f == field.0.name())
-                        .unwrap();
-                    code.extend(field.0.build_match(state, end, index as u32));
-                }
-                code.extend([ByteCode::Match(id), ByteCode::Not, ByteCode::Jmp(*end)]);
-                code
+                // let IdentDef::Decl(decl) = name.last().unwrap().0 else {
+                //     panic!("Expected struct")
+                // };
+                // let DeclKind::Struct {
+                //     body: StructDecl::Fields(decl_fields),
+                //     ..
+                // } = decl.kind(state.db)
+                // else {
+                //     panic!("Expected struct")
+                // };
+                // let id = decl.as_id().as_u32();
+                // let mut code = vec![];
+                // for field in fields {
+                //     let index = decl_fields
+                //         .iter()
+                //         .position(|(f, _)| f == field.0.name())
+                //         .unwrap();
+                //     code.extend(field.0.build_match(state, end, index as u32));
+                // }
+                // code
+                todo!()
             }
             PatternIR::UnitStruct(name) => {
                 let IdentDef::Decl(decl) = name.last().unwrap().0 else {
                     panic!("Expected struct")
                 };
                 let id = decl.as_id().as_u32();
-                vec![ByteCode::Match(id), ByteCode::Not, ByteCode::Jmp(*end)]
+                *end += 1;
+                vec![Match(id)]
             }
-            PatternIR::TupleStruct { name, fields } => todo!(),
+            PatternIR::TupleStruct { name, fields } => {
+                let IdentDef::Decl(decl) = name.last().unwrap().0 else {
+                    panic!("Expected struct")
+                };
+                let id = decl.as_id().as_u32();
+                let mut code = vec![];
+                for (index, field) in fields.iter().enumerate().rev() {
+                    let mut f = vec![Copy, Index(index as u32)];
+                    f.extend(field.0.build_match(state, end));
+                    *end += 2;
+                    code.push(f);
+                    if index != 0 {
+                        code.push(vec![Je(2), Push(Literal::Bool(false)), Jmp(*end)]);
+                        *end += 3;
+                    }
+                }
+                if code.is_empty() {
+                    *end += 1;
+                    return vec![Match(id)];
+                }
+                code.push(vec![Je(2), Push(Literal::Bool(false)), Jmp(*end)]);
+                *end += 4;
+                code.push(vec![Match(id)]);
+                code.iter().rev().flatten().cloned().collect()
+            }
             PatternIR::Error => todo!(),
         }
     }
@@ -421,26 +449,28 @@ impl<'db> PatternIR<'db> {
 }
 
 impl<'db> StructFieldPatternIR<'db> {
-    pub fn build_match(
-        &self,
-        state: &mut BuildState<'db>,
-        end: &mut i32,
-        index: u32,
-    ) -> Vec<ByteCode> {
-        match self {
-            StructFieldPatternIR::Implied { .. } => {
-                vec![]
-            }
-            StructFieldPatternIR::Explicit { field, pattern } => {
-                let pattern = pattern.0.build_match(state, end);
-                let mut code = vec![ByteCode::Copy, ByteCode::Index(index)];
-                code.extend(pattern);
-                *end += 2;
-                code
-            }
-        }
-    }
-
+    // pub fn build_match(
+    //     &self,
+    //     state: &mut BuildState<'db>,
+    //     end: &mut i32,
+    //     index: u32,
+    // ) -> Vec<ByteCode> {
+    //     match self {
+    //         StructFieldPatternIR::Implied { .. } => {
+    //             vec![ByteCode::Je(*end)]
+    //         }
+    //         StructFieldPatternIR::Explicit { field, pattern } => {
+    //             let pattern = pattern.0.build_match(state, end);
+    //             let my_end = *end;
+    //             let mut code = vec![ByteCode::Copy, ByteCode::Index(index)];
+    //             code.extend(pattern);
+    //             code.push(ByteCode::Je(my_end));
+    //             *end += 3;
+    //             code
+    //         }
+    //     }
+    // }
+    //
     pub fn build(&self, state: &mut BuildState<'db>, index: u32) -> Vec<ByteCode> {
         match self {
             StructFieldPatternIR::Implied { name } => {

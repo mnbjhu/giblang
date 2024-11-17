@@ -36,6 +36,8 @@ tokio-util = "0.7.12"
 pretty = "0.12.3"
 backtrace = "0.3.74"
 broom = "0.3.2"
+dap = "0.4.1-alpha1"
+thiserror = "2.0.3"
 [lints.clippy]
 pedantic = { priority = -1, level = "warn" }
 module_name_repetitions = "allow"

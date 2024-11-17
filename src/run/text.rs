@@ -27,6 +27,7 @@ pub enum ByteCodeToken {
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum ByteCodeKeyword {
+    Copy,
     Func,
     Push,
     Pop,
@@ -47,6 +48,11 @@ pub enum ByteCodeKeyword {
     Not,
     And,
     Or,
+    Match,
+    Jmp,
+    Je,
+    Jne,
+    Index,
 }
 
 pub fn byte_code_lexer<'src>(
@@ -77,6 +83,12 @@ pub fn byte_code_lexer<'src>(
         "and" => ByteCodeToken::Keyword(ByteCodeKeyword::And),
         "or" => ByteCodeToken::Keyword(ByteCodeKeyword::Or),
         "not" => ByteCodeToken::Keyword(ByteCodeKeyword::Not),
+        "match" => ByteCodeToken::Keyword(ByteCodeKeyword::Match),
+        "je" => ByteCodeToken::Keyword(ByteCodeKeyword::Je),
+        "jne" => ByteCodeToken::Keyword(ByteCodeKeyword::Jne),
+        "jmp" => ByteCodeToken::Keyword(ByteCodeKeyword::Jmp),
+        "copy" => ByteCodeToken::Keyword(ByteCodeKeyword::Copy),
+        "index" => ByteCodeToken::Keyword(ByteCodeKeyword::Index),
         "true" => ByteCodeToken::Literal(Literal::Bool(true)),
         "false" => ByteCodeToken::Literal(Literal::Bool(false)),
         _ => ByteCodeToken::Ident(ident.to_string()),
@@ -182,6 +194,12 @@ impl Display for ByteCodeKeyword {
             ByteCodeKeyword::Not => write!(f, "not"),
             ByteCodeKeyword::And => write!(f, "and"),
             ByteCodeKeyword::Or => write!(f, "or"),
+            ByteCodeKeyword::Match => write!(f, "match"),
+            ByteCodeKeyword::Jmp => write!(f, "jmp"),
+            ByteCodeKeyword::Je => write!(f, "je"),
+            ByteCodeKeyword::Jne => write!(f, "jne"),
+            ByteCodeKeyword::Copy => write!(f, "copy"),
+            ByteCodeKeyword::Index => write!(f, "index"),
         }
     }
 }
@@ -244,6 +262,7 @@ pub fn bc_op_parser<'tokens, 'src: 'tokens>() -> impl Parser<
     let call = keyword(ByteCodeKeyword::Call)
         .ignore_then(num)
         .map(ByteCode::Call);
+    let copy = keyword(ByteCodeKeyword::Copy).map(|()| ByteCode::Copy);
     let mul = keyword(ByteCodeKeyword::Mul).map(|()| ByteCode::Mul);
     let add = keyword(ByteCodeKeyword::Add).map(|()| ByteCode::Add);
     let sub = keyword(ByteCodeKeyword::Sub).map(|()| ByteCode::Sub);
@@ -257,6 +276,31 @@ pub fn bc_op_parser<'tokens, 'src: 'tokens>() -> impl Parser<
     let param = keyword(ByteCodeKeyword::Param)
         .ignore_then(num)
         .map(ByteCode::Param);
+    let match_ = keyword(ByteCodeKeyword::Match)
+        .ignore_then(num)
+        .map(ByteCode::Match);
+    let index = keyword(ByteCodeKeyword::Index)
+        .ignore_then(num)
+        .map(ByteCode::Index);
+
+    let int = just(ByteCodeToken::Op("-".to_string()))
+        .or_not()
+        .then(num.clone())
+        .map(|(s, n)| match s {
+            Some(_) => -(n as i32),
+            None => n as i32,
+        });
+    let jmp = keyword(ByteCodeKeyword::Jmp)
+        .ignore_then(int.clone())
+        .map(ByteCode::Jmp);
+
+    let je = keyword(ByteCodeKeyword::Je)
+        .ignore_then(int.clone())
+        .map(ByteCode::Je);
+
+    let jne = keyword(ByteCodeKeyword::Jne)
+        .ignore_then(int)
+        .map(ByteCode::Jne);
 
     let get_local = keyword(ByteCodeKeyword::GetLocal)
         .ignore_then(num)
@@ -272,7 +316,7 @@ pub fn bc_op_parser<'tokens, 'src: 'tokens>() -> impl Parser<
 
     choice((
         pop, push, print, panic, construct, call, ret, new_local, get_local, set_local, goto,
-        param, mul, add, sub, or, and, eq, not,
+        param, mul, add, sub, or, and, eq, not, match_, jmp, je, jne, copy, index,
     ))
 }
 
@@ -290,7 +334,16 @@ pub fn bc_parser<'tokens, 'src: 'tokens>() -> impl Parser<
                 .separated_by(just(ByteCodeToken::Newline))
                 .collect(),
         )
-        .map(|((id, args), body)| (id, FuncDef { args, body }))
+        .map_with(|((id, args), body), e| {
+            (
+                id,
+                FuncDef {
+                    args,
+                    body,
+                    offset: e.span().start,
+                },
+            )
+        })
         .separated_by(just(ByteCodeToken::Newline))
         .allow_trailing()
         .collect()

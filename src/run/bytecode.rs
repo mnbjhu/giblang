@@ -24,6 +24,8 @@ pub enum ByteCode {
     SetLocal(u32),
     Param(u32),
     Goto(u32),
+    Je(i32),
+    Jne(i32),
     Jmp(i32),
     Id,
     Add,
@@ -58,7 +60,7 @@ impl<'code> ProgramState<'code> {
                 }
             }
             ByteCode::Match(expected) => {
-                let refr = self.peak();
+                let refr = self.pop();
                 let obj = self.heap.get(refr).unwrap();
                 if let Object::Vec(id, _) = obj {
                     let res = self.heap.insert(Object::Bool(id == expected));
@@ -123,7 +125,7 @@ impl<'code> ProgramState<'code> {
                 let refr = self.pop();
                 self.set_local(*id, refr);
             }
-            ByteCode::Jmp(diff) => {
+            ByteCode::Je(diff) => {
                 let cond = self.pop();
                 if let Object::Bool(cond) = self.heap.get(cond).unwrap() {
                     if *cond {
@@ -132,6 +134,19 @@ impl<'code> ProgramState<'code> {
                 } else {
                     panic!("Expected condition to be a boolean")
                 }
+            }
+            ByteCode::Jne(diff) => {
+                let cond = self.pop();
+                if let Object::Bool(cond) = self.heap.get(cond).unwrap() {
+                    if !cond {
+                        self.scope_mut().index = (self.scope().index as i32 + diff) as usize;
+                    }
+                } else {
+                    panic!("Expected condition to be a boolean")
+                }
+            }
+            ByteCode::Jmp(diff) => {
+                self.scope_mut().index = (self.scope().index as i32 + diff) as usize;
             }
             ByteCode::Goto(line) => {
                 let cond = self.pop();
@@ -282,6 +297,8 @@ impl Display for ByteCode {
             ByteCode::Not => write!(f, "not"),
             ByteCode::Eq => write!(f, "eq"),
             ByteCode::Copy => write!(f, "copy"),
+            ByteCode::Je(diff) => write!(f, "je {diff}"),
+            ByteCode::Jne(diff) => write!(f, "jne {diff}"),
             ByteCode::Jmp(diff) => write!(f, "jmp {diff}"),
             ByteCode::Id => write!(f, "id"),
             ByteCode::Match(id) => write!(f, "match {id}"),

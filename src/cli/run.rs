@@ -24,8 +24,7 @@ pub fn run() {
     }
     if diags.is_empty() {
         let funcs = db.vfs.unwrap().build(&db, project);
-        let main = funcs.get(&0).expect("no main function");
-        let mut prog = ProgramState::new(&main.body, 0);
+        let mut prog = ProgramState::new();
         prog.run(&funcs);
     }
 }

@@ -22,7 +22,7 @@ pub fn brackets<'b, D, A, T>(
     allocator: &'b D,
     open: &'b str,
     close: &'b str,
-    items: &'b [Spanned<T>],
+    items: &'b [T],
 ) -> pretty::DocBuilder<'b, D, A>
 where
     D: pretty::DocAllocator<'b, A>,
@@ -36,9 +36,7 @@ where
         .append(
             allocator
                 .line_()
-                .append(
-                    allocator.intersperse(items.iter().map(|i| i.0.pretty(allocator)), separator),
-                )
+                .append(allocator.intersperse(items.iter().map(|i| i.pretty(allocator)), separator))
                 .nest(4),
         )
         .append(allocator.line_())
@@ -46,10 +44,7 @@ where
         .group()
 }
 
-pub fn braces<'b, D, A, T>(
-    allocator: &'b D,
-    items: &'b [Spanned<T>],
-) -> pretty::DocBuilder<'b, D, A>
+pub fn braces<'b, D, A, T>(allocator: &'b D, items: &'b [T]) -> pretty::DocBuilder<'b, D, A>
 where
     D: pretty::DocAllocator<'b, A>,
     D::Doc: Clone,
@@ -62,9 +57,7 @@ where
         .append(
             allocator
                 .hardline()
-                .append(
-                    allocator.intersperse(items.iter().map(|i| i.0.pretty(allocator)), separator),
-                )
+                .append(allocator.intersperse(items.iter().map(|i| i.pretty(allocator)), separator))
                 .nest(4),
         )
         .append(allocator.hardline())

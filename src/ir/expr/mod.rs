@@ -7,13 +7,15 @@ use lambda::LambdaIR;
 use match_::MatchIR;
 use member::MemberCallIR;
 use op::OpIR;
+use salsa::plumbing::AsId;
 use tuple::{check_tuple, expect_tuple};
 
 use crate::{
     check::{build_state::BuildState, state::CheckState},
+    db::decl::{struct_::StructDecl, Decl, DeclKind},
     item::definitions::ident::IdentDef,
     lexer::literal::Literal,
-    parser::expr::Expr,
+    parser::{expr::Expr, top::struct_::Struct},
     run::bytecode::ByteCode,
     ty::Ty,
     util::{Span, Spanned},
@@ -165,7 +167,22 @@ impl<'db> ExprIR<'db> {
                     vec![ByteCode::GetLocal(var)]
                 }
                 IdentDef::Generic(_) => todo!(),
-                IdentDef::Decl(_) => todo!(),
+                IdentDef::Decl(decl) => match decl.kind(state.db) {
+                    DeclKind::Struct { body, .. } | DeclKind::Member { body } => {
+                        if let StructDecl::None = body {
+                            vec![ByteCode::Construct {
+                                id: decl.as_id().as_u32(),
+                                len: 0,
+                            }]
+                        } else {
+                            panic!("Expected fields")
+                        }
+                    }
+                    DeclKind::Trait { generics, body } => todo!(),
+                    DeclKind::Enum { generics, variants } => todo!(),
+                    DeclKind::Function(_) => todo!(),
+                    DeclKind::Module(_) => todo!(),
+                },
                 IdentDef::Unresolved => unreachable!(),
             },
             ExprIRData::CodeBlock(CodeBlockIR { stmts, .. }) => {
@@ -179,7 +196,7 @@ impl<'db> ExprIR<'db> {
             }
             ExprIRData::Call(call) => call.build(state),
             ExprIRData::MemberCall(member_call) => todo!(),
-            ExprIRData::Match(match_) => todo!(),
+            ExprIRData::Match(match_) => match_.build(state),
             ExprIRData::Tuple(tuple) => {
                 let mut code = tuple
                     .iter()
