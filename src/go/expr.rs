@@ -70,6 +70,12 @@ impl AstItem for GoExpr {
                     OpKind::Div => "/",
                     OpKind::Eq => "==",
                     OpKind::Neq => "!=",
+                    OpKind::Lt => "<",
+                    OpKind::Gt => ">",
+                    OpKind::Lte => "<=",
+                    OpKind::Gte => ">=",
+                    OpKind::And => "&&",
+                    OpKind::Or => "||",
                 };
                 left.pretty(allocator)
                     .append(allocator.space())

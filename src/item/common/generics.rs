@@ -44,7 +44,34 @@ where
         .group()
 }
 
-pub fn braces<'b, D, A, T>(allocator: &'b D, items: &'b [T]) -> pretty::DocBuilder<'b, D, A>
+pub fn line_sep_braces<'b, D, A, T>(
+    allocator: &'b D,
+    items: &'b [T],
+) -> pretty::DocBuilder<'b, D, A>
+where
+    D: pretty::DocAllocator<'b, A>,
+    D::Doc: Clone,
+    A: Clone,
+    T: AstItem,
+{
+    let separator = allocator.hardline();
+    allocator
+        .text(" {")
+        .append(
+            allocator
+                .hardline()
+                .append(allocator.intersperse(items.iter().map(|i| i.pretty(allocator)), separator))
+                .nest(4),
+        )
+        .append(allocator.hardline())
+        .append("}")
+        .group()
+}
+
+pub fn comma_sep_braces<'b, D, A, T>(
+    allocator: &'b D,
+    items: &'b [T],
+) -> pretty::DocBuilder<'b, D, A>
 where
     D: pretty::DocAllocator<'b, A>,
     D::Doc: Clone,

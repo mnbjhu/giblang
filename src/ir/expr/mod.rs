@@ -12,7 +12,7 @@ use tuple::{check_tuple, expect_tuple};
 use while_::WhileIR;
 
 use crate::{
-    check::{build_state::BuildState, state::CheckState},
+    check::{build_state::BuildState, state::CheckState, TokenKind},
     db::decl::{struct_::StructDecl, Decl, DeclKind},
     item::definitions::ident::IdentDef,
     lexer::literal::Literal,
@@ -182,10 +182,17 @@ impl<'db> ExprIR<'db> {
             ExprIRData::Literal(lit) => vec![ByteCode::Push(lit.replace_chars())],
             ExprIRData::Field(field) => field.build(state),
             ExprIRData::Ident(ident) => match &ident.last().unwrap().0 {
-                IdentDef::Variable(var) => {
-                    let var = state.get_var(&var.name).unwrap();
-                    vec![ByteCode::GetLocal(var)]
-                }
+                IdentDef::Variable(var) => match &var.kind {
+                    TokenKind::Var => {
+                        let var = state.get_var(&var.name).unwrap();
+                        vec![ByteCode::GetLocal(var)]
+                    }
+                    TokenKind::Param => {
+                        let param = state.get_param(&var.name).unwrap();
+                        vec![ByteCode::Param(param)]
+                    }
+                    _ => todo!(),
+                },
                 IdentDef::Generic(_) => todo!(),
                 IdentDef::Decl(decl) => match decl.kind(state.db) {
                     DeclKind::Struct { body, .. } | DeclKind::Member { body } => {
@@ -215,7 +222,7 @@ impl<'db> ExprIR<'db> {
                 code
             }
             ExprIRData::Call(call) => call.build(state),
-            ExprIRData::MemberCall(member_call) => todo!(),
+            ExprIRData::MemberCall(member_call) => member_call.build(state),
             ExprIRData::Match(match_) => match_.build(state),
             ExprIRData::Tuple(tuple) => {
                 let mut code = tuple

@@ -1,8 +1,11 @@
+use salsa::plumbing::AsId;
+
 use crate::{
-    check::{state::CheckState, SemanticToken, TokenKind},
+    check::{build_state::BuildState, state::CheckState, SemanticToken, TokenKind},
     ir::{ContainsOffset, IrNode, IrState},
     item::definitions::ident::IdentDef,
     parser::expr::member::MemberCall,
+    run::bytecode::ByteCode,
     ty::{FuncTy, Ty},
     util::{Span, Spanned},
 };
@@ -122,5 +125,31 @@ impl<'db> IrNode<'db> for MemberCallIR<'db> {
 
     fn hover(&self, _: usize, state: &mut IrState<'db>) -> Option<String> {
         Some(self.def.hover(state))
+    }
+
+    fn goto(
+        &self,
+        offset: usize,
+        state: &mut IrState<'db>,
+    ) -> Option<(crate::db::input::SourceFile, Span)> {
+        self.def.goto(state)
+    }
+}
+
+impl<'db> MemberCallIR<'db> {
+    pub fn build(&self, state: &mut BuildState<'db>) -> Vec<ByteCode> {
+        let mut code = self.receiver.0.build(state);
+        for arg in &self.args {
+            code.extend(arg.0.build(state));
+        }
+        match &self.def {
+            IdentDef::Variable(_) => todo!(),
+            IdentDef::Generic(_) => todo!(),
+            IdentDef::Decl(decl) => {
+                code.push(ByteCode::Call(decl.as_id().as_u32()));
+                code
+            }
+            IdentDef::Unresolved => todo!(),
+        }
     }
 }

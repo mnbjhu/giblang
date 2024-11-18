@@ -6,7 +6,7 @@ use crate::{
     check::{build_state::BuildState, state::VarDecl, SemanticToken},
     db::{
         decl::{Decl, Project},
-        input::Db,
+        input::{Db, SourceFile},
         path::ModulePath,
     },
     run::state::FuncDef,
@@ -36,6 +36,10 @@ pub trait IrNode<'db> {
     fn hover(&self, offset: usize, state: &mut IrState<'db>) -> Option<String> {
         None
     }
+    #[allow(unused)]
+    fn goto(&self, offset: usize, state: &mut IrState<'db>) -> Option<(SourceFile, Span)> {
+        None
+    }
 }
 
 pub struct IrState<'db> {
@@ -44,16 +48,23 @@ pub struct IrState<'db> {
     pub db: &'db dyn Db,
     pub project: Project<'db>,
     pub type_vars: HashMap<u32, Ty<'db>>,
+    pub file: SourceFile,
 }
 
 impl<'db> IrState<'db> {
-    pub fn new(db: &'db dyn Db, project: Project<'db>, type_vars: HashMap<u32, Ty<'db>>) -> Self {
+    pub fn new(
+        db: &'db dyn Db,
+        project: Project<'db>,
+        type_vars: HashMap<u32, Ty<'db>>,
+        file: SourceFile,
+    ) -> Self {
         IrState {
             generics: vec![],
             variables: vec![],
             db,
             project,
             type_vars,
+            file,
         }
     }
 
@@ -75,7 +86,7 @@ impl<'db> FileIR<'db> {
     pub fn build(self, state: &mut BuildState<'db>) -> HashMap<u32, FuncDef> {
         self.tops(state.db)
             .iter()
-            .filter_map(|(top, _)| top.build(state))
+            .flat_map(|(top, _)| top.build(state))
             .collect()
     }
 }

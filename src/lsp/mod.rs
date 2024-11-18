@@ -157,7 +157,7 @@ fn semantic_tokens_full(
         let file = db.input(&msg.text_document.uri.to_file_path().unwrap());
         let project = resolve_project(&db, db.vfs.unwrap());
         let ir = check_file(&db, file, project);
-        let mut state = IrState::new(&db, project, ir.type_vars(&db));
+        let mut state = IrState::new(&db, project, ir.type_vars(&db), file);
         let mut tokens = vec![];
         ir.tokens(&mut tokens, &mut state);
         Ok(Some(async_lsp::lsp_types::SemanticTokensResult::Tokens(

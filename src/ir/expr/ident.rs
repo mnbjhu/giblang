@@ -4,7 +4,10 @@ use crate::{
         state::CheckState,
         SemanticToken, TokenKind,
     },
-    db::{decl::DeclKind, input::Db},
+    db::{
+        decl::DeclKind,
+        input::{Db, SourceFile},
+    },
     ir::{common::pattern::SpannedQualifiedNameIR, ContainsOffset as _, IrNode, IrState},
     item::definitions::ident::IdentDef,
     ty::Ty,
@@ -160,6 +163,15 @@ impl<'db> IrNode<'db> for SpannedQualifiedNameIR<'db> {
             None
         }
     }
+
+    fn goto(&self, offset: usize, state: &mut IrState<'db>) -> Option<(SourceFile, Span)> {
+        let seg = self.iter().find(|(_, span)| span.contains_offset(offset));
+        if let Some((def, _)) = seg {
+            def.goto(state)
+        } else {
+            None
+        }
+    }
 }
 
 impl<'db> IdentDef<'db> {
@@ -173,6 +185,15 @@ impl<'db> IdentDef<'db> {
                 format!("{}: {}", generic.name.0, generic.super_.get_ir_name(state))
             }
             IdentDef::Unresolved => "Unresolved".to_string(),
+        }
+    }
+
+    pub fn goto(&self, state: &mut IrState<'db>) -> Option<(SourceFile, Span)> {
+        match self {
+            IdentDef::Variable(var) => Some((state.file, var.span)),
+            IdentDef::Decl(decl) => Some((decl.file(state.db), decl.span(state.db))),
+            IdentDef::Generic(generic) => Some((state.file, generic.name.1)),
+            IdentDef::Unresolved => None,
         }
     }
 }

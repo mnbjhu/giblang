@@ -1,7 +1,7 @@
 use crate::item::AstItem;
 use crate::parser::common::type_::Type;
 
-use super::generics::{braces, brackets};
+use super::generics::{brackets, comma_sep_braces};
 
 impl AstItem for Type {
     fn item_name(&self) -> &'static str {
@@ -18,7 +18,7 @@ impl AstItem for Type {
             Type::Wildcard(_) => allocator.text("_"),
             Type::Named(named) => named.pretty(allocator),
             Type::Tuple(tys) => brackets(allocator, "(", ")", tys),
-            Type::Sum(tys) => braces(allocator, tys),
+            Type::Sum(tys) => comma_sep_braces(allocator, tys),
             Type::Function {
                 receiver,
                 args,

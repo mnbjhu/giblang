@@ -1,12 +1,13 @@
 use std::future::Future;
 
-use async_lsp::lsp_types::{GotoDefinitionParams, GotoDefinitionResponse};
+use async_lsp::lsp_types::{GotoDefinitionParams, GotoDefinitionResponse, Location, Url};
 
 use crate::{
-    check::{resolve_project, state::CheckState},
+    check::{check_file, resolve_project, state::CheckState},
     db::input::Db as _,
+    ir::{IrNode as _, IrState},
     parser::parse_file,
-    range::position_to_offset,
+    range::{position_to_offset, span_to_range_str},
 };
 
 use super::ServerState;
@@ -26,22 +27,16 @@ pub fn goto_definition(
         );
         let offset = position_to_offset(msg.text_document_position_params.position, file.text(&db));
         let project = resolve_project(&db, db.vfs.unwrap());
-        let ast = parse_file(&db, file);
-        let mut state = CheckState::from_file(&db, file, project);
-        state.should_error = false;
-        todo!();
-        // let found = ast.at_offset(&db, &mut state, offset);
-        // if let Some((found, _)) = found {
-        //     if let Some((file, span)) = found.goto_def(&mut state, offset) {
-        //         if file.module_path(&db).name(&db).first().unwrap() == "std" {
-        //             return Ok(None)
-        //         }
-        //         let range = span_to_range_str(span.into(), file.text(&db));
-        //         let url = Url::from_file_path(file.path(&db)).unwrap();
-        //         let location = Location { uri: url, range };
-        //         return Ok(Some(GotoDefinitionResponse::Scalar(location)));
-        //     }
-        // }
-        Ok(None)
+        let ir = check_file(&db, file, project);
+        let mut state = IrState::new(&db, project, ir.type_vars(&db), file);
+        let node = ir.at_offset(offset, &mut state);
+        if let Some((file, span)) = node.goto(offset, &mut state) {
+            Ok(Some(GotoDefinitionResponse::Scalar(Location {
+                uri: Url::from_file_path(file.path(&db)).unwrap(),
+                range: span_to_range_str(span.into(), file.text(&db)),
+            })))
+        } else {
+            Ok(None)
+        }
     }
 }

@@ -88,11 +88,12 @@ impl<'db> IrNode<'db> for TopIR<'db> {
 }
 
 impl<'db> TopIR<'db> {
-    pub fn build(&self, state: &mut BuildState<'db>) -> Option<(u32, FuncDef)> {
+    pub fn build(&self, state: &mut BuildState<'db>) -> Vec<(u32, FuncDef)> {
         // TODO: Add constructors for other types
         match self {
-            TopIR::Func(f) => Some(f.build(state)),
-            _ => None,
+            TopIR::Func(f) => vec![f.build(state)],
+            TopIR::Impl(i) => i.build(state),
+            _ => vec![],
         }
     }
 }

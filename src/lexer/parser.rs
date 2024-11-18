@@ -53,7 +53,7 @@ pub fn lexer<'src>(
         .delimited_by(just('\''), just('\''))
         .map(|c: char| Token::Literal(Literal::Char(c)));
 
-    let op = one_of("+-*/=<>_")
+    let op = one_of("+-*/=<>_!&|")
         .repeated()
         .at_least(1)
         .to_slice()

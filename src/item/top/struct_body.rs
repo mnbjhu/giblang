@@ -1,10 +1,9 @@
-
 use async_lsp::lsp_types::DocumentSymbol;
 
 use crate::{
     check::state::CheckState,
     item::{
-        common::generics::{braces, brackets},
+        common::generics::{brackets, comma_sep_braces},
         AstItem,
     },
     parser::top::struct_body::StructBody,
@@ -25,7 +24,7 @@ impl AstItem for StructBody {
         match self {
             StructBody::None => allocator.nil(),
             StructBody::Tuple(tys) => brackets(allocator, "(", ")", tys),
-            StructBody::Fields(fields) => braces(allocator, fields),
+            StructBody::Fields(fields) => comma_sep_braces(allocator, fields),
         }
     }
 }

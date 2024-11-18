@@ -1,5 +1,5 @@
 use crate::{
-    item::{common::generics::braces, AstItem},
+    item::{common::generics::line_sep_braces, AstItem},
     parser::expr::code_block::CodeBlock,
 };
 
@@ -14,6 +14,6 @@ impl AstItem for CodeBlock {
         D::Doc: Clone,
         A: Clone,
     {
-        braces(allocator, self)
+        line_sep_braces(allocator, self)
     }
 }

@@ -45,6 +45,7 @@ pub enum ByteCodeKeyword {
     Add,
     Sub,
     Eq,
+    Neq,
     Not,
     And,
     Or,
@@ -54,6 +55,11 @@ pub enum ByteCodeKeyword {
     Jne,
     Index,
     SetIndex,
+    Gt,
+    Lt,
+    Gte,
+    Lte,
+    Clone,
 }
 
 pub fn byte_code_lexer<'src>(
@@ -81,6 +87,7 @@ pub fn byte_code_lexer<'src>(
         "add" => ByteCodeToken::Keyword(ByteCodeKeyword::Add),
         "sub" => ByteCodeToken::Keyword(ByteCodeKeyword::Sub),
         "eq" => ByteCodeToken::Keyword(ByteCodeKeyword::Eq),
+        "neq" => ByteCodeToken::Keyword(ByteCodeKeyword::Neq),
         "and" => ByteCodeToken::Keyword(ByteCodeKeyword::And),
         "or" => ByteCodeToken::Keyword(ByteCodeKeyword::Or),
         "not" => ByteCodeToken::Keyword(ByteCodeKeyword::Not),
@@ -91,6 +98,11 @@ pub fn byte_code_lexer<'src>(
         "copy" => ByteCodeToken::Keyword(ByteCodeKeyword::Copy),
         "index" => ByteCodeToken::Keyword(ByteCodeKeyword::Index),
         "set_index" => ByteCodeToken::Keyword(ByteCodeKeyword::SetIndex),
+        "gt" => ByteCodeToken::Keyword(ByteCodeKeyword::Gt),
+        "lt" => ByteCodeToken::Keyword(ByteCodeKeyword::Lt),
+        "gte" => ByteCodeToken::Keyword(ByteCodeKeyword::Gte),
+        "lte" => ByteCodeToken::Keyword(ByteCodeKeyword::Lte),
+        "clone" => ByteCodeToken::Keyword(ByteCodeKeyword::Clone),
         "true" => ByteCodeToken::Literal(Literal::Bool(true)),
         "false" => ByteCodeToken::Literal(Literal::Bool(false)),
         _ => ByteCodeToken::Ident(ident.to_string()),
@@ -193,6 +205,7 @@ impl Display for ByteCodeKeyword {
             ByteCodeKeyword::Add => write!(f, "add"),
             ByteCodeKeyword::Sub => write!(f, "sub"),
             ByteCodeKeyword::Eq => write!(f, "eq"),
+            ByteCodeKeyword::Neq => write!(f, "neq"),
             ByteCodeKeyword::Not => write!(f, "not"),
             ByteCodeKeyword::And => write!(f, "and"),
             ByteCodeKeyword::Or => write!(f, "or"),
@@ -203,6 +216,11 @@ impl Display for ByteCodeKeyword {
             ByteCodeKeyword::Copy => write!(f, "copy"),
             ByteCodeKeyword::Index => write!(f, "index"),
             ByteCodeKeyword::SetIndex => write!(f, "set_index"),
+            ByteCodeKeyword::Gt => write!(f, "gt"),
+            ByteCodeKeyword::Lt => write!(f, "lt"),
+            ByteCodeKeyword::Gte => write!(f, "gte"),
+            ByteCodeKeyword::Lte => write!(f, "lte"),
+            ByteCodeKeyword::Clone => write!(f, "clone"),
         }
     }
 }
@@ -273,6 +291,11 @@ pub fn bc_op_parser<'tokens, 'src: 'tokens>() -> impl Parser<
     let eq = keyword(ByteCodeKeyword::Eq).map(|()| ByteCode::Eq);
     let and = keyword(ByteCodeKeyword::And).map(|()| ByteCode::And);
     let or = keyword(ByteCodeKeyword::Or).map(|()| ByteCode::Or);
+    let gt = keyword(ByteCodeKeyword::Gt).map(|()| ByteCode::Gt);
+    let lt = keyword(ByteCodeKeyword::Lt).map(|()| ByteCode::Lt);
+    let gte = keyword(ByteCodeKeyword::Gte).map(|()| ByteCode::Gte);
+    let lte = keyword(ByteCodeKeyword::Lte).map(|()| ByteCode::Lte);
+    let clone = keyword(ByteCodeKeyword::Lte).map(|()| ByteCode::Clone);
 
     let ret = keyword(ByteCodeKeyword::Return).map(|()| ByteCode::Return);
     let param = keyword(ByteCodeKeyword::Param)
@@ -290,7 +313,7 @@ pub fn bc_op_parser<'tokens, 'src: 'tokens>() -> impl Parser<
 
     let int = just(ByteCodeToken::Op("-".to_string()))
         .or_not()
-        .then(num.clone())
+        .then(num)
         .map(|(s, n)| match s {
             Some(_) => -(n as i32),
             None => n as i32,
@@ -323,8 +346,13 @@ pub fn bc_op_parser<'tokens, 'src: 'tokens>() -> impl Parser<
         .map(ByteCode::Goto);
 
     choice((
-        pop, push, print, panic, construct, call, ret, new_local, get_local, set_local, goto,
-        param, mul, add, sub, or, and, eq, not, match_, jmp, je, jne, copy, index, set_index,
+        choice((
+            pop, push, print, panic, construct, call, ret, new_local, get_local, set_local, goto,
+        )),
+        choice((
+            param, mul, add, sub, or, and, eq, not, match_, jmp, je, jne, copy, index, set_index,
+            gt, lt, gte, lte, clone,
+        )),
     ))
 }
 

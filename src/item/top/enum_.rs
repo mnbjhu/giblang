@@ -2,7 +2,7 @@ use async_lsp::lsp_types::{DocumentSymbol, SymbolKind};
 
 use crate::{
     check::state::CheckState,
-    item::{common::generics::braces, AstItem},
+    item::{common::generics::comma_sep_braces, AstItem},
     parser::top::enum_::Enum,
     range::span_to_range_str,
     util::Span,
@@ -26,7 +26,7 @@ impl AstItem for Enum {
             .append(allocator.space())
             .append(self.generics.0.pretty(allocator))
             .append(allocator.space())
-            .append(braces(allocator, &self.members))
+            .append(comma_sep_braces(allocator, &self.members))
     }
 }
 

@@ -50,16 +50,16 @@ impl<'code> ProgramState<'code> {
         self.scopes.push(Scope::from_code(&main.body, 0));
         while !self.scopes.is_empty() {
             let instr = self.next_instr();
-            println!(
-                "{instr:?} : {:?} : {:?}",
-                self.stack_trace(),
-                self.scope()
-                    .stack
-                    .iter()
-                    .map(|it| it.get_text(self))
-                    .collect::<Vec<_>>()
-                    .join("|"),
-            );
+            // println!(
+            //     "{instr:?} : {:?} : {:?}",
+            //     self.stack_trace(),
+            //     self.scope()
+            //         .stack
+            //         .iter()
+            //         .map(|it| it.get_text(self))
+            //         .collect::<Vec<_>>()
+            //         .join("|"),
+            // );
             self.execute(instr, funcs);
         }
     }

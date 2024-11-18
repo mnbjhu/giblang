@@ -36,7 +36,13 @@ pub enum ByteCode {
     And,
     Not,
     Eq,
+    Neq,
+    Lt,
+    Gt,
+    Lte,
+    Gte,
     Match(u32),
+    Clone,
 }
 
 #[allow(clippy::too_many_lines)]
@@ -242,6 +248,80 @@ impl<'code> ProgramState<'code> {
                 let res = StackItem::Bool(a == b);
                 self.push(res);
             }
+            ByteCode::Neq => {
+                let b = self.pop();
+                let a = self.pop();
+                let res = StackItem::Bool(a != b);
+                self.push(res);
+            }
+            ByteCode::Lt => {
+                let b = self.pop();
+                let a = self.pop();
+                match (a, b) {
+                    (StackItem::Int(a), StackItem::Int(b)) => {
+                        let res = StackItem::Bool(a < b);
+                        self.push(res);
+                    }
+                    (StackItem::Float(a), StackItem::Float(b)) => {
+                        let res = StackItem::Bool(a < b);
+                        self.push(res);
+                    }
+                    _ => {
+                        panic!("Cannot '<' non-numbers")
+                    }
+                }
+            }
+            ByteCode::Gt => {
+                let b = self.pop();
+                let a = self.pop();
+                match (a, b) {
+                    (StackItem::Int(a), StackItem::Int(b)) => {
+                        let res = StackItem::Bool(a > b);
+                        self.push(res);
+                    }
+                    (StackItem::Float(a), StackItem::Float(b)) => {
+                        let res = StackItem::Bool(a > b);
+                        self.push(res);
+                    }
+                    _ => {
+                        panic!("Cannot '>' non-numbers")
+                    }
+                }
+            }
+            ByteCode::Lte => {
+                let b = self.pop();
+                let a = self.pop();
+                match (a, b) {
+                    (StackItem::Int(a), StackItem::Int(b)) => {
+                        let res = StackItem::Bool(a <= b);
+                        self.push(res);
+                    }
+                    (StackItem::Float(a), StackItem::Float(b)) => {
+                        let res = StackItem::Bool(a <= b);
+                        self.push(res);
+                    }
+                    _ => {
+                        panic!("Cannot '<=' non-numbers")
+                    }
+                }
+            }
+            ByteCode::Gte => {
+                let b = self.pop();
+                let a = self.pop();
+                match (a, b) {
+                    (StackItem::Int(a), StackItem::Int(b)) => {
+                        let res = StackItem::Bool(a >= b);
+                        self.push(res);
+                    }
+                    (StackItem::Float(a), StackItem::Float(b)) => {
+                        let res = StackItem::Bool(a >= b);
+                        self.push(res);
+                    }
+                    _ => {
+                        panic!("Cannot '>=' non-numbers")
+                    }
+                }
+            }
             ByteCode::Not => match self.pop() {
                 StackItem::Bool(a) => {
                     let res = StackItem::Bool(!a);
@@ -267,6 +347,17 @@ impl<'code> ProgramState<'code> {
                 };
                 let data = self.heap.get_mut(*refr).unwrap();
                 data.0[*index as usize] = value;
+            }
+            ByteCode::Clone => {
+                let refr = self.pop();
+                if let StackItem::Vec(id, refr) = refr {
+                    let data = self.heap.get(refr).unwrap();
+                    let refr = self.heap.insert(Object(data.0.clone()));
+                    let res = StackItem::Vec(id, refr.into());
+                    self.push(res);
+                } else {
+                    self.push(refr.clone());
+                }
             }
         };
     }
@@ -302,6 +393,12 @@ impl Display for ByteCode {
             ByteCode::Jmp(diff) => write!(f, "jmp {diff}"),
             ByteCode::Id => write!(f, "id"),
             ByteCode::Match(id) => write!(f, "match {id}"),
+            ByteCode::Lt => write!(f, "lt"),
+            ByteCode::Gt => write!(f, "gt"),
+            ByteCode::Lte => write!(f, "lte"),
+            ByteCode::Gte => write!(f, "gte"),
+            ByteCode::Neq => write!(f, "neq"),
+            ByteCode::Clone => write!(f, "clone"),
         }
     }
 }

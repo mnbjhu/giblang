@@ -33,6 +33,10 @@ impl<'db> BuildState<'db> {
             .find_map(|vars| vars.get(name).copied())
     }
 
+    pub fn get_param(&self, name: &str) -> Option<u32> {
+        self.params.get(name).copied()
+    }
+
     pub fn clear(&mut self) {
         self.vars.clear();
         self.params.clear();

@@ -1,6 +1,6 @@
 use crate::{
     item::{
-        common::generics::{braces, brackets},
+        common::generics::{brackets, comma_sep_braces},
         AstItem,
     },
     util::Spanned,
@@ -52,7 +52,7 @@ impl AstItem for GoFunc {
             .append(format!("F{}", self.id))
             .append(brackets(allocator, "(", ")", &self.args))
             .append(ret)
-            .append(braces(allocator, &self.body))
+            .append(comma_sep_braces(allocator, &self.body))
     }
 }
 

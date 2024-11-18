@@ -68,14 +68,21 @@ impl<'db> OpIR<'db> {
     pub fn build(&self, state: &mut BuildState<'db>) -> Vec<ByteCode> {
         let mut code = self.left.0.build(state);
         code.extend(self.right.0.build(state));
-        match &self.kind {
-            OpKind::Add => code.push(ByteCode::Add),
-            OpKind::Sub => code.push(ByteCode::Sub),
-            OpKind::Mul => code.push(ByteCode::Mul),
+        let op = match &self.kind {
+            OpKind::Add => ByteCode::Add,
+            OpKind::Sub => ByteCode::Sub,
+            OpKind::Mul => ByteCode::Mul,
             OpKind::Div => todo!(),
-            OpKind::Eq => code.push(ByteCode::Eq),
-            OpKind::Neq => code.extend([ByteCode::Eq, ByteCode::Not]),
+            OpKind::Eq => ByteCode::Eq,
+            OpKind::Neq => ByteCode::Neq,
+            OpKind::Lt => ByteCode::Lt,
+            OpKind::Gt => ByteCode::Gt,
+            OpKind::Lte => ByteCode::Lte,
+            OpKind::Gte => ByteCode::Gte,
+            OpKind::And => ByteCode::And,
+            OpKind::Or => ByteCode::Or,
         };
+        code.push(op);
         code
     }
 }

@@ -128,6 +128,9 @@ impl<'db> IrNode<'db> for FuncIR<'db> {
 impl<'db> FuncIR<'db> {
     pub fn build(&self, state: &mut BuildState<'db>) -> (u32, FuncDef) {
         state.clear();
+        if self.receiver.is_some() {
+            state.add_param("self".to_string());
+        }
         for param in &self.args {
             state.add_param(param.0.name.0.clone());
         }
@@ -154,7 +157,7 @@ impl<'db> FuncIR<'db> {
         (
             id,
             FuncDef {
-                args: self.args.len() as u32,
+                args: state.params.len() as u32,
                 body,
                 offset: 0,
             },
