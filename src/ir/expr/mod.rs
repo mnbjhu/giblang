@@ -1,8 +1,8 @@
 use block::{check_block, CodeBlockIR};
 use call::CallIR;
-use chumsky::container::Container;
 use field::FieldIR;
 use ident::{check_ident, expect_ident};
+use if_else::IfElseIR;
 use lambda::LambdaIR;
 use match_::MatchIR;
 use member::MemberCallIR;
@@ -13,10 +13,10 @@ use while_::WhileIR;
 
 use crate::{
     check::{build_state::BuildState, state::CheckState, TokenKind},
-    db::decl::{struct_::StructDecl, Decl, DeclKind},
+    db::decl::{struct_::StructDecl, DeclKind},
     item::definitions::ident::IdentDef,
     lexer::literal::Literal,
-    parser::{expr::Expr, top::struct_::Struct},
+    parser::expr::Expr,
     run::bytecode::ByteCode,
     ty::Ty,
     util::{Span, Spanned},
@@ -57,6 +57,7 @@ pub enum ExprIRData<'db> {
     Op(OpIR<'db>),
     Lambda(LambdaIR<'db>),
     While(WhileIR<'db>),
+    IfElse(IfElseIR<'db>),
     Error,
 }
 
@@ -81,35 +82,44 @@ impl<'db> Expr {
                 data: ExprIRData::Error,
                 ty: Ty::Unknown,
             },
-            Expr::IfElse(_) => todo!(),
+            Expr::IfElse(if_else) => if_else.check(state),
         }
     }
 
-    pub fn expect(&self, state: &mut CheckState<'db>, ty: &Ty<'db>, span: Span) -> ExprIR<'db> {
+    pub fn expect(
+        &self,
+        state: &mut CheckState<'db>,
+        expected: &Ty<'db>,
+        span: Span,
+    ) -> ExprIR<'db> {
         match self {
-            Expr::Literal(lit) => ExprIR {
-                data: ExprIRData::Literal(lit.clone()),
-                ty: lit.to_ty(state.db),
-            },
-            Expr::Field(field) => field.expect(state, ty, span),
-            Expr::Ident(ident) => expect_ident(ident, state, ty, span),
+            Expr::Literal(lit) => {
+                let ty = lit.to_ty(state.db);
+                ty.expect_is_instance_of(expected, state, span);
+                ExprIR {
+                    data: ExprIRData::Literal(lit.clone()),
+                    ty,
+                }
+            }
+            Expr::Field(field) => field.expect(state, expected, span),
+            Expr::Ident(ident) => expect_ident(ident, state, expected, span),
             Expr::CodeBlock(block) => check_block(block, state),
-            Expr::Call(call) => call.expect(state, ty, span),
-            Expr::MemberCall(member_call) => member_call.expect(state, ty, span),
-            Expr::Match(match_) => match_.expect(state, ty, span),
-            Expr::Tuple(tuple) => expect_tuple(tuple, state, ty, span),
-            Expr::Op(op) => op.expect(state, ty, span),
-            Expr::Lambda(lambda) => lambda.expect(state, ty, span),
+            Expr::Call(call) => call.expect(state, expected, span),
+            Expr::MemberCall(member_call) => member_call.expect(state, expected, span),
+            Expr::Match(match_) => match_.expect(state, expected, span),
+            Expr::Tuple(tuple) => expect_tuple(tuple, state, expected, span),
+            Expr::Op(op) => op.expect(state, expected, span),
+            Expr::Lambda(lambda) => lambda.expect(state, expected, span),
             Expr::Error => ExprIR {
                 data: ExprIRData::Error,
                 ty: Ty::Unknown,
             },
             Expr::While(while_) => {
                 let ir = while_.check(state);
-                Ty::unit().expect_is_instance_of(ty, state, span);
+                Ty::unit().expect_is_instance_of(expected, state, span);
                 ir
             }
-            Expr::IfElse(_) => todo!(),
+            Expr::IfElse(if_else) => if_else.expect(state, expected, span),
         }
     }
 }
@@ -135,6 +145,7 @@ impl<'db> IrNode<'db> for ExprIR<'db> {
             ExprIRData::Op(op) => op.at_offset(offset, state),
             ExprIRData::Lambda(lambda) => lambda.at_offset(offset, state),
             ExprIRData::While(while_) => while_.at_offset(offset, state),
+            ExprIRData::IfElse(if_else) => if_else.at_offset(offset, state),
         }
     }
 
@@ -159,6 +170,7 @@ impl<'db> IrNode<'db> for ExprIR<'db> {
             ExprIRData::Op(op) => op.tokens(tokens, state),
             ExprIRData::Lambda(lambda) => lambda.tokens(tokens, state),
             ExprIRData::While(while_) => while_.tokens(tokens, state),
+            ExprIRData::IfElse(if_else) => if_else.tokens(tokens, state),
         }
     }
 
@@ -194,22 +206,24 @@ impl<'db> ExprIR<'db> {
                     _ => todo!(),
                 },
                 IdentDef::Generic(_) => todo!(),
-                IdentDef::Decl(decl) => match decl.kind(state.db) {
-                    DeclKind::Struct { body, .. } | DeclKind::Member { body } => {
-                        if let StructDecl::None = body {
-                            vec![ByteCode::Construct {
-                                id: decl.as_id().as_u32(),
-                                len: 0,
-                            }]
-                        } else {
-                            panic!("Expected fields")
+                IdentDef::Decl(decl) => {
+                    if matches!(
+                        decl.kind(state.db),
+                        DeclKind::Struct {
+                            body: StructDecl::None,
+                            ..
+                        } | DeclKind::Member {
+                            body: StructDecl::None,
                         }
+                    ) {
+                        vec![ByteCode::Construct {
+                            id: decl.as_id().as_u32(),
+                            len: 0,
+                        }]
+                    } else {
+                        panic!("Can only construct unit decl as ident")
                     }
-                    DeclKind::Trait { generics, body } => todo!(),
-                    DeclKind::Enum { generics, variants } => todo!(),
-                    DeclKind::Function(_) => todo!(),
-                    DeclKind::Module(_) => todo!(),
-                },
+                }
                 IdentDef::Unresolved => unreachable!(),
             },
             ExprIRData::CodeBlock(CodeBlockIR { stmts, .. }) => {
@@ -238,6 +252,7 @@ impl<'db> ExprIR<'db> {
             ExprIRData::Op(op) => op.build(state),
             ExprIRData::Lambda(lambda) => todo!(),
             ExprIRData::While(while_) => while_.build(state),
+            ExprIRData::IfElse(if_else) => if_else.build(state),
             ExprIRData::Error => unreachable!(),
         }
     }

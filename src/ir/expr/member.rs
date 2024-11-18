@@ -18,13 +18,14 @@ pub struct MemberCallIR<'db> {
     pub name: Spanned<String>,
     pub args: Vec<Spanned<ExprIR<'db>>>,
     pub def: IdentDef<'db>,
+    pub ty: Option<FuncTy<'db>>,
 }
 
 impl<'db> MemberCall {
     pub fn check(&self, state: &mut CheckState<'db>) -> ExprIR<'db> {
         let rec = Box::new((self.rec.0.check(state), self.rec.1));
         let funcs = rec.0.ty.get_member_func(&self.name, state);
-        let Some(func_ty) = funcs else {
+        let Some((def, func_ty)) = funcs else {
             state.simple_error(
                 &format!(
                     "No function {} found for type {}",
@@ -43,18 +44,16 @@ impl<'db> MemberCall {
                         .map(|(arg, span)| (arg.check(state), *span))
                         .collect(),
                     def: IdentDef::Unresolved,
+                    ty: None,
                 }),
                 ty: Ty::Unknown,
             };
         };
-        let (
-            def,
-            FuncTy {
-                args: expected_args,
-                ret,
-                receiver,
-            },
-        ) = func_ty;
+        let FuncTy {
+            args: expected_args,
+            ret,
+            receiver,
+        } = func_ty.clone();
         if let Some(expected) = receiver {
             rec.0.ty.expect_is_instance_of(&expected, state, self.rec.1);
         }
@@ -82,6 +81,7 @@ impl<'db> MemberCall {
                 name: self.name.clone(),
                 args,
                 def,
+                ty: Some(func_ty),
             }),
             ty,
         }
@@ -124,7 +124,13 @@ impl<'db> IrNode<'db> for MemberCallIR<'db> {
     }
 
     fn hover(&self, _: usize, state: &mut IrState<'db>) -> Option<String> {
-        Some(self.def.hover(state))
+        Some(format!(
+            "{}: {}",
+            self.def.hover(state),
+            self.ty
+                .as_ref()
+                .map_or("Unknown".to_string(), |func| func.get_ir_name(state))
+        ))
     }
 
     fn goto(

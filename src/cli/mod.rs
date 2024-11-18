@@ -44,6 +44,9 @@ pub enum Command {
     /// Runs the project
     Run,
 
+    /// Runs the project with debug traces
+    Debug,
+
     /// Shows a tree of the exports
     Exports,
 
@@ -67,12 +70,6 @@ pub enum Command {
         /// The path to the source file
         path: PathBuf,
     },
-
-    /// Bytecode debugger
-    ByteCodeDebug {
-        /// The path to the source file
-        path: PathBuf,
-    },
 }
 
 impl Command {
@@ -88,7 +85,7 @@ impl Command {
             Command::Fmt { path } => fmt(path),
             Command::Run => run(),
             Command::ByteCodeText { path } => byte_code_text(path),
-            Command::ByteCodeDebug { path } => debug(path),
+            Command::Debug => debug(),
         }
     }
 }

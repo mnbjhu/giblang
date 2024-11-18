@@ -52,5 +52,9 @@ impl<'db> IrNode<'db> for EnumIR<'db> {
             span: self.name.1,
             kind: TokenKind::Enum,
         });
+        self.generics.0.tokens(tokens, state);
+        self.members
+            .iter()
+            .for_each(|(member, _)| member.tokens(tokens, state));
     }
 }

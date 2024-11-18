@@ -52,7 +52,7 @@ impl<'db> BuildState<'db> {
         self.vars.pop();
     }
 
-    pub fn add_param(&mut self, name: String) {
-        self.params.insert(name, self.params.len() as u32);
+    pub fn add_param(&mut self, name: String, id: u32) {
+        self.params.insert(name, id);
     }
 }

@@ -45,21 +45,30 @@ impl<'code> ProgramState<'code> {
         self.scopes.last_mut().expect("Call stack underflow")
     }
 
+    pub fn run_debug(&mut self, funcs: &'code HashMap<u32, FuncDef>) {
+        let main = funcs.get(&0).expect("No main function");
+        self.scopes.push(Scope::from_code(&main.body, 0));
+        while !self.scopes.is_empty() {
+            let instr = self.next_instr();
+            println!(
+                "{instr:?} : {:?} : {:?}",
+                self.stack_trace(),
+                self.scope()
+                    .stack
+                    .iter()
+                    .map(|it| it.get_text(self))
+                    .collect::<Vec<_>>()
+                    .join("|"),
+            );
+            self.execute(instr, funcs);
+        }
+    }
+
     pub fn run(&mut self, funcs: &'code HashMap<u32, FuncDef>) {
         let main = funcs.get(&0).expect("No main function");
         self.scopes.push(Scope::from_code(&main.body, 0));
         while !self.scopes.is_empty() {
             let instr = self.next_instr();
-            // println!(
-            //     "{instr:?} : {:?} : {:?}",
-            //     self.stack_trace(),
-            //     self.scope()
-            //         .stack
-            //         .iter()
-            //         .map(|it| it.get_text(self))
-            //         .collect::<Vec<_>>()
-            //         .join("|"),
-            // );
             self.execute(instr, funcs);
         }
     }

@@ -128,6 +128,16 @@ impl Vfs {
 
                 struct Vec[T]
 
+                impl[T] Vec[T] {
+                    fn new(): Self
+                    fn Self.get(index: Int): T
+                    fn Self.set(index: Int, value: T)
+                    fn Self.push(value: T)
+                    fn Self.pop(): T
+                    fn Self.peak(): T
+                    fn Self.len(): Int
+                }
+
                 enum Option[T] {
                     Some(T),
                     None

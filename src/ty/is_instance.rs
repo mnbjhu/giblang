@@ -29,12 +29,8 @@ impl<'db> Ty<'db> {
         }
         let res = match (self, other) {
             (Ty::Unknown | Ty::Nothing, _) | (_, Ty::Unknown) => true,
-            (Ty::TypeVar { id }, _) => {
+            (Ty::TypeVar { id }, other) | (other, Ty::TypeVar { id }) => {
                 state.expected_var_is_ty(*id, other.clone(), span);
-                true
-            }
-            (_, Ty::TypeVar { id }) => {
-                state.expected_ty_is_var(*id, self.clone(), span);
                 true
             }
             (_, Ty::Any) => true,

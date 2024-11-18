@@ -77,6 +77,29 @@ impl<'db> IrState<'db> {
         self.generics.push(generics);
     }
 
+    pub fn get_var(&self, name: &str) -> Option<&VarDecl<'db>> {
+        for scope in self.variables.iter().rev() {
+            if let Some(var) = scope.get(name) {
+                return Some(var);
+            }
+        }
+        None
+    }
+
+    pub fn get_generic(&self, name: &str) -> Option<&Generic<'db>> {
+        for scope in self.generics.iter().rev() {
+            if let Some(generic) = scope.get(name) {
+                return Some(generic);
+            }
+        }
+        None
+    }
+
+    pub fn exit_scope(&mut self) {
+        self.variables.pop();
+        self.generics.pop();
+    }
+
     pub fn try_get_decl_path(&self, name: ModulePath<'db>) -> Option<Decl<'db>> {
         self.project.get_decl(self.db, name)
     }

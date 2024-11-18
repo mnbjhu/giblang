@@ -1,5 +1,7 @@
 use std::{collections::HashMap, fmt::Display};
 
+use chumsky::container::Container;
+
 use crate::{lexer::literal::Literal, run::DebugText};
 
 use super::{
@@ -20,6 +22,16 @@ pub enum ByteCode {
     Return,
     Index(u32),
     SetIndex(u32),
+
+    VecGet,
+    VecSet,
+    VecPush,
+    VecPop,
+    VecPeak,
+    VecInsert,
+    VecRemove,
+    VecLen,
+
     NewLocal(u32),
     GetLocal(u32),
     SetLocal(u32),
@@ -83,9 +95,9 @@ impl<'code> ProgramState<'code> {
             }
             ByteCode::Call(id) => {
                 let func = &funcs[id];
-                let mut args = Vec::new();
+                let mut args = Vec::with_capacity(func.args as usize);
                 for _ in 0..func.args {
-                    args.push(self.pop());
+                    args.insert(0, self.pop());
                 }
                 let scope = Scope {
                     args,
@@ -359,6 +371,88 @@ impl<'code> ProgramState<'code> {
                     self.push(refr.clone());
                 }
             }
+            ByteCode::VecGet => {
+                let StackItem::Int(index) = self.pop() else {
+                    panic!("Expected index to be an int")
+                };
+                let StackItem::Vec(_, refr) = self.pop() else {
+                    panic!("Cannot index non-vec")
+                };
+                let data = self.heap.get(refr).unwrap();
+                let res = data.0[index as usize].clone();
+                self.push(res);
+            }
+            ByteCode::VecSet => {
+                let StackItem::Int(index) = self.pop() else {
+                    panic!("Expected index to be an int")
+                };
+                let value = self.pop();
+                let StackItem::Vec(_, refr) = self.pop() else {
+                    panic!("Cannot index non-vec")
+                };
+                let data = self.heap.get_mut(refr).unwrap();
+                data.0[index as usize] = value;
+            }
+            ByteCode::VecPush => {
+                let value = self.pop();
+                let vec = self.pop();
+                let StackItem::Vec(_, refr) = &vec else {
+                    panic!("Cannot index non-vec")
+                };
+                let data = self.heap.get_mut(*refr).unwrap();
+                data.0.push(value);
+            }
+            ByteCode::VecPop => {
+                let vec = self.pop();
+                let StackItem::Vec(_, refr) = vec else {
+                    panic!("Cannot index non-vec")
+                };
+                let data = self.heap.get_mut(refr).unwrap();
+                let res = data.0.pop().unwrap();
+                self.push(res);
+            }
+            ByteCode::VecPeak => {
+                let vec = self.pop();
+                let StackItem::Vec(_, refr) = vec else {
+                    panic!("Cannot index non-vec")
+                };
+                let data = self.heap.get(refr).unwrap();
+                let res = data.0.last().unwrap().clone();
+                self.push(res);
+            }
+            ByteCode::VecInsert => {
+                let StackItem::Int(index) = self.pop() else {
+                    panic!("Expected index to be an int")
+                };
+                let value = self.pop();
+                let vec = self.pop();
+                let StackItem::Vec(_, refr) = &vec else {
+                    panic!("Cannot index non-vec")
+                };
+                let data = self.heap.get_mut(*refr).unwrap();
+                data.0.insert(index as usize, value);
+            }
+            ByteCode::VecRemove => {
+                let StackItem::Int(index) = self.pop() else {
+                    panic!("Expected index to be an int")
+                };
+                let vec = self.pop();
+                let StackItem::Vec(_, refr) = vec else {
+                    panic!("Cannot index non-vec")
+                };
+                let data = self.heap.get_mut(refr).unwrap();
+                let res = data.0.remove(index as usize);
+                self.push(res);
+            }
+            ByteCode::VecLen => {
+                let vec = self.pop();
+                let StackItem::Vec(_, refr) = vec else {
+                    panic!("Cannot index non-vec")
+                };
+                let data = self.heap.get(refr).unwrap();
+                let res = StackItem::Int(data.0.len() as i32);
+                self.push(res);
+            }
         };
     }
 }
@@ -399,6 +493,14 @@ impl Display for ByteCode {
             ByteCode::Gte => write!(f, "gte"),
             ByteCode::Neq => write!(f, "neq"),
             ByteCode::Clone => write!(f, "clone"),
+            ByteCode::VecGet => write!(f, "vec_get"),
+            ByteCode::VecSet => write!(f, "vec_set"),
+            ByteCode::VecPush => write!(f, "vec_push"),
+            ByteCode::VecPop => write!(f, "vec_pop"),
+            ByteCode::VecPeak => write!(f, "vec_peak"),
+            ByteCode::VecInsert => write!(f, "vec_insert"),
+            ByteCode::VecRemove => write!(f, "vec_remove"),
+            ByteCode::VecLen => write!(f, "vec_len"),
         }
     }
 }

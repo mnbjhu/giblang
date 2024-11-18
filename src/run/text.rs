@@ -60,6 +60,13 @@ pub enum ByteCodeKeyword {
     Gte,
     Lte,
     Clone,
+    VecGet,
+    VecSet,
+    VecPush,
+    VecPop,
+    VecLen,
+    VecInsert,
+    VecRemove,
 }
 
 pub fn byte_code_lexer<'src>(
@@ -103,6 +110,13 @@ pub fn byte_code_lexer<'src>(
         "gte" => ByteCodeToken::Keyword(ByteCodeKeyword::Gte),
         "lte" => ByteCodeToken::Keyword(ByteCodeKeyword::Lte),
         "clone" => ByteCodeToken::Keyword(ByteCodeKeyword::Clone),
+        "vec_get" => ByteCodeToken::Keyword(ByteCodeKeyword::VecGet),
+        "vec_set" => ByteCodeToken::Keyword(ByteCodeKeyword::VecSet),
+        "vec_push" => ByteCodeToken::Keyword(ByteCodeKeyword::VecPush),
+        "vec_pop" => ByteCodeToken::Keyword(ByteCodeKeyword::VecPop),
+        "vec_len" => ByteCodeToken::Keyword(ByteCodeKeyword::VecLen),
+        "vec_insert" => ByteCodeToken::Keyword(ByteCodeKeyword::VecInsert),
+        "vec_remove" => ByteCodeToken::Keyword(ByteCodeKeyword::VecRemove),
         "true" => ByteCodeToken::Literal(Literal::Bool(true)),
         "false" => ByteCodeToken::Literal(Literal::Bool(false)),
         _ => ByteCodeToken::Ident(ident.to_string()),
@@ -221,6 +235,13 @@ impl Display for ByteCodeKeyword {
             ByteCodeKeyword::Gte => write!(f, "gte"),
             ByteCodeKeyword::Lte => write!(f, "lte"),
             ByteCodeKeyword::Clone => write!(f, "clone"),
+            ByteCodeKeyword::VecGet => write!(f, "vec_get"),
+            ByteCodeKeyword::VecSet => write!(f, "vec_set"),
+            ByteCodeKeyword::VecPush => write!(f, "vec_push"),
+            ByteCodeKeyword::VecPop => write!(f, "vec_pop"),
+            ByteCodeKeyword::VecLen => write!(f, "vec_len"),
+            ByteCodeKeyword::VecInsert => write!(f, "vec_insert"),
+            ByteCodeKeyword::VecRemove => write!(f, "vec_remove"),
         }
     }
 }
@@ -296,6 +317,13 @@ pub fn bc_op_parser<'tokens, 'src: 'tokens>() -> impl Parser<
     let gte = keyword(ByteCodeKeyword::Gte).map(|()| ByteCode::Gte);
     let lte = keyword(ByteCodeKeyword::Lte).map(|()| ByteCode::Lte);
     let clone = keyword(ByteCodeKeyword::Lte).map(|()| ByteCode::Clone);
+    let vec_get = keyword(ByteCodeKeyword::VecGet).map(|()| ByteCode::VecGet);
+    let vec_set = keyword(ByteCodeKeyword::VecSet).map(|()| ByteCode::VecSet);
+    let vec_push = keyword(ByteCodeKeyword::VecPush).map(|()| ByteCode::VecPush);
+    let vec_pop = keyword(ByteCodeKeyword::VecPop).map(|()| ByteCode::VecPop);
+    let vec_len = keyword(ByteCodeKeyword::VecLen).map(|()| ByteCode::VecLen);
+    let vec_insert = keyword(ByteCodeKeyword::VecInsert).map(|()| ByteCode::VecInsert);
+    let vec_remove = keyword(ByteCodeKeyword::VecRemove).map(|()| ByteCode::VecRemove);
 
     let ret = keyword(ByteCodeKeyword::Return).map(|()| ByteCode::Return);
     let param = keyword(ByteCodeKeyword::Param)
@@ -348,6 +376,7 @@ pub fn bc_op_parser<'tokens, 'src: 'tokens>() -> impl Parser<
     choice((
         choice((
             pop, push, print, panic, construct, call, ret, new_local, get_local, set_local, goto,
+            vec_get, vec_set, vec_push, vec_pop, vec_len, vec_insert, vec_remove,
         )),
         choice((
             param, mul, add, sub, or, and, eq, not, match_, jmp, je, jne, copy, index, set_index,

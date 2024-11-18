@@ -7,7 +7,7 @@ use crate::{
         build_state::BuildState, err::CheckError, state::CheckState, SemanticToken, TokenKind,
     },
     db::decl::{struct_::StructDecl, DeclKind},
-    ir::{ContainsOffset, IrNode},
+    ir::{ContainsOffset, IrNode, IrState},
     item::definitions::ident::IdentDef,
     lexer::literal::Literal,
     parser::common::pattern::{Pattern, StructFieldPattern},
@@ -294,6 +294,22 @@ impl<'db> IrNode<'db> for PatternIR<'db> {
                 }
             }
             PatternIR::Error => {}
+        }
+    }
+
+    fn hover(&self, offset: usize, state: &mut IrState<'db>) -> Option<String> {
+        match self {
+            PatternIR::Name(name) => Some(format!(
+                "{}: {}",
+                name.0,
+                state
+                    .get_var(&name.0)
+                    .map_or("Unknown".to_string(), |t| t.ty.get_ir_name(state))
+            )),
+            PatternIR::Struct { name, fields } => todo!(),
+            PatternIR::UnitStruct(_) => todo!(),
+            PatternIR::TupleStruct { name, fields } => todo!(),
+            PatternIR::Error => todo!(),
         }
     }
 }

@@ -20,20 +20,20 @@ use super::{
 
 #[derive(Clone, PartialEq, Debug, Eq)]
 pub struct IfElse {
-    pub ifs: Vec<IfBranch>,
-    pub else_: Option<CodeBlock>,
+    pub ifs: Vec<Spanned<IfBranch>>,
+    pub else_: Option<Spanned<CodeBlock>>,
 }
 
 #[derive(Clone, PartialEq, Debug, Eq)]
 pub struct IfBranch {
-    pub condition: Condition,
-    pub body: Vec<Spanned<Stmt>>,
+    pub condition: Spanned<Condition>,
+    pub body: Spanned<Vec<Spanned<Stmt>>>,
 }
 
 #[derive(Clone, PartialEq, Debug, Eq)]
 pub enum Condition {
     Let(LetStatement),
-    Expr(Spanned<Expr>),
+    Expr(Expr),
 }
 
 pub fn if_else_parser<'tokens, 'src: 'tokens>(
@@ -42,8 +42,10 @@ pub fn if_else_parser<'tokens, 'src: 'tokens>(
 ) -> AstParser!(IfElse) {
     let else_ = just(kw!(else))
         .ignore_then(code_block_parser(stmt.clone()))
+        .map_with(|i, e| (i, e.span()))
         .or_not();
     if_branch_parser(expr, stmt)
+        .map_with(|i, e| (i, e.span()))
         .separated_by(just(kw!(else)).padded_by(optional_newline()))
         .at_least(1)
         .collect()
@@ -57,10 +59,11 @@ pub fn if_branch_parser<'tokens, 'src: 'tokens>(
 ) -> AstParser!(IfBranch) {
     let condition = let_parser(expr.clone())
         .map(Condition::Let)
-        .or(expr.map_with(|ex, e| (ex, e.span())).map(Condition::Expr));
+        .or(expr.map(Condition::Expr))
+        .map_with(|i, e| (i, e.span()));
 
     just(kw!(if))
         .ignore_then(condition)
-        .then(code_block_parser(stmt))
+        .then(code_block_parser(stmt).map_with(|i, e| (i, e.span())))
         .map(|(condition, body)| IfBranch { condition, body })
 }

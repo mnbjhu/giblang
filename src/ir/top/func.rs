@@ -128,11 +128,14 @@ impl<'db> IrNode<'db> for FuncIR<'db> {
 impl<'db> FuncIR<'db> {
     pub fn build(&self, state: &mut BuildState<'db>) -> (u32, FuncDef) {
         state.clear();
+        let mut i = 0;
         if self.receiver.is_some() {
-            state.add_param("self".to_string());
+            state.add_param("self".to_string(), 0);
+            i += 1;
         }
         for param in &self.args {
-            state.add_param(param.0.name.0.clone());
+            state.add_param(param.0.name.0.clone(), i);
+            i += 1;
         }
         let id = if self.name.0 == "main" {
             0
@@ -141,10 +144,37 @@ impl<'db> FuncIR<'db> {
         };
         let path = self.decl.path(state.db).name(state.db);
         let mut body = if path[0] == "std" {
-            match path[1].as_str() {
-                "print" => vec![ByteCode::Param(0), ByteCode::Print],
-                "panic" => vec![ByteCode::Param(0), ByteCode::Panic],
-                _ => vec![],
+            if let Some(name) = path.get(1) {
+                match name.as_str() {
+                    "print" => vec![ByteCode::Param(0), ByteCode::Print],
+                    "panic" => vec![ByteCode::Param(0), ByteCode::Panic],
+                    _ => vec![],
+                }
+            } else {
+                match self.name.0.as_str() {
+                    "get" => vec![ByteCode::Param(0), ByteCode::Param(1), ByteCode::VecGet],
+                    "set" => vec![
+                        ByteCode::Param(0),
+                        ByteCode::Param(2),
+                        ByteCode::Param(1),
+                        ByteCode::VecSet,
+                    ],
+                    "push" => vec![ByteCode::Param(0), ByteCode::Param(1), ByteCode::VecPush],
+                    "pop" => vec![ByteCode::Param(0), ByteCode::VecPop],
+                    "peak" => vec![ByteCode::Param(0), ByteCode::VecPeak],
+                    "insert" => {
+                        vec![
+                            ByteCode::Param(0),
+                            ByteCode::Param(2),
+                            ByteCode::Param(1),
+                            ByteCode::VecInsert,
+                        ]
+                    }
+                    "remove" => vec![ByteCode::Param(0), ByteCode::Param(1), ByteCode::VecRemove],
+                    "len" => vec![ByteCode::Param(0), ByteCode::VecLen],
+                    "new" => vec![ByteCode::Construct { id: 0, len: 0 }],
+                    _ => panic!("Unknown std function: {}", self.name.0),
+                }
             }
         } else {
             self.body

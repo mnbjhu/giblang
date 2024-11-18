@@ -30,7 +30,7 @@ pub fn build() {
         for (id, func) in funcs {
             writeln!(out, "func {id}, {}", func.args).unwrap();
             for op in func.body {
-                writeln!(out, "{op}").unwrap();
+                writeln!(out, "    {op}").unwrap();
             }
         }
     }
