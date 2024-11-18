@@ -35,32 +35,33 @@ impl<'db> Ty<'db> {
         name: &Spanned<String>,
         state: &mut CheckState<'db>,
     ) -> Option<(IdentDef<'db>, FuncTy<'db>)> {
-        let mut funcs = get_sub_tys(self, state, name.1)
-            .iter()
-            .filter_map(|ty| ty.get_func(name, state, self))
-            .collect::<Vec<_>>();
-        funcs.extend(self.get_func(name, state, self));
-        if funcs.len() > 1 {
-            state.simple_error(&format!("Ambiguous call to function {}", &name.0), name.1);
-            None
-        } else if funcs.len() == 1 {
-            let func = (
-                funcs[0].0.clone(),
-                funcs[0].1.inst(&mut HashMap::new(), state, name.1),
-            );
-            Some(func)
-        } else {
-            let ident = check_ident(&[name.clone()], state);
-            let ExprIRData::Ident(segs) = ident.data else {
-                panic!("Expected ident...")
-            };
-            let def = segs.last().unwrap().0.clone();
-            if let Ty::Function(func_ty) = ident.ty {
-                Some((def, func_ty))
-            } else {
-                None
-            }
-        }
+        self.get_func(name, state, self)
+        // let mut funcs = get_sub_tys(self, state, name.1)
+        //     .iter()
+        //     .filter_map(|ty| ty.get_func(name, state, self))
+        //     .collect::<Vec<_>>();
+        // funcs.extend(self.get_func(name, state, self));
+        // if funcs.len() > 1 {
+        //     state.simple_error(&format!("Ambiguous call to function {}", &name.0), name.1);
+        //     None
+        // } else if funcs.len() == 1 {
+        //     let func = (
+        //         funcs[0].0.clone(),
+        //         funcs[0].1.inst(&mut HashMap::new(), state, name.1),
+        //     );
+        //     Some(func)
+        // } else {
+        //     let ident = check_ident(&[name.clone()], state);
+        //     let ExprIRData::Ident(segs) = ident.data else {
+        //         panic!("Expected ident...")
+        //     };
+        //     let def = segs.last().unwrap().0.clone();
+        //     if let Ty::Function(func_ty) = ident.ty {
+        //         Some((def, func_ty))
+        //     } else {
+        //         None
+        //     }
+        // }
     }
 
     pub fn get_matching_member_func(

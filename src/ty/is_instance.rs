@@ -192,41 +192,50 @@ impl<'db> FuncTy<'db> {
 }
 
 impl<'db> Ty<'db> {
-    pub fn get_func(
+    pub fn get_all_impl_funcs(
         &self,
         name: &Spanned<String>,
         state: &mut CheckState<'db>,
-        self_ty: &Ty<'db>,
-    ) -> Option<(IdentDef<'db>, FuncTy<'db>)> {
-        if let Ty::Named(Named { name: id, args }) = self {
-            if let Some(DeclKind::Trait { body, generics }) =
-                state.try_get_decl_path(*id).map(|d| d.kind(state.db))
-            {
-                if args.len() != generics.len() {
-                    return None;
-                }
-                let mut params = generics
-                    .iter()
-                    .map(|arg| arg.name.0.clone())
-                    .zip(args.iter().cloned())
-                    .collect::<HashMap<_, _>>();
-                params.insert("Self".to_string(), self_ty.clone());
-                let found = body
-                    .iter()
-                    .find(|func| func.name(state.db) == name.0)
-                    .map(|func| {
-                        let Ty::Function(ty) =
-                            func.get_ty(state).parameterize(&params).inst(state, name.1)
-                        else {
-                            panic!("Expected function");
-                        };
-                        (IdentDef::Decl(*func), ty)
-                    });
-                if let Some(found) = found {
-                    return Some(found);
-                }
-            };
-            let mut impl_funcs = state
+    ) -> Vec<(IdentDef<'db>, FuncTy<'db>)> {
+        if let Ty::Named(Named { name: id, .. }) = self {
+            state
+                .project
+                .get_impls(state.db, *id)
+                .into_iter()
+                .flat_map(|i| {
+                    let mut funcs = Vec::new();
+                    let mut implied = HashMap::new();
+                    i.from_ty(state.db).imply_generic_args(self, &mut implied);
+                    let self_ty = self.parameterize(&implied);
+                    implied.insert("Self".to_string(), self_ty);
+                    if i.to_ty(state.db).is_some() {
+                        let new = i.map(state.db, self);
+                        funcs.extend(new.get_all_impl_funcs(name, state));
+                    }
+                    for func in i.functions(state.db) {
+                        if func.name(state.db) != name.0 {
+                            continue;
+                        }
+                        let ty = func.get_ty(state).parameterize(&implied);
+                        if let Ty::Function(ty) = ty {
+                            funcs.push((IdentDef::Decl(*func), ty));
+                        }
+                    }
+                    funcs
+                })
+                .collect::<Vec<_>>()
+        } else {
+            vec![]
+        }
+    }
+
+    pub fn get_impl_funcs(
+        &self,
+        name: &Spanned<String>,
+        state: &mut CheckState<'db>,
+    ) -> Vec<(IdentDef<'db>, FuncTy<'db>)> {
+        if let Ty::Named(Named { name: id, .. }) = self {
+            state
                 .project
                 .get_impls(state.db, *id)
                 .into_iter()
@@ -253,8 +262,57 @@ impl<'db> Ty<'db> {
                     }
                     funcs
                 })
-                .collect::<Vec<_>>();
-            impl_funcs.pop()
+                .collect::<Vec<_>>()
+        } else {
+            vec![]
+        }
+    }
+
+    pub fn get_trait_funcs(
+        &self,
+        name: &Spanned<String>,
+        state: &mut CheckState<'db>,
+        self_ty: &Ty<'db>,
+    ) -> Vec<(IdentDef<'db>, FuncTy<'db>)> {
+        if let Ty::Named(Named { name: id, args }) = self {
+            if let Some(DeclKind::Trait { body, generics }) =
+                state.try_get_decl_path(*id).map(|d| d.kind(state.db))
+            {
+                if args.len() != generics.len() {
+                    return vec![];
+                }
+                let mut params = generics
+                    .iter()
+                    .map(|arg| arg.name.0.clone())
+                    .zip(args.iter().cloned())
+                    .collect::<HashMap<_, _>>();
+                params.insert("Self".to_string(), self_ty.clone());
+                return body
+                    .iter()
+                    .filter(|func| func.name(state.db) == name.0)
+                    .map(|func| {
+                        let Ty::Function(ty) =
+                            func.get_ty(state).parameterize(&params).inst(state, name.1)
+                        else {
+                            panic!("Expected function");
+                        };
+                        (IdentDef::Decl(*func), ty)
+                    })
+                    .collect::<Vec<_>>();
+            };
+        }
+        Vec::new()
+    }
+    pub fn get_func(
+        &self,
+        name: &Spanned<String>,
+        state: &mut CheckState<'db>,
+        self_ty: &Ty<'db>,
+    ) -> Option<(IdentDef<'db>, FuncTy<'db>)> {
+        if let Ty::Named(Named { name: id, args }) = self {
+            let mut funcs = self.get_trait_funcs(name, state, self_ty);
+            funcs.extend(self.get_all_impl_funcs(name, state));
+            funcs.pop()
         } else {
             None
         }
