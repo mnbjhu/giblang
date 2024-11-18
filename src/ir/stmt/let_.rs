@@ -3,6 +3,7 @@ use crate::{
     ir::{common::pattern::PatternIR, expr::ExprIR, ty::TypeIR, ContainsOffset, IrNode},
     parser::stmt::let_::LetStatement,
     run::bytecode::ByteCode,
+    ty::Ty,
     util::Spanned,
 };
 #[derive(Debug, PartialEq, Clone, Eq)]
@@ -18,20 +19,25 @@ pub struct LetIR<'db> {
 }
 impl<'db> LetStatement {
     pub fn check(&self, state: &mut CheckState<'db>) -> LetIR<'db> {
-        let mut ty = None;
-        let expr = if let Some(expected) = &self.ty {
-            let expected = (expected.0.check(state), expected.1);
-            let expr = self.value.0.expect(state, &expected.0.ty, self.value.1);
-            ty = Some(expected);
-            (expr, self.value.1)
+        let explicit = self.ty.as_ref().map(|(ty, span)| (ty.check(state), *span));
+        let expr = if let Some(explicit) = &explicit {
+            let expr = self.value.0.expect(state, &explicit.0.ty, self.value.1);
+            expr
         } else {
-            (self.value.0.check(state), self.value.1)
+            let expr = self.value.0.check(state);
+            expr
         };
-        let pattern = (self.pattern.0.expect(state, &expr.0.ty), self.pattern.1);
+        let pattern = if let Some(explicit) = &explicit {
+            (self.pattern.0.expect(state, &explicit.0.ty), self.pattern.1)
+        } else if Ty::Unknown == expr.ty {
+            (self.pattern.0.check(state), self.pattern.1)
+        } else {
+            (self.pattern.0.expect(state, &expr.ty), self.pattern.1)
+        };
         LetIR {
             pattern,
-            expr: Box::new(expr),
-            ty,
+            expr: Box::new((expr, self.value.1)),
+            ty: explicit,
         }
     }
 }

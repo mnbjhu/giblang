@@ -1,6 +1,6 @@
 use std::{collections::HashMap, usize};
 
-use broom::{Handle, Heap};
+use broom::Heap;
 
 use crate::{lexer::literal::Literal, run::DebugText as _};
 
@@ -9,6 +9,7 @@ use super::{bytecode::ByteCode, scope::Scope, Object, StackItem};
 pub struct ProgramState<'code> {
     pub heap: Heap<Object>,
     pub scopes: Vec<Scope<'code>>,
+    pub vtables: HashMap<u32, HashMap<u32, u32>>, // trait_func_id -> (type_id -> impl_func_id)
 }
 
 pub struct FuncDef {
@@ -34,6 +35,7 @@ impl<'code> ProgramState<'code> {
         Self {
             heap: Heap::default(),
             scopes: vec![],
+            vtables: HashMap::new(),
         }
     }
 
@@ -119,5 +121,9 @@ impl<'code> ProgramState<'code> {
 
     pub fn next_instr(&mut self) -> &'code ByteCode {
         self.scope_mut().next_instr()
+    }
+
+    pub fn get_trait_impl(&self, func_id: u32, trait_id: u32) -> Option<u32> {
+        self.vtables.get(&func_id)?.get(&trait_id).copied()
     }
 }

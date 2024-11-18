@@ -6,7 +6,6 @@ use trait_::TraitIR;
 
 use crate::{
     check::{build_state::BuildState, err::CheckError, state::CheckState},
-    db::input::Db,
     parser::top::Top,
     run::state::FuncDef,
 };
@@ -93,6 +92,7 @@ impl<'db> TopIR<'db> {
         match self {
             TopIR::Func(f) => vec![f.build(state)],
             TopIR::Impl(i) => i.build(state),
+            TopIR::Trait(t) => t.build(state),
             _ => vec![],
         }
     }

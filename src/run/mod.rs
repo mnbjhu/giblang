@@ -15,6 +15,7 @@ pub enum StackItem {
     String(String),
     Char(char),
     Bool(bool),
+    Dyn(u32, Box<StackItem>),
     Vec(u32, Handle<Object>),
 }
 
@@ -26,6 +27,10 @@ impl Trace<Self> for Object {
         for item in &self.0 {
             if let StackItem::Vec(_, data) = item {
                 data.trace(tracer)
+            } else if let StackItem::Dyn(_, data) = item {
+                if let StackItem::Vec(_, data) = &**data {
+                    data.trace(tracer)
+                }
             }
         }
     }
@@ -47,7 +52,7 @@ impl DebugText for StackItem {
             StackItem::Vec(id, fields) => {
                 let fields = state.heap.get(fields).unwrap();
                 format!(
-                    "({id}, {})",
+                    "{id}:[{}]",
                     fields
                         .0
                         .iter()
@@ -55,6 +60,9 @@ impl DebugText for StackItem {
                         .collect::<Vec<_>>()
                         .join(", ")
                 )
+            }
+            StackItem::Dyn(id, data) => {
+                format!("{id}:{{{}}}", data.get_text(state))
             }
         }
     }

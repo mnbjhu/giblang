@@ -4,6 +4,7 @@ use crate::{
     check::{state::CheckState, SemanticToken, TokenKind},
     ir::{common::generic_args::GenericArgsIR, ContainsOffset, IrNode},
     parser::top::trait_::Trait,
+    run::state::FuncDef,
     ty::{Named, Ty},
     util::Spanned,
 };
@@ -72,5 +73,15 @@ impl<'db> IrNode<'db> for TraitIR<'db> {
         for func in &self.body {
             func.0.tokens(tokens, state);
         }
+    }
+}
+
+impl<'db> TraitIR<'db> {
+    pub fn build(&self, state: &mut crate::ir::BuildState<'db>) -> Vec<(u32, FuncDef)> {
+        let mut funcs = vec![];
+        for func in &self.body {
+            funcs.push(func.0.build(state));
+        }
+        funcs
     }
 }

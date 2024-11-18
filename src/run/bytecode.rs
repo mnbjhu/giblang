@@ -18,7 +18,9 @@ pub enum ByteCode {
     Print,
     Panic,
     Construct { id: u32, len: u32 },
+    Dyn(u32),
     Call(u32),
+    DynCall(u32),
     Return,
     Index(u32),
     SetIndex(u32),
@@ -40,7 +42,6 @@ pub enum ByteCode {
     Je(i32),
     Jne(i32),
     Jmp(i32),
-    Id,
     Add,
     Mul,
     Sub,
@@ -66,14 +67,6 @@ impl<'code> ProgramState<'code> {
             }
             ByteCode::Pop => {
                 self.pop();
-            }
-            ByteCode::Id => {
-                if let StackItem::Vec(id, _) = self.peak() {
-                    let res = StackItem::Int(*id as i32);
-                    self.push(res);
-                } else {
-                    panic!("Expected vec")
-                }
             }
             ByteCode::Match(expected) => {
                 if let StackItem::Vec(id, _) = self.pop() {
@@ -106,6 +99,37 @@ impl<'code> ProgramState<'code> {
                     code: &func.body,
                     index: 0,
                     id: *id,
+                };
+                self.scopes.push(scope);
+            }
+            ByteCode::Dyn(id) => {
+                let item = self.pop();
+                let res = StackItem::Dyn(*id, Box::new(item));
+                self.push(res);
+            }
+            ByteCode::DynCall(func_id) => {
+                let trait_func = &funcs[func_id];
+                let mut args = Vec::with_capacity(trait_func.args as usize);
+                let mut trait_id = 0;
+                for i in (0..trait_func.args).rev() {
+                    if i == 0 {
+                        let StackItem::Dyn(id, refr) = self.pop() else {
+                            panic!("Expected dyn")
+                        };
+                        trait_id = id;
+                        args.push(refr.as_ref().clone());
+                    } else {
+                        args.push(self.pop());
+                    }
+                }
+                let impl_func = self.get_trait_impl(*func_id, trait_id).unwrap();
+                let scope = Scope {
+                    args,
+                    locals: HashMap::new(),
+                    stack: Vec::new(),
+                    code: &trait_func.body,
+                    index: 0,
+                    id: impl_func,
                 };
                 self.scopes.push(scope);
             }
@@ -485,7 +509,6 @@ impl Display for ByteCode {
             ByteCode::Je(diff) => write!(f, "je {diff}"),
             ByteCode::Jne(diff) => write!(f, "jne {diff}"),
             ByteCode::Jmp(diff) => write!(f, "jmp {diff}"),
-            ByteCode::Id => write!(f, "id"),
             ByteCode::Match(id) => write!(f, "match {id}"),
             ByteCode::Lt => write!(f, "lt"),
             ByteCode::Gt => write!(f, "gt"),
@@ -501,6 +524,8 @@ impl Display for ByteCode {
             ByteCode::VecInsert => write!(f, "vec_insert"),
             ByteCode::VecRemove => write!(f, "vec_remove"),
             ByteCode::VecLen => write!(f, "vec_len"),
+            ByteCode::Dyn(id) => write!(f, "dyn {id}"),
+            ByteCode::DynCall(id) => write!(f, "dyn_call {id}"),
         }
     }
 }

@@ -6,6 +6,8 @@ use chumsky::{
     primitive::{choice, end, just, none_of, one_of},
     select, text, IterParser, Parser,
 };
+use ByteCodeKeyword::*;
+use ByteCodeToken::*;
 
 use crate::{
     lexer::literal::Literal,
@@ -67,6 +69,8 @@ pub enum ByteCodeKeyword {
     VecLen,
     VecInsert,
     VecRemove,
+    Dyn,
+    DynCall,
 }
 
 pub fn byte_code_lexer<'src>(
@@ -77,49 +81,51 @@ pub fn byte_code_lexer<'src>(
         .map(ByteCodeToken::Label);
 
     let ident = text::ident().map(|ident| match ident {
-        "func" => ByteCodeToken::Keyword(ByteCodeKeyword::Func),
-        "push" => ByteCodeToken::Keyword(ByteCodeKeyword::Push),
-        "pop" => ByteCodeToken::Keyword(ByteCodeKeyword::Pop),
-        "print" => ByteCodeToken::Keyword(ByteCodeKeyword::Print),
-        "panic" => ByteCodeToken::Keyword(ByteCodeKeyword::Panic),
-        "construct" => ByteCodeToken::Keyword(ByteCodeKeyword::Construct),
-        "call" => ByteCodeToken::Keyword(ByteCodeKeyword::Call),
-        "return" => ByteCodeToken::Keyword(ByteCodeKeyword::Return),
-        "new" => ByteCodeToken::Keyword(ByteCodeKeyword::NewLocal),
-        "get" => ByteCodeToken::Keyword(ByteCodeKeyword::GetLocal),
-        "set" => ByteCodeToken::Keyword(ByteCodeKeyword::SetLocal),
-        "goto" => ByteCodeToken::Keyword(ByteCodeKeyword::Goto),
-        "param" => ByteCodeToken::Keyword(ByteCodeKeyword::Param),
-        "mul" => ByteCodeToken::Keyword(ByteCodeKeyword::Mul),
-        "add" => ByteCodeToken::Keyword(ByteCodeKeyword::Add),
-        "sub" => ByteCodeToken::Keyword(ByteCodeKeyword::Sub),
-        "eq" => ByteCodeToken::Keyword(ByteCodeKeyword::Eq),
-        "neq" => ByteCodeToken::Keyword(ByteCodeKeyword::Neq),
-        "and" => ByteCodeToken::Keyword(ByteCodeKeyword::And),
-        "or" => ByteCodeToken::Keyword(ByteCodeKeyword::Or),
-        "not" => ByteCodeToken::Keyword(ByteCodeKeyword::Not),
-        "match" => ByteCodeToken::Keyword(ByteCodeKeyword::Match),
-        "je" => ByteCodeToken::Keyword(ByteCodeKeyword::Je),
-        "jne" => ByteCodeToken::Keyword(ByteCodeKeyword::Jne),
-        "jmp" => ByteCodeToken::Keyword(ByteCodeKeyword::Jmp),
-        "copy" => ByteCodeToken::Keyword(ByteCodeKeyword::Copy),
-        "index" => ByteCodeToken::Keyword(ByteCodeKeyword::Index),
-        "set_index" => ByteCodeToken::Keyword(ByteCodeKeyword::SetIndex),
-        "gt" => ByteCodeToken::Keyword(ByteCodeKeyword::Gt),
-        "lt" => ByteCodeToken::Keyword(ByteCodeKeyword::Lt),
-        "gte" => ByteCodeToken::Keyword(ByteCodeKeyword::Gte),
-        "lte" => ByteCodeToken::Keyword(ByteCodeKeyword::Lte),
-        "clone" => ByteCodeToken::Keyword(ByteCodeKeyword::Clone),
-        "vec_get" => ByteCodeToken::Keyword(ByteCodeKeyword::VecGet),
-        "vec_set" => ByteCodeToken::Keyword(ByteCodeKeyword::VecSet),
-        "vec_push" => ByteCodeToken::Keyword(ByteCodeKeyword::VecPush),
-        "vec_pop" => ByteCodeToken::Keyword(ByteCodeKeyword::VecPop),
-        "vec_len" => ByteCodeToken::Keyword(ByteCodeKeyword::VecLen),
-        "vec_insert" => ByteCodeToken::Keyword(ByteCodeKeyword::VecInsert),
-        "vec_remove" => ByteCodeToken::Keyword(ByteCodeKeyword::VecRemove),
-        "true" => ByteCodeToken::Literal(Literal::Bool(true)),
-        "false" => ByteCodeToken::Literal(Literal::Bool(false)),
-        _ => ByteCodeToken::Ident(ident.to_string()),
+        "func" => Keyword(ByteCodeKeyword::Func),
+        "push" => Keyword(Push),
+        "pop" => Keyword(ByteCodeKeyword::Pop),
+        "print" => Keyword(ByteCodeKeyword::Print),
+        "panic" => Keyword(Panic),
+        "construct" => Keyword(Construct),
+        "call" => Keyword(Call),
+        "return" => Keyword(Return),
+        "new" => Keyword(NewLocal),
+        "get" => Keyword(GetLocal),
+        "set" => Keyword(SetLocal),
+        "goto" => Keyword(Goto),
+        "param" => Keyword(Param),
+        "mul" => Keyword(Mul),
+        "add" => Keyword(Add),
+        "sub" => Keyword(Sub),
+        "eq" => Keyword(Eq),
+        "neq" => Keyword(Neq),
+        "and" => Keyword(And),
+        "or" => Keyword(Or),
+        "not" => Keyword(Not),
+        "match" => ByteCodeToken::Keyword(Match),
+        "je" => Keyword(Je),
+        "jne" => Keyword(Jne),
+        "jmp" => Keyword(Jmp),
+        "copy" => Keyword(Copy),
+        "index" => Keyword(Index),
+        "set_index" => Keyword(SetIndex),
+        "gt" => Keyword(Gt),
+        "lt" => Keyword(Lt),
+        "gte" => Keyword(Gte),
+        "lte" => Keyword(Lte),
+        "clone" => Keyword(Clone),
+        "vec_get" => Keyword(VecGet),
+        "vec_set" => Keyword(VecSet),
+        "vec_push" => Keyword(VecPush),
+        "vec_pop" => Keyword(VecPop),
+        "vec_len" => Keyword(VecLen),
+        "vec_insert" => Keyword(VecInsert),
+        "vec_remove" => Keyword(VecRemove),
+        "dyn" => Keyword(Dyn),
+        "dyn_call" => Keyword(DynCall),
+        "true" => Literal(Literal::Bool(true)),
+        "false" => Literal(Literal::Bool(false)),
+        _ => Ident(ident.to_string()),
     });
 
     let string = none_of("\"")
@@ -181,20 +187,20 @@ fn keyword<'tokens, 'src>(
     ByteCodeParserInput<'tokens, 'src>,
     (),
     extra::Full<Rich<'tokens, ByteCodeToken, Span>, (), ()>,
-> + Clone
+> + core::clone::Clone
        + 'tokens {
     just(ByteCodeToken::Keyword(kw)).ignored()
 }
 impl Display for ByteCodeToken {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            ByteCodeToken::Keyword(k) => write!(f, "{k}"),
-            ByteCodeToken::Ident(i) => write!(f, "{i}"),
-            ByteCodeToken::Literal(l) => write!(f, "{l}"),
-            ByteCodeToken::Op(o) => write!(f, "{o}"),
-            ByteCodeToken::Punct(p) => write!(f, "{p}"),
-            ByteCodeToken::Newline => write!(f, "newline"),
-            ByteCodeToken::Label(l) => write!(f, "${l}"),
+            Keyword(k) => write!(f, "{k}"),
+            Ident(i) => write!(f, "{i}"),
+            Literal(l) => write!(f, "{l}"),
+            Op(o) => write!(f, "{o}"),
+            Punct(p) => write!(f, "{p}"),
+            Newline => write!(f, "newline"),
+            Label(l) => write!(f, "${l}"),
         }
     }
 }
@@ -203,45 +209,47 @@ impl Display for ByteCodeKeyword {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             ByteCodeKeyword::Func => write!(f, "func"),
-            ByteCodeKeyword::Push => write!(f, "push"),
-            ByteCodeKeyword::Pop => write!(f, "pop"),
-            ByteCodeKeyword::Print => write!(f, "print"),
-            ByteCodeKeyword::Panic => write!(f, "panic"),
-            ByteCodeKeyword::Construct => write!(f, "construct"),
-            ByteCodeKeyword::Call => write!(f, "call"),
-            ByteCodeKeyword::Return => write!(f, "return"),
-            ByteCodeKeyword::NewLocal => write!(f, "new"),
-            ByteCodeKeyword::GetLocal => write!(f, "get"),
-            ByteCodeKeyword::SetLocal => write!(f, "set"),
-            ByteCodeKeyword::Goto => write!(f, "goto"),
-            ByteCodeKeyword::Param => write!(f, "param"),
-            ByteCodeKeyword::Mul => write!(f, "mul"),
-            ByteCodeKeyword::Add => write!(f, "add"),
-            ByteCodeKeyword::Sub => write!(f, "sub"),
-            ByteCodeKeyword::Eq => write!(f, "eq"),
-            ByteCodeKeyword::Neq => write!(f, "neq"),
-            ByteCodeKeyword::Not => write!(f, "not"),
-            ByteCodeKeyword::And => write!(f, "and"),
-            ByteCodeKeyword::Or => write!(f, "or"),
-            ByteCodeKeyword::Match => write!(f, "match"),
-            ByteCodeKeyword::Jmp => write!(f, "jmp"),
-            ByteCodeKeyword::Je => write!(f, "je"),
-            ByteCodeKeyword::Jne => write!(f, "jne"),
-            ByteCodeKeyword::Copy => write!(f, "copy"),
-            ByteCodeKeyword::Index => write!(f, "index"),
-            ByteCodeKeyword::SetIndex => write!(f, "set_index"),
-            ByteCodeKeyword::Gt => write!(f, "gt"),
-            ByteCodeKeyword::Lt => write!(f, "lt"),
-            ByteCodeKeyword::Gte => write!(f, "gte"),
-            ByteCodeKeyword::Lte => write!(f, "lte"),
-            ByteCodeKeyword::Clone => write!(f, "clone"),
-            ByteCodeKeyword::VecGet => write!(f, "vec_get"),
-            ByteCodeKeyword::VecSet => write!(f, "vec_set"),
-            ByteCodeKeyword::VecPush => write!(f, "vec_push"),
-            ByteCodeKeyword::VecPop => write!(f, "vec_pop"),
-            ByteCodeKeyword::VecLen => write!(f, "vec_len"),
-            ByteCodeKeyword::VecInsert => write!(f, "vec_insert"),
-            ByteCodeKeyword::VecRemove => write!(f, "vec_remove"),
+            Push => write!(f, "push"),
+            Pop => write!(f, "pop"),
+            Print => write!(f, "print"),
+            Panic => write!(f, "panic"),
+            Construct => write!(f, "construct"),
+            Call => write!(f, "call"),
+            Return => write!(f, "return"),
+            NewLocal => write!(f, "new"),
+            GetLocal => write!(f, "get"),
+            SetLocal => write!(f, "set"),
+            Goto => write!(f, "goto"),
+            Param => write!(f, "param"),
+            Mul => write!(f, "mul"),
+            Add => write!(f, "add"),
+            Sub => write!(f, "sub"),
+            Eq => write!(f, "eq"),
+            Neq => write!(f, "neq"),
+            Not => write!(f, "not"),
+            And => write!(f, "and"),
+            Or => write!(f, "or"),
+            Match => write!(f, "match"),
+            Jmp => write!(f, "jmp"),
+            Je => write!(f, "je"),
+            Jne => write!(f, "jne"),
+            Copy => write!(f, "copy"),
+            Index => write!(f, "index"),
+            SetIndex => write!(f, "set_index"),
+            Gt => write!(f, "gt"),
+            Lt => write!(f, "lt"),
+            Gte => write!(f, "gte"),
+            Lte => write!(f, "lte"),
+            Clone => write!(f, "clone"),
+            VecGet => write!(f, "vec_get"),
+            VecSet => write!(f, "vec_set"),
+            VecPush => write!(f, "vec_push"),
+            VecPop => write!(f, "vec_pop"),
+            VecLen => write!(f, "vec_len"),
+            VecInsert => write!(f, "vec_insert"),
+            VecRemove => write!(f, "vec_remove"),
+            Dyn => write!(f, "dyn"),
+            DynCall => write!(f, "dyn_call"),
         }
     }
 }
@@ -254,7 +262,7 @@ pub fn bc_func_parser<'tokens, 'src: 'tokens>() -> impl Parser<
     ByteCodeParserInput<'tokens, 'src>,
     (u32, u32),
     extra::Full<Rich<'tokens, ByteCodeToken, Span>, (), ()>,
-> + Clone
+> + core::clone::Clone
        + 'tokens {
     let num = select! {
         ByteCodeToken::Literal(Literal::Int(n)) => n.parse().unwrap(),
@@ -273,7 +281,7 @@ pub fn bc_op_parser<'tokens, 'src: 'tokens>() -> impl Parser<
     ByteCodeParserInput<'tokens, 'src>,
     ByteCode,
     extra::Full<Rich<'tokens, ByteCodeToken, Span>, (), ()>,
-> + Clone
+> + core::clone::Clone
        + 'tokens {
     let num = select! {
         ByteCodeToken::Literal(Literal::Int(n)) => {
@@ -304,26 +312,28 @@ pub fn bc_op_parser<'tokens, 'src: 'tokens>() -> impl Parser<
     let call = keyword(ByteCodeKeyword::Call)
         .ignore_then(num)
         .map(ByteCode::Call);
-    let copy = keyword(ByteCodeKeyword::Copy).map(|()| ByteCode::Copy);
-    let mul = keyword(ByteCodeKeyword::Mul).map(|()| ByteCode::Mul);
-    let add = keyword(ByteCodeKeyword::Add).map(|()| ByteCode::Add);
-    let sub = keyword(ByteCodeKeyword::Sub).map(|()| ByteCode::Sub);
-    let not = keyword(ByteCodeKeyword::Not).map(|()| ByteCode::Not);
-    let eq = keyword(ByteCodeKeyword::Eq).map(|()| ByteCode::Eq);
-    let and = keyword(ByteCodeKeyword::And).map(|()| ByteCode::And);
-    let or = keyword(ByteCodeKeyword::Or).map(|()| ByteCode::Or);
-    let gt = keyword(ByteCodeKeyword::Gt).map(|()| ByteCode::Gt);
-    let lt = keyword(ByteCodeKeyword::Lt).map(|()| ByteCode::Lt);
-    let gte = keyword(ByteCodeKeyword::Gte).map(|()| ByteCode::Gte);
-    let lte = keyword(ByteCodeKeyword::Lte).map(|()| ByteCode::Lte);
-    let clone = keyword(ByteCodeKeyword::Lte).map(|()| ByteCode::Clone);
-    let vec_get = keyword(ByteCodeKeyword::VecGet).map(|()| ByteCode::VecGet);
-    let vec_set = keyword(ByteCodeKeyword::VecSet).map(|()| ByteCode::VecSet);
-    let vec_push = keyword(ByteCodeKeyword::VecPush).map(|()| ByteCode::VecPush);
-    let vec_pop = keyword(ByteCodeKeyword::VecPop).map(|()| ByteCode::VecPop);
-    let vec_len = keyword(ByteCodeKeyword::VecLen).map(|()| ByteCode::VecLen);
-    let vec_insert = keyword(ByteCodeKeyword::VecInsert).map(|()| ByteCode::VecInsert);
-    let vec_remove = keyword(ByteCodeKeyword::VecRemove).map(|()| ByteCode::VecRemove);
+    let basic = select! {
+        ByteCodeToken::Keyword(ByteCodeKeyword::Copy) => ByteCode::Copy,
+        ByteCodeToken::Keyword(ByteCodeKeyword::Mul) => ByteCode::Mul,
+        ByteCodeToken::Keyword(ByteCodeKeyword::Add) => ByteCode::Add,
+        ByteCodeToken::Keyword(ByteCodeKeyword::Sub) => ByteCode::Sub,
+        ByteCodeToken::Keyword(ByteCodeKeyword::Not) => ByteCode::Not,
+        ByteCodeToken::Keyword(ByteCodeKeyword::Eq) => ByteCode::Eq,
+        ByteCodeToken::Keyword(ByteCodeKeyword::And) => ByteCode::And,
+        ByteCodeToken::Keyword(ByteCodeKeyword::Or) => ByteCode::Or,
+        ByteCodeToken::Keyword(ByteCodeKeyword::Gt) => ByteCode::Gt,
+        ByteCodeToken::Keyword(ByteCodeKeyword::Lt) => ByteCode::Lt,
+        ByteCodeToken::Keyword(ByteCodeKeyword::Gte) => ByteCode::Gte,
+        ByteCodeToken::Keyword(ByteCodeKeyword::Lte) => ByteCode::Lte,
+        ByteCodeToken::Keyword(ByteCodeKeyword::Clone) => ByteCode::Clone,
+        ByteCodeToken::Keyword(ByteCodeKeyword::VecGet) => ByteCode::VecGet,
+        ByteCodeToken::Keyword(ByteCodeKeyword::VecSet) => ByteCode::VecSet,
+        ByteCodeToken::Keyword(ByteCodeKeyword::VecPush) => ByteCode::VecPush,
+        ByteCodeToken::Keyword(ByteCodeKeyword::VecPop) => ByteCode::VecPop,
+        ByteCodeToken::Keyword(ByteCodeKeyword::VecLen) => ByteCode::VecLen,
+        ByteCodeToken::Keyword(ByteCodeKeyword::VecInsert) => ByteCode::VecInsert,
+        ByteCodeToken::Keyword(ByteCodeKeyword::VecRemove) => ByteCode::VecRemove,
+    };
 
     let ret = keyword(ByteCodeKeyword::Return).map(|()| ByteCode::Return);
     let param = keyword(ByteCodeKeyword::Param)
@@ -336,6 +346,12 @@ pub fn bc_op_parser<'tokens, 'src: 'tokens>() -> impl Parser<
         .ignore_then(num)
         .map(ByteCode::Index);
     let set_index = keyword(ByteCodeKeyword::SetIndex)
+        .ignore_then(num)
+        .map(ByteCode::SetIndex);
+    let dyn_call = keyword(ByteCodeKeyword::DynCall)
+        .ignore_then(num)
+        .map(ByteCode::SetIndex);
+    let dyn_ = keyword(ByteCodeKeyword::Dyn)
         .ignore_then(num)
         .map(ByteCode::SetIndex);
 
@@ -376,12 +392,11 @@ pub fn bc_op_parser<'tokens, 'src: 'tokens>() -> impl Parser<
     choice((
         choice((
             pop, push, print, panic, construct, call, ret, new_local, get_local, set_local, goto,
-            vec_get, vec_set, vec_push, vec_pop, vec_len, vec_insert, vec_remove,
         )),
         choice((
-            param, mul, add, sub, or, and, eq, not, match_, jmp, je, jne, copy, index, set_index,
-            gt, lt, gte, lte, clone,
+            param, match_, jmp, je, jne, index, set_index, dyn_, dyn_call,
         )),
+        basic,
     ))
 }
 
@@ -390,7 +405,7 @@ pub fn bc_parser<'tokens, 'src: 'tokens>() -> impl Parser<
     ByteCodeParserInput<'tokens, 'src>,
     HashMap<u32, FuncDef>,
     extra::Full<Rich<'tokens, ByteCodeToken, Span>, (), ()>,
-> + Clone
+> + core::clone::Clone
        + 'tokens {
     bc_func_parser()
         .then_ignore(just(ByteCodeToken::Newline))
