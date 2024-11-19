@@ -132,6 +132,7 @@ impl Vfs {
                     fn new(): Self
                     fn Self.get(index: Int): T
                     fn Self.set(index: Int, value: T)
+                    fn Self.remove(index: Int): T
                     fn Self.push(value: T)
                     fn Self.pop(): T
                     fn Self.peak(): T

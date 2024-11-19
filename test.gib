@@ -12,7 +12,7 @@ use std::Option::Some
 trait Test {
     fn another[T]() {
         let test = 123
-        println(test)
+        println("Hello")
     }
 }
 

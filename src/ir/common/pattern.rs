@@ -49,6 +49,16 @@ impl<'db> Pattern {
     pub fn check(&self, state: &mut CheckState<'db>) -> PatternIR<'db> {
         match self {
             Pattern::Name(name) => {
+                let def = state.get_ident_ir(&[name.clone()]);
+                if let Some(IdentDef::Decl(decl)) = def.first().map(|(d, _)| d) {
+                    if let DeclKind::Struct { body, .. } | DeclKind::Member { body, .. } =
+                        decl.kind(state.db)
+                    {
+                        if let StructDecl::None = body {
+                            return PatternIR::UnitStruct(def);
+                        }
+                    }
+                }
                 state.insert_variable(name.0.to_string(), Ty::Unknown, TokenKind::Var, name.1);
                 PatternIR::Name(name.clone())
             }
@@ -71,6 +81,16 @@ impl<'db> Pattern {
     }
     pub fn expect(&self, state: &mut CheckState<'db>, ty: &Ty<'db>) -> PatternIR<'db> {
         if let Pattern::Name(name) = self {
+            let def = state.get_ident_ir(&[name.clone()]);
+            if let Some(IdentDef::Decl(decl)) = def.first().map(|(d, _)| d) {
+                if let DeclKind::Struct { body, .. } | DeclKind::Member { body, .. } =
+                    decl.kind(state.db)
+                {
+                    if let StructDecl::None = body {
+                        return PatternIR::UnitStruct(def);
+                    }
+                }
+            }
             state.insert_variable(name.0.to_string(), ty.clone(), TokenKind::Var, name.1);
             return PatternIR::Name(name.clone());
         }
@@ -367,12 +387,16 @@ impl<'db> PatternIR<'db> {
         };
         let fields = match self {
             PatternIR::Struct { fields, .. } => {
-                let DeclKind::Struct {
+                let (DeclKind::Struct {
                     body: StructDecl::Fields(decl_fields),
                     ..
-                } = decl.kind(state.db)
+                }
+                | DeclKind::Member {
+                    body: StructDecl::Fields(decl_fields),
+                    ..
+                }) = decl.kind(state.db)
                 else {
-                    panic!("Expected struct")
+                    panic!("Expected a struct but found {}", decl.name(state.db))
                 };
                 let mut found = Vec::new();
                 for field in fields {
@@ -429,10 +453,14 @@ impl<'db> PatternIR<'db> {
                 let IdentDef::Decl(decl) = name.last().unwrap().0 else {
                     panic!("Expected struct")
                 };
-                let DeclKind::Struct {
+                let (DeclKind::Struct {
                     body: StructDecl::Fields(decl_fields),
                     ..
-                } = decl.kind(state.db)
+                }
+                | DeclKind::Member {
+                    body: StructDecl::Fields(decl_fields),
+                    ..
+                }) = decl.kind(state.db)
                 else {
                     panic!("Expected struct")
                 };

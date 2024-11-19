@@ -3,12 +3,11 @@ use std::collections::HashMap;
 use crate::{
     check::state::CheckState,
     db::decl::{struct_::StructDecl, Decl, DeclKind},
-    ir::expr::{ident::check_ident, ExprIRData},
     item::definitions::ident::IdentDef,
     util::{Span, Spanned},
 };
 
-use super::{sub_tys::get_sub_tys, FuncTy, Named, Ty};
+use super::{sub_tys::get_sub_tys, FuncTy, Generic, Named, Ty};
 
 impl<'db> Ty<'db> {
     pub fn try_get_func_ty(&self, state: &mut CheckState<'db>, span: Span) -> Option<FuncTy<'db>> {
@@ -35,7 +34,11 @@ impl<'db> Ty<'db> {
         name: &Spanned<String>,
         state: &mut CheckState<'db>,
     ) -> Option<(IdentDef<'db>, FuncTy<'db>)> {
-        self.get_func(name, state, self)
+        if let Ty::Generic(Generic { super_, .. }) = state.resolved_ty(self) {
+            state.resolved_ty(&super_).get_func(name, state, &super_)
+        } else {
+            state.resolved_ty(self).get_func(name, state, self)
+        }
         // let mut funcs = get_sub_tys(self, state, name.1)
         //     .iter()
         //     .filter_map(|ty| ty.get_func(name, state, self))

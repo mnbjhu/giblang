@@ -23,8 +23,9 @@ use crate::{
 
 #[derive(Debug, PartialEq, Clone, Eq)]
 pub struct CallIR<'db> {
-    expr: Box<Spanned<ExprIR<'db>>>,
-    args: Vec<Spanned<ExprIR<'db>>>,
+    pub expr: Box<Spanned<ExprIR<'db>>>,
+    pub args: Vec<Spanned<ExprIR<'db>>>,
+    pub ty: Option<FuncTy<'db>>,
 }
 impl<'db> Call {
     pub fn check(&self, state: &mut CheckState<'db>) -> ExprIR<'db> {
@@ -38,6 +39,7 @@ impl<'db> Call {
                         .iter()
                         .map(|arg| (arg.0.check(state), arg.1))
                         .collect(),
+                    ty: None,
                 }),
                 ty: Ty::Unknown,
             };
@@ -80,6 +82,7 @@ impl<'db> Call {
                 data: ExprIRData::Call(CallIR {
                     expr: Box::new((name_ir, self.name.1)),
                     args,
+                    ty: Some(func_ty.clone()),
                 }),
                 ty,
             };
@@ -100,6 +103,7 @@ impl<'db> Call {
                     .iter()
                     .map(|arg| (arg.0.check(state), arg.1))
                     .collect(),
+                ty: None,
             }),
             ty: Ty::Unknown,
         }

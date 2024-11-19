@@ -8,7 +8,9 @@ pub mod lex;
 pub mod module_tree;
 pub mod parse;
 pub mod run;
+pub mod run_vm;
 
+use crate::cli::run_vm::run_vm;
 use std::path::PathBuf;
 
 use build::build;
@@ -43,6 +45,12 @@ pub enum Command {
 
     /// Runs the project
     Run,
+
+    /// Runs an executable in the VM
+    Vm {
+        /// The path to the executable
+        path: PathBuf,
+    },
 
     /// Runs the project with debug traces
     Debug,
@@ -86,6 +94,7 @@ impl Command {
             Command::Run => run(),
             Command::ByteCodeText { path } => byte_code_text(path),
             Command::Debug => debug(),
+            Command::Vm { path } => run_vm(path),
         }
     }
 }

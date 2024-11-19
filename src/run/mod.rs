@@ -1,6 +1,7 @@
 use broom::{trace::Trace, Handle};
 use state::ProgramState;
 
+pub mod bin;
 pub mod bytecode;
 pub mod debug;
 pub mod scope;

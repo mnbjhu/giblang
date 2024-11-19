@@ -44,6 +44,14 @@ pub struct CheckState<'db> {
 }
 
 impl<'ty, 'db: 'ty> CheckState<'db> {
+    pub fn resolved_ty(&self, ty: &Ty<'db>) -> Ty<'db> {
+        if let Ty::TypeVar { id } = ty {
+            self.get_resolved_type_var(*id)
+        } else {
+            ty.clone()
+        }
+    }
+
     pub fn from_file(
         db: &'db dyn Db,
         file_data: SourceFile,

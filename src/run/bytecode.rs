@@ -112,11 +112,11 @@ impl<'code> ProgramState<'code> {
                 for i in (0..trait_func.args).rev() {
                     let dyn_ = self.pop();
                     if i == 0 {
-                        let StackItem::Dyn(id, _) = &dyn_ else {
+                        let StackItem::Dyn(id, refr) = &dyn_ else {
                             panic!("Expected dyn")
                         };
                         type_id = *id;
-                        args.push(dyn_);
+                        args.push(refr.as_ref().clone());
                     } else {
                         args.push(self.pop());
                     }

@@ -21,7 +21,7 @@ use crate::{
     lexer::literal::Literal,
     parser::expr::Expr,
     run::bytecode::ByteCode,
-    ty::{Named, Ty},
+    ty::{Generic, Named, Ty},
     util::{Span, Spanned},
 };
 
@@ -279,23 +279,34 @@ impl<'db> ExprIR<'db> {
     }
 }
 
+impl<'db> Ty<'db> {
+    pub fn is_dyn(&self, state: &mut CheckState<'db>) -> bool {
+        if let Ty::Named(Named { name, .. }) = self {
+            let decl = state.project.get_decl(state.db, *name).unwrap();
+            if let DeclKind::Trait { .. } = decl.kind(state.db) {
+                return true;
+            }
+        } else if let Ty::Generic(Generic { super_, .. }) = self {
+            return super_.is_dyn(state);
+        }
+        false
+    }
+}
+
 impl<'db> ExprIRData<'db> {
     pub fn is_dyn(&self, state: &mut CheckState<'db>) -> bool {
         match self {
             ExprIRData::Ident(ident) => match &ident.last().unwrap().0 {
                 IdentDef::Decl(decl) => matches!(decl.kind(state.db), DeclKind::Trait { .. }),
                 IdentDef::Variable(var) => {
-                    if let Ty::Named(Named { name, .. }) = var.ty {
-                        let decl = state.project.get_decl(state.db, name).unwrap();
-                        if let DeclKind::Trait { .. } = decl.kind(state.db) {
-                            return true;
-                        }
-                    }
-                    false
+                    var.ty.is_dyn(state)
                 }
                 _ => false,
             },
             ExprIRData::Field(field) => {
+                if field.decl.is_none() {
+                    return true;
+                }
                 let decl = field.decl.unwrap();
                 let DeclKind::Struct { body, .. } = decl.kind(state.db) else {
                     panic!("Expected struct")
@@ -316,19 +327,29 @@ impl<'db> ExprIRData<'db> {
                     todo!()
                 }
             },
+            ExprIRData::Call(call) => {
+                if call.ty.is_none() {
+                    return true;
+                }
+                call.ty.as_ref().unwrap().ret.as_ref().is_dyn(state)
+            }
+            ExprIRData::MemberCall(member) => {
+                if member.ty.is_none() {
+                    return true;
+                }
+                member.ty.as_ref().unwrap().ret.as_ref().is_dyn(state)
+            }
             ExprIRData::CodeBlock(_)
-            | ExprIRData::Call(_)
             | ExprIRData::IfElse(_)
             | ExprIRData::Match(_)
             | ExprIRData::ImplicitDyn(_, _)
-            | ExprIRData::While(_) => true,
-            ExprIRData::MemberCall(_) => todo!(),
+            | ExprIRData::While(_)
+            | ExprIRData::Error  => true,
             ExprIRData::Tuple(_)
             | ExprIRData::Literal(_)
             // TODO: Will change with op overloading
             | ExprIRData::Op(_)
             | ExprIRData::Lambda(_) => false,
-            ExprIRData::Error => unreachable!(),
         }
     }
 }

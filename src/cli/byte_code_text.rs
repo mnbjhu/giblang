@@ -27,7 +27,7 @@ pub fn byte_code_text(path: &Path) {
         if let Some(bc_file) = funcs {
             let mut prog = ProgramState::new();
             prog.vtables = bc_file.tables;
-            prog.run_debug(&bc_file.funcs);
+            prog.run(&bc_file.funcs);
         }
     }
 }

@@ -7,6 +7,7 @@ use ariadne::{Label, Report, ReportKind};
 use crate::check::{check_project, check_vfs, resolve_project};
 use crate::db::err::Diagnostic;
 use crate::db::input::{Db, SourceDatabase};
+use crate::run::bin::encode_program;
 
 pub fn build() {
     let pwd = std::env::current_dir().unwrap();
@@ -19,7 +20,7 @@ pub fn build() {
         print_error(&db, diag);
     }
     if diags.is_empty() {
-        let out_file = pwd.join("out");
+        let out_file = pwd.join("out.txt");
         let mut out = fs::File::create(out_file.clone())
             .or_else(|_| {
                 fs::remove_file(out_file.clone()).unwrap();
@@ -33,12 +34,21 @@ pub fn build() {
                 writeln!(out, "    {key}, {value}").unwrap();
             }
         }
-        for (id, func) in file.funcs {
+        for (id, func) in &file.funcs {
             writeln!(out, "func {id}, {}", func.args).unwrap();
-            for op in func.body {
+            for op in &func.body {
                 writeln!(out, "    {op}").unwrap();
             }
         }
+        let out_file = pwd.join("out");
+        let bytes = encode_program(&file.funcs, &file.tables);
+        let mut out = fs::File::create(out_file.clone())
+            .or_else(|_| {
+                fs::remove_file(out_file.clone()).unwrap();
+                fs::File::create(out_file)
+            })
+            .unwrap();
+        out.write_all(&bytes).unwrap();
     }
 }
 
