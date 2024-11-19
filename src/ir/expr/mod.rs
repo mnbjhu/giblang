@@ -13,12 +13,15 @@ use while_::WhileIR;
 
 use crate::{
     check::{build_state::BuildState, state::CheckState, TokenKind},
-    db::decl::{struct_::StructDecl, DeclKind},
+    db::{
+        decl::{struct_::StructDecl, Decl, DeclKind},
+        input::Db,
+    },
     item::definitions::ident::IdentDef,
     lexer::literal::Literal,
     parser::expr::Expr,
     run::bytecode::ByteCode,
-    ty::Ty,
+    ty::{Named, Ty},
     util::{Span, Spanned},
 };
 
@@ -58,6 +61,7 @@ pub enum ExprIRData<'db> {
     Lambda(LambdaIR<'db>),
     While(WhileIR<'db>),
     IfElse(IfElseIR<'db>),
+    ImplicitDyn(Box<ExprIR<'db>>, Decl<'db>),
     Error,
 }
 
@@ -92,7 +96,7 @@ impl<'db> Expr {
         expected: &Ty<'db>,
         span: Span,
     ) -> ExprIR<'db> {
-        match self {
+        let res = match self {
             Expr::Literal(lit) => {
                 let ty = lit.to_ty(state.db);
                 ty.expect_is_instance_of(expected, state, span);
@@ -120,7 +124,17 @@ impl<'db> Expr {
                 ir
             }
             Expr::IfElse(if_else) => if_else.expect(state, expected, span),
+        };
+        if let Ty::Named(Named { name, .. }) = &expected {
+            let decl = state.project.get_decl(state.db, *name).unwrap();
+            if matches!(decl.kind(state.db), DeclKind::Trait { .. }) && !res.data.is_dyn(state) {
+                return ExprIR {
+                    data: ExprIRData::ImplicitDyn(Box::new(res), decl),
+                    ty: Ty::Unknown,
+                };
+            }
         }
+        res
     }
 }
 
@@ -146,6 +160,7 @@ impl<'db> IrNode<'db> for ExprIR<'db> {
             ExprIRData::Lambda(lambda) => lambda.at_offset(offset, state),
             ExprIRData::While(while_) => while_.at_offset(offset, state),
             ExprIRData::IfElse(if_else) => if_else.at_offset(offset, state),
+            ExprIRData::ImplicitDyn(expr, _) => expr.at_offset(offset, state),
         }
     }
 
@@ -171,6 +186,7 @@ impl<'db> IrNode<'db> for ExprIR<'db> {
             ExprIRData::Lambda(lambda) => lambda.tokens(tokens, state),
             ExprIRData::While(while_) => while_.tokens(tokens, state),
             ExprIRData::IfElse(if_else) => if_else.tokens(tokens, state),
+            ExprIRData::ImplicitDyn(expr, _) => expr.tokens(tokens, state),
         }
     }
 
@@ -253,6 +269,65 @@ impl<'db> ExprIR<'db> {
             ExprIRData::Lambda(lambda) => todo!(),
             ExprIRData::While(while_) => while_.build(state),
             ExprIRData::IfElse(if_else) => if_else.build(state),
+            ExprIRData::ImplicitDyn(expr, trait_decl) => {
+                let mut code = expr.build(state);
+                code.push(ByteCode::Dyn(state.get_vtable(&expr.ty)));
+                code
+            }
+            ExprIRData::Error => unreachable!(),
+        }
+    }
+}
+
+impl<'db> ExprIRData<'db> {
+    pub fn is_dyn(&self, state: &mut CheckState<'db>) -> bool {
+        match self {
+            ExprIRData::Ident(ident) => match &ident.last().unwrap().0 {
+                IdentDef::Decl(decl) => matches!(decl.kind(state.db), DeclKind::Trait { .. }),
+                IdentDef::Variable(var) => {
+                    if let Ty::Named(Named { name, .. }) = var.ty {
+                        let decl = state.project.get_decl(state.db, name).unwrap();
+                        if let DeclKind::Trait { .. } = decl.kind(state.db) {
+                            return true;
+                        }
+                    }
+                    false
+                }
+                _ => false,
+            },
+            ExprIRData::Field(field) => {
+                let decl = field.decl.unwrap();
+                let DeclKind::Struct { body, .. } = decl.kind(state.db) else {
+                    panic!("Expected struct")
+                };
+                if let StructDecl::Fields(fields) = body {
+                    let field = fields
+                        .iter()
+                        .find(|f| f.0 == field.name.0)
+                        .unwrap();
+                    if let Ty::Named(Named { name, .. }) = field.1 {
+                        let decl = state.project.get_decl(state.db, name).unwrap();
+                        if let DeclKind::Trait { .. } = decl.kind(state.db) {
+                            return true;
+                        }
+                    }
+                    false
+                } else {
+                    todo!()
+                }
+            },
+            ExprIRData::CodeBlock(_)
+            | ExprIRData::Call(_)
+            | ExprIRData::IfElse(_)
+            | ExprIRData::Match(_)
+            | ExprIRData::ImplicitDyn(_, _)
+            | ExprIRData::While(_) => true,
+            ExprIRData::MemberCall(_) => todo!(),
+            ExprIRData::Tuple(_)
+            | ExprIRData::Literal(_)
+            // TODO: Will change with op overloading
+            | ExprIRData::Op(_)
+            | ExprIRData::Lambda(_) => false,
             ExprIRData::Error => unreachable!(),
         }
     }

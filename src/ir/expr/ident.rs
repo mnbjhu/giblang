@@ -16,9 +16,21 @@ use crate::{
 
 use super::{ExprIR, ExprIRData};
 
+#[allow(clippy::too_many_lines)]
 pub fn check_ident<'db>(ident: &[Spanned<String>], state: &mut CheckState<'db>) -> ExprIR<'db> {
     let name = ident.last().unwrap();
     if ident.len() == 1 {
+        if let Some(var) = state.get_variable(&name.0) {
+            return ExprIR {
+                data: ExprIRData::Ident(vec![(IdentDef::Variable(var.clone()), name.1)]),
+                ty: var.ty.clone(),
+            };
+        } else if let Some(generic) = state.get_generic(&ident[0].0).cloned() {
+            return ExprIR {
+                data: ExprIRData::Ident(vec![(IdentDef::Generic(generic.clone()), name.1)]),
+                ty: Ty::Meta(Box::new(Ty::Generic(generic))),
+            };
+        }
         if let Some(self_param) = state.get_variable("self") {
             if let Some(field) = self_param
                 .ty
@@ -44,17 +56,6 @@ pub fn check_ident<'db>(ident: &[Spanned<String>], state: &mut CheckState<'db>) 
                     ty: ty.clone(),
                 };
             }
-        }
-        if let Some(var) = state.get_variable(&name.0) {
-            return ExprIR {
-                data: ExprIRData::Ident(vec![(IdentDef::Variable(var.clone()), name.1)]),
-                ty: var.ty.clone(),
-            };
-        } else if let Some(generic) = state.get_generic(&ident[0].0).cloned() {
-            return ExprIR {
-                data: ExprIRData::Ident(vec![(IdentDef::Generic(generic.clone()), name.1)]),
-                ty: Ty::Meta(Box::new(Ty::Generic(generic))),
-            };
         }
         match state.get_decl_with_error(ident) {
             Ok(found) => {

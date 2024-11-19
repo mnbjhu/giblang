@@ -1,21 +1,41 @@
-use std::collections::HashMap;
+use std::{
+    collections::HashMap,
+    hash::{DefaultHasher, Hash, Hasher},
+    ptr::hash,
+};
 
-use crate::db::input::Db;
+use rustc_hash::FxHasher;
+use salsa::plumbing::AsId;
+
+use crate::{
+    db::{decl::Project, input::Db},
+    ty::Ty,
+};
 
 pub struct BuildState<'db> {
     pub vars: Vec<HashMap<String, u32>>,
     pub params: HashMap<String, u32>,
     pub var_count: u32,
     pub db: &'db dyn Db,
+    pub vtables: HashMap<u64, VTable>,
+    pub vtable_map: HashMap<Ty<'db>, u64>,
+    pub project: Project<'db>,
+    pub hasher: FxHasher,
 }
 
+pub type VTable = HashMap<u32, u32>;
+
 impl<'db> BuildState<'db> {
-    pub fn new(db: &'db dyn Db) -> Self {
+    pub fn new(db: &'db dyn Db, project: Project<'db>) -> Self {
         BuildState {
             vars: vec![],
             params: HashMap::new(),
             var_count: 0,
             db,
+            vtables: HashMap::new(),
+            vtable_map: HashMap::new(),
+            project,
+            hasher: FxHasher::default(),
         }
     }
 
@@ -54,5 +74,21 @@ impl<'db> BuildState<'db> {
 
     pub fn add_param(&mut self, name: String, id: u32) {
         self.params.insert(name, id);
+    }
+
+    pub fn get_vtable(&mut self, ty: &Ty<'db>) -> u64 {
+        if let Some(existing) = self.vtable_map.get(&ty) {
+            return *existing;
+        }
+        let funcs = ty
+            .get_trait_func_decls(self)
+            .iter()
+            .map(|(trait_, impl_)| (trait_.as_id().as_u32(), impl_.as_id().as_u32()))
+            .collect::<HashMap<_, _>>();
+        ty.hash(&mut self.hasher);
+        let hash = self.hasher.finish();
+        self.vtable_map.insert(ty.clone(), hash);
+        self.vtables.insert(hash, funcs);
+        hash
     }
 }

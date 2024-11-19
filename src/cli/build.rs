@@ -26,8 +26,14 @@ pub fn build() {
                 fs::File::create(out_file)
             })
             .unwrap();
-        let funcs = db.vfs.unwrap().build(&db, project);
-        for (id, func) in funcs {
+        let file = db.vfs.unwrap().build(&db, project);
+        for (id, table) in &file.tables {
+            writeln!(out, "type {id}").unwrap();
+            for (key, value) in table {
+                writeln!(out, "    {key}, {value}").unwrap();
+            }
+        }
+        for (id, func) in file.funcs {
             writeln!(out, "func {id}, {}", func.args).unwrap();
             for op in func.body {
                 writeln!(out, "    {op}").unwrap();

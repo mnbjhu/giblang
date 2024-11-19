@@ -46,8 +46,7 @@ impl<'db> IfElse {
                         .0
                         .stmts
                         .last()
-                        .map(|(stmt, _)| stmt.get_ty())
-                        .unwrap_or(Ty::unit());
+                        .map_or(Ty::unit(), |(stmt, _)| stmt.get_ty());
                     (ir, *span)
                 } else {
                     (branch.expect(state, &ty, *span), *span)
@@ -55,10 +54,15 @@ impl<'db> IfElse {
             })
             .collect();
         let else_ = self.else_.as_ref().map(|(block, span)| {
+            let block = if let Ty::Unknown = ty {
+                check_block(block, state)
+            } else {
+                expect_block(block, state, &ty, *span)
+            };
             let ExprIR {
                 data: ExprIRData::CodeBlock(block),
                 ..
-            } = check_block(block, state)
+            } = block
             else {
                 panic!("Expected code block...");
             };
@@ -80,13 +84,13 @@ impl<'db> IfElse {
         let ifs = self
             .ifs
             .iter()
-            .map(|(branch, span)| (branch.expect(state, &expected, *span), *span))
+            .map(|(branch, span)| (branch.expect(state, expected, *span), *span))
             .collect();
         let else_ = self.else_.as_ref().map(|(block, span)| {
             let ExprIR {
                 data: ExprIRData::CodeBlock(block),
                 ..
-            } = check_block(block, state)
+            } = expect_block(block, state, expected, *span)
             else {
                 panic!("Expected code block...");
             };

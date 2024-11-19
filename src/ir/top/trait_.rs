@@ -34,8 +34,10 @@ impl<'db> Trait {
             .iter()
             .map(|(func, span)| {
                 state.enter_scope();
+                state.enter_decl(&func.name.0);
                 let ir = func.check(state, true);
                 state.exit_scope();
+                state.exit_decl();
                 (ir, *span)
             })
             .collect();

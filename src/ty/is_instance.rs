@@ -1,7 +1,10 @@
 use std::collections::HashMap;
 
+use chumsky::container::Container;
+
 use crate::{
     check::{
+        build_state::BuildState,
         err::{is_not_instance::IsNotInstance, CheckError},
         state::CheckState,
     },
@@ -268,6 +271,44 @@ impl<'db> Ty<'db> {
         }
     }
 
+    pub fn get_trait_func_decls(&self, state: &mut BuildState<'db>) -> Vec<(Decl<'db>, Decl<'db>)> {
+        let Ty::Named(Named { name, .. }) = self else {
+            return Vec::new();
+        };
+        let impls = state
+            .project
+            .get_impls(state.db, *name)
+            .into_iter()
+            .filter(|i| i.to_ty(state.db).is_some())
+            .flat_map(|i| {
+                let Ty::Named(Named { name, .. }) = i.to_ty(state.db).unwrap() else {
+                    unreachable!()
+                };
+                let DeclKind::Trait { body, .. } = state
+                    .project
+                    .get_decl(state.db, name)
+                    .unwrap()
+                    .kind(state.db)
+                else {
+                    unreachable!()
+                };
+                let mut found = vec![];
+                for trait_func in body {
+                    let impl_func = i
+                        .functions(state.db)
+                        .iter()
+                        .find(|f| f.name(state.db) == trait_func.name(state.db));
+                    if let Some(impl_func) = impl_func {
+                        found.push((*trait_func, *impl_func));
+                    }
+                }
+                found.extend(i.map(state.db, self).get_trait_func_decls(state));
+                found
+            })
+            .collect();
+        impls
+    }
+
     pub fn get_trait_funcs(
         &self,
         name: &Spanned<String>,
@@ -303,6 +344,7 @@ impl<'db> Ty<'db> {
         }
         Vec::new()
     }
+
     pub fn get_func(
         &self,
         name: &Spanned<String>,

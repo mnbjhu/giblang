@@ -1,9 +1,8 @@
-use std::collections::HashMap;
 use std::fmt::Display;
 use std::{fs, path::Path};
 
-use crate::run::state::{FuncDef, ProgramState};
-use crate::run::text::{bc_parser, byte_code_lexer};
+use crate::run::state::ProgramState;
+use crate::run::text::{byte_code_file_parser, byte_code_lexer};
 use crate::util::Span;
 use ariadne::{Color, Label, Report, ReportKind, Source};
 use chumsky::error::Rich;
@@ -19,22 +18,18 @@ pub fn byte_code_text(path: &Path) {
     }
     if let Some(tokens) = tokens {
         let parser_input = tokens.spanned(Span::splat(text.len()));
-        let (funcs, errors) = bc_parser().parse(parser_input).into_output_errors();
+        let (funcs, errors) = byte_code_file_parser()
+            .parse(parser_input)
+            .into_output_errors();
         for err in errors {
             print_error(&err, &text, path);
         }
-        if let Some(funcs) = funcs {
+        if let Some(bc_file) = funcs {
             let mut prog = ProgramState::new();
-            prog.run(&funcs);
+            prog.vtables = bc_file.tables;
+            prog.run_debug(&bc_file.funcs);
         }
     }
-}
-
-pub fn parse_byte_code_text(text: &str) -> Option<HashMap<u32, FuncDef>> {
-    let tokens = byte_code_lexer().parse(&text).into_output()?;
-    let parser_input = tokens.spanned(Span::splat(text.len()));
-    let funcs = bc_parser().parse(parser_input).into_output()?;
-    Some(funcs)
 }
 
 pub fn print_error<T: Display>(error: &Rich<'_, T>, text: &str, path: &Path) {

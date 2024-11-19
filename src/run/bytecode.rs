@@ -1,7 +1,5 @@
 use std::{collections::HashMap, fmt::Display};
 
-use chumsky::container::Container;
-
 use crate::{lexer::literal::Literal, run::DebugText};
 
 use super::{
@@ -18,7 +16,7 @@ pub enum ByteCode {
     Print,
     Panic,
     Construct { id: u32, len: u32 },
-    Dyn(u32),
+    Dyn(u64),
     Call(u32),
     DynCall(u32),
     Return,
@@ -110,24 +108,26 @@ impl<'code> ProgramState<'code> {
             ByteCode::DynCall(func_id) => {
                 let trait_func = &funcs[func_id];
                 let mut args = Vec::with_capacity(trait_func.args as usize);
-                let mut trait_id = 0;
+                let mut type_id = 0;
                 for i in (0..trait_func.args).rev() {
+                    let dyn_ = self.pop();
                     if i == 0 {
-                        let StackItem::Dyn(id, refr) = self.pop() else {
+                        let StackItem::Dyn(id, _) = &dyn_ else {
                             panic!("Expected dyn")
                         };
-                        trait_id = id;
-                        args.push(refr.as_ref().clone());
+                        type_id = *id;
+                        args.push(dyn_);
                     } else {
                         args.push(self.pop());
                     }
                 }
-                let impl_func = self.get_trait_impl(*func_id, trait_id).unwrap();
+                let impl_func = self.get_trait_impl(*func_id, type_id).unwrap();
+                let code = &funcs[&impl_func].body;
                 let scope = Scope {
                     args,
                     locals: HashMap::new(),
                     stack: Vec::new(),
-                    code: &trait_func.body,
+                    code,
                     index: 0,
                     id: impl_func,
                 };

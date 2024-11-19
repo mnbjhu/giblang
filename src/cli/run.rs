@@ -7,7 +7,10 @@ use crate::{
         err::Diagnostic,
         input::{Db, SourceDatabase, Vfs, VfsInner},
     },
-    run::state::{FuncDef, ProgramState},
+    run::{
+        state::{FuncDef, ProgramState},
+        text::ByteCodeFile,
+    },
 };
 
 use super::build::print_error;
@@ -23,26 +26,28 @@ pub fn run() {
         print_error(&db, diag);
     }
     if diags.is_empty() {
-        let funcs = db.vfs.unwrap().build(&db, project);
+        let file = db.vfs.unwrap().build(&db, project);
         let mut prog = ProgramState::new();
-        prog.run(&funcs);
+        prog.vtables = file.tables;
+        prog.run(&file.funcs);
     }
 }
 
 impl<'db> Vfs {
-    pub fn build(self, db: &'db dyn Db, project: Project<'db>) -> HashMap<u32, FuncDef> {
+    pub fn build(self, db: &'db dyn Db, project: Project<'db>) -> ByteCodeFile {
         match self.inner(db) {
             VfsInner::Dir(files) => {
-                let mut funcs = HashMap::new();
+                let mut code = ByteCodeFile::default();
                 for file in files {
-                    let file_funcs = file.build(db, project);
-                    funcs.extend(file_funcs);
+                    let file_code = file.build(db, project);
+                    code.funcs.extend(file_code.funcs);
+                    code.tables.extend(file_code.tables);
                 }
-                funcs
+                code
             }
             VfsInner::File(file) => {
                 let ir = check_file(db, *file, project);
-                let mut state = BuildState::new(db);
+                let mut state = BuildState::new(db, project);
                 ir.build(&mut state)
             }
         }

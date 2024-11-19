@@ -22,7 +22,7 @@ impl Trait {
         for func in &self.body {
             state.enter_scope();
             state.path.push(func.0.name.0.clone());
-            let decl = func.0.resolve(state);
+            let decl = func.0.resolve(state, true);
             body.push(decl);
             state.path.pop();
             state.exit_scope();

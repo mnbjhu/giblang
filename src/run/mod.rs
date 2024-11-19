@@ -15,7 +15,7 @@ pub enum StackItem {
     String(String),
     Char(char),
     Bool(bool),
-    Dyn(u32, Box<StackItem>),
+    Dyn(u64, Box<StackItem>),
     Vec(u32, Handle<Object>),
 }
 
@@ -26,10 +26,10 @@ impl Trace<Self> for Object {
     fn trace(&self, tracer: &mut broom::prelude::Tracer<Self>) {
         for item in &self.0 {
             if let StackItem::Vec(_, data) = item {
-                data.trace(tracer)
+                data.trace(tracer);
             } else if let StackItem::Dyn(_, data) = item {
                 if let StackItem::Vec(_, data) = &**data {
-                    data.trace(tracer)
+                    data.trace(tracer);
                 }
             }
         }

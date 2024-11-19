@@ -2,6 +2,7 @@ use salsa::plumbing::AsId;
 
 use crate::{
     check::{build_state::BuildState, state::CheckState, SemanticToken, TokenKind},
+    db::decl::{func::Function, DeclKind},
     ir::{ContainsOffset, IrNode, IrState},
     item::definitions::ident::IdentDef,
     parser::expr::member::MemberCall,
@@ -152,7 +153,14 @@ impl<'db> MemberCallIR<'db> {
             IdentDef::Variable(_) => todo!(),
             IdentDef::Generic(_) => todo!(),
             IdentDef::Decl(decl) => {
-                code.push(ByteCode::Call(decl.as_id().as_u32()));
+                let DeclKind::Function(Function { virtual_, .. }) = decl.kind(state.db) else {
+                    panic!("Expected function")
+                };
+                if *virtual_ {
+                    code.push(ByteCode::DynCall(decl.as_id().as_u32()));
+                } else {
+                    code.push(ByteCode::Call(decl.as_id().as_u32()));
+                }
                 code
             }
             IdentDef::Unresolved => todo!(),

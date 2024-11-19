@@ -31,7 +31,8 @@ pub fn lexer<'src>(
         _ => Token::Ident(ident.to_string()),
     });
 
-    let string = none_of("\"")
+    let string = just("\\\"")
+        .or(none_of("\"").to_slice())
         .repeated()
         .to_slice()
         .map(|s: &str| Token::Literal(Literal::String(s.to_string())))

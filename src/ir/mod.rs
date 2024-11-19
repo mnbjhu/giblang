@@ -9,7 +9,7 @@ use crate::{
         input::{Db, SourceFile},
         path::ModulePath,
     },
-    run::state::FuncDef,
+    run::{state::FuncDef, text::ByteCodeFile},
     ty::{Generic, Ty},
     util::{Span, Spanned},
 };
@@ -106,11 +106,14 @@ impl<'db> IrState<'db> {
 }
 
 impl<'db> FileIR<'db> {
-    pub fn build(self, state: &mut BuildState<'db>) -> HashMap<u32, FuncDef> {
-        self.tops(state.db)
+    pub fn build(self, state: &mut BuildState<'db>) -> ByteCodeFile {
+        let funcs = self
+            .tops(state.db)
             .iter()
             .flat_map(|(top, _)| top.build(state))
-            .collect()
+            .collect();
+        let tables = state.vtables.clone();
+        ByteCodeFile { funcs, tables }
     }
 }
 
