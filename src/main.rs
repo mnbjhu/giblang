@@ -3,6 +3,7 @@ use cli::Command;
 
 mod check;
 mod cli;
+mod dap;
 mod db;
 mod go;
 mod ir;

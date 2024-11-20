@@ -1,23 +1,41 @@
 use std::{collections::HashMap, iter::Peekable};
 
-use crate::lexer::literal::Literal;
+use crate::{check::build_state::VTable, lexer::literal::Literal};
 
 use super::{bytecode::ByteCode, state::FuncDef, text::ByteCodeFile};
 
 pub fn decode_file<T: Iterator<Item = u8>>(bytes: &mut Peekable<T>) -> ByteCodeFile {
     let mut funcs = HashMap::new();
     let mut tables = HashMap::new();
+    let mut file_names = HashMap::new();
     while let Some(code) = bytes.next() {
         match code {
             0 => {
                 let id = decode_small(bytes);
+                let args = decode_small(bytes);
+                let name_len = decode_small(bytes);
+                let mut name = String::new();
+                for _ in 0..name_len {
+                    name.push(bytes.next().unwrap() as char);
+                }
+                let line = decode_tiny(bytes);
+                let char = decode_tiny(bytes);
+                let file = decode_small(bytes);
+                let pos = (line, char);
                 let mut func = FuncDef {
-                    args: decode_small(bytes),
+                    name,
+                    args,
                     body: Vec::new(),
-                    offset: 0,
+                    pos,
+                    file,
+                    marks: Vec::new(),
                 };
                 while let Some(bc) = decode_code(bytes) {
-                    func.body.push(bc);
+                    if let ByteCode::Mark(line, col) = bc {
+                        func.marks.push((func.body.len(), (line, col)));
+                    } else {
+                        func.body.push(bc);
+                    }
                 }
                 funcs.insert(id, func);
             }
@@ -32,10 +50,23 @@ pub fn decode_file<T: Iterator<Item = u8>>(bytes: &mut Peekable<T>) -> ByteCodeF
                 }
                 tables.insert(id, items);
             }
+            49 => {
+                let id = decode_small(bytes);
+                let len = decode_small(bytes);
+                let mut name = String::new();
+                for _ in 0..len {
+                    name.push(bytes.next().unwrap() as char);
+                }
+                file_names.insert(id, name);
+            }
             _ => panic!("Invalid byte code header"),
         }
     }
-    ByteCodeFile { funcs, tables }
+    ByteCodeFile {
+        file_names,
+        funcs,
+        tables,
+    }
 }
 
 #[allow(clippy::too_many_lines)]
@@ -256,6 +287,12 @@ pub fn decode_code<T: Iterator<Item = u8>>(bytes: &mut Peekable<T>) -> Option<By
                 let char = bytes.next().unwrap();
                 Some(ByteCode::Push(Literal::Char(char as char)))
             }
+            48 => {
+                bytes.next();
+                let line = decode_tiny(bytes);
+                let col = decode_tiny(bytes);
+                Some(ByteCode::Mark(line, col))
+            }
             _ => None,
         }
     } else {
@@ -263,6 +300,9 @@ pub fn decode_code<T: Iterator<Item = u8>>(bytes: &mut Peekable<T>) -> Option<By
     }
 }
 
+pub fn decode_tiny<T: Iterator<Item = u8>>(iter: &mut Peekable<T>) -> u16 {
+    u16::from_be_bytes([iter.next().unwrap(), iter.next().unwrap()])
+}
 pub fn decode_small<T: Iterator<Item = u8>>(iter: &mut Peekable<T>) -> u32 {
     u32::from_be_bytes([
         iter.next().unwrap(),
@@ -345,6 +385,7 @@ impl ByteCode {
                 Literal::Bool(_) => 46,
                 Literal::Char(_) => 47,
             },
+            ByteCode::Mark(_, _) => 48,
         }
     }
 
@@ -432,6 +473,12 @@ impl ByteCode {
                 bytes.extend_from_slice(&sign.to_be_bytes());
                 bytes
             }
+            ByteCode::Mark(line, col) => {
+                let mut bytes = vec![self.get_code()];
+                bytes.extend_from_slice(&line.to_be_bytes());
+                bytes.extend_from_slice(&col.to_be_bytes());
+                bytes
+            }
         }
     }
 }
@@ -441,6 +488,12 @@ impl FuncDef {
         let mut bytes = vec![0];
         bytes.extend_from_slice(&id.to_be_bytes());
         bytes.extend_from_slice(&self.args.to_be_bytes());
+        let len = self.name.len() as u32;
+        bytes.extend_from_slice(&len.to_be_bytes());
+        bytes.extend_from_slice(self.name.as_bytes());
+        bytes.extend_from_slice(&self.pos.0.to_be_bytes());
+        bytes.extend_from_slice(&self.pos.1.to_be_bytes());
+        bytes.extend_from_slice(&self.file.to_be_bytes());
         for bc in &self.body {
             bytes.extend_from_slice(&bc.get_bytes());
         }
@@ -460,11 +513,24 @@ pub fn get_table_bytes(id: u64, items: &HashMap<u32, u32>) -> Vec<u8> {
     bytes
 }
 
+pub fn get_file_name_bytes(id: u32, name: &str) -> Vec<u8> {
+    let mut bytes = vec![49];
+    bytes.extend_from_slice(&id.to_be_bytes());
+    let len: u32 = name.len() as u32;
+    bytes.extend_from_slice(&len.to_be_bytes());
+    bytes.extend_from_slice(name.as_bytes());
+    bytes
+}
+
 pub fn encode_program(
     funcs: &HashMap<u32, FuncDef>,
-    tables: &HashMap<u64, HashMap<u32, u32>>,
+    tables: &HashMap<u64, VTable>,
+    file_names: &HashMap<u32, String>,
 ) -> Vec<u8> {
     let mut bytes = vec![];
+    for (id, name) in file_names {
+        bytes.extend_from_slice(&&get_file_name_bytes(*id, name));
+    }
     for (id, items) in tables {
         bytes.extend_from_slice(&get_table_bytes(*id, items));
     }

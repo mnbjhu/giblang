@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use salsa::plumbing::AsId;
 use top::TopIR;
 
 use crate::{
@@ -113,7 +114,27 @@ impl<'db> FileIR<'db> {
             .flat_map(|(top, _)| top.build(state))
             .collect();
         let tables = state.vtables.clone();
-        ByteCodeFile { funcs, tables }
+        let file_names = state.db.files();
+        let file_names = file_names
+            .iter()
+            .map(|f| {
+                (
+                    f.as_id().as_u32(),
+                    f.path(state.db)
+                        .to_string_lossy()
+                        .strip_prefix(&state.db.root())
+                        .unwrap()
+                        .strip_prefix("/")
+                        .unwrap()
+                        .to_string(),
+                )
+            })
+            .collect();
+        ByteCodeFile {
+            file_names,
+            funcs,
+            tables,
+        }
     }
 }
 

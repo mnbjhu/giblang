@@ -1,10 +1,12 @@
-use std::{collections::HashMap, fmt::Display};
+use std::{collections::HashMap, fmt::Display, fs::File};
 
 use chumsky::{
     error::Rich,
     extra,
     primitive::{choice, end, just, none_of, one_of},
-    select, text, IterParser, Parser,
+    select,
+    text::{self},
+    IterParser, Parser,
 };
 use ByteCodeKeyword::*;
 use ByteCodeToken::*;
@@ -31,6 +33,7 @@ pub enum ByteCodeToken {
 pub enum ByteCodeKeyword {
     Func,
     Type,
+    File,
 
     Copy,
     Push,
@@ -74,6 +77,27 @@ pub enum ByteCodeKeyword {
     Dyn,
     DynCall,
     VecPeak,
+    Mark,
+}
+
+pub fn write_text(program: &ByteCodeFile, out: &mut impl std::io::Write) {
+    for (id, table) in &program.tables {
+        writeln!(out, "type {id}").unwrap();
+        for (key, value) in table {
+            writeln!(out, "    {key}, {value}").unwrap();
+        }
+    }
+    for (id, func) in &program.funcs {
+        writeln!(
+            out,
+            "func {id}, {}, \"{}\", {}, {}, {}",
+            func.args, func.name, func.pos.0, func.pos.1, func.file,
+        )
+        .unwrap();
+        for op in &func.body {
+            writeln!(out, "    {op}").unwrap();
+        }
+    }
 }
 
 pub fn byte_code_lexer<'src>(
@@ -86,6 +110,7 @@ pub fn byte_code_lexer<'src>(
     let ident = text::ident().map(|ident| match ident {
         "type" => Keyword(Type),
         "func" => Keyword(Func),
+        "file" => Keyword(File),
         "push" => Keyword(Push),
         "pop" => Keyword(Pop),
         "print" => Keyword(Print),
@@ -128,6 +153,7 @@ pub fn byte_code_lexer<'src>(
         "vec_remove" => Keyword(VecRemove),
         "dyn" => Keyword(Dyn),
         "dyn_call" => Keyword(DynCall),
+        "mark" => Keyword(Mark),
         "true" => Literal(Literal::Bool(true)),
         "false" => Literal(Literal::Bool(false)),
         _ => Ident(ident.to_string()),
@@ -215,6 +241,7 @@ impl Display for ByteCodeKeyword {
         match self {
             Func => write!(f, "func"),
             Type => write!(f, "type"),
+            File => write!(f, "file"),
             Push => write!(f, "push"),
             Pop => write!(f, "pop"),
             Print => write!(f, "print"),
@@ -257,6 +284,7 @@ impl Display for ByteCodeKeyword {
             VecRemove => write!(f, "vec_remove"),
             Dyn => write!(f, "dyn"),
             DynCall => write!(f, "dyn_call"),
+            Mark => write!(f, "mark"),
         }
     }
 }
@@ -284,23 +312,53 @@ pub fn bc_vtable_parser<'tokens, 'src: 'tokens>() -> impl Parser<
     head.then(item.separated_by(just(Newline)).collect())
 }
 
+pub struct FuncHead {
+    pub id: u32,
+    pub name: String,
+    pub arg_count: u32,
+    pub position: (u16, u16),
+    pub file: u32,
+}
+
 pub fn bc_func_head_parser<'tokens, 'src: 'tokens>() -> impl Parser<
     'tokens,
     ByteCodeParserInput<'tokens, 'src>,
-    (u32, u32),
+    FuncHead,
     extra::Full<Rich<'tokens, ByteCodeToken, Span>, (), ()>,
 > + core::clone::Clone
        + 'tokens {
-    let num = select! {
-        ByteCodeToken::Literal(Literal::Int(n)) => n.parse().unwrap(),
+    let tiny = select! {
+        ByteCodeToken::Literal(Literal::Int(n)) => n.parse::<u16>().unwrap(),
     };
-    let args = num
-        .separated_by(just(ByteCodeToken::Punct(',')))
-        .exactly(2)
-        .collect::<Vec<_>>()
-        .map(|args| (args[0], args[1]));
-    let func = keyword(ByteCodeKeyword::Func).ignore_then(args);
-    func
+    let position = tiny
+        .then_ignore(just(Punct(',')))
+        .then(tiny)
+        .or_not()
+        .map(|it| it.unwrap_or((0, 0)));
+    let name = select! {
+        ByteCodeToken::Literal(Literal::String(n)) => n,
+    };
+    let small = select! {
+        ByteCodeToken::Literal(Literal::Int(n)) => n.parse::<u32>().unwrap(),
+    };
+
+    keyword(Func)
+        .ignore_then(small)
+        .then_ignore(just(Punct(',')))
+        .then(small)
+        .then_ignore(just(Punct(',')))
+        .then(name)
+        .then_ignore(just(Punct(',')))
+        .then(position)
+        .then_ignore(just(Punct(',')))
+        .then(small.or_not().map(|it| it.unwrap_or(0)))
+        .map(|((((id, args), name), pos), file)| FuncHead {
+            id,
+            name,
+            arg_count: args,
+            position: pos,
+            file,
+        })
 }
 
 #[allow(clippy::too_many_lines)]
@@ -423,12 +481,24 @@ pub fn bc_op_parser<'tokens, 'src: 'tokens>() -> impl Parser<
         .ignore_then(num)
         .map(ByteCode::Goto);
 
+    let tiny = select! {
+        ByteCodeToken::Literal(Literal::Int(n)) => {
+            n.parse::<u16>().unwrap()
+        },
+    };
+
+    let mark = keyword(Mark)
+        .ignore_then(tiny)
+        .then_ignore(just(Punct(',')))
+        .then(tiny)
+        .map(|(line, col)| ByteCode::Mark(line, col));
+
     choice((
         choice((
             pop, push, print, panic, construct, call, ret, new_local, get_local, set_local, goto,
         )),
         choice((
-            param, match_, jmp, je, jne, index, set_index, dyn_, dyn_call,
+            param, match_, jmp, je, jne, index, set_index, dyn_, dyn_call, mark,
         )),
         basic,
     ))
@@ -437,10 +507,12 @@ pub fn bc_op_parser<'tokens, 'src: 'tokens>() -> impl Parser<
 enum ByteCodeDecl {
     Func(u32, FuncDef),
     Table(u64, HashMap<u32, u32>),
+    FileInfo(u32, String),
 }
 
 #[derive(Default)]
 pub struct ByteCodeFile {
+    pub file_names: HashMap<u32, String>,
     pub funcs: HashMap<u32, FuncDef>,
     pub tables: HashMap<u64, HashMap<u32, u32>>,
 }
@@ -452,9 +524,19 @@ pub fn byte_code_file_parser<'tokens, 'src: 'tokens>() -> impl Parser<
     extra::Full<Rich<'tokens, ByteCodeToken, Span>, (), ()>,
 > + core::clone::Clone
        + 'tokens {
+    let file_name = keyword(File)
+        .ignore_then(select! {
+            ByteCodeToken::Literal(Literal::Int(n)) => n.parse::<u32>().unwrap(),
+        })
+        .then_ignore(just(Punct(',')))
+        .then(select! {
+            ByteCodeToken::Literal(Literal::String(n)) => n,
+        })
+        .map(|(id, name)| ByteCodeDecl::FileInfo(id, name));
     let decl = choice((
         bc_func_parser().map(|(id, f)| ByteCodeDecl::Func(id, f)),
         bc_vtable_parser().map(|(id, t)| ByteCodeDecl::Table(id, t)),
+        file_name,
     ));
     decl.separated_by(just(ByteCodeToken::Newline))
         .allow_trailing()
@@ -462,6 +544,7 @@ pub fn byte_code_file_parser<'tokens, 'src: 'tokens>() -> impl Parser<
         .map(|items| {
             let mut funcs = HashMap::new();
             let mut tables = HashMap::new();
+            let mut file_names = HashMap::new();
             for item in items {
                 match item {
                     ByteCodeDecl::Func(id, f) => {
@@ -470,9 +553,16 @@ pub fn byte_code_file_parser<'tokens, 'src: 'tokens>() -> impl Parser<
                     ByteCodeDecl::Table(id, t) => {
                         tables.insert(id, t);
                     }
+                    ByteCodeDecl::FileInfo(id, name) => {
+                        file_names.insert(id, name);
+                    }
                 }
             }
-            ByteCodeFile { funcs, tables }
+            ByteCodeFile {
+                file_names,
+                funcs,
+                tables,
+            }
         })
 }
 
@@ -490,13 +580,16 @@ pub fn bc_func_parser<'tokens, 'src: 'tokens>() -> impl Parser<
                 .separated_by(just(ByteCodeToken::Newline))
                 .collect(),
         )
-        .map_with(|((id, args), body), e| {
+        .map(|(def, body)| {
             (
-                id,
+                def.id,
                 FuncDef {
-                    args,
+                    args: def.arg_count,
+                    pos: def.position,
+                    name: def.name,
+                    file: def.file,
                     body,
-                    offset: e.span().start,
+                    marks: Vec::new(),
                 },
             )
         })

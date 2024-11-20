@@ -22,7 +22,7 @@ use crate::{
 };
 
 use super::{
-    input::{Db, SourceFile},
+    input::{Db, SourceFile, Vfs, VfsInner},
     path::ModulePath,
 };
 
@@ -72,6 +72,15 @@ pub enum DeclKind<'db> {
     },
     Function(Function<'db>),
     Module(Vec<Decl<'db>>),
+}
+
+impl<'db> Vfs {
+    pub fn source_files(self, db: &'db dyn Db) -> Vec<&SourceFile> {
+        match self.inner(db) {
+            VfsInner::File(f) => vec![f],
+            VfsInner::Dir(dir) => dir.iter().flat_map(|m| m.source_files(db)).collect(),
+        }
+    }
 }
 
 #[salsa::tracked]

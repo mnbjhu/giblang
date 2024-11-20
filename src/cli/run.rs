@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use crate::{
     check::{build_state::BuildState, check_file, check_project, check_vfs, resolve_project},
     db::{
@@ -7,10 +5,7 @@ use crate::{
         err::Diagnostic,
         input::{Db, SourceDatabase, Vfs, VfsInner},
     },
-    run::{
-        state::{FuncDef, ProgramState},
-        text::ByteCodeFile,
-    },
+    run::{state::ProgramState, text::ByteCodeFile},
 };
 
 use super::build::print_error;
@@ -27,9 +22,8 @@ pub fn run() {
     }
     if diags.is_empty() {
         let file = db.vfs.unwrap().build(&db, project);
-        let mut prog = ProgramState::new();
-        prog.vtables = file.tables;
-        prog.run(&file.funcs);
+        let mut prog = ProgramState::new(&file.funcs, file.tables, file.file_names);
+        prog.run();
     }
 }
 
@@ -42,12 +36,13 @@ impl<'db> Vfs {
                     let file_code = file.build(db, project);
                     code.funcs.extend(file_code.funcs);
                     code.tables.extend(file_code.tables);
+                    code.file_names.extend(file_code.file_names);
                 }
                 code
             }
             VfsInner::File(file) => {
                 let ir = check_file(db, *file, project);
-                let mut state = BuildState::new(db, project);
+                let mut state = BuildState::new(db, project, *file);
                 ir.build(&mut state)
             }
         }

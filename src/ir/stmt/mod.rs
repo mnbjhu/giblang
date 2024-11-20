@@ -6,7 +6,7 @@ use crate::{
     parser::stmt::Stmt,
     run::bytecode::ByteCode,
     ty::Ty,
-    util::Span,
+    util::{Span, Spanned},
 };
 
 use super::{expr::ExprIR, IrNode, IrState};
@@ -16,15 +16,15 @@ pub mod let_;
 
 #[derive(Debug, PartialEq, Clone, Eq)]
 pub enum StmtIR<'db> {
-    Expr(ExprIR<'db>),
-    Let(LetIR<'db>),
-    Assign(AssignIR<'db>),
+    Expr(Spanned<ExprIR<'db>>),
+    Let(Spanned<LetIR<'db>>),
+    Assign(Spanned<AssignIR<'db>>),
 }
 
 impl<'db> StmtIR<'db> {
     pub fn get_ty(&self) -> Ty<'db> {
         match self {
-            StmtIR::Expr(e) => e.ty.clone(),
+            StmtIR::Expr(e) => e.0.ty.clone(),
             StmtIR::Let(_) | StmtIR::Assign(_) => Ty::unit(),
         }
     }
@@ -33,9 +33,9 @@ impl<'db> StmtIR<'db> {
 impl<'db> Stmt {
     pub fn check(&self, state: &mut CheckState<'db>) -> StmtIR<'db> {
         match &self {
-            Stmt::Let(l) => StmtIR::Let(l.check(state)),
-            Stmt::Expr(e) => StmtIR::Expr(e.check(state)),
-            Stmt::Assign(e) => StmtIR::Assign(e.check(state)),
+            Stmt::Let(l) => StmtIR::Let((l.0.check(state), l.1)),
+            Stmt::Expr(e) => StmtIR::Expr((e.0.check(state), e.1)),
+            Stmt::Assign(e) => StmtIR::Assign((e.0.check(state), e.1)),
         }
     }
 
@@ -47,7 +47,7 @@ impl<'db> Stmt {
     ) -> StmtIR<'db> {
         match self {
             Stmt::Let(l) => {
-                let ir = l.check(state);
+                let ir = l.0.check(state);
                 let actual = Ty::unit();
                 if !expected.eq(&actual) {
                     state.simple_error(
@@ -59,11 +59,11 @@ impl<'db> Stmt {
                         span,
                     );
                 }
-                StmtIR::Let(ir)
+                StmtIR::Let((ir, l.1))
             }
-            Stmt::Expr(e) => StmtIR::Expr(e.expect(state, expected, span)),
+            Stmt::Expr(e) => StmtIR::Expr((e.0.expect(state, expected, span), e.1)),
             Stmt::Assign(a) => {
-                let ir = a.check(state);
+                let ir = a.0.check(state);
                 let actual = Ty::unit();
                 if !expected.eq(&actual) {
                     state.simple_error(
@@ -75,7 +75,7 @@ impl<'db> Stmt {
                         span,
                     );
                 }
-                StmtIR::Assign(ir)
+                StmtIR::Assign((ir, a.1))
             }
         }
     }
@@ -84,27 +84,36 @@ impl<'db> Stmt {
 impl<'db> IrNode<'db> for StmtIR<'db> {
     fn at_offset(&self, offset: usize, state: &mut IrState<'db>) -> &dyn IrNode {
         match self {
-            StmtIR::Expr(e) => e.at_offset(offset, state),
-            StmtIR::Let(l) => l.at_offset(offset, state),
-            StmtIR::Assign(a) => a.at_offset(offset, state),
+            StmtIR::Expr(e) => e.0.at_offset(offset, state),
+            StmtIR::Let(l) => l.0.at_offset(offset, state),
+            StmtIR::Assign(a) => a.0.at_offset(offset, state),
         }
     }
 
     fn tokens(&self, tokens: &mut Vec<SemanticToken>, state: &mut crate::ir::IrState<'db>) {
         match self {
-            StmtIR::Expr(e) => e.tokens(tokens, state),
-            StmtIR::Let(l) => l.tokens(tokens, state),
-            StmtIR::Assign(a) => a.tokens(tokens, state),
+            StmtIR::Expr(e) => e.0.tokens(tokens, state),
+            StmtIR::Let(l) => l.0.tokens(tokens, state),
+            StmtIR::Assign(a) => a.0.tokens(tokens, state),
         }
     }
 }
 
 impl<'db> StmtIR<'db> {
     pub fn build(&self, state: &mut BuildState<'db>) -> Vec<ByteCode> {
+        let (line, col) = state.get_pos(self.get_span());
+        let mut code = vec![ByteCode::Mark(line, col)];
         match self {
-            StmtIR::Expr(e) => e.build(state),
-            StmtIR::Let(l) => l.build(state),
-            StmtIR::Assign(a) => a.build(state),
+            StmtIR::Expr(e) => code.extend(e.0.build(state)),
+            StmtIR::Let(l) => code.extend(l.0.build(state)),
+            StmtIR::Assign(a) => code.extend(a.0.build(state)),
+        }
+        code
+    }
+
+    pub fn get_span(&self) -> Span {
+        match self {
+            StmtIR::Expr((_, s)) | StmtIR::Let((_, s)) | StmtIR::Assign((_, s)) => *s,
         }
     }
 }

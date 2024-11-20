@@ -10,7 +10,7 @@ pub mod parse;
 pub mod run;
 pub mod run_vm;
 
-use crate::cli::run_vm::run_vm;
+use crate::{cli::run_vm::run_vm, dap::start_dap};
 use std::path::PathBuf;
 
 use build::build;
@@ -61,6 +61,12 @@ pub enum Command {
     /// Start the language server
     Lsp,
 
+    /// Start the debug adapter protocol
+    Dap {
+        /// The path to the source file
+        path: PathBuf,
+    },
+
     /// Show the included files
     FileTree,
 
@@ -95,6 +101,7 @@ impl Command {
             Command::ByteCodeText { path } => byte_code_text(path),
             Command::Debug => debug(),
             Command::Vm { path } => run_vm(path),
+            Command::Dap { path } => start_dap(path).unwrap(),
         }
     }
 }

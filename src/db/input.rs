@@ -31,6 +31,7 @@ impl SourceDatabase {
 pub trait Db: salsa::Database {
     fn root(&self) -> String;
     fn input(&mut self, path: &Path) -> SourceFile;
+    fn files(&self) -> Vec<&SourceFile>;
 }
 
 #[salsa::db]
@@ -60,6 +61,10 @@ impl Db for SourceDatabase {
             let file = self.vfs.unwrap().get_file(self, &module_path);
             file.unwrap()
         }
+    }
+
+    fn files(&self) -> Vec<&SourceFile> {
+        self.vfs.unwrap().source_files(self)
     }
 }
 
@@ -115,7 +120,7 @@ impl Vfs {
                 db,
                 "std".to_string(),
                 PathBuf::from_str(&format!("{root}/std.gib", root = db.root())).unwrap(),
-                r"
+                r#"
                 struct Int
                 struct Float
                 struct Bool
@@ -124,7 +129,10 @@ impl Vfs {
 
                 fn panic(message: String): Nothing
                 fn print(data: Any)
-                fn println(text: String)
+                fn println(data: Any) {
+                    print(data)
+                    print("\n")
+                }
 
                 struct Vec[T]
 
@@ -148,7 +156,7 @@ impl Vfs {
                     Ok(R),
                     Err(E),
                 }
-                "
+                "#
                 .to_string(),
                 vec!["std".to_string()],
             )),

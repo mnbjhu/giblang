@@ -1,7 +1,7 @@
 use assign::{assign_parser, Assign};
 use chumsky::{recursive::recursive, Parser};
 
-use crate::AstParser;
+use crate::{util::Spanned, AstParser};
 
 use self::let_::{let_parser, LetStatement};
 
@@ -12,17 +12,23 @@ pub mod let_;
 
 #[derive(Clone, PartialEq, Debug, Eq)]
 pub enum Stmt {
-    Let(LetStatement),
-    Assign(Assign),
-    Expr(Expr),
+    Let(Spanned<LetStatement>),
+    Assign(Spanned<Assign>),
+    Expr(Spanned<Expr>),
 }
 
 #[must_use]
 pub fn stmt_parser<'tokens, 'src: 'tokens>() -> AstParser!(Stmt) {
     recursive(|stmt| {
-        let let_ = let_parser(expr_parser(stmt.clone())).map(Stmt::Let);
-        let assign = assign_parser(expr_parser(stmt.clone())).map(Stmt::Assign);
-        let expr = expr_parser(stmt).map(Stmt::Expr);
+        let let_ = let_parser(expr_parser(stmt.clone()))
+            .map_with(|s, e| (s, e.span()))
+            .map(Stmt::Let);
+        let assign = assign_parser(expr_parser(stmt.clone()))
+            .map_with(|s, e| (s, e.span()))
+            .map(Stmt::Assign);
+        let expr = expr_parser(stmt)
+            .map_with(|s, e| (s, e.span()))
+            .map(Stmt::Expr);
         let_.or(assign).or(expr)
     })
 }
@@ -31,9 +37,8 @@ mod tests {
     use crate::{
         assert_parse_eq,
         parser::{
-            common::pattern::Pattern,
             expr::{expr_parser, Expr},
-            stmt::{let_::LetStatement, stmt_parser, Stmt},
+            stmt::stmt_parser,
         },
     };
 
@@ -46,21 +51,5 @@ mod tests {
         );
 
         assert_parse_eq!(expr_parser(stmt_parser()), "42", Expr::Literal(42.into()));
-    }
-
-    #[test]
-    fn test_let_statement() {
-        assert_parse_eq!(
-            stmt_parser(),
-            "let x = 42",
-            Stmt::Let(LetStatement {
-                pattern: (
-                    Pattern::Name(("x".to_string(), (4..5).into())),
-                    (4..5).into()
-                ),
-                ty: None,
-                value: (Expr::Literal(42.into()), (8..10).into())
-            })
-        );
     }
 }

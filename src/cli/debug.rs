@@ -18,8 +18,7 @@ pub fn debug() {
     }
     if diags.is_empty() {
         let file = db.vfs.unwrap().build(&db, project);
-        let mut prog = ProgramState::new();
-        prog.vtables = file.tables;
-        prog.run_debug(&file.funcs);
+        let mut prog = ProgramState::new(&file.funcs, file.tables, file.file_names);
+        prog.run_debug();
     }
 }

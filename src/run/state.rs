@@ -2,21 +2,28 @@ use std::{collections::HashMap, usize};
 
 use broom::Heap;
 
-use crate::{lexer::literal::Literal, run::DebugText as _};
+use crate::{check::build_state::VTable, lexer::literal::Literal, run::DebugText as _};
 
 use super::{bytecode::ByteCode, scope::Scope, Object, StackItem};
 
 pub struct ProgramState<'code> {
+    pub funcs: &'code HashMap<u32, FuncDef>,
     pub heap: Heap<Object>,
     pub scopes: Vec<Scope<'code>>,
     pub vtables: HashMap<u64, HashMap<u32, u32>>, // type_id -> (trait_func_id -> impl_func_id)
+    pub file_names: HashMap<u32, String>,
 }
 
 pub struct FuncDef {
+    pub name: String,
     pub args: u32,
-    pub offset: usize,
+    pub pos: (u16, u16),
+    pub file: u32,
     pub body: Vec<ByteCode>,
+    pub marks: Vec<(usize, ByteCodeSpan)>,
 }
+
+pub type ByteCodeSpan = (u16, u16);
 
 impl From<Literal> for StackItem {
     fn from(val: Literal) -> Self {
@@ -31,11 +38,17 @@ impl From<Literal> for StackItem {
 }
 
 impl<'code> ProgramState<'code> {
-    pub fn new() -> Self {
+    pub fn new(
+        funcs: &'code HashMap<u32, FuncDef>,
+        vtables: HashMap<u64, VTable>,
+        file_names: HashMap<u32, String>,
+    ) -> Self {
         Self {
             heap: Heap::default(),
             scopes: vec![],
-            vtables: HashMap::new(),
+            vtables,
+            file_names,
+            funcs,
         }
     }
 
@@ -47,13 +60,13 @@ impl<'code> ProgramState<'code> {
         self.scopes.last_mut().expect("Call stack underflow")
     }
 
-    pub fn run_debug(&mut self, funcs: &'code HashMap<u32, FuncDef>) {
-        let main = funcs.get(&0).expect("No main function");
+    pub fn run_debug(&mut self) {
+        let main = self.funcs.get(&0).expect("No main function");
         self.scopes.push(Scope::from_code(&main.body, 0));
         while !self.scopes.is_empty() {
             let instr = self.next_instr();
             println!(
-                "{instr:?} : {:?} : {:?}",
+                "{instr:?} : {}:{}",
                 self.stack_trace(),
                 self.scope()
                     .stack
@@ -62,16 +75,16 @@ impl<'code> ProgramState<'code> {
                     .collect::<Vec<_>>()
                     .join("|"),
             );
-            self.execute(instr, funcs);
+            self.execute(instr);
         }
     }
 
-    pub fn run(&mut self, funcs: &'code HashMap<u32, FuncDef>) {
-        let main = funcs.get(&0).expect("No main function");
+    pub fn run(&mut self) {
+        let main = self.funcs.get(&0).expect("No main function");
         self.scopes.push(Scope::from_code(&main.body, 0));
         while !self.scopes.is_empty() {
             let instr = self.next_instr();
-            self.execute(instr, funcs);
+            self.execute(instr);
         }
     }
 
@@ -94,9 +107,25 @@ impl<'code> ProgramState<'code> {
     pub fn stack_trace(&self) -> String {
         self.scopes
             .iter()
-            .map(|scope| format!("{}:{}", scope.id, scope.index - 1))
+            .map(|scope| {
+                let func = &self.funcs[&scope.id];
+                let file_name = &self.file_names[&func.file];
+                let marker = func
+                    .marks
+                    .iter()
+                    .find_map(|(offset, pos)| {
+                        if *offset >= scope.index {
+                            Some(pos)
+                        } else {
+                            None
+                        }
+                    })
+                    .copied()
+                    .unwrap_or(func.pos);
+                format!("{}:{}:{} ({})", file_name, marker.0, marker.1, func.name)
+            })
             .collect::<Vec<_>>()
-            .join("/")
+            .join("\n")
     }
 
     pub fn new_local(&mut self, id: u32, refr: StackItem) {

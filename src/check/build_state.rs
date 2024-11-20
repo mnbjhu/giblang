@@ -4,12 +4,18 @@ use std::{
     ptr::hash,
 };
 
+use async_lsp::lsp_types::Position;
 use rustc_hash::FxHasher;
 use salsa::plumbing::AsId;
 
 use crate::{
-    db::{decl::Project, input::Db},
+    db::{
+        decl::Project,
+        input::{Db, SourceFile},
+    },
+    range::offset_to_position_str,
     ty::Ty,
+    util::Span,
 };
 
 pub struct BuildState<'db> {
@@ -21,12 +27,13 @@ pub struct BuildState<'db> {
     pub vtable_map: HashMap<Ty<'db>, u64>,
     pub project: Project<'db>,
     pub hasher: FxHasher,
+    pub file: SourceFile,
 }
 
 pub type VTable = HashMap<u32, u32>;
 
 impl<'db> BuildState<'db> {
-    pub fn new(db: &'db dyn Db, project: Project<'db>) -> Self {
+    pub fn new(db: &'db dyn Db, project: Project<'db>, file: SourceFile) -> Self {
         BuildState {
             vars: vec![],
             params: HashMap::new(),
@@ -36,6 +43,7 @@ impl<'db> BuildState<'db> {
             vtable_map: HashMap::new(),
             project,
             hasher: FxHasher::default(),
+            file,
         }
     }
 
@@ -77,7 +85,7 @@ impl<'db> BuildState<'db> {
     }
 
     pub fn get_vtable(&mut self, ty: &Ty<'db>) -> u64 {
-        if let Some(existing) = self.vtable_map.get(&ty) {
+        if let Some(existing) = self.vtable_map.get(ty) {
             return *existing;
         }
         let funcs = ty
@@ -90,5 +98,11 @@ impl<'db> BuildState<'db> {
         self.vtable_map.insert(ty.clone(), hash);
         self.vtables.insert(hash, funcs);
         hash
+    }
+
+    pub fn get_pos(&self, span: Span) -> (u16, u16) {
+        let text = self.file.text(self.db);
+        let Position { line, character } = offset_to_position_str(span.start, text);
+        (line as u16, character as u16)
     }
 }

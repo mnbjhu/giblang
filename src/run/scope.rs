@@ -1,7 +1,5 @@
 use std::collections::HashMap;
 
-use broom::Handle;
-
 use super::{bytecode::ByteCode, StackItem};
 
 pub struct Scope<'code> {

@@ -1,4 +1,8 @@
-use std::{collections::HashMap, fmt::Display};
+use std::{
+    collections::HashMap,
+    fmt::{write, Display},
+    process::exit,
+};
 
 use crate::{lexer::literal::Literal, run::DebugText};
 
@@ -54,11 +58,12 @@ pub enum ByteCode {
     Gte,
     Match(u32),
     Clone,
+    Mark(u16, u16),
 }
 
 #[allow(clippy::too_many_lines)]
 impl<'code> ProgramState<'code> {
-    pub fn execute(&mut self, code: &'code ByteCode, funcs: &'code HashMap<u32, FuncDef>) {
+    pub fn execute(&mut self, code: &'code ByteCode) {
         match code {
             ByteCode::Push(lit) => {
                 self.push(lit.clone().into());
@@ -82,10 +87,12 @@ impl<'code> ProgramState<'code> {
                 print!("{}", self.pop().get_text(self));
             }
             ByteCode::Panic => {
-                panic!("{}", self.pop().get_text(self));
+                println!("{}", self.pop().get_text(self));
+                println!("{}", self.stack_trace());
+                exit(1);
             }
             ByteCode::Call(id) => {
-                let func = &funcs[id];
+                let func = &self.funcs[id];
                 let mut args = Vec::with_capacity(func.args as usize);
                 for _ in 0..func.args {
                     args.insert(0, self.pop());
@@ -106,7 +113,7 @@ impl<'code> ProgramState<'code> {
                 self.push(res);
             }
             ByteCode::DynCall(func_id) => {
-                let trait_func = &funcs[func_id];
+                let trait_func = &self.funcs[func_id];
                 let mut args = Vec::with_capacity(trait_func.args as usize);
                 let mut type_id = 0;
                 for i in (0..trait_func.args).rev() {
@@ -122,7 +129,7 @@ impl<'code> ProgramState<'code> {
                     }
                 }
                 let impl_func = self.get_trait_impl(*func_id, type_id).unwrap();
-                let code = &funcs[&impl_func].body;
+                let code = &self.funcs[&impl_func].body;
                 let scope = Scope {
                     args,
                     locals: HashMap::new(),
@@ -477,6 +484,9 @@ impl<'code> ProgramState<'code> {
                 let res = StackItem::Int(data.0.len() as i32);
                 self.push(res);
             }
+            ByteCode::Mark(_, _) => {
+                panic!("'mark' should be removed before runtime")
+            }
         };
     }
 }
@@ -526,6 +536,7 @@ impl Display for ByteCode {
             ByteCode::VecLen => write!(f, "vec_len"),
             ByteCode::Dyn(id) => write!(f, "dyn {id}"),
             ByteCode::DynCall(id) => write!(f, "dyn_call {id}"),
+            ByteCode::Mark(line, col) => write!(f, "mark {line}, {col}"),
         }
     }
 }
