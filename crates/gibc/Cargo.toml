@@ -1,0 +1,45 @@
+[package]
+name = "gibc"
+version = "0.1.0"
+edition = "2021"
+description = "The Giblang Compiler"
+repository = "https:://github.com/mnbjhu/giblang"
+rust-version = "1.74"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+ariadne = "0.4.1"
+clap = { version = "4.5.3", features = ["derive"] }
+chumsky = "1.0.0-alpha.7"
+glob = "0.3.1"
+salsa = { git = "https://github.com/mnbjhu/salsa", branch = "input_change_cause_panic" }
+rustc-hash = "2.0.0"
+tracing = "0.1.40"
+anyhow = "1.0.89"
+rayon = "1.10.0"
+dashmap = "6.1.0"
+crossbeam = "0.8.0"
+notify-debouncer-mini = "0.4.1"
+tower = "0.5.1"
+async-lsp = { version = "0.2.0", features = [
+  "client-monitor",
+  "omni-trait",
+  "stdio",
+  "tracing",
+  "tokio",
+] }
+tokio = { version = "1.40.0", features = ["full"] }
+tracing-subscriber = "0.3.16"
+tokio-util = "0.7.12"
+# codespan = "0.11.1
+pretty = "0.12.3"
+backtrace = "0.3.74"
+broom = "0.3.2"
+dap = "0.4.1-alpha1"
+thiserror = "2.0.3"
+gvm = { path = "../gvm" }
+[lints.clippy]
+pedantic = { priority = -1, level = "warn" }
+module_name_repetitions = "allow"
+missing_panics_doc = "allow"
