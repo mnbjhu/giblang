@@ -20,14 +20,14 @@ pub struct Decode {
 
 impl Decode {
     pub fn run(&self) {
-        let input = if let Some(input) = &self.input {
-            fs::read_to_string(input).unwrap()
+        let bytes = if let Some(input) = &self.input {
+            fs::read(input).unwrap()
         } else {
-            let mut text = String::new();
-            stdin().read_to_string(&mut text).unwrap();
-            text
+            let mut bytes = vec![];
+            stdin().read_to_end(&mut bytes).unwrap();
+            bytes
         };
-        let bytecode = decode_file(&mut input.bytes().peekable());
+        let bytecode = decode_file(&mut bytes.into_iter().peekable());
 
         if let Some(output) = &self.output {
             let mut file = OpenOptions::new()

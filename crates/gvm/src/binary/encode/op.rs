@@ -51,7 +51,6 @@ impl ByteCode {
                 Literal::Bool(_) => 46,
                 Literal::Char(_) => 47,
             },
-            ByteCode::Mark(_, _) => 48,
         }
     }
 
@@ -136,12 +135,6 @@ impl ByteCode {
             ByteCode::Jmp(sign) | ByteCode::Jne(sign) | ByteCode::Je(sign) => {
                 let mut bytes = vec![self.get_code()];
                 bytes.extend_from_slice(&sign.to_be_bytes());
-                bytes
-            }
-            ByteCode::Mark(line, col) => {
-                let mut bytes = vec![self.get_code()];
-                bytes.extend_from_slice(&line.to_be_bytes());
-                bytes.extend_from_slice(&col.to_be_bytes());
                 bytes
             }
         }

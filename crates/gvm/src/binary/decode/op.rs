@@ -2,7 +2,7 @@ use std::iter::Peekable;
 
 use crate::format::{instr::ByteCode, literal::Literal};
 
-use super::util::{decode_big, decode_sign, decode_small, decode_tiny};
+use super::util::{decode_big, decode_sign, decode_small};
 
 #[allow(clippy::too_many_lines)]
 pub fn decode_code<T: Iterator<Item = u8>>(bytes: &mut Peekable<T>) -> Option<ByteCode> {
@@ -221,12 +221,6 @@ pub fn decode_code<T: Iterator<Item = u8>>(bytes: &mut Peekable<T>) -> Option<By
                 bytes.next();
                 let char = bytes.next().unwrap();
                 Some(ByteCode::Push(Literal::Char(char as char)))
-            }
-            48 => {
-                bytes.next();
-                let line = decode_tiny(bytes);
-                let col = decode_tiny(bytes);
-                Some(ByteCode::Mark(line, col))
             }
             _ => None,
         }

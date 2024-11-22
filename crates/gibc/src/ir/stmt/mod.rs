@@ -101,13 +101,14 @@ impl<'db> IrNode<'db> for StmtIR<'db> {
 
 impl<'db> StmtIR<'db> {
     pub fn build(&self, state: &mut BuildState<'db>) -> Vec<ByteCode> {
-        let (line, col) = state.get_pos(self.get_span());
-        let mut code = vec![ByteCode::Mark(line, col)];
+        // let pos = state.get_pos(self.get_span());
+        let mut code = vec![];
         match self {
             StmtIR::Expr(e) => code.extend(e.0.build(state)),
             StmtIR::Let(l) => code.extend(l.0.build(state)),
             StmtIR::Assign(a) => code.extend(a.0.build(state)),
         }
+        // state.marks.push((code.len(), pos));
         code
     }
 

@@ -11,6 +11,7 @@ use super::lexer::Token;
 
 mod decl;
 mod instr;
+mod mark;
 mod util;
 
 const DECL_HEADERS: &str = "one of 'func', 'type' or 'file'";

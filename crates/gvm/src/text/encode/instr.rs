@@ -5,7 +5,7 @@ use crate::format::instr::ByteCode;
 impl Display for ByteCode {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            ByteCode::Push(lit) => write!(f, "push {lit}"),
+            ByteCode::Push(lit) => write!(f, "push {}", lit),
             ByteCode::Pop => write!(f, "pop"),
             ByteCode::Print => write!(f, "print"),
             ByteCode::Panic => write!(f, "panic"),
@@ -47,7 +47,6 @@ impl Display for ByteCode {
             ByteCode::VecLen => write!(f, "vec_len"),
             ByteCode::Dyn(id) => write!(f, "dyn {id}"),
             ByteCode::DynCall(id) => write!(f, "dyn_call {id}"),
-            ByteCode::Mark(line, col) => write!(f, "mark {line}, {col}"),
         }
     }
 }

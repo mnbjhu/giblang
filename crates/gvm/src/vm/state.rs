@@ -90,18 +90,15 @@ impl<'code> ProgramState<'code> {
             .map(|scope| {
                 let func = &self.funcs[&scope.id];
                 let file_name = &self.file_names[&func.file];
-                let marker = func
-                    .marks
-                    .iter()
-                    .find_map(|(offset, pos)| {
-                        if *offset >= scope.index {
-                            Some(pos)
-                        } else {
-                            None
-                        }
-                    })
-                    .copied()
-                    .unwrap_or(func.pos);
+                let mut marker = func.pos;
+                let mut index = 0;
+                for mark in &func.marks {
+                    index += mark.0;
+                    if index >= scope.index {
+                        break;
+                    }
+                    marker = mark.1;
+                }
                 format!("{}:{}:{} ({})", file_name, marker.0, marker.1, func.name)
             })
             .collect::<Vec<_>>()

@@ -4,7 +4,6 @@ use std::io::Write;
 use ariadne::{Color, Source};
 use ariadne::{Label, Report, ReportKind};
 use gvm::binary::encode::encode_program;
-use gvm::format::instr::ByteCode;
 
 use crate::check::{check_project, check_vfs, resolve_project};
 use crate::db::err::Diagnostic;
@@ -28,13 +27,8 @@ pub fn build() {
                 fs::File::create(out_file)
             })
             .unwrap();
-        let mut file = db.vfs.unwrap().build(&db, project);
-        for func in file.funcs.values_mut() {
-            while let Some((index, (line, col))) = func.marks.pop() {
-                func.body.insert(index, ByteCode::Mark(line, col));
-            }
-        }
-        writeln!(out, "{}", file).unwrap();
+        let file = db.vfs.unwrap().build(&db, project);
+        writeln!(out, "{file}").unwrap();
         let out_file = pwd.join("out");
         let bytes = encode_program(&file);
         let mut out = fs::File::create(out_file.clone())

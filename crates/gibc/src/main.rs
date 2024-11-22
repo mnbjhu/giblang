@@ -12,7 +12,6 @@ mod lsp;
 mod parser;
 mod range;
 mod resolve;
-// mod run;
 mod ty;
 mod util;
 

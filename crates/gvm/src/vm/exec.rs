@@ -463,9 +463,6 @@ impl<'code> ProgramState<'code> {
                 let res = StackItem::Int(data.len() as i32);
                 self.push(res);
             }
-            ByteCode::Mark(_, _) => {
-                panic!("'mark' should be removed before runtime")
-            }
         };
     }
 }

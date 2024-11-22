@@ -1,6 +1,6 @@
 use std::{collections::HashMap, iter::Peekable};
 
-use crate::format::{func::FuncDef, instr::ByteCode, ByteCodeFile};
+use crate::format::{func::FuncDef, ByteCodeFile};
 
 use super::{
     op::decode_code,
@@ -27,12 +27,17 @@ pub fn decode_func<T: Iterator<Item = u8>>(bytes: &mut Peekable<T>, into: &mut B
         file,
         marks: Vec::new(),
     };
+
+    let marks_len = decode_small(bytes);
+    for _ in 0..marks_len {
+        let index = decode_small(bytes);
+        let line = decode_tiny(bytes);
+        let col = decode_tiny(bytes);
+        func.marks.push((index as usize, (line, col)));
+    }
+
     while let Some(bc) = decode_code(bytes) {
-        if let ByteCode::Mark(line, col) = bc {
-            func.marks.push((func.body.len(), (line, col)));
-        } else {
-            func.body.push(bc);
-        }
+        func.body.push(bc);
     }
     into.funcs.insert(id, func);
 }

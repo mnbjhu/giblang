@@ -15,7 +15,7 @@ impl AstItem for While {
         allocator
             .text("while")
             .append(allocator.space())
-            .append(self.expr.pretty(allocator))
+            .append(self.condition.0.pretty(allocator))
             .append(self.block.0.pretty(allocator))
     }
 }

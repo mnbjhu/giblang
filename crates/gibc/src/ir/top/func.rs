@@ -190,22 +190,12 @@ impl<'db> FuncIR<'db> {
                 .collect()
         };
         body.push(ByteCode::Return);
-        let mut marks = Vec::new();
-        let mut to_check = 0;
-        while to_check < body.len() {
-            if let ByteCode::Mark(line, col) = body[to_check] {
-                body.remove(to_check);
-                marks.push((to_check, (line, col)));
-            } else {
-                to_check += 1;
-            }
-        }
         (
             id,
             FuncDef {
                 args: state.params.len() as u32,
                 body,
-                marks,
+                marks: state.marks.clone(),
                 name: self.name.0.to_string(),
                 pos: state.get_pos(self.name.1),
                 file: state.file.as_id().as_u32(),

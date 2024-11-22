@@ -1,14 +1,12 @@
 use std::{
     cmp::Ordering,
     collections::HashMap,
-    io::Stdout,
+    io::{Stdin, Stdout},
     sync::{Arc, Mutex},
-    thread,
-    time::Duration,
 };
 
 use dap::{
-    events::{Event, StoppedEventBody},
+    events::{Event, OutputEventBody, StoppedEventBody},
     server::ServerOutput,
     types::StoppedEventReason,
 };
@@ -20,8 +18,8 @@ use gvm::{
 pub struct Debugger<'code> {
     pub state: ProgramState<'code>,
     pub output: Arc<Mutex<ServerOutput<Stdout>>>,
-    pub breakpoints: Arc<Mutex<HashMap<ByteCodeBreakpoint, i64>>>,
-    pub paused: Arc<Mutex<bool>>,
+    pub breakpoints: HashMap<ByteCodeBreakpoint, i64>,
+    pub paused: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -30,37 +28,53 @@ pub struct ByteCodeBreakpoint {
     pub instr: usize,
 }
 
-impl<'db> Debugger<'db> {
-    pub fn run_dap(&mut self) {
-        let main = self.state.funcs.get(&0).expect("No main function");
-        self.state.scopes.push(Scope::from_code(&main.body, 0));
-        while *self.paused.lock().unwrap() {
-            thread::sleep(Duration::from_millis(100));
+impl<'code> Debugger<'code> {
+    pub fn new(state: ProgramState<'code>, output: Arc<Mutex<ServerOutput<Stdout>>>) -> Self {
+        let mut res = Self {
+            state,
+            output,
+            breakpoints: HashMap::new(),
+            paused: true,
+        };
+        let main = res.state.funcs.get(&0).expect("No main function");
+        res.state.scopes.push(Scope::from_code(&main.body, 0));
+        res
+    }
+
+    pub fn poll(&mut self) {
+        if self.paused {
+            self.output
+                .lock()
+                .unwrap()
+                .send_event(Event::Output(OutputEventBody {
+                    output: "Paused".to_string(),
+                    ..Default::default()
+                }))
+                .unwrap();
+            return;
         }
-        while !self.state.scopes.is_empty() {
-            let instr = self.state.next_instr();
-            let point = ByteCodeBreakpoint {
-                func: self.state.scope().id,
-                instr: self.state.scope().index,
-            };
-            if let Some(bp) = self.breakpoints.lock().unwrap().get(&point) {
-                self.output
-                    .lock()
-                    .unwrap()
-                    .send_event(Event::Stopped(StoppedEventBody {
-                        reason: StoppedEventReason::Breakpoint,
-                        description: Some("Breakpoint hit desc".to_string()),
-                        thread_id: None,
-                        preserve_focus_hint: Some(false),
-                        text: Some("Breakpoint hit".to_string()),
-                        all_threads_stopped: Some(true),
-                        hit_breakpoint_ids: Some(vec![*bp]),
-                    }))
-                    .unwrap();
-                *self.paused.lock().unwrap() = true;
-            }
-            self.state.execute(instr);
+        let instr = self.state.next_instr();
+        let point = ByteCodeBreakpoint {
+            func: self.state.scope().id,
+            instr: self.state.scope().index,
+        };
+        if let Some(bp) = self.breakpoints.get(&point) {
+            self.output
+                .lock()
+                .unwrap()
+                .send_event(Event::Stopped(StoppedEventBody {
+                    reason: StoppedEventReason::Breakpoint,
+                    description: Some("Breakpoint hit desc".to_string()),
+                    thread_id: None,
+                    preserve_focus_hint: Some(false),
+                    text: Some("Breakpoint hit".to_string()),
+                    all_threads_stopped: Some(true),
+                    hit_breakpoint_ids: Some(vec![*bp]),
+                }))
+                .unwrap();
+            self.paused = true;
         }
+        self.state.execute(instr);
     }
 }
 

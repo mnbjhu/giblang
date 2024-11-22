@@ -8,7 +8,10 @@ impl Display for Literal {
             Literal::Int(val) => val.fmt(f),
             Literal::String(val) => format!("\"{}\"", val).fmt(f),
             Literal::Float(val) => val.fmt(f),
-            Literal::Char(val) => val.fmt(f),
+            Literal::Char(val) => match val {
+                '\n' => write!(f, "'\\n'"),
+                _ => write!(f, "'{}'", val),
+            },
             Literal::Bool(val) => val.fmt(f),
         }
     }

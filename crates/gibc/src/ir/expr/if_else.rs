@@ -3,8 +3,8 @@ use gvm::format::instr::ByteCode;
 
 use crate::{
     check::{build_state::BuildState, state::CheckState},
-    ir::{stmt::let_::LetIR, ContainsOffset as _, IrNode},
-    parser::expr::if_else::{Condition, IfBranch, IfElse},
+    ir::{common::condition::ConditionIR, ContainsOffset as _, IrNode},
+    parser::expr::if_else::{IfBranch, IfElse},
     ty::Ty,
     util::{Span, Spanned},
 };
@@ -24,12 +24,6 @@ pub struct IfElseIR<'db> {
 pub struct IfBranchIR<'db> {
     pub condition: Spanned<ConditionIR<'db>>,
     pub body: Spanned<CodeBlockIR<'db>>,
-}
-
-#[derive(Clone, PartialEq, Debug)]
-pub enum ConditionIR<'db> {
-    Let(LetIR<'db>),
-    Expr(ExprIR<'db>),
 }
 
 impl<'db> IfElse {
@@ -106,10 +100,7 @@ impl<'db> IfElse {
 
 impl<'db> IfBranch {
     pub fn check(&self, state: &mut CheckState<'db>) -> IfBranchIR<'db> {
-        let condition = match &self.condition.0 {
-            Condition::Let(let_) => ConditionIR::Let(let_.check(state)),
-            Condition::Expr(expr) => ConditionIR::Expr(expr.check(state)),
-        };
+        let condition = self.condition.0.check(state, self.condition.1);
         let condition = (condition, self.condition.1);
         let ExprIR {
             data: ExprIRData::CodeBlock(body),
@@ -128,10 +119,7 @@ impl<'db> IfBranch {
         expected: &Ty<'db>,
         span: Span,
     ) -> IfBranchIR<'db> {
-        let condition = match &self.condition.0 {
-            Condition::Let(let_) => ConditionIR::Let(let_.check(state)),
-            Condition::Expr(expr) => ConditionIR::Expr(expr.check(state)),
-        };
+        let condition = self.condition.0.check(state, self.condition.1);
         let condition = (condition, self.condition.1);
         let ExprIR {
             data: ExprIRData::CodeBlock(body),
@@ -191,26 +179,6 @@ impl<'db> IrNode<'db> for IfBranchIR<'db> {
     ) {
         self.condition.0.tokens(tokens, state);
         self.body.0.tokens(tokens, state);
-    }
-}
-
-impl<'db> IrNode<'db> for ConditionIR<'db> {
-    fn at_offset(&self, offset: usize, state: &mut crate::ir::IrState<'db>) -> &dyn IrNode {
-        match self {
-            ConditionIR::Let(let_) => let_.at_offset(offset, state),
-            ConditionIR::Expr(expr) => expr.at_offset(offset, state),
-        }
-    }
-
-    fn tokens(
-        &self,
-        tokens: &mut Vec<crate::check::SemanticToken>,
-        state: &mut crate::ir::IrState<'db>,
-    ) {
-        match self {
-            ConditionIR::Let(let_) => let_.tokens(tokens, state),
-            ConditionIR::Expr(expr) => expr.tokens(tokens, state),
-        }
     }
 }
 

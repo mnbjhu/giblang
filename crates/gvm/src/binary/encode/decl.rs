@@ -13,6 +13,16 @@ impl FuncDef {
         bytes.extend_from_slice(&self.pos.0.to_be_bytes());
         bytes.extend_from_slice(&self.pos.1.to_be_bytes());
         bytes.extend_from_slice(&self.file.to_be_bytes());
+
+        let len = self.marks.len() as u32;
+        bytes.extend_from_slice(&len.to_be_bytes());
+        for (index, pos) in &self.marks {
+            let index = *index as u32;
+            bytes.extend_from_slice(&index.to_be_bytes());
+            bytes.extend_from_slice(&pos.0.to_be_bytes());
+            bytes.extend_from_slice(&pos.1.to_be_bytes());
+        }
+
         for bc in &self.body {
             bytes.extend_from_slice(&bc.get_bytes());
         }

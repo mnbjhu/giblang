@@ -99,8 +99,6 @@ pub fn parse_instr<'src>(lex: &mut Lex<'src>) -> PResult<'src, ByteCode> {
                 let id = expect_num(lex, "'id' (u32)")?;
                 Ok(ByteCode::DynCall(id))
             }
-            Token::Mark => todo!(),
-
             Token::Func | Token::Type | Token::File => Err(ParseError::ImpliedEnd),
             found => Err(ParseError::UnexpectedToken {
                 range: range.clone(),

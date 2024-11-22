@@ -46,5 +46,4 @@ pub enum ByteCode {
     Gte,
     Match(u32),
     Clone,
-    Mark(u16, u16),
 }
