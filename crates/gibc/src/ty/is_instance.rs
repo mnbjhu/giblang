@@ -136,7 +136,7 @@ impl<'db> Ty<'db> {
         }
     }
 
-    fn imply_named_sub_ty(
+    pub fn imply_named_sub_ty(
         &self,
         sub_ty: ModulePath<'db>,
         state: &mut CheckState<'db>,

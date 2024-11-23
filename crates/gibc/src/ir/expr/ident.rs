@@ -1,3 +1,5 @@
+use async_lsp::lsp_types::CompletionItem;
+
 use crate::{
     check::{
         err::{unresolved::Unresolved, CheckError},
@@ -10,11 +12,11 @@ use crate::{
     },
     ir::{common::pattern::SpannedQualifiedNameIR, ContainsOffset as _, IrNode, IrState},
     item::definitions::ident::IdentDef,
-    ty::Ty,
+    ty::{Named, Ty},
     util::{Span, Spanned},
 };
 
-use super::{ExprIR, ExprIRData};
+use super::{field::FieldIR, ExprIR, ExprIRData};
 
 #[allow(clippy::too_many_lines)]
 pub fn check_ident<'db>(ident: &[Spanned<String>], state: &mut CheckState<'db>) -> ExprIR<'db> {
@@ -32,29 +34,48 @@ pub fn check_ident<'db>(ident: &[Spanned<String>], state: &mut CheckState<'db>) 
             };
         }
         if let Some(self_param) = state.get_variable("self") {
-            if let Some(field) = self_param
-                .ty
-                .fields(state)
-                .iter()
-                .find(|(n, _)| n == &name.0)
+            if let Ty::Named(Named {
+                name: self_name, ..
+            }) = self_param.ty
             {
-                let ty = field.1.clone();
-                return ExprIR {
-                    data: ExprIRData::Ident(vec![(IdentDef::Variable(self_param.clone()), name.1)]),
-                    ty: ty.clone(),
+                let decl = state.project.get_decl(state.db, self_name).unwrap();
+                let phantom_self = ExprIR {
+                    data: ExprIRData::Phantom(Box::new(ExprIR {
+                        data: ExprIRData::Ident(vec![(
+                            IdentDef::Variable(self_param.clone()),
+                            self_param.span,
+                        )]),
+                        ty: self_param.ty.clone(),
+                    })),
+                    ty: self_param.ty.clone(),
                 };
-            }
-            if let Some(func) = self_param
-                .ty
-                .member_funcs(state, name.1)
-                .iter()
-                .find(|(n, _)| n.name(state.db) == name.0)
-            {
-                let ty = Ty::Function(func.1.clone());
-                return ExprIR {
-                    data: ExprIRData::Ident(vec![(IdentDef::Decl(func.0), name.1)]),
-                    ty: ty.clone(),
-                };
+                if let Some(field) = self_param
+                    .ty
+                    .fields(state)
+                    .iter()
+                    .find(|(n, _)| n == &name.0)
+                {
+                    return ExprIR {
+                        data: ExprIRData::Field(FieldIR {
+                            name: name.clone(),
+                            struct_: Box::new((phantom_self, self_param.span)),
+                            decl: Some(decl),
+                        }),
+                        ty: field.1.clone(),
+                    };
+                }
+                if let Some(func) = self_param
+                    .ty
+                    .member_funcs(state, name.1)
+                    .iter()
+                    .find(|(n, _)| n.name(state.db) == name.0)
+                {
+                    let ty = Ty::Function(func.1.clone());
+                    return ExprIR {
+                        data: ExprIRData::Ident(vec![(IdentDef::Decl(func.0), name.1)]),
+                        ty: ty.clone(),
+                    };
+                }
             }
         }
         match state.get_decl_with_error(ident) {
@@ -172,6 +193,20 @@ impl<'db> IrNode<'db> for SpannedQualifiedNameIR<'db> {
         } else {
             None
         }
+    }
+
+    fn completions(&self, offset: usize, state: &mut IrState<'db>) -> Vec<CompletionItem> {
+        let mut completions = vec![];
+        if self.len() < 2 {
+            // TODO: IDENT COMPLETIONS
+            // 1. Add vars
+            // 2. Add self fields and funcs
+            // 3. Add imported types
+            // 4. Add global
+            // 5. Add generics
+        }
+        let seg = self.iter().find(|(_, span)| span.contains_offset(offset));
+        completions
     }
 }
 

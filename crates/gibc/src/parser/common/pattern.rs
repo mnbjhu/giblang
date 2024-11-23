@@ -1,15 +1,21 @@
-use chumsky::{primitive::just, recursive::recursive, IterParser, Parser};
+use chumsky::{
+    primitive::{choice, just},
+    recursive::recursive,
+    select, IterParser, Parser,
+};
+use gvm::format::literal::Literal;
 
 use crate::{
-    lexer::token::punct,
+    lexer::token::{punct, Token},
+    op,
     parser::expr::qualified_name::{qualified_name_parser, SpannedQualifiedName},
-    util::Spanned,
+    util::{Span, Spanned},
     AstParser,
 };
 
 use super::{ident::spanned_ident_parser, optional_newline::optional_newline};
 
-#[derive(Clone, PartialEq, Debug, Eq)]
+#[derive(Clone, PartialEq, Debug)]
 pub enum Pattern {
     Name(Spanned<String>),
     Struct {
@@ -21,6 +27,8 @@ pub enum Pattern {
         name: SpannedQualifiedName,
         fields: Vec<Spanned<Pattern>>,
     },
+    Exact(Spanned<Literal>),
+    Wildcard(Span),
 }
 
 impl Pattern {
@@ -31,11 +39,13 @@ impl Pattern {
             | Pattern::TupleStruct { name, .. }
             | Pattern::UnitStruct(name) => name,
             Pattern::Name(_) => panic!("Name pattern has no name"),
+            Pattern::Exact(_) => panic!("Exact pattern has no name"),
+            Pattern::Wildcard(_) => panic!("Wildcard pattern has no name"),
         }
     }
 }
 
-#[derive(Clone, PartialEq, Debug, Eq)]
+#[derive(Clone, PartialEq, Debug)]
 pub enum StructFieldPattern {
     Implied(Spanned<String>),
     Explicit {
@@ -59,6 +69,13 @@ pub fn struct_field_pattern_parser<'tokens, 'src: 'tokens>(
 
 pub fn pattern_parser<'tokens, 'src: 'tokens>() -> AstParser!(Pattern) {
     let name = spanned_ident_parser().map(Pattern::Name);
+    let wildcard = just(op!(_)).map_with(|_, e| Pattern::Wildcard(e.span()));
+    let exact = select! {
+        Token::Literal(lit) => lit,
+    }
+    .map_with(|lit, e| (lit, e.span()))
+    .map(Pattern::Exact);
+
     let sep = just(punct(':')).then(just(punct(':')));
     let unit = spanned_ident_parser()
         .separated_by(sep)
@@ -96,6 +113,6 @@ pub fn pattern_parser<'tokens, 'src: 'tokens>() -> AstParser!(Pattern) {
             .then(struct_)
             .map(|(name, fields)| Pattern::Struct { name, fields });
 
-        tuple_struct.or(struct_).or(unit).or(name)
+        choice((tuple_struct, struct_, unit, name, exact, wildcard))
     })
 }

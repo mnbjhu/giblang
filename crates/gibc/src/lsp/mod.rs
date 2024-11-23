@@ -1,4 +1,5 @@
 mod capabilities;
+mod completions;
 mod definition;
 mod diagnostics;
 mod document_symbols;
@@ -21,6 +22,7 @@ use async_lsp::router::Router;
 use async_lsp::server::LifecycleLayer;
 use async_lsp::tracing::TracingLayer;
 use async_lsp::ClientSocket;
+use completions::get_completions;
 use hover::hover;
 use salsa::{AsDynDatabase, Setter as _};
 use semantic_tokens::get_semantic_tokens;
@@ -175,40 +177,4 @@ fn initialize(
     let root = params.root_path.clone().unwrap();
     st.db.init(root);
     async move { Ok(capabilities::capabilities()) }
-}
-
-#[allow(clippy::unnecessary_wraps)]
-fn get_completions(mut db: SourceDatabase, msg: &CompletionParams) -> Option<CompletionResponse> {
-    let file = db.input(
-        &msg.text_document_position
-            .text_document
-            .uri
-            .to_file_path()
-            .unwrap(),
-    );
-    let offset = position_to_offset(msg.text_document_position.position, file.text(&db));
-    let ast = parse_file(&db, file);
-    let project = resolve_project(&db, db.vfs.unwrap());
-    let mut state = CheckState::from_file(&db, file, project);
-    state.should_error = false;
-    let ir = check_file(&db, file, project);
-    // TODO: Implement completions
-    // let (found, ty) = ast.at_offset(&db, &mut state, offset)?;
-    // let mut completions = found.completions(&mut state, offset, &type_vars, &ty);
-    let mut completions = vec![];
-    let kw_completions = ast
-        .expected(state.db)
-        .iter()
-        .filter(|(_, span)| span.contains_offset(offset))
-        .flat_map(|(kws, _)| kws)
-        .map(|kw| CompletionItem {
-            label: kw.to_string(),
-            kind: Some(CompletionItemKind::KEYWORD),
-            detail: Some("Keyword".to_string()),
-            ..CompletionItem::default()
-        })
-        .collect::<Vec<_>>();
-    info!("Keyword completions: {:?}", kw_completions);
-    completions.extend(kw_completions);
-    Some(CompletionResponse::Array(completions))
 }

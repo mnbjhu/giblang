@@ -1,4 +1,3 @@
-
 use crate::{
     item::AstItem,
     parser::common::pattern::{Pattern, StructFieldPattern},
@@ -29,6 +28,8 @@ impl AstItem for Pattern {
                 let content = brackets(allocator, "(", ")", fields);
                 name.pretty(allocator).append(content)
             }
+            Pattern::Exact(lit) => lit.pretty(allocator),
+            Pattern::Wildcard(_) => allocator.text("_"),
         }
     }
 }

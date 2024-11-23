@@ -33,14 +33,20 @@ impl ByteCodeNode {
                 let mut top = top;
                 let mut found = vec![];
                 let end = top + len;
-                for (cond, then) in branches {
-                    let next = top + cond.len() + then.len() + 1;
+                let last = branches.len() - 1;
+                for (index, (cond, then)) in branches.into_iter().enumerate() {
+                    let is_last_branch = index == last && else_.is_none();
+                    let next = if is_last_branch {
+                        end
+                    } else {
+                        top + cond.len() + then.len() + 1
+                    };
                     let mut code = cond.build(top, break_, continue_, next);
                     top += code.len() as u32;
                     let body = then.build(top, break_, continue_, next);
                     top += body.len() as u32;
                     code.extend(body);
-                    if end != top {
+                    if !is_last_branch {
                         code.push(ByteCode::Jmp(end));
                         top += 1;
                     }

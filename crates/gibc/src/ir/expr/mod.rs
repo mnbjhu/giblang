@@ -1,6 +1,7 @@
 use block::{check_block, CodeBlockIR};
 use call::CallIR;
 use field::FieldIR;
+use for_::ForIR;
 use gvm::format::{instr::ByteCode, literal::Literal};
 use ident::{check_ident, expect_ident};
 use if_else::IfElseIR;
@@ -15,7 +16,10 @@ use while_::WhileIR;
 
 use crate::{
     check::{build_state::BuildState, state::CheckState, TokenKind},
-    db::decl::{struct_::StructDecl, Decl, DeclKind},
+    db::{
+        decl::{struct_::StructDecl, Decl, DeclKind, Project},
+        input::Db,
+    },
     item::definitions::ident::IdentDef,
     parser::expr::Expr,
     ty::{Generic, Named, Ty},
@@ -29,6 +33,7 @@ use super::{
 pub mod block;
 pub mod call;
 pub mod field;
+pub mod for_;
 pub mod ident;
 pub mod if_else;
 pub mod lambda;
@@ -61,6 +66,8 @@ pub enum ExprIRData<'db> {
     While(WhileIR<'db>),
     IfElse(IfElseIR<'db>),
     ImplicitDyn(Box<ExprIR<'db>>, Decl<'db>),
+    Phantom(Box<ExprIR<'db>>),
+    For(ForIR<'db>),
     Error,
 }
 
@@ -86,6 +93,7 @@ impl<'db> Expr {
                 ty: Ty::Unknown,
             },
             Expr::IfElse(if_else) => if_else.check(state),
+            Expr::For(for_) => for_.check(state),
         }
     }
 
@@ -122,11 +130,18 @@ impl<'db> Expr {
                 Ty::unit().expect_is_instance_of(expected, state, span);
                 ir
             }
+            Expr::For(for_) => {
+                let ir = for_.check(state);
+                Ty::unit().expect_is_instance_of(expected, state, span);
+                ir
+            }
             Expr::IfElse(if_else) => if_else.expect(state, expected, span),
         };
         if let Ty::Named(Named { name, .. }) = &expected {
             let decl = state.project.get_decl(state.db, *name).unwrap();
-            if matches!(decl.kind(state.db), DeclKind::Trait { .. }) && !res.data.is_dyn(state) {
+            if matches!(decl.kind(state.db), DeclKind::Trait { .. })
+                && !res.data.is_dyn(state.db, state.project)
+            {
                 return ExprIR {
                     data: ExprIRData::ImplicitDyn(Box::new(res), decl),
                     ty: Ty::Unknown,
@@ -158,8 +173,10 @@ impl<'db> IrNode<'db> for ExprIR<'db> {
             ExprIRData::Op(op) => op.at_offset(offset, state),
             ExprIRData::Lambda(lambda) => lambda.at_offset(offset, state),
             ExprIRData::While(while_) => while_.at_offset(offset, state),
+            ExprIRData::For(for_) => for_.at_offset(offset, state),
             ExprIRData::IfElse(if_else) => if_else.at_offset(offset, state),
             ExprIRData::ImplicitDyn(expr, _) => expr.at_offset(offset, state),
+            ExprIRData::Phantom(_) => unreachable!(),
         }
     }
 
@@ -184,8 +201,10 @@ impl<'db> IrNode<'db> for ExprIR<'db> {
             ExprIRData::Op(op) => op.tokens(tokens, state),
             ExprIRData::Lambda(lambda) => lambda.tokens(tokens, state),
             ExprIRData::While(while_) => while_.tokens(tokens, state),
+            ExprIRData::For(for_) => for_.tokens(tokens, state),
             ExprIRData::IfElse(if_else) => if_else.tokens(tokens, state),
             ExprIRData::ImplicitDyn(expr, _) => expr.tokens(tokens, state),
+            ExprIRData::Phantom(_) => {}
         }
     }
 
@@ -257,6 +276,7 @@ impl<'db> ExprIR<'db> {
             ExprIRData::Op(op) => op.build(state),
             ExprIRData::Lambda(lambda) => todo!(),
             ExprIRData::While(while_) => while_.build(state),
+            ExprIRData::For(for_) => for_.build(state),
             ExprIRData::IfElse(if_else) => if_else.build(state),
             ExprIRData::ImplicitDyn(expr, trait_decl) => {
                 let mut code = vec![expr.build(state)];
@@ -266,31 +286,32 @@ impl<'db> ExprIR<'db> {
                 ByteCodeNode::Block(code)
             }
             ExprIRData::Error => unreachable!(),
+            ExprIRData::Phantom(expr) => expr.build(state),
         }
     }
 }
 
 impl<'db> Ty<'db> {
-    pub fn is_dyn(&self, state: &mut CheckState<'db>) -> bool {
+    pub fn is_dyn(&self, db: &'db dyn Db, project: Project) -> bool {
         if let Ty::Named(Named { name, .. }) = self {
-            let decl = state.project.get_decl(state.db, *name).unwrap();
-            if let DeclKind::Trait { .. } = decl.kind(state.db) {
+            let decl = project.get_decl(db, *name).unwrap();
+            if let DeclKind::Trait { .. } = decl.kind(db) {
                 return true;
             }
         } else if let Ty::Generic(Generic { super_, .. }) = self {
-            return super_.is_dyn(state);
+            return super_.is_dyn(db, project);
         }
         false
     }
 }
 
 impl<'db> ExprIRData<'db> {
-    pub fn is_dyn(&self, state: &mut CheckState<'db>) -> bool {
+    pub fn is_dyn(&self, db: &'db dyn Db, project: Project) -> bool {
         match self {
             ExprIRData::Ident(ident) => match &ident.last().unwrap().0 {
-                IdentDef::Decl(decl) => matches!(decl.kind(state.db), DeclKind::Trait { .. }),
+                IdentDef::Decl(decl) => matches!(decl.kind(db), DeclKind::Trait { .. }),
                 IdentDef::Variable(var) => {
-                    var.ty.is_dyn(state)
+                    var.ty.is_dyn(db, project)
                 }
                 _ => false,
             },
@@ -299,7 +320,7 @@ impl<'db> ExprIRData<'db> {
                     return true;
                 }
                 let decl = field.decl.unwrap();
-                let DeclKind::Struct { body, .. } = decl.kind(state.db) else {
+                let DeclKind::Struct { body, .. } = decl.kind(db) else {
                     panic!("Expected struct")
                 };
                 if let StructDecl::Fields(fields) = body {
@@ -308,8 +329,8 @@ impl<'db> ExprIRData<'db> {
                         .find(|f| f.0 == field.name.0)
                         .unwrap();
                     if let Ty::Named(Named { name, .. }) = field.1 {
-                        let decl = state.project.get_decl(state.db, name).unwrap();
-                        if let DeclKind::Trait { .. } = decl.kind(state.db) {
+                        let decl = project.get_decl(db, name).unwrap();
+                        if let DeclKind::Trait { .. } = decl.kind(db) {
                             return true;
                         }
                     }
@@ -322,25 +343,27 @@ impl<'db> ExprIRData<'db> {
                 if call.ty.is_none() {
                     return true;
                 }
-                call.ty.as_ref().unwrap().ret.as_ref().is_dyn(state)
+                call.ty.as_ref().unwrap().ret.as_ref().is_dyn(db, project)
             }
             ExprIRData::MemberCall(member) => {
                 if member.ty.is_none() {
                     return true;
                 }
-                member.ty.as_ref().unwrap().ret.as_ref().is_dyn(state)
+                member.ty.as_ref().unwrap().ret.as_ref().is_dyn(db, project)
             }
             ExprIRData::CodeBlock(_)
             | ExprIRData::IfElse(_)
             | ExprIRData::Match(_)
             | ExprIRData::ImplicitDyn(_, _)
             | ExprIRData::While(_)
+            | ExprIRData::For(_)
             | ExprIRData::Error  => true,
             ExprIRData::Tuple(_)
             | ExprIRData::Literal(_)
             // TODO: Will change with op overloading
             | ExprIRData::Op(_)
             | ExprIRData::Lambda(_) => false,
+            ExprIRData::Phantom(expr) => expr.data.is_dyn(db, project),
         }
     }
 }

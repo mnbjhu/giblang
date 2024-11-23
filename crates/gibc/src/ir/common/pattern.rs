@@ -8,11 +8,11 @@ use crate::{
         build_state::BuildState, err::CheckError, state::CheckState, SemanticToken, TokenKind,
     },
     db::decl::{struct_::StructDecl, DeclKind},
-    ir::{builder::ByteCodeNode, ContainsOffset, IrNode, IrState},
+    ir::{builder::ByteCodeNode, expr::lit::Typed, ContainsOffset, IrNode, IrState},
     item::definitions::ident::IdentDef,
     parser::common::pattern::{Pattern, StructFieldPattern},
     ty::{Generic, Named, Ty},
-    util::Spanned,
+    util::{Span, Spanned},
 };
 
 pub type SpannedQualifiedNameIR<'db> = Vec<Spanned<IdentDef<'db>>>;
@@ -29,6 +29,8 @@ pub enum PatternIR<'db> {
         name: SpannedQualifiedNameIR<'db>,
         fields: Vec<Spanned<PatternIR<'db>>>,
     },
+    Exact(Spanned<Literal>),
+    Wildcard(Span),
     Error,
 }
 
@@ -76,6 +78,8 @@ impl<'db> Pattern {
                     .map(|(ty, span)| (ty.check(state), *span))
                     .collect(),
             },
+            Pattern::Exact(lit) => PatternIR::Exact(lit.clone()),
+            Pattern::Wildcard(span) => PatternIR::Wildcard(*span),
         }
     }
     pub fn expect(&self, state: &mut CheckState<'db>, ty: &Ty<'db>) -> PatternIR<'db> {
@@ -92,6 +96,15 @@ impl<'db> Pattern {
             }
             state.insert_variable(name.0.to_string(), ty.clone(), TokenKind::Var, name.1);
             return PatternIR::Name(name.clone());
+        }
+        if let Pattern::Wildcard(span) = self {
+            return PatternIR::Wildcard(*span);
+        }
+        if let Pattern::Exact(lit) = self {
+            lit.0
+                .to_ty(state.db)
+                .expect_is_instance_of(ty, state, lit.1);
+            return PatternIR::Exact(lit.clone());
         }
         let name = self.name();
         let decl = state.get_decl_with_error(name);
@@ -283,7 +296,7 @@ impl<'db> IrNode<'db> for PatternIR<'db> {
                 }
                 self
             }
-            PatternIR::Error => self,
+            PatternIR::Error | PatternIR::Exact(_) | PatternIR::Wildcard(_) => self,
         }
     }
 
@@ -312,7 +325,7 @@ impl<'db> IrNode<'db> for PatternIR<'db> {
                     field.tokens(tokens, state);
                 }
             }
-            PatternIR::Error => {}
+            PatternIR::Error | PatternIR::Exact(_) | PatternIR::Wildcard(_) => {}
         }
     }
 
@@ -328,6 +341,7 @@ impl<'db> IrNode<'db> for PatternIR<'db> {
             PatternIR::Struct { name, fields } => todo!(),
             PatternIR::UnitStruct(_) => todo!(),
             PatternIR::TupleStruct { name, fields } => todo!(),
+            PatternIR::Wildcard(_) | PatternIR::Exact(_) => None,
             PatternIR::Error => todo!(),
         }
     }
@@ -371,8 +385,16 @@ impl<'db> IrNode<'db> for StructFieldPatternIR<'db> {
 
 impl<'db> PatternIR<'db> {
     pub fn build_match(&self, state: &mut BuildState<'db>) -> ByteCodeNode {
-        if let PatternIR::Name(_) = self {
+        if let PatternIR::Wildcard(_) | PatternIR::Name(_) = self {
             return ByteCodeNode::Code(vec![]);
+        };
+        if let PatternIR::Exact(lit) = self {
+            let code = ByteCodeNode::Code(vec![
+                ByteCode::Copy,
+                ByteCode::Push(lit.0.clone()),
+                ByteCode::Eq,
+            ]);
+            return ByteCodeNode::Block(vec![code, ByteCodeNode::Next]);
         };
         let (PatternIR::TupleStruct { name, .. }
         | PatternIR::UnitStruct(name)
@@ -444,6 +466,7 @@ impl<'db> PatternIR<'db> {
                 let id = state.add_var(name.0.clone());
                 ByteCodeNode::Code(vec![ByteCode::NewLocal(id)])
             }
+            PatternIR::Exact(_) | PatternIR::Wildcard(_) => ByteCodeNode::Code(vec![ByteCode::Pop]),
             PatternIR::Struct { name, fields } => {
                 let IdentDef::Decl(decl) = name.last().unwrap().0 else {
                     panic!("Expected struct")
@@ -476,9 +499,10 @@ impl<'db> PatternIR<'db> {
                 let mut code = vec![];
                 for (index, field) in fields.iter().enumerate() {
                     let field_index = fields.len() - index - 1;
-                    code.push(ByteCodeNode::Code(vec![ByteCode::Index(
-                        field_index as u32,
-                    )]));
+                    code.push(ByteCodeNode::Code(vec![
+                        ByteCode::Copy,
+                        ByteCode::Index(field_index as u32),
+                    ]));
                     code.push(field.0.build(state));
                 }
                 ByteCodeNode::Block(code)
@@ -489,28 +513,6 @@ impl<'db> PatternIR<'db> {
 }
 
 impl<'db> StructFieldPatternIR<'db> {
-    // pub fn build_match(
-    //     &self,
-    //     state: &mut BuildState<'db>,
-    //     end: &mut i32,
-    //     index: u32,
-    // ) -> Vec<ByteCode> {
-    //     match self
-    //         StructFieldPatternIR::Implied { .. } => {
-    //             vec![ByteCode::Je(*end)]
-    //         }
-    //         StructFieldPatternIR::Explicit { field, pattern } => {
-    //             let pattern = pattern.0.build_match(state, end);
-    //             let my_end = *end;
-    //             let mut code = vec![ByteCode::Copy, ByteCode::Index(index)];
-    //             code.extend(pattern);
-    //             code.push(ByteCode::Je(my_end));
-    //             *end += 3;
-    //             code
-    //         }
-    //     }
-    // }
-    //
     pub fn build(&self, state: &mut BuildState<'db>, index: u32) -> ByteCodeNode {
         match self {
             StructFieldPatternIR::Implied { name } => {

@@ -24,6 +24,7 @@ pub mod state;
 // mod stmt;
 // pub mod top;
 // pub mod ty;
+mod scoped_state;
 mod type_state;
 
 #[derive(Debug, PartialEq, Clone, Update, Eq)]

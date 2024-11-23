@@ -1,16 +1,10 @@
-use std::collections::HashMap;
-
-use std::io::{stdin, BufReader, BufWriter};
-use std::path::{Path, PathBuf};
-use std::sync::{Arc, Mutex};
-use std::time::Duration;
-use std::{fs, thread};
-
-use crossbeam::epoch::Pointable;
 use debugger::{ByteCodeExt as _, Debugger};
 use gvm::binary::decode::decode_file;
 use gvm::vm::state::ProgramState;
 use responses::SetBreakpointsResponse;
+use std::fs;
+use std::io::{stdin, BufReader, BufWriter};
+use std::path::{Path, PathBuf};
 use thiserror::Error;
 
 use dap::prelude::*;

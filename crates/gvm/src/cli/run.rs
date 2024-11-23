@@ -1,5 +1,5 @@
 use std::{
-    fs::{self, File},
+    fs::{self},
     io::{stdin, Read},
     path::PathBuf,
 };

@@ -7,6 +7,7 @@ use chumsky::{
 };
 use field::Field;
 
+use for_::{for_parser, For};
 use gvm::format::literal::Literal;
 use lambda::{lambda_parser, Lambda};
 use op::{op_parser, Op};
@@ -33,6 +34,7 @@ pub mod access;
 pub mod call;
 pub mod code_block;
 pub mod field;
+pub mod for_;
 pub mod if_else;
 pub mod lambda;
 pub mod match_;
@@ -56,6 +58,7 @@ pub enum Expr {
     Op(Op),
     Lambda(Lambda),
     While(While),
+    For(For),
     Error,
 }
 
@@ -155,9 +158,10 @@ pub fn expr_parser<'tokens, 'src: 'tokens>(stmt: AstParser!(Stmt)) -> AstParser!
         .map(Expr::Match);
 
         let while_ = while_parser(basic_op.clone(), stmt.clone());
+        let for_ = for_parser(basic_op.clone(), stmt.clone());
 
         let if_else = if_else_parser(basic_op, stmt).map(Expr::IfElse);
 
-        choice((if_else, match_, while_, lambda, op)).boxed()
+        choice((if_else, match_, for_, while_, lambda, op)).boxed()
     })
 }

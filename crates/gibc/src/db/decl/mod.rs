@@ -27,7 +27,6 @@ use super::{
 };
 
 #[salsa::tracked]
-#[derive()]
 pub struct Project<'db> {
     pub decls: Decl<'db>,
     pub impl_map: HashMap<ModulePath<'db>, Vec<ImplForDecl<'db>>>,

@@ -134,6 +134,15 @@ impl Vfs {
                     print("\n")
                 }
 
+                trait Iterator[T] {
+                    fn Self.next(): Option[T]
+                }
+
+                trait IntoIter[T] {
+                    fn Self.iter(): Iterator[T]
+                }
+
+
                 struct Vec[T]
 
                 impl[T] Vec[T] {

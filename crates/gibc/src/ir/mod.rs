@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use async_lsp::lsp_types::CompletionItem;
 use gvm::format::ByteCodeFile;
 use salsa::plumbing::AsId;
 use top::TopIR;
@@ -41,6 +42,10 @@ pub trait IrNode<'db> {
     #[allow(unused)]
     fn goto(&self, offset: usize, state: &mut IrState<'db>) -> Option<(SourceFile, Span)> {
         None
+    }
+    #[allow(unused)]
+    fn completions(&self, offset: usize, state: &mut IrState<'db>) -> Vec<CompletionItem> {
+        vec![]
     }
 }
 

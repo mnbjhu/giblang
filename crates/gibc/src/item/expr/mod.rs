@@ -9,6 +9,7 @@ pub mod block;
 pub mod call;
 pub mod code_block;
 pub mod field;
+pub mod for_;
 pub mod ident;
 pub mod if_else;
 pub mod lambda;
@@ -47,6 +48,7 @@ impl AstItem for Expr {
             Expr::Field(field) => field.pretty(allocator),
             Expr::Lambda(lambda) => lambda.pretty(allocator),
             Expr::While(while_) => while_.pretty(allocator),
+            Expr::For(for_) => for_.pretty(allocator),
         }
     }
 }

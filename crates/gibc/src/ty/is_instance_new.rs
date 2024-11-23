@@ -1,8 +1,5 @@
 use crate::{
-    check::state::CheckState,
-    db::path::ModulePath,
-    parser::common::variance::Variance,
-    util::Span,
+    check::state::CheckState, db::path::ModulePath, parser::common::variance::Variance, util::Span,
 };
 
 use super::{is_instance::path_to_sub_ty, FuncTy, Generic, Named, Ty};
@@ -110,7 +107,7 @@ impl<'db> Named<'db> {
             false
         }
     }
-    fn imply_named_sub_ty(
+    pub fn imply_named_sub_ty(
         &self,
         sub_ty: ModulePath<'db>,
         state: &mut CheckState<'db>,

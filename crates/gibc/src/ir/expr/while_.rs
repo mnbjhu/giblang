@@ -1,6 +1,3 @@
-use chumsky::container::Container;
-use gvm::format::instr::ByteCode;
-
 use crate::{
     check::{build_state::BuildState, state::CheckState},
     ir::{builder::ByteCodeNode, common::condition::ConditionIR, ContainsOffset, IrNode},
