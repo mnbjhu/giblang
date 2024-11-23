@@ -116,14 +116,4 @@ impl<'db> StmtIR<'db> {
             StmtIR::Break(_) => ByteCodeNode::Break,
         }
     }
-
-    pub fn get_span(&self) -> Span {
-        match self {
-            StmtIR::Expr((_, s))
-            | StmtIR::Let((_, s))
-            | StmtIR::Assign((_, s))
-            | StmtIR::Break(s)
-            | StmtIR::Continue(s) => *s,
-        }
-    }
 }

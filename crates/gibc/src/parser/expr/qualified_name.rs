@@ -8,7 +8,6 @@ use crate::{
 };
 
 pub type SpannedQualifiedName = Vec<Spanned<String>>;
-pub type QualifiedName = Vec<String>;
 
 #[must_use]
 pub fn qualified_name_parser<'tokens, 'src: 'tokens>() -> AstParser!(SpannedQualifiedName) {

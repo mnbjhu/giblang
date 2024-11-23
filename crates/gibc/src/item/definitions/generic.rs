@@ -13,7 +13,7 @@ impl Generic<'_> {
             format!("{}: {}", self.name.0, self.super_.get_name(state, None))
         }
     }
-    pub fn completions(&self, state: &mut CheckState) -> Vec<CompletionItem> {
+    pub fn completions(&self, state: &CheckState) -> Vec<CompletionItem> {
         vec![CompletionItem {
             label: self.name.0.clone(),
             detail: Some(self.hover(state)),

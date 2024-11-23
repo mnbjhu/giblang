@@ -1,26 +1,22 @@
-use std::collections::HashMap;
-
-use gvm::format::instr::ByteCode;
-
 use crate::{
     check::{
         build_state::BuildState,
-        state::{CheckState, VarDecl},
+        scoped_state::{Scope, Scoped},
+        state::CheckState,
         SemanticToken,
     },
     ir::{builder::ByteCodeNode, stmt::StmtIR, ContainsOffset, IrNode, IrState},
     parser::expr::code_block::CodeBlock,
-    ty::{Generic, Ty},
+    ty::Ty,
     util::{Span, Spanned},
 };
 
 use super::{ExprIR, ExprIRData};
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct CodeBlockIR<'db> {
-    pub vars: HashMap<String, VarDecl<'db>>,
-    pub generics: HashMap<String, Generic<'db>>,
     pub stmts: Vec<Spanned<StmtIR<'db>>>,
+    pub scope: Scope<'db>,
 }
 
 pub fn check_block<'db>(block: &CodeBlock, state: &mut CheckState<'db>) -> ExprIR<'db> {
@@ -29,14 +25,10 @@ pub fn check_block<'db>(block: &CodeBlock, state: &mut CheckState<'db>) -> ExprI
         .iter()
         .map(|stmt| (stmt.0.check(state), stmt.1))
         .collect::<Vec<_>>();
-    let (vars, generics) = state.exit_scope();
+    let scope = state.exit_scope();
     let ty = stmts.last().map_or(Ty::unit(), |stmt| stmt.0.get_ty());
     ExprIR {
-        data: ExprIRData::CodeBlock(CodeBlockIR {
-            vars,
-            generics,
-            stmts,
-        }),
+        data: ExprIRData::CodeBlock(CodeBlockIR { stmts, scope }),
         ty,
     }
 }
@@ -51,13 +43,12 @@ pub fn expect_block<'db>(
     }
     state.enter_scope();
     if block.is_empty() {
-        let (vars, generics) = state.exit_scope();
+        let scope = state.exit_scope();
         Ty::unit().expect_is_instance_of(expected, state, span);
         return ExprIR {
             data: ExprIRData::CodeBlock(CodeBlockIR {
-                vars,
-                generics,
                 stmts: vec![],
+                scope,
             }),
             ty: Ty::unit(),
         };
@@ -70,20 +61,16 @@ pub fn expect_block<'db>(
     let last = (last.0.expect(state, expected, last.1), last.1);
     let ty = last.0.get_ty();
     stmts.push(last);
-    let (vars, generics) = state.exit_scope();
+    let scope = state.exit_scope();
     ExprIR {
-        data: ExprIRData::CodeBlock(CodeBlockIR {
-            vars,
-            generics,
-            stmts,
-        }),
+        data: ExprIRData::CodeBlock(CodeBlockIR { stmts, scope }),
         ty,
     }
 }
 
 impl<'db> IrNode<'db> for CodeBlockIR<'db> {
     fn at_offset(&self, offset: usize, state: &mut IrState<'db>) -> &dyn IrNode {
-        state.enter_scope(self.vars.clone(), self.generics.clone());
+        state.push_scope(self.scope.clone());
         for stmt in &self.stmts {
             if stmt.1.contains_offset(offset) {
                 return stmt.0.at_offset(offset, state);

@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 
-use chumsky::container::Container;
 use func::Function;
 use impl_::ImplForDecl;
 use salsa::Update;
@@ -11,11 +10,7 @@ pub mod impl_;
 pub mod struct_;
 
 use crate::{
-    check::{
-        err::{unresolved::Unresolved, CheckError},
-        state::CheckState,
-        TokenKind,
-    },
+    check::{err::unresolved::Unresolved, scoped_state::Scoped, state::CheckState, TokenKind},
     item::definitions::ident::IdentDef,
     ty::{sub_tys::get_sub_tys, FuncTy, Generic, Named, Ty},
     util::{Span, Spanned},
@@ -158,7 +153,7 @@ impl<'db> Decl<'db> {
             return Vec::new();
         }
         let ty = self.default_named_ty(state).inst(state, span);
-        let mut funcs = get_sub_tys(&ty, state, span)
+        let mut funcs = get_sub_tys(&ty, state)
             .iter()
             .flat_map(|t| t.get_funcs(state))
             .collect::<Vec<_>>();
@@ -205,38 +200,16 @@ impl<'db> Decl<'db> {
 
     pub fn get_path_ir(
         self,
-        state: &CheckState<'db>,
+        state: &impl Scoped<'db>,
         path: &[Spanned<String>],
     ) -> Vec<Spanned<IdentDef<'db>>> {
         let mut current = self;
         let mut found = vec![];
         for name in path {
-            if let Some(decl) = current.get(state.db, &name.0) {
+            if let Some(decl) = current.get(state.db(), &name.0) {
                 found.push((IdentDef::Decl(decl), name.1));
                 current = decl;
             } else {
-                return found;
-            }
-        }
-        found
-    }
-
-    pub fn get_path_ir_with_error(
-        self,
-        state: &mut CheckState<'db>,
-        path: &[Spanned<String>],
-    ) -> Vec<Spanned<IdentDef<'db>>> {
-        let mut current = self;
-        let mut found = vec![];
-        for name in path {
-            if let Some(decl) = current.get(state.db, &name.0) {
-                found.push((IdentDef::Decl(decl), name.1));
-                current = decl;
-            } else {
-                state.error(CheckError::Unresolved(Unresolved {
-                    name: name.clone(),
-                    file: state.file_data,
-                }));
                 return found;
             }
         }
@@ -245,29 +218,21 @@ impl<'db> Decl<'db> {
 
     pub fn try_get_path(
         self,
-        state: &CheckState<'db>,
+        state: &impl Scoped<'db>,
         path: &[Spanned<String>],
     ) -> Result<Decl<'db>, Unresolved> {
         let mut current = self;
         for name in path {
-            if let Some(decl) = current.get(state.db, &name.0) {
+            if let Some(decl) = current.get(state.db(), &name.0) {
                 current = decl;
             } else {
                 return Err(Unresolved {
                     name: (name.0.clone(), name.1),
-                    file: state.file_data,
+                    file: state.get_file(),
                 });
             }
         }
         Ok(current)
-    }
-
-    pub fn into_func(self, db: &'db dyn Db) -> &'db Function<'db> {
-        if let DeclKind::Function(f) = self.kind(db) {
-            f
-        } else {
-            panic!("Expected function");
-        }
     }
 
     pub fn file(self, db: &'db dyn Db) -> SourceFile {

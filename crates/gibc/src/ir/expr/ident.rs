@@ -3,6 +3,7 @@ use async_lsp::lsp_types::CompletionItem;
 use crate::{
     check::{
         err::{unresolved::Unresolved, CheckError},
+        scoped_state::Scoped as _,
         state::CheckState,
         SemanticToken, TokenKind,
     },
@@ -33,7 +34,7 @@ pub fn check_ident<'db>(ident: &[Spanned<String>], state: &mut CheckState<'db>) 
                 ty: Ty::Meta(Box::new(Ty::Generic(generic))),
             };
         }
-        if let Some(self_param) = state.get_variable("self") {
+        if let Some(self_param) = state.get_variable("self").cloned() {
             if let Ty::Named(Named {
                 name: self_name, ..
             }) = self_param.ty
@@ -66,7 +67,7 @@ pub fn check_ident<'db>(ident: &[Spanned<String>], state: &mut CheckState<'db>) 
                 }
                 if let Some(func) = self_param
                     .ty
-                    .member_funcs(state, name.1)
+                    .member_funcs(state)
                     .iter()
                     .find(|(n, _)| n.name(state.db) == name.0)
                 {
@@ -195,8 +196,8 @@ impl<'db> IrNode<'db> for SpannedQualifiedNameIR<'db> {
         }
     }
 
-    fn completions(&self, offset: usize, state: &mut IrState<'db>) -> Vec<CompletionItem> {
-        let mut completions = vec![];
+    fn completions(&self, offset: usize, _: &mut IrState<'db>) -> Vec<CompletionItem> {
+        let completions = vec![];
         if self.len() < 2 {
             // TODO: IDENT COMPLETIONS
             // 1. Add vars
@@ -205,7 +206,7 @@ impl<'db> IrNode<'db> for SpannedQualifiedNameIR<'db> {
             // 4. Add global
             // 5. Add generics
         }
-        let seg = self.iter().find(|(_, span)| span.contains_offset(offset));
+        let _seg = self.iter().find(|(_, span)| span.contains_offset(offset));
         completions
     }
 }

@@ -1,8 +1,7 @@
 use std::collections::HashMap;
 
-use super::{FuncTy, Generic, Named, Ty};
+use super::{FuncTy, Named, Ty};
 
-// TODO: This should use unique ids instead of the String names for generic type args
 impl<'db> Ty<'db> {
     pub fn parameterize(&self, generics: &HashMap<String, Ty<'db>>) -> Ty<'db> {
         match self {
@@ -36,16 +35,6 @@ impl<'db> FuncTy<'db> {
                 .map(|ty| ty.parameterize(generics))
                 .collect(),
             ret: Box::new(self.ret.parameterize(generics)),
-        }
-    }
-}
-
-impl<'db> Generic<'db> {
-    pub fn parameterize(&self, params: &HashMap<String, Ty<'db>>) -> Generic<'db> {
-        Generic {
-            name: self.name.clone(),
-            variance: self.variance,
-            super_: Box::new(self.super_.parameterize(params)),
         }
     }
 }

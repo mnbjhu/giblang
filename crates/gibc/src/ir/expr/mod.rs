@@ -135,7 +135,7 @@ impl<'db> Expr {
                 Ty::unit().expect_is_instance_of(expected, state, span);
                 ir
             }
-            Expr::IfElse(if_else) => if_else.expect(state, expected, span),
+            Expr::IfElse(if_else) => if_else.expect(state, expected),
         };
         if let Ty::Named(Named { name, .. }) = &expected {
             let decl = state.project.get_decl(state.db, *name).unwrap();
@@ -186,7 +186,6 @@ impl<'db> IrNode<'db> for ExprIR<'db> {
         state: &mut super::IrState<'db>,
     ) {
         match &self.data {
-            ExprIRData::Literal(_) | ExprIRData::Error => {}
             ExprIRData::Field(field) => field.tokens(tokens, state),
             ExprIRData::Ident(ident) => ident.tokens(tokens, state),
             ExprIRData::CodeBlock(block) => block.tokens(tokens, state),
@@ -204,7 +203,7 @@ impl<'db> IrNode<'db> for ExprIR<'db> {
             ExprIRData::For(for_) => for_.tokens(tokens, state),
             ExprIRData::IfElse(if_else) => if_else.tokens(tokens, state),
             ExprIRData::ImplicitDyn(expr, _) => expr.tokens(tokens, state),
-            ExprIRData::Phantom(_) => {}
+            ExprIRData::Phantom(_) | ExprIRData::Literal(_) | ExprIRData::Error => {}
         }
     }
 
@@ -274,11 +273,11 @@ impl<'db> ExprIR<'db> {
                 ByteCodeNode::Block(code)
             }
             ExprIRData::Op(op) => op.build(state),
-            ExprIRData::Lambda(lambda) => todo!(),
+            ExprIRData::Lambda(_) => todo!(),
             ExprIRData::While(while_) => while_.build(state),
             ExprIRData::For(for_) => for_.build(state),
             ExprIRData::IfElse(if_else) => if_else.build(state),
-            ExprIRData::ImplicitDyn(expr, trait_decl) => {
+            ExprIRData::ImplicitDyn(expr, _) => {
                 let mut code = vec![expr.build(state)];
                 code.push(ByteCodeNode::Code(vec![ByteCode::Dyn(
                     state.get_vtable(&expr.ty),

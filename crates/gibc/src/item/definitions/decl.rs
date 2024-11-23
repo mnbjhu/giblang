@@ -9,6 +9,7 @@ use crate::{
 };
 
 impl<'db> Decl<'db> {
+    #[allow(unused)]
     pub fn hover(self, state: &mut CheckState<'db>) -> String {
         let path_name = self.path(state.db).name(state.db).join("::");
         let kind = self.get_kind_name(state.db);

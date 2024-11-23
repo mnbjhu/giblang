@@ -1,6 +1,5 @@
 use gvm::format::instr::ByteCode;
 use salsa::plumbing::AsId;
-use tracing::error;
 
 use crate::{
     check::{build_state::BuildState, state::CheckState},
@@ -20,7 +19,7 @@ use super::{
     ExprIR, ExprIRData,
 };
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct ForIR<'db> {
     pub pattern: Box<Spanned<PatternIR<'db>>>,
     pub expr: Box<Spanned<ExprIR<'db>>>,

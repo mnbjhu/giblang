@@ -1,4 +1,3 @@
-use chumsky::container::Container;
 use gvm::format::instr::ByteCode;
 
 use crate::{
@@ -6,7 +5,7 @@ use crate::{
     ir::{builder::ByteCodeNode, common::condition::ConditionIR, ContainsOffset as _, IrNode},
     parser::expr::if_else::{IfBranch, IfElse},
     ty::Ty,
-    util::{Span, Spanned},
+    util::Spanned,
 };
 
 use super::{
@@ -43,7 +42,7 @@ impl<'db> IfElse {
                         .map_or(Ty::unit(), |(stmt, _)| stmt.get_ty());
                     (ir, *span)
                 } else {
-                    (branch.expect(state, &ty, *span), *span)
+                    (branch.expect(state, &ty), *span)
                 }
             })
             .collect();
@@ -69,16 +68,11 @@ impl<'db> IfElse {
         }
     }
 
-    pub fn expect(
-        &self,
-        state: &mut CheckState<'db>,
-        expected: &Ty<'db>,
-        span: Span,
-    ) -> ExprIR<'db> {
+    pub fn expect(&self, state: &mut CheckState<'db>, expected: &Ty<'db>) -> ExprIR<'db> {
         let ifs = self
             .ifs
             .iter()
-            .map(|(branch, span)| (branch.expect(state, expected, *span), *span))
+            .map(|(branch, span)| (branch.expect(state, expected), *span))
             .collect();
         let else_ = self.else_.as_ref().map(|(block, span)| {
             let ExprIR {
@@ -113,12 +107,7 @@ impl<'db> IfBranch {
         IfBranchIR { condition, body }
     }
 
-    pub fn expect(
-        &self,
-        state: &mut CheckState<'db>,
-        expected: &Ty<'db>,
-        span: Span,
-    ) -> IfBranchIR<'db> {
+    pub fn expect(&self, state: &mut CheckState<'db>, expected: &Ty<'db>) -> IfBranchIR<'db> {
         let condition = self.condition.0.check(state, self.condition.1);
         let condition = (condition, self.condition.1);
         let ExprIR {

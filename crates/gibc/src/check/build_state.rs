@@ -4,7 +4,6 @@ use std::{
 };
 
 use async_lsp::lsp_types::Position;
-use chumsky::container::Container;
 use rustc_hash::FxHasher;
 use salsa::plumbing::AsId;
 

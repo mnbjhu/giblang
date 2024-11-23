@@ -6,13 +6,17 @@ use salsa::plumbing::AsId;
 use top::TopIR;
 
 use crate::{
-    check::{build_state::BuildState, state::VarDecl, SemanticToken},
+    check::{
+        build_state::BuildState,
+        scoped_state::{IsScoped, Scope, ScopedState},
+        SemanticToken,
+    },
     db::{
         decl::{Decl, Project},
         input::{Db, SourceFile},
         path::ModulePath,
     },
-    ty::{Generic, Ty},
+    ty::Ty,
     util::{Span, Spanned},
 };
 
@@ -28,7 +32,10 @@ pub struct FileIR<'db> {
     #[no_eq]
     #[return_ref]
     pub tops: Vec<Spanned<TopIR<'db>>>,
-    pub imports: HashMap<String, Decl<'db>>,
+
+    #[no_eq]
+    #[return_ref]
+    pub scope: Scope<'db>,
     pub type_vars: HashMap<u32, Ty<'db>>,
 }
 
@@ -50,12 +57,21 @@ pub trait IrNode<'db> {
 }
 
 pub struct IrState<'db> {
-    pub generics: Vec<HashMap<String, Generic<'db>>>,
-    pub variables: Vec<HashMap<String, VarDecl<'db>>>,
     pub db: &'db dyn Db,
     pub project: Project<'db>,
     pub type_vars: HashMap<u32, Ty<'db>>,
     pub file: SourceFile,
+    pub scope_state: ScopedState<'db>,
+}
+
+impl<'db> IsScoped<'db> for IrState<'db> {
+    fn get_scope_state<'me>(&'me self) -> &'me ScopedState<'db> {
+        &self.scope_state
+    }
+
+    fn get_scope_state_mut<'me>(&'me mut self) -> &'me mut ScopedState<'db> {
+        &mut self.scope_state
+    }
 }
 
 impl<'db> IrState<'db> {
@@ -66,45 +82,12 @@ impl<'db> IrState<'db> {
         file: SourceFile,
     ) -> Self {
         IrState {
-            generics: vec![],
-            variables: vec![],
             db,
             project,
             type_vars,
             file,
+            scope_state: ScopedState::new(db, project, file),
         }
-    }
-
-    pub fn enter_scope(
-        &mut self,
-        vars: HashMap<String, VarDecl<'db>>,
-        generics: HashMap<String, Generic<'db>>,
-    ) {
-        self.variables.push(vars);
-        self.generics.push(generics);
-    }
-
-    pub fn get_var(&self, name: &str) -> Option<&VarDecl<'db>> {
-        for scope in self.variables.iter().rev() {
-            if let Some(var) = scope.get(name) {
-                return Some(var);
-            }
-        }
-        None
-    }
-
-    pub fn get_generic(&self, name: &str) -> Option<&Generic<'db>> {
-        for scope in self.generics.iter().rev() {
-            if let Some(generic) = scope.get(name) {
-                return Some(generic);
-            }
-        }
-        None
-    }
-
-    pub fn exit_scope(&mut self) {
-        self.variables.pop();
-        self.generics.pop();
     }
 
     pub fn try_get_decl_path(&self, name: ModulePath<'db>) -> Option<Decl<'db>> {
@@ -137,9 +120,9 @@ impl<'db> FileIR<'db> {
             })
             .collect();
         ByteCodeFile {
-            file_names,
             funcs,
             tables,
+            file_names,
         }
     }
 }

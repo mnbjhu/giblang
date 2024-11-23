@@ -1,5 +1,5 @@
 use crate::{
-    check::{state::CheckState, SemanticToken, TokenKind},
+    check::{scoped_state::Scoped as _, state::CheckState, SemanticToken, TokenKind},
     ir::{ty::TypeIR, ContainsOffset, IrNode, IrState},
     parser::common::{generic_arg::GenericArg, variance::Variance},
     ty::{Generic, Ty},
@@ -38,7 +38,7 @@ impl<'db> GenericArg {
                     .map_or(Ty::Any, |super_| super_.0.ty.clone()),
             ),
         };
-        state.insert_generic(self.name.0.to_string(), generic.clone());
+        state.insert_generic(&self.name.0, generic.clone());
         GenericArgIR {
             name: self.name.clone(),
             variance: self.variance,

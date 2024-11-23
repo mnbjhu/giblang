@@ -1,5 +1,9 @@
 use crate::{
-    check::{state::CheckState, SemanticToken, TokenKind},
+    check::{
+        scoped_state::Scoped as _,
+        state::{CheckState, VarDecl},
+        SemanticToken, TokenKind,
+    },
     ir::{ty::TypeIR, ContainsOffset, IrNode, IrState},
     parser::top::arg::FunctionArg,
     util::Spanned,
@@ -14,12 +18,13 @@ pub struct FunctionArgIR<'db> {
 impl<'db> FunctionArg {
     pub fn check(&self, state: &mut CheckState<'db>) -> FunctionArgIR<'db> {
         let ty = (self.ty.0.check(state), self.ty.1);
-        state.insert_variable(
-            self.name.0.clone(),
-            ty.0.ty.clone(),
-            TokenKind::Param,
-            self.name.1,
-        );
+        let var = VarDecl {
+            name: self.name.0.clone(),
+            ty: ty.0.ty.clone(),
+            kind: TokenKind::Param,
+            span: self.name.1,
+        };
+        state.insert_variable(&self.name.0, var);
         FunctionArgIR {
             name: self.name.clone(),
             ty,

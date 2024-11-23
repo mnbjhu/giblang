@@ -136,7 +136,7 @@ impl<'db> IrNode<'db> for MemberCallIR<'db> {
 
     fn goto(
         &self,
-        offset: usize,
+        _: usize,
         state: &mut IrState<'db>,
     ) -> Option<(crate::db::input::SourceFile, Span)> {
         self.def.goto(state)

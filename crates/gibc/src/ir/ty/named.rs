@@ -1,5 +1,5 @@
 use crate::{
-    check::{err::CheckError, state::CheckState, SemanticToken},
+    check::{err::CheckError, scoped_state::Scoped as _, state::CheckState, SemanticToken},
     ir::{common::pattern::SpannedQualifiedNameIR, ContainsOffset, IrNode, IrState},
     parser::common::type_::NamedType,
     ty::{Named, Ty},

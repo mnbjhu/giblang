@@ -1,4 +1,3 @@
-use chumsky::container::Container;
 use gvm::format::instr::ByteCode;
 
 use crate::{

@@ -1,7 +1,7 @@
 use gvm::format::func::FuncDef;
 
 use crate::{
-    check::state::CheckState,
+    check::{scoped_state::Scoped as _, state::CheckState},
     ir::{common::generic_args::GenericArgsIR, ty::TypeIR, ContainsOffset, IrNode},
     parser::top::impl_::Impl,
     util::Spanned,
@@ -42,8 +42,9 @@ impl<'db> Impl {
             .map(|(index, (func, span))| {
                 state.enter_scope();
                 state.decl_stack.push(decl.functions(state.db)[index]);
-                let ir = func.check(state, false);
-                let _ = state.exit_scope();
+                let mut ir = func.check(state, false);
+                let scope = state.exit_scope();
+                ir.scope = Some(scope);
                 state.exit_decl();
                 (ir, *span)
             })

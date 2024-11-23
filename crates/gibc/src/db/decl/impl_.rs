@@ -29,6 +29,7 @@ impl<'db> ImplForDecl<'db> {
     }
 
     #[must_use]
+    #[allow(unused)]
     pub fn try_map(self, db: &'db dyn Db, ty: &Ty<'db>) -> Ty<'db> {
         let mut implied = HashMap::new();
         self.from_ty(db).imply_generic_args(ty, &mut implied);

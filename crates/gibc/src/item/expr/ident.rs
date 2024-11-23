@@ -3,15 +3,10 @@ use std::collections::HashMap;
 use async_lsp::lsp_types::{CompletionItem, CompletionItemKind};
 
 use crate::{
-    check::{
-        err::unresolved::Unresolved,
-        state::{CheckState, VarDecl},
-        TokenKind,
-    },
-    item::{definitions::ident::IdentDef, AstItem},
+    check::{scoped_state::Scoped as _, state::CheckState},
+    item::AstItem,
     parser::expr::qualified_name::SpannedQualifiedName,
     ty::Ty,
-    util::{Span, Spanned},
 };
 
 impl AstItem for SpannedQualifiedName {
@@ -32,10 +27,11 @@ impl AstItem for SpannedQualifiedName {
     }
 }
 
-fn get_ident_completions(
-    state: &mut CheckState,
+#[allow(unused)]
+fn get_ident_completions<'db>(
+    state: &mut CheckState<'db>,
     completions: &mut Vec<CompletionItem>,
-    type_vars: &HashMap<u32, Ty>,
+    type_vars: &HashMap<u32, Ty<'db>>,
 ) {
     for (_, var) in state.get_variables() {
         completions.extend(var.completions(state, type_vars));
@@ -51,7 +47,7 @@ fn get_ident_completions(
         }
     }
     if let Some(self_param) = state.get_variable("self") {
-        for (name, func_ty) in self_param.ty.member_funcs(state, Span::splat(0)) {
+        for (name, func_ty) in self_param.ty.member_funcs(state) {
             completions.push(CompletionItem {
                 label: name.name(state.db),
                 kind: Some(CompletionItemKind::METHOD),
@@ -60,7 +56,7 @@ fn get_ident_completions(
             });
         }
 
-        for (name, ty) in self_param.ty.fields(state) {
+        for (name, ty) in self_param.ty.fields(state).clone() {
             completions.push(CompletionItem {
                 label: name.clone(),
                 kind: Some(CompletionItemKind::FIELD),
@@ -75,51 +71,4 @@ fn get_ident_completions(
             .decls(state.db)
             .get_static_access_completions(state),
     );
-}
-
-impl<'db> CheckState<'db> {
-    pub fn get_ident_def(
-        &mut self,
-        ident: &[Spanned<String>],
-    ) -> Result<IdentDef<'db>, Unresolved> {
-        if ident.len() == 1 {
-            let name = &ident[0];
-            if let Some(self_param) = self.get_variable("self") {
-                if let Some(field) = self_param
-                    .ty
-                    .fields(self)
-                    .iter()
-                    .find(|(n, _)| n == &name.0)
-                {
-                    return Ok(IdentDef::Variable(VarDecl {
-                        name: name.0.clone(),
-                        ty: field.1.clone(),
-                        span: name.1,
-                        kind: TokenKind::Property,
-                    }));
-                }
-                if let Some(func) = self_param
-                    .ty
-                    .member_funcs(self, name.1)
-                    .iter()
-                    .find(|(n, _)| n.name(self.db) == name.0)
-                {
-                    return Ok(IdentDef::Variable(VarDecl {
-                        name: name.0.clone(),
-                        ty: Ty::Function(func.1.clone()),
-                        span: name.1,
-                        kind: TokenKind::Func,
-                    }));
-                }
-            }
-            if let Some(var) = self.get_variable(&name.0) {
-                return Ok(IdentDef::Variable(var));
-            }
-            if let Some(gen) = self.get_generic(&name.0) {
-                return Ok(IdentDef::Generic(gen.clone()));
-            }
-        }
-        let decl = self.get_decl_with_error(ident)?;
-        Ok(IdentDef::Decl(decl))
-    }
 }

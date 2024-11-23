@@ -1,8 +1,7 @@
-use chumsky::container::Container;
 use gvm::format::func::FuncDef;
 
 use crate::{
-    check::{state::CheckState, SemanticToken, TokenKind},
+    check::{scoped_state::Scoped as _, state::CheckState, SemanticToken, TokenKind},
     ir::{common::generic_args::GenericArgsIR, ContainsOffset, IrNode},
     parser::top::trait_::Trait,
     ty::{Named, Ty},
@@ -35,8 +34,9 @@ impl<'db> Trait {
             .map(|(func, span)| {
                 state.enter_scope();
                 state.enter_decl(&func.name.0);
-                let ir = func.check(state, true);
-                state.exit_scope();
+                let mut ir = func.check(state, true);
+                let scope = state.exit_scope();
+                ir.scope = Some(scope);
                 state.exit_decl();
                 (ir, *span)
             })

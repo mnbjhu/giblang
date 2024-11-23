@@ -18,9 +18,6 @@ enum MyAdapterError {
     #[error("Unhandled command {cmd:?}")]
     UnhandledCommandError { cmd: Command },
 
-    #[error("Missing command")]
-    MissingCommandError,
-
     #[error("Path not found {path}")]
     PathNotFound { path: PathBuf },
 }

@@ -5,7 +5,11 @@ use salsa::plumbing::AsId as _;
 
 use crate::{
     check::{
-        build_state::BuildState, err::CheckError, state::CheckState, SemanticToken, TokenKind,
+        build_state::BuildState,
+        err::CheckError,
+        scoped_state::Scoped,
+        state::{CheckState, VarDecl},
+        SemanticToken, TokenKind,
     },
     db::decl::{struct_::StructDecl, DeclKind},
     ir::{builder::ByteCodeNode, expr::lit::Typed, ContainsOffset, IrNode, IrState},
@@ -60,7 +64,13 @@ impl<'db> Pattern {
                         }
                     }
                 }
-                state.insert_variable(name.0.to_string(), Ty::Unknown, TokenKind::Var, name.1);
+                let var = VarDecl {
+                    name: name.0.to_string(),
+                    ty: Ty::Unknown,
+                    kind: TokenKind::Var,
+                    span: name.1,
+                };
+                state.insert_variable(&name.0, var);
                 PatternIR::Name(name.clone())
             }
             Pattern::Struct { name, fields } => PatternIR::Struct {
@@ -94,7 +104,13 @@ impl<'db> Pattern {
                     }
                 }
             }
-            state.insert_variable(name.0.to_string(), ty.clone(), TokenKind::Var, name.1);
+            let var = VarDecl {
+                name: name.0.to_string(),
+                ty: ty.clone(),
+                kind: TokenKind::Var,
+                span: name.1,
+            };
+            state.insert_variable(&name.0, var);
             return PatternIR::Name(name.clone());
         }
         if let Pattern::Wildcard(span) = self {
@@ -250,7 +266,13 @@ impl<'db> StructFieldPattern {
         match self {
             StructFieldPattern::Implied(name) => {
                 if let Some(ty) = fields.get(&name.0) {
-                    state.insert_variable(name.0.to_string(), ty.clone(), TokenKind::Var, name.1);
+                    let var = VarDecl {
+                        name: name.0.to_string(),
+                        ty: ty.clone(),
+                        kind: TokenKind::Var,
+                        span: name.1,
+                    };
+                    state.insert_variable(&name.0, var);
                 } else {
                     state.simple_error(&format!("Field '{}' not found", name.0), name.1);
                 }
@@ -278,8 +300,7 @@ impl<'db> StructFieldPattern {
 impl<'db> IrNode<'db> for PatternIR<'db> {
     fn at_offset(&self, offset: usize, state: &mut crate::ir::IrState<'db>) -> &dyn IrNode {
         match self {
-            PatternIR::Name(name) => self,
-            PatternIR::Struct { name, fields } => {
+            PatternIR::Struct { fields, .. } => {
                 for (field, span) in fields {
                     if span.contains_offset(offset) {
                         return field.at_offset(offset, state);
@@ -288,7 +309,7 @@ impl<'db> IrNode<'db> for PatternIR<'db> {
                 self
             }
             PatternIR::UnitStruct(name) => name.at_offset(offset, state),
-            PatternIR::TupleStruct { name, fields } => {
+            PatternIR::TupleStruct { fields, .. } => {
                 for (field, span) in fields {
                     if span.contains_offset(offset) {
                         return field.at_offset(offset, state);
@@ -296,7 +317,10 @@ impl<'db> IrNode<'db> for PatternIR<'db> {
                 }
                 self
             }
-            PatternIR::Error | PatternIR::Exact(_) | PatternIR::Wildcard(_) => self,
+            PatternIR::Name(_)
+            | PatternIR::Error
+            | PatternIR::Exact(_)
+            | PatternIR::Wildcard(_) => self,
         }
     }
 
@@ -329,18 +353,18 @@ impl<'db> IrNode<'db> for PatternIR<'db> {
         }
     }
 
-    fn hover(&self, offset: usize, state: &mut IrState<'db>) -> Option<String> {
+    fn hover(&self, _: usize, state: &mut IrState<'db>) -> Option<String> {
         match self {
             PatternIR::Name(name) => Some(format!(
                 "{}: {}",
                 name.0,
                 state
-                    .get_var(&name.0)
+                    .get_variable(&name.0)
                     .map_or("Unknown".to_string(), |t| t.ty.get_ir_name(state))
             )),
-            PatternIR::Struct { name, fields } => todo!(),
+            PatternIR::Struct { .. } => todo!(),
             PatternIR::UnitStruct(_) => todo!(),
-            PatternIR::TupleStruct { name, fields } => todo!(),
+            PatternIR::TupleStruct { .. } => todo!(),
             PatternIR::Wildcard(_) | PatternIR::Exact(_) => None,
             PatternIR::Error => todo!(),
         }
@@ -350,8 +374,8 @@ impl<'db> IrNode<'db> for PatternIR<'db> {
 impl<'db> IrNode<'db> for StructFieldPatternIR<'db> {
     fn at_offset(&self, offset: usize, state: &mut crate::ir::IrState<'db>) -> &dyn IrNode {
         match self {
-            StructFieldPatternIR::Implied { name } => self,
-            StructFieldPatternIR::Explicit { field, pattern } => {
+            StructFieldPatternIR::Implied { .. } => self,
+            StructFieldPatternIR::Explicit { pattern, .. } => {
                 if pattern.1.contains_offset(offset) {
                     return pattern.0.at_offset(offset, state);
                 }

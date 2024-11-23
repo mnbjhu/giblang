@@ -50,6 +50,7 @@ impl Display for OpKind {
     }
 }
 
+#[allow(clippy::too_many_lines)]
 pub fn op_parser<'tokens, 'src: 'tokens>(expr: AstParser!(Expr)) -> AstParser!(Expr) {
     let mul_op = select! {
         Token::Op(op) if op == "*" => OpKind::Mul,

@@ -1,6 +1,10 @@
 use async_lsp::lsp_types::DocumentSymbol;
 
-use crate::{check::state::CheckState, parser::top::Top, util::Span};
+use crate::{
+    check::{scoped_state::Scoped as _, state::CheckState},
+    parser::top::Top,
+    util::Span,
+};
 
 use super::AstItem;
 

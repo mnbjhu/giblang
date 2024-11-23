@@ -1,5 +1,3 @@
-use gvm::format::instr::ByteCode;
-
 use crate::{
     check::{build_state::BuildState, state::CheckState},
     ir::{
@@ -77,9 +75,6 @@ impl<'db> IrNode<'db> for LetIR<'db> {
 
 impl<'db> LetIR<'db> {
     pub fn build(&self, state: &mut BuildState<'db>) -> ByteCodeNode {
-        let mut code = vec![];
-        code.push(self.expr.0.build(state));
-        code.push(self.pattern.0.build(state));
-        ByteCodeNode::Block(code)
+        ByteCodeNode::Block(vec![self.expr.0.build(state), self.pattern.0.build(state)])
     }
 }

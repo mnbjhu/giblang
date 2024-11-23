@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use salsa::Update;
+use scoped_state::Scoped as _;
 
 use crate::{
     db::{
@@ -9,7 +10,6 @@ use crate::{
         path::ModulePath,
     },
     ir::FileIR,
-    item::AstItem,
     parser::parse_file,
     resolve::{resolve_impls_vfs, resolve_vfs},
     ty::{Named, Ty},
@@ -17,14 +17,9 @@ use crate::{
 };
 
 pub mod build_state;
-// mod common;
 pub mod err;
-// pub mod expr;
+pub mod scoped_state;
 pub mod state;
-// mod stmt;
-// pub mod top;
-// pub mod ty;
-mod scoped_state;
 mod type_state;
 
 #[derive(Debug, PartialEq, Clone, Update, Eq)]
@@ -75,8 +70,7 @@ pub fn check_file<'db>(db: &'db dyn Db, file: SourceFile, project: Project<'db>)
         .collect();
 
     let type_vars = state.get_type_vars();
-    let imports = state.imports;
-    FileIR::new(db, tops, imports, type_vars)
+    FileIR::new(db, tops, state.exit_scope(), type_vars)
 }
 
 #[salsa::tracked]
@@ -96,13 +90,4 @@ pub fn check_vfs<'db>(db: &'db dyn Db, vfs: Vfs, project: Project<'db>) {
 pub fn check_project<'db>(db: &'db dyn Db, vfs: Vfs) {
     let project = resolve_project(db, vfs);
     check_vfs(db, vfs, project);
-}
-
-pub struct AtOffsetIter<'ast> {
-    offset: usize,
-    last: Option<&'ast dyn AstItem>,
-}
-
-pub struct SemanticTokensIter {
-    pub tokens: Vec<SemanticToken>,
 }

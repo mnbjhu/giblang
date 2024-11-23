@@ -2,7 +2,7 @@ use gvm::format::instr::ByteCode;
 use salsa::plumbing::AsId;
 
 use crate::{
-    check::{build_state::BuildState, SemanticToken},
+    check::{build_state::BuildState, scoped_state::Scoped as _, SemanticToken},
     db::decl::DeclKind,
     ir::{builder::ByteCodeNode, ContainsOffset, IrNode},
     item::definitions::ident::IdentDef,
@@ -21,7 +21,7 @@ use crate::{
     util::Span,
 };
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct CallIR<'db> {
     pub expr: Box<Spanned<ExprIR<'db>>>,
     pub args: Vec<Spanned<ExprIR<'db>>>,
@@ -55,6 +55,7 @@ impl<'db> Call {
                 if let Some(self_ty) = state.get_variable("self") {
                     self_ty
                         .ty
+                        .clone()
                         .expect_is_instance_of(receiver, state, self.name.1);
                 } else {
                     state.error(CheckError::MissingReceiver(MissingReceiver {

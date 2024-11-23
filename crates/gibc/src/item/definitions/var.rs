@@ -8,7 +8,8 @@ use crate::{
 };
 
 impl<'db> VarDecl<'db> {
-    pub fn hover(&self, state: &mut CheckState<'db>, type_vars: &HashMap<u32, Ty<'db>>) -> String {
+    #[allow(unused)]
+    pub fn hover(&self, state: &CheckState<'db>, type_vars: &HashMap<u32, Ty<'db>>) -> String {
         format!(
             "{}: {}",
             self.name,
@@ -18,7 +19,7 @@ impl<'db> VarDecl<'db> {
 
     pub fn completions(
         &self,
-        state: &mut CheckState,
+        state: &CheckState<'db>,
         type_vars: &HashMap<u32, Ty<'db>>,
     ) -> Vec<CompletionItem> {
         vec![CompletionItem {

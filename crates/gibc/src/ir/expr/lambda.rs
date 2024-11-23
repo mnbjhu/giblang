@@ -1,7 +1,6 @@
-use std::collections::HashMap;
-
 use crate::{
     check::{
+        scoped_state::{Scope, Scoped as _},
         state::{CheckState, VarDecl},
         SemanticToken, TokenKind,
     },
@@ -11,7 +10,7 @@ use crate::{
         ContainsOffset, IrNode, IrState,
     },
     parser::expr::lambda::{Lambda, LambdaParam},
-    ty::{FuncTy, Generic, Ty},
+    ty::{FuncTy, Ty},
     util::{Span, Spanned},
 };
 
@@ -24,8 +23,7 @@ use super::{
 pub struct LambdaIR<'db> {
     pub args: Vec<Spanned<LambdaParamIR<'db>>>,
     pub body: Spanned<CodeBlockIR<'db>>,
-    pub vars: HashMap<String, VarDecl<'db>>,
-    pub generics: HashMap<String, Generic<'db>>,
+    pub scope: Scope<'db>,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -48,7 +46,7 @@ impl<'db> Lambda {
         else {
             panic!("Expected block");
         };
-        let (vars, generics) = state.exit_scope();
+        let scope = state.exit_scope();
         let ty = Ty::Function(FuncTy {
             receiver: None,
             args: args.iter().map(|arg| arg.0.ty.0.ty.clone()).collect(),
@@ -57,8 +55,7 @@ impl<'db> Lambda {
         let ir = LambdaIR {
             args,
             body: (body, self.body.1),
-            vars,
-            generics,
+            scope,
         };
         ExprIR {
             data: ExprIRData::Lambda(ir),
@@ -86,15 +83,16 @@ impl<'db> Lambda {
                 }
             }
             if self.args.is_empty() && expected.args.len() == 1 {
-                state.insert_variable(
-                    "it".to_string(),
-                    expected.args[0].clone(),
-                    TokenKind::Var,
+                let var = VarDecl {
+                    name: "it".to_string(),
+                    ty: expected.args[0].clone(),
+                    kind: TokenKind::Var,
                     span,
-                );
+                };
+                state.insert_variable("it", var);
             }
             if let Some(receiver) = &expected.receiver {
-                state.add_self_param(receiver.as_ref().clone(), span);
+                state.add_self_param(receiver.as_ref(), span);
             }
             let ExprIR {
                 data: ExprIRData::CodeBlock(body),
@@ -103,13 +101,12 @@ impl<'db> Lambda {
             else {
                 panic!("Expected block???");
             };
-            let (vars, generics) = state.exit_scope();
+            let scope = state.exit_scope();
             ExprIR {
                 data: ExprIRData::Lambda(LambdaIR {
                     args,
                     body: (body, self.body.1),
-                    vars,
-                    generics,
+                    scope,
                 }),
                 ty,
             }
@@ -117,7 +114,7 @@ impl<'db> Lambda {
             let ir = self.check(state);
             let ty = ir.ty.clone();
             ty.expect_is_instance_of(expected, state, span);
-            let (vars, generics) = state.exit_scope();
+            let scope = state.exit_scope();
             let ExprIR {
                 data: ExprIRData::CodeBlock(body),
                 ty,
@@ -132,8 +129,7 @@ impl<'db> Lambda {
                     .map(|(arg, span)| (arg.check(state, *span), *span))
                     .collect(),
                 body: (body, self.body.1),
-                vars,
-                generics,
+                scope,
             };
             ExprIR {
                 data: ExprIRData::Lambda(ir),

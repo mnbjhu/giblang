@@ -3,10 +3,9 @@ use std::future::Future;
 use async_lsp::lsp_types::{GotoDefinitionParams, GotoDefinitionResponse, Location, Url};
 
 use crate::{
-    check::{check_file, resolve_project, state::CheckState},
+    check::{check_file, resolve_project},
     db::input::Db as _,
     ir::{IrNode as _, IrState},
-    parser::parse_file,
     range::{position_to_offset, span_to_range_str},
 };
 

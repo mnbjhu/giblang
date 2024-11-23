@@ -99,6 +99,7 @@ impl<'db> Type {
 }
 
 impl<'db> IrNode<'db> for TypeIR<'db> {
+    #[allow(clippy::only_used_in_recursion)]
     fn at_offset(&self, offset: usize, state: &mut IrState<'db>) -> &dyn IrNode {
         match &self.data {
             TypeIRData::Tuple(tys) | TypeIRData::Sum(tys) => {

@@ -7,7 +7,6 @@ pub mod imply;
 pub mod inst;
 pub mod ir_name;
 pub mod is_instance;
-pub mod is_instance_new;
 pub mod name;
 pub mod parameterize;
 pub mod sub_tys;

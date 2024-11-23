@@ -84,10 +84,6 @@ impl<'db> TypeState<'db> {
         }
     }
 
-    pub fn add_explicit_type(&mut self, id: u32, ty: Spanned<Ty<'db>>) {
-        let var = self.get_type_var_mut(id);
-        var.explicit = Some(ty);
-    }
     pub fn merge(&mut self, first: u32, second: u32) {
         let first = self.get_data_pointer(first);
         let second = self.get_data_pointer(second);
@@ -108,21 +104,11 @@ impl<'db> TypeState<'db> {
         };
         first.explicit = explicit;
     }
-
-    pub fn add_bound(&mut self, id: u32, bound: Generic<'db>) {
-        let var = self.get_type_var_mut(id);
-        var.bounds.push(bound);
-    }
 }
 
 pub enum MaybeTypeVar<'db> {
     Data(TypeVarData<'db>),
     Pointer(u32),
-}
-
-pub struct Decision<'db> {
-    pub id: u32,
-    pub options: Vec<Ty<'db>>
 }
 
 impl<'db> MaybeTypeVar<'db> {

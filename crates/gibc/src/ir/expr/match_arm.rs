@@ -1,13 +1,12 @@
-use std::collections::HashMap;
-
 use crate::{
     check::{
         build_state::BuildState,
-        state::{CheckState, VarDecl},
+        scoped_state::{Scope, Scoped as _},
+        state::CheckState,
     },
     ir::{builder::ByteCodeNode, common::pattern::PatternIR, ContainsOffset, IrNode},
     parser::expr::match_arm::MatchArm,
-    ty::{Generic, Ty},
+    ty::Ty,
     util::{Span, Spanned},
 };
 
@@ -17,20 +16,18 @@ use super::{match_::MatchIR, ExprIR};
 pub struct MatchArmIR<'db> {
     pub pattern: Spanned<PatternIR<'db>>,
     pub expr: Box<Spanned<ExprIR<'db>>>,
-    pub generics: HashMap<String, Generic<'db>>,
-    pub vars: HashMap<String, VarDecl<'db>>,
+    pub scope: Scope<'db>,
 }
 impl<'db> MatchArm {
     pub fn check(&self, state: &mut CheckState<'db>, ty: &Ty<'db>) -> MatchArmIR<'db> {
         state.enter_scope();
         let pattern = (self.pattern.0.expect(state, ty), self.pattern.1);
         let expr = Box::new((self.expr.0.check(state), self.expr.1));
-        let (vars, generics) = state.exit_scope();
+        let scope = state.exit_scope();
         MatchArmIR {
             pattern,
             expr,
-            generics,
-            vars,
+            scope,
         }
     }
 
@@ -44,12 +41,11 @@ impl<'db> MatchArm {
         state.enter_scope();
         let pattern = (self.pattern.0.expect(state, ty), self.pattern.1);
         let expr = Box::new((self.expr.0.expect(state, expected, span), self.expr.1));
-        let (vars, generics) = state.exit_scope();
+        let scope = state.exit_scope();
         MatchArmIR {
             pattern,
             expr,
-            generics,
-            vars,
+            scope,
         }
     }
 }

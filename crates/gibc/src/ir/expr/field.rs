@@ -13,7 +13,7 @@ use crate::{
 
 use super::{ExprIR, ExprIRData};
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct FieldIR<'db> {
     pub name: Spanned<String>,
     pub struct_: Box<Spanned<ExprIR<'db>>>,

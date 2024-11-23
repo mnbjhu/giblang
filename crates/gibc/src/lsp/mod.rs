@@ -11,11 +11,13 @@ use std::future::Future;
 use std::ops::ControlFlow;
 use std::time::Duration;
 
+use crate::check::{check_file, resolve_project};
+use crate::db::input::{Db, SourceDatabase};
+use crate::ir::{IrNode, IrState};
 use async_lsp::client_monitor::ClientProcessMonitorLayer;
 use async_lsp::concurrency::ConcurrencyLayer;
 use async_lsp::lsp_types::{
-    notification, request, CompletionItem, CompletionItemKind, CompletionParams,
-    CompletionResponse, DidChangeTextDocumentParams, DidOpenTextDocumentParams,
+    notification, request, DidChangeTextDocumentParams, DidOpenTextDocumentParams, InitializeParams,
 };
 use async_lsp::panic::CatchUnwindLayer;
 use async_lsp::router::Router;
@@ -27,14 +29,7 @@ use hover::hover;
 use salsa::{AsDynDatabase, Setter as _};
 use semantic_tokens::get_semantic_tokens;
 use tower::ServiceBuilder;
-use tracing::{info, Level};
-
-use crate::check::state::CheckState;
-use crate::check::{check_file, resolve_project};
-use crate::db::input::{Db, SourceDatabase};
-use crate::ir::{ContainsOffset as _, IrNode, IrState};
-use crate::parser::parse_file;
-use crate::range::position_to_offset;
+use tracing::Level;
 
 pub struct ServerState {
     pub client: ClientSocket,
@@ -168,9 +163,10 @@ fn semantic_tokens_full(
     }
 }
 
+#[allow(clippy::needless_pass_by_value)]
 fn initialize(
     st: &mut ServerState,
-    params: async_lsp::lsp_types::InitializeParams,
+    params: InitializeParams,
 ) -> impl Future<Output = Result<async_lsp::lsp_types::InitializeResult, async_lsp::ResponseError>>
 {
     #[allow(deprecated)]

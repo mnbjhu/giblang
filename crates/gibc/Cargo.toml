@@ -43,3 +43,5 @@ gvm = { path = "../gvm" }
 pedantic = { priority = -1, level = "warn" }
 module_name_repetitions = "allow"
 missing_panics_doc = "allow"
+cast_possible_truncation = "allow"
+cast_sign_loss = "allow"

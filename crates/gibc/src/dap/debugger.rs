@@ -1,7 +1,7 @@
 use std::{
     cmp::Ordering,
     collections::HashMap,
-    io::{Stdin, Stdout},
+    io::Stdout,
     sync::{Arc, Mutex},
 };
 

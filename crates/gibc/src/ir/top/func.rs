@@ -1,5 +1,7 @@
 use crate::{
-    check::{build_state::BuildState, state::CheckState, SemanticToken, TokenKind},
+    check::{
+        build_state::BuildState, scoped_state::Scope, state::CheckState, SemanticToken, TokenKind,
+    },
     db::decl::Decl,
     ir::{
         builder::ByteCodeNode,
@@ -29,6 +31,7 @@ pub struct FuncIR<'db> {
     pub ret: Option<Spanned<TypeIR<'db>>>,
     pub body: CodeBlockIR<'db>,
     pub decl: Decl<'db>,
+    pub scope: Option<Scope<'db>>,
 }
 
 impl<'db> Func {
@@ -37,7 +40,7 @@ impl<'db> Func {
         let generics = (self.generics.0.check(state), self.generics.1);
         let receiver = self.receiver.as_ref().map(|(rec, span)| {
             let ir = rec.check(state);
-            state.add_self_param(ir.ty.clone(), *span);
+            state.add_self_param(&ir.ty, *span);
             (ir, *span)
         });
         let args = self
@@ -75,6 +78,7 @@ impl<'db> Func {
             ret,
             body,
             decl,
+            scope: None,
         }
     }
 }
