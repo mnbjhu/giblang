@@ -1,10 +1,7 @@
 use async_lsp::lsp_types::{DocumentSymbol, SymbolKind};
 
 use crate::{
-    check::state::CheckState,
-    item::AstItem,
-    parser::top::trait_::Trait,
-    range::span_to_range_str,
+    check::state::CheckState, item::AstItem, parser::top::trait_::Trait, range::span_to_range_str,
     util::Span,
 };
 

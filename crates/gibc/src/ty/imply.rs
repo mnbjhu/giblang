@@ -10,8 +10,8 @@ impl<'db> Ty<'db> {
                 implied.insert(g.name.0.to_string(), other.clone());
             }
             (
-                Ty::Named (Named { name, args }),
-                Ty::Named (Named {
+                Ty::Named(Named { name, args }),
+                Ty::Named(Named {
                     name: other_name,
                     args: other_args,
                 }),

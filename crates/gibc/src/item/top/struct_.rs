@@ -1,11 +1,8 @@
 use async_lsp::lsp_types::{DocumentSymbol, SymbolKind};
 
 use crate::{
-    check::state::CheckState,
-    item::AstItem,
-    parser::top::struct_::Struct,
-    range::span_to_range_str,
-    util::Span,
+    check::state::CheckState, item::AstItem, parser::top::struct_::Struct,
+    range::span_to_range_str, util::Span,
 };
 
 impl AstItem for Struct {

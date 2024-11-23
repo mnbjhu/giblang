@@ -1,7 +1,6 @@
 use crate::{item::AstItem, parser::stmt::let_::LetStatement};
 
 impl AstItem for LetStatement {
-
     fn item_name(&self) -> &'static str {
         "let"
     }

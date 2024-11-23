@@ -1,8 +1,4 @@
-
-use crate::{
-    item::AstItem,
-    parser::top::struct_field::StructField,
-};
+use crate::{item::AstItem, parser::top::struct_field::StructField};
 
 impl AstItem for StructField {
     fn item_name(&self) -> &'static str {
