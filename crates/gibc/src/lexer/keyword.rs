@@ -16,6 +16,9 @@ pub enum Keyword {
     If,
     Else,
     While,
+    Return,
+    Continue,
+    Break,
 }
 
 impl Display for Keyword {
@@ -35,6 +38,9 @@ impl Display for Keyword {
             Keyword::If => write!(f, "if"),
             Keyword::Else => write!(f, "else"),
             Keyword::While => write!(f, "while"),
+            Keyword::Return => write!(f, "return"),
+            Keyword::Continue => write!(f, "continue"),
+            Keyword::Break => write!(f, "break"),
         }
     }
 }
@@ -82,6 +88,15 @@ macro_rules! kw {
     };
     (while) => {
         $crate::lexer::token::Token::Keyword($crate::lexer::keyword::Keyword::While)
+    };
+    (return) => {
+        $crate::lexer::token::Token::Keyword($crate::lexer::keyword::Keyword::Return)
+    };
+    (continue) => {
+        $crate::lexer::token::Token::Keyword($crate::lexer::keyword::Keyword::Continue)
+    };
+    (break) => {
+        $crate::lexer::token::Token::Keyword($crate::lexer::keyword::Keyword::Break)
     };
 }
 

@@ -119,28 +119,7 @@ impl<'code> ProgramState<'code> {
                 let refr = self.pop();
                 self.set_local(*id, refr);
             }
-            ByteCode::Je(diff) => {
-                if let StackItem::Bool(cond) = self.pop() {
-                    if cond {
-                        self.scope_mut().index = (self.scope().index as i32 + diff - 1) as usize;
-                    }
-                } else {
-                    panic!("Expected condition to be a boolean")
-                }
-            }
-            ByteCode::Jne(diff) => {
-                if let StackItem::Bool(cond) = self.pop() {
-                    if !cond {
-                        self.scope_mut().index = (self.scope().index as i32 + diff - 1) as usize;
-                    }
-                } else {
-                    panic!("Expected condition to be a boolean")
-                }
-            }
-            ByteCode::Jmp(diff) => {
-                self.scope_mut().index = (self.scope().index as i32 + diff - 1) as usize;
-            }
-            ByteCode::Goto(line) => {
+            ByteCode::Je(line) => {
                 if let StackItem::Bool(cond) = self.pop() {
                     if cond {
                         self.scope_mut().index = *line as usize;
@@ -149,9 +128,34 @@ impl<'code> ProgramState<'code> {
                     panic!("Expected condition to be a boolean")
                 }
             }
+            ByteCode::Jne(line) => {
+                if let StackItem::Bool(cond) = self.pop() {
+                    if !cond {
+                        self.scope_mut().index = *line as usize;
+                    }
+                } else {
+                    panic!("Expected condition to be a boolean")
+                }
+            }
+            ByteCode::Jmp(line) => {
+                self.scope_mut().index = *line as usize;
+            }
             ByteCode::Param(id) => {
                 let refr = self.get_param(*id);
                 self.push(refr);
+            }
+            ByteCode::Mod => {
+                let b = self.pop();
+                let a = self.pop();
+                match (a, b) {
+                    (StackItem::Int(a), StackItem::Int(b)) => {
+                        let res = StackItem::Int(a % b);
+                        self.push(res);
+                    }
+                    _ => {
+                        panic!("Cannot 'mod' non-int")
+                    }
+                }
             }
             ByteCode::Mul => {
                 let b = self.pop();
@@ -161,12 +165,45 @@ impl<'code> ProgramState<'code> {
                         let res = StackItem::Int(a * b);
                         self.push(res);
                     }
+                    (StackItem::Int(a), StackItem::Float(b)) => {
+                        let res = StackItem::Float((a as f32) * b);
+                        self.push(res);
+                    }
+                    (StackItem::Float(a), StackItem::Int(b)) => {
+                        let res = StackItem::Float(a * (b as f32));
+                        self.push(res);
+                    }
                     (StackItem::Float(a), StackItem::Float(b)) => {
                         let res = StackItem::Float(a * b);
                         self.push(res);
                     }
                     _ => {
                         panic!("Cannot 'mul' non-numbers")
+                    }
+                }
+            }
+            ByteCode::Div => {
+                let b = self.pop();
+                let a = self.pop();
+                match (a, b) {
+                    (StackItem::Int(a), StackItem::Int(b)) => {
+                        let res = StackItem::Int(a / b);
+                        self.push(res);
+                    }
+                    (StackItem::Int(a), StackItem::Float(b)) => {
+                        let res = StackItem::Float(a as f32 / b);
+                        self.push(res);
+                    }
+                    (StackItem::Float(a), StackItem::Int(b)) => {
+                        let res = StackItem::Float(a / (b as f32));
+                        self.push(res);
+                    }
+                    (StackItem::Float(a), StackItem::Float(b)) => {
+                        let res = StackItem::Float(a / b);
+                        self.push(res);
+                    }
+                    _ => {
+                        panic!("Cannot 'div' non-numbers")
                     }
                 }
             }

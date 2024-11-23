@@ -1,5 +1,4 @@
 use assign::AssignIR;
-use gvm::format::instr::ByteCode;
 use let_::LetIR;
 
 use crate::{
@@ -9,7 +8,7 @@ use crate::{
     util::{Span, Spanned},
 };
 
-use super::{expr::ExprIR, IrNode, IrState};
+use super::{builder::ByteCodeNode, expr::ExprIR, IrNode, IrState};
 
 pub mod assign;
 pub mod let_;
@@ -19,6 +18,8 @@ pub enum StmtIR<'db> {
     Expr(Spanned<ExprIR<'db>>),
     Let(Spanned<LetIR<'db>>),
     Assign(Spanned<AssignIR<'db>>),
+    Break(Span),
+    Continue(Span),
 }
 
 impl<'db> StmtIR<'db> {
@@ -26,6 +27,7 @@ impl<'db> StmtIR<'db> {
         match self {
             StmtIR::Expr(e) => e.0.ty.clone(),
             StmtIR::Let(_) | StmtIR::Assign(_) => Ty::unit(),
+            StmtIR::Break(_) | StmtIR::Continue(_) => Ty::Nothing,
         }
     }
 }
@@ -36,6 +38,8 @@ impl<'db> Stmt {
             Stmt::Let(l) => StmtIR::Let((l.0.check(state), l.1)),
             Stmt::Expr(e) => StmtIR::Expr((e.0.check(state), e.1)),
             Stmt::Assign(e) => StmtIR::Assign((e.0.check(state), e.1)),
+            Stmt::Break(s) => StmtIR::Break(*s),
+            Stmt::Continue(s) => StmtIR::Continue(*s),
         }
     }
 
@@ -77,6 +81,7 @@ impl<'db> Stmt {
                 }
                 StmtIR::Assign((ir, a.1))
             }
+            Stmt::Break(_) | Stmt::Continue(_) => self.check(state),
         }
     }
 }
@@ -87,6 +92,7 @@ impl<'db> IrNode<'db> for StmtIR<'db> {
             StmtIR::Expr(e) => e.0.at_offset(offset, state),
             StmtIR::Let(l) => l.0.at_offset(offset, state),
             StmtIR::Assign(a) => a.0.at_offset(offset, state),
+            StmtIR::Break(_) | StmtIR::Continue(_) => self,
         }
     }
 
@@ -95,26 +101,29 @@ impl<'db> IrNode<'db> for StmtIR<'db> {
             StmtIR::Expr(e) => e.0.tokens(tokens, state),
             StmtIR::Let(l) => l.0.tokens(tokens, state),
             StmtIR::Assign(a) => a.0.tokens(tokens, state),
+            StmtIR::Break(_) | StmtIR::Continue(_) => {}
         }
     }
 }
 
 impl<'db> StmtIR<'db> {
-    pub fn build(&self, state: &mut BuildState<'db>) -> Vec<ByteCode> {
-        // let pos = state.get_pos(self.get_span());
-        let mut code = vec![];
+    pub fn build(&self, state: &mut BuildState<'db>) -> ByteCodeNode {
         match self {
-            StmtIR::Expr(e) => code.extend(e.0.build(state)),
-            StmtIR::Let(l) => code.extend(l.0.build(state)),
-            StmtIR::Assign(a) => code.extend(a.0.build(state)),
+            StmtIR::Expr(e) => e.0.build(state),
+            StmtIR::Let(l) => l.0.build(state),
+            StmtIR::Assign(a) => a.0.build(state),
+            StmtIR::Continue(_) => ByteCodeNode::Continue,
+            StmtIR::Break(_) => ByteCodeNode::Break,
         }
-        // state.marks.push((code.len(), pos));
-        code
     }
 
     pub fn get_span(&self) -> Span {
         match self {
-            StmtIR::Expr((_, s)) | StmtIR::Let((_, s)) | StmtIR::Assign((_, s)) => *s,
+            StmtIR::Expr((_, s))
+            | StmtIR::Let((_, s))
+            | StmtIR::Assign((_, s))
+            | StmtIR::Break(s)
+            | StmtIR::Continue(s) => *s,
         }
     }
 }

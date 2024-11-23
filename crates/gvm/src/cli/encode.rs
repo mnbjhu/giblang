@@ -14,7 +14,10 @@ use clap::Args;
 // Convert from the text format to the binary format
 #[derive(Args)]
 pub struct Encode {
+    /// The input text file to encode (if not provided, reads from stdin)
     pub input: Option<PathBuf>,
+
+    /// The output file to write to (if not provided stdout will be used instead)
     pub output: Option<PathBuf>,
 }
 #[test]

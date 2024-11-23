@@ -8,7 +8,7 @@ use crate::{
         build_state::BuildState, err::CheckError, state::CheckState, SemanticToken, TokenKind,
     },
     db::decl::{struct_::StructDecl, DeclKind},
-    ir::{ContainsOffset, IrNode, IrState},
+    ir::{builder::ByteCodeNode, ContainsOffset, IrNode, IrState},
     item::definitions::ident::IdentDef,
     parser::common::pattern::{Pattern, StructFieldPattern},
     ty::{Generic, Named, Ty},
@@ -370,10 +370,9 @@ impl<'db> IrNode<'db> for StructFieldPatternIR<'db> {
 }
 
 impl<'db> PatternIR<'db> {
-    pub fn build_match(&self, state: &mut BuildState<'db>, end: &mut i32) -> Vec<ByteCode> {
+    pub fn build_match(&self, state: &mut BuildState<'db>) -> ByteCodeNode {
         if let PatternIR::Name(_) = self {
-            *end += 2;
-            return vec![ByteCode::Pop, ByteCode::Push(Literal::Bool(true))];
+            return ByteCodeNode::Code(vec![]);
         };
         let (PatternIR::TupleStruct { name, .. }
         | PatternIR::UnitStruct(name)
@@ -422,39 +421,28 @@ impl<'db> PatternIR<'db> {
 
         let id = decl.as_id().as_u32();
         let mut code = vec![];
-        for (index, field) in fields.iter().enumerate().rev() {
-            let mut f = vec![ByteCode::Copy, ByteCode::Index(field.0 as u32)];
-            f.extend(field.1.build_match(state, end));
-            *end += 2;
-            code.push(f);
-            if index != 0 {
-                code.push(vec![
-                    ByteCode::Je(3),
-                    ByteCode::Push(Literal::Bool(false)),
-                    ByteCode::Jmp(*end),
-                ]);
-                *end += 3;
+        code.push(ByteCodeNode::Code(vec![
+            ByteCode::Copy,
+            ByteCode::Match(id),
+        ]));
+        code.push(ByteCodeNode::Next);
+        for (index, field) in fields.iter().enumerate() {
+            let cond = field.1.build_match(state);
+            if cond.len() == 0 {
+                continue;
             }
+            let f = ByteCodeNode::Code(vec![ByteCode::Copy, ByteCode::Index(index as u32)]);
+            code.push(f);
+            code.push(cond);
         }
-        if code.is_empty() {
-            *end += 1;
-            return vec![ByteCode::Match(id)];
-        }
-        code.push(vec![
-            ByteCode::Je(3),
-            ByteCode::Push(Literal::Bool(false)),
-            ByteCode::Jmp(*end),
-        ]);
-        *end += 4;
-        code.push(vec![ByteCode::Match(id)]);
-        code.into_iter().rev().flatten().collect()
+        ByteCodeNode::Block(code)
     }
 
-    pub fn build(&self, state: &mut crate::ir::BuildState<'db>) -> Vec<ByteCode> {
+    pub fn build(&self, state: &mut crate::ir::BuildState<'db>) -> ByteCodeNode {
         match self {
             PatternIR::Name(name) => {
                 let id = state.add_var(name.0.clone());
-                vec![ByteCode::NewLocal(id)]
+                ByteCodeNode::Code(vec![ByteCode::NewLocal(id)])
             }
             PatternIR::Struct { name, fields } => {
                 let IdentDef::Decl(decl) = name.last().unwrap().0 else {
@@ -478,22 +466,24 @@ impl<'db> PatternIR<'db> {
                         .position(|(f, _)| f == field.0.name())
                         .unwrap();
                     index = decl_fields.len() - index - 1;
-                    code.extend(field.0.build(state, index as u32));
+                    code.push(field.0.build(state, index as u32));
                 }
-                code.push(ByteCode::Pop);
-                code
+                code.push(ByteCodeNode::Code(vec![ByteCode::Pop]));
+                ByteCodeNode::Block(code)
             }
-            PatternIR::UnitStruct(_) => vec![],
-            PatternIR::TupleStruct { name, fields } => {
+            PatternIR::UnitStruct(_) => ByteCodeNode::Code(vec![]),
+            PatternIR::TupleStruct { fields, .. } => {
                 let mut code = vec![];
                 for (index, field) in fields.iter().enumerate() {
                     let field_index = fields.len() - index - 1;
-                    code.push(ByteCode::Index(field_index as u32));
-                    code.extend(field.0.build(state));
+                    code.push(ByteCodeNode::Code(vec![ByteCode::Index(
+                        field_index as u32,
+                    )]));
+                    code.push(field.0.build(state));
                 }
-                code
+                ByteCodeNode::Block(code)
             }
-            PatternIR::Error => vec![],
+            PatternIR::Error => panic!("Unexpected err pattern"),
         }
     }
 }
@@ -505,7 +495,7 @@ impl<'db> StructFieldPatternIR<'db> {
     //     end: &mut i32,
     //     index: u32,
     // ) -> Vec<ByteCode> {
-    //     match self {
+    //     match self
     //         StructFieldPatternIR::Implied { .. } => {
     //             vec![ByteCode::Je(*end)]
     //         }
@@ -521,20 +511,20 @@ impl<'db> StructFieldPatternIR<'db> {
     //     }
     // }
     //
-    pub fn build(&self, state: &mut BuildState<'db>, index: u32) -> Vec<ByteCode> {
+    pub fn build(&self, state: &mut BuildState<'db>, index: u32) -> ByteCodeNode {
         match self {
             StructFieldPatternIR::Implied { name } => {
                 let id = state.add_var(name.0.clone());
-                vec![
+                ByteCodeNode::Code(vec![
                     ByteCode::Copy,
                     ByteCode::Index(index),
                     ByteCode::NewLocal(id),
-                ]
+                ])
             }
             StructFieldPatternIR::Explicit { pattern, .. } => {
-                let mut code = vec![ByteCode::Copy, ByteCode::Index(index)];
-                code.extend(pattern.0.build(state));
-                code
+                let field = ByteCodeNode::Code(vec![ByteCode::Copy, ByteCode::Index(index)]);
+                let res = vec![field, pattern.0.build(state)];
+                ByteCodeNode::Block(res)
             }
         }
     }

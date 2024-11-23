@@ -27,6 +27,9 @@ pub fn lexer<'src>(
         "if" => Token::Keyword(Keyword::If),
         "else" => Token::Keyword(Keyword::Else),
         "while" => Token::Keyword(Keyword::While),
+        "return" => Token::Keyword(Keyword::Return),
+        "continue" => Token::Keyword(Keyword::Continue),
+        "break" => Token::Keyword(Keyword::Break),
         "true" => Token::Literal(Literal::Bool(true)),
         "false" => Token::Literal(Literal::Bool(false)),
         _ => Token::Ident(ident.to_string()),
@@ -55,7 +58,7 @@ pub fn lexer<'src>(
         .delimited_by(just('\''), just('\''))
         .map(|c: char| Token::Literal(Literal::Char(c)));
 
-    let op = one_of("+-*/=<>_!&|")
+    let op = one_of("+-*/=<>_!&|%")
         .repeated()
         .at_least(1)
         .to_slice()

@@ -30,9 +30,7 @@ impl DebugText for HeapItem {
                 }
                 text
             }
-            HeapItem::String(text) => {
-                format!("\"{}\"", text)
-            }
+            HeapItem::String(text) => text.to_string(),
             HeapItem::Dyn(id, item) => {
                 format!("Dyn({}, {})", id, item.get_text(state))
             }

@@ -25,7 +25,6 @@ impl ByteCode {
             ByteCode::GetLocal(_) => 21,
             ByteCode::SetLocal(_) => 22,
             ByteCode::Param(_) => 23,
-            ByteCode::Goto(_) => 24,
             ByteCode::Je(_) => 25,
             ByteCode::Jne(_) => 26,
             ByteCode::Jmp(_) => 27,
@@ -51,6 +50,8 @@ impl ByteCode {
                 Literal::Bool(_) => 46,
                 Literal::Char(_) => 47,
             },
+            ByteCode::Div => 50,
+            ByteCode::Mod => 51,
         }
     }
 
@@ -78,6 +79,8 @@ impl ByteCode {
             | ByteCode::Add
             | ByteCode::Mul
             | ByteCode::Sub
+            | ByteCode::Mod
+            | ByteCode::Div
             | ByteCode::Or
             | ByteCode::And
             | ByteCode::Not
@@ -127,14 +130,11 @@ impl ByteCode {
             | ByteCode::GetLocal(small)
             | ByteCode::SetLocal(small)
             | ByteCode::Param(small)
-            | ByteCode::Goto(small) => {
+            | ByteCode::Jmp(small)
+            | ByteCode::Jne(small)
+            | ByteCode::Je(small) => {
                 let mut bytes = vec![self.get_code()];
                 bytes.extend_from_slice(&small.to_be_bytes());
-                bytes
-            }
-            ByteCode::Jmp(sign) | ByteCode::Jne(sign) | ByteCode::Je(sign) => {
-                let mut bytes = vec![self.get_code()];
-                bytes.extend_from_slice(&sign.to_be_bytes());
                 bytes
             }
         }

@@ -5,6 +5,7 @@ use crate::{
     check::{build_state::BuildState, state::CheckState},
     db::decl::{struct_::StructDecl, Decl, DeclKind},
     ir::{
+        builder::ByteCodeNode,
         expr::{ExprIR, ExprIRData},
         ContainsOffset, IrNode,
     },
@@ -75,21 +76,21 @@ impl<'db> Decl<'db> {
 }
 
 impl<'db> AssignIR<'db> {
-    pub fn build(&self, state: &mut BuildState<'db>) -> Vec<ByteCode> {
+    pub fn build(&self, state: &mut BuildState<'db>) -> ByteCodeNode {
         match &self.refr.0.data {
             ExprIRData::Field(field) => {
                 let index = field.decl.unwrap().get_field_index(&field.name.0, state);
-                let mut code = field.struct_.0.build(state);
-                code.extend(self.value.0.build(state));
-                code.push(ByteCode::SetIndex(index));
-                code
+                let mut code = vec![field.struct_.0.build(state)];
+                code.push(self.value.0.build(state));
+                code.push(ByteCodeNode::Code(vec![ByteCode::SetIndex(index)]));
+                ByteCodeNode::Block(code)
             }
             ExprIRData::Ident(name) => match &name.last().unwrap().0 {
                 IdentDef::Variable(var) => {
                     let id = state.get_var(&var.name).unwrap();
-                    let mut code = self.value.0.build(state);
-                    code.push(ByteCode::SetLocal(id));
-                    code
+                    let mut code = vec![self.value.0.build(state)];
+                    code.push(ByteCodeNode::Code(vec![ByteCode::SetLocal(id)]));
+                    ByteCodeNode::Block(code)
                 }
                 _ => panic!("Don't think so?"),
             },

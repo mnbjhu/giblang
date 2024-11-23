@@ -15,6 +15,7 @@ use crate::{
     util::{Span, Spanned},
 };
 
+pub mod builder;
 pub mod common;
 pub mod expr;
 pub mod stmt;

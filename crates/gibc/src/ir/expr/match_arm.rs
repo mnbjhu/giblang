@@ -1,13 +1,11 @@
 use std::collections::HashMap;
 
-use gvm::format::instr::ByteCode;
-
 use crate::{
     check::{
         build_state::BuildState,
         state::{CheckState, VarDecl},
     },
-    ir::{common::pattern::PatternIR, ContainsOffset, IrNode},
+    ir::{builder::ByteCodeNode, common::pattern::PatternIR, ContainsOffset, IrNode},
     parser::expr::match_arm::MatchArm,
     ty::{Generic, Ty},
     util::{Span, Spanned},
@@ -78,31 +76,26 @@ impl<'db> IrNode<'db> for MatchArmIR<'db> {
 }
 
 impl<'db> MatchIR<'db> {
-    pub fn build(&self, state: &mut BuildState<'db>) -> Vec<ByteCode> {
-        let mut code = self.expr.0.build(state);
-        let mut end = 1;
-        let mut arms = vec![];
-        for arm in self.arms.iter().rev() {
-            arms.push(arm.0.build(state, &mut end));
+    pub fn build(&self, state: &mut BuildState<'db>) -> ByteCodeNode {
+        let mut branches = vec![];
+        for (arm, _) in &self.arms {
+            branches.push(arm.build(state));
         }
-        code.extend(arms.into_iter().rev().flatten());
-        code
+        let if_ = ByteCodeNode::If {
+            branches,
+            else_: None,
+        };
+        ByteCodeNode::Block(vec![self.expr.0.build(state), if_])
     }
 }
 
 impl<'db> MatchArmIR<'db> {
-    pub fn build(&self, state: &mut BuildState<'db>, end: &mut i32) -> Vec<ByteCode> {
+    pub fn build(&self, state: &mut BuildState<'db>) -> (Box<ByteCodeNode>, Box<ByteCodeNode>) {
         state.enter_scope();
-        let mut code = self.pattern.0.build_match(state, &mut 1);
-        code.insert(0, ByteCode::Copy);
-        let mut block = vec![];
-        block.extend(self.pattern.0.build(state));
-        block.extend(self.expr.0.build(state));
-        block.extend([ByteCode::Jmp(*end)]);
-        code.extend([ByteCode::Jne(block.len() as i32 + 1)]);
-        code.extend(block);
-        *end += code.len() as i32;
+        let pattern = self.pattern.0.build(state);
+        let cond = self.pattern.0.build_match(state);
+        let then = vec![pattern, self.expr.0.build(state)];
         state.exit_scope();
-        code
+        (Box::new(cond), Box::new(ByteCodeNode::Block(then)))
     }
 }

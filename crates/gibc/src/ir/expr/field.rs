@@ -5,7 +5,7 @@ use gvm::format::instr::ByteCode;
 use crate::{
     check::{build_state::BuildState, state::CheckState, SemanticToken, TokenKind},
     db::decl::{struct_::StructDecl, Decl, DeclKind},
-    ir::{ContainsOffset, IrNode, IrState},
+    ir::{builder::ByteCodeNode, ContainsOffset, IrNode, IrState},
     parser::expr::field::Field,
     ty::{Named, Ty},
     util::{Span, Spanned},
@@ -139,8 +139,8 @@ impl<'db> IrNode<'db> for FieldIR<'db> {
 }
 
 impl<'db> FieldIR<'db> {
-    pub fn build(&self, state: &mut BuildState<'db>) -> Vec<ByteCode> {
-        let mut code = self.struct_.0.build(state);
+    pub fn build(&self, state: &mut BuildState<'db>) -> ByteCodeNode {
+        let struct_ = self.struct_.0.build(state);
         let DeclKind::Struct { body, .. } = self.decl.unwrap().kind(state.db) else {
             panic!("Expected struct")
         };
@@ -151,11 +151,13 @@ impl<'db> FieldIR<'db> {
                     .position(|field| field.0 == self.name.0)
                     .unwrap();
                 field = fields.len() - field - 1;
-                code.push(ByteCode::Index(field as u32));
+                ByteCodeNode::Block(vec![
+                    struct_,
+                    ByteCodeNode::Code(vec![ByteCode::Index(field as u32)]),
+                ])
             }
             StructDecl::Tuple(_) => todo!(),
             StructDecl::None => panic!("A unit struct has no fields"),
         }
-        code
     }
 }

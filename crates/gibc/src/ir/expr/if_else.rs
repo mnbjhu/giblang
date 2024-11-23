@@ -3,7 +3,7 @@ use gvm::format::instr::ByteCode;
 
 use crate::{
     check::{build_state::BuildState, state::CheckState},
-    ir::{common::condition::ConditionIR, ContainsOffset as _, IrNode},
+    ir::{builder::ByteCodeNode, common::condition::ConditionIR, ContainsOffset as _, IrNode},
     parser::expr::if_else::{IfBranch, IfElse},
     ty::Ty,
     util::{Span, Spanned},
@@ -183,44 +183,33 @@ impl<'db> IrNode<'db> for IfBranchIR<'db> {
 }
 
 impl<'db> IfElseIR<'db> {
-    pub fn build(&self, state: &mut BuildState<'db>) -> Vec<ByteCode> {
-        let mut code = vec![];
-        let mut end: i32 = 1;
-        if let Some((block, _)) = &self.else_ {
-            let block = block.build(state);
-            end += block.len() as i32;
-            code.push(block);
+    pub fn build(&self, state: &mut BuildState<'db>) -> ByteCodeNode {
+        ByteCodeNode::If {
+            branches: self.ifs.iter().map(|(if_, _)| if_.build(state)).collect(),
+            else_: self.else_.as_ref().map(|(e, _)| Box::new(e.build(state))),
         }
-        for (branch, _) in self.ifs.iter().rev() {
-            let branch = branch.build(state, end);
-            end += branch.len() as i32;
-            code.push(branch);
-        }
-        code.into_iter().rev().flatten().collect()
     }
 }
 
 impl<'db> IfBranchIR<'db> {
-    pub fn build(&self, state: &mut BuildState<'db>, end: i32) -> Vec<ByteCode> {
+    pub fn build(&self, state: &mut BuildState<'db>) -> (Box<ByteCodeNode>, Box<ByteCodeNode>) {
         match &self.condition.0 {
             ConditionIR::Let(let_) => {
-                let mut code = let_.expr.0.build(state);
-                code.push(ByteCode::Copy);
-                code.extend(let_.pattern.0.build_match(state, &mut 1));
-                let mut body = let_.pattern.0.build(state);
-                body.extend(self.body.0.build(state));
-                body.push(ByteCode::Jmp(end));
-                code.push(ByteCode::Jne(body.len() as i32 + 1));
-                code.extend(body);
-                code
+                let expr = let_.expr.0.build(state);
+                let then = let_.pattern.0.build(state);
+                let cond = let_.pattern.0.build_match(state);
+                let cond = if then.len() == 0 {
+                    ByteCodeNode::Block(vec![expr, cond])
+                } else {
+                    ByteCodeNode::Block(vec![expr, ByteCodeNode::Code(vec![ByteCode::Copy]), cond])
+                };
+                let then = ByteCodeNode::Block(vec![then, self.body.0.build(state)]);
+                (Box::new(cond), Box::new(then))
             }
             ConditionIR::Expr(e) => {
-                let mut body = self.body.0.build(state);
-                let mut code = e.build(state);
-                body.push(ByteCode::Jmp(end));
-                code.push(ByteCode::Jne(body.len() as i32 + 1));
-                code.extend(body);
-                code
+                let cond = ByteCodeNode::Block(vec![e.build(state), ByteCodeNode::Next]);
+                let then = ByteCodeNode::Block(vec![self.body.0.build(state)]);
+                (Box::new(cond), Box::new(then))
             }
         }
     }

@@ -2,7 +2,10 @@ use gvm::format::instr::ByteCode;
 
 use crate::{
     check::{build_state::BuildState, state::CheckState},
-    ir::{common::pattern::PatternIR, expr::ExprIR, ty::TypeIR, ContainsOffset, IrNode},
+    ir::{
+        builder::ByteCodeNode, common::pattern::PatternIR, expr::ExprIR, ty::TypeIR,
+        ContainsOffset, IrNode,
+    },
     parser::stmt::let_::LetStatement,
     ty::Ty,
     util::Spanned,
@@ -73,10 +76,10 @@ impl<'db> IrNode<'db> for LetIR<'db> {
 }
 
 impl<'db> LetIR<'db> {
-    pub fn build(&self, state: &mut BuildState<'db>) -> Vec<ByteCode> {
+    pub fn build(&self, state: &mut BuildState<'db>) -> ByteCodeNode {
         let mut code = vec![];
-        code.extend(self.expr.0.build(state));
-        code.extend(self.pattern.0.build(state));
-        code
+        code.push(self.expr.0.build(state));
+        code.push(self.pattern.0.build(state));
+        ByteCodeNode::Block(code)
     }
 }

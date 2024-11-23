@@ -20,6 +20,8 @@ impl AstItem for Stmt {
             Stmt::Expr(e) => e.pretty(allocator),
             Stmt::Let(l) => l.pretty(allocator),
             Stmt::Assign(a) => a.pretty(allocator),
+            Stmt::Break(_) => allocator.text("break"),
+            Stmt::Continue(_) => allocator.text("continue"),
         }
     }
 }

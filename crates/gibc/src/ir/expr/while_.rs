@@ -1,8 +1,9 @@
+use chumsky::container::Container;
 use gvm::format::instr::ByteCode;
 
 use crate::{
     check::{build_state::BuildState, state::CheckState},
-    ir::{common::condition::ConditionIR, ContainsOffset, IrNode},
+    ir::{builder::ByteCodeNode, common::condition::ConditionIR, ContainsOffset, IrNode},
     parser::expr::while_::While,
     ty::Ty,
     util::Spanned,
@@ -63,30 +64,27 @@ impl<'db> IrNode<'db> for WhileIR<'db> {
 }
 
 impl<'db> WhileIR<'db> {
-    pub fn build(&self, state: &mut BuildState<'db>) -> Vec<ByteCode> {
+    pub fn build(&self, state: &mut BuildState<'db>) -> ByteCodeNode {
         match &self.condition.0 {
             ConditionIR::Let(let_) => {
-                let mut code = let_.expr.0.build(state);
-                code.push(ByteCode::Copy);
-                code.extend(let_.pattern.0.build_match(state, &mut 1));
-                let mut body = let_.pattern.0.build(state);
-                body.extend(self.block.0.build(state));
-                let break_ = body.len();
-                let continue_ = body.len() + code.len();
-                code.push(ByteCode::Jne(break_ as i32 + 2));
-                code.extend(body);
-                code.push(ByteCode::Jmp(-(continue_ as i32 + 1)));
-                code
+                let cond = vec![let_.expr.0.build(state), let_.pattern.0.build_match(state)];
+                let then = vec![
+                    let_.pattern.0.build(state),
+                    self.block.0.build(state),
+                    ByteCodeNode::Continue,
+                ];
+                ByteCodeNode::While(
+                    Box::new(ByteCodeNode::Block(cond)),
+                    Box::new(ByteCodeNode::Block(then)),
+                )
             }
             ConditionIR::Expr(expr) => {
-                let mut expr = expr.build(state);
-                let body = self.block.0.build(state);
-                let break_ = body.len();
-                let continue_ = body.len() + expr.len();
-                expr.push(ByteCode::Jne(break_ as i32 + 2));
-                expr.extend(body);
-                expr.push(ByteCode::Jmp(-(continue_ as i32 + 1)));
-                expr
+                let cond = vec![expr.build(state), ByteCodeNode::MaybeBreak];
+                let then = vec![self.block.0.build(state), ByteCodeNode::Continue];
+                ByteCodeNode::While(
+                    Box::new(ByteCodeNode::Block(cond)),
+                    Box::new(ByteCodeNode::Block(then)),
+                )
             }
         }
     }

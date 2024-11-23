@@ -107,24 +107,19 @@ pub fn decode_code<T: Iterator<Item = u8>>(bytes: &mut Peekable<T>) -> Option<By
                 let small = decode_small(bytes);
                 Some(ByteCode::Param(small))
             }
-            24 => {
-                bytes.next();
-                let small = decode_small(bytes);
-                Some(ByteCode::Goto(small))
-            }
             25 => {
                 bytes.next();
-                let small = decode_sign(bytes);
+                let small = decode_small(bytes);
                 Some(ByteCode::Je(small))
             }
             26 => {
                 bytes.next();
-                let small = decode_sign(bytes);
+                let small = decode_small(bytes);
                 Some(ByteCode::Jne(small))
             }
             27 => {
                 bytes.next();
-                let small = decode_sign(bytes);
+                let small = decode_small(bytes);
                 Some(ByteCode::Jmp(small))
             }
             28 => {
@@ -221,6 +216,14 @@ pub fn decode_code<T: Iterator<Item = u8>>(bytes: &mut Peekable<T>) -> Option<By
                 bytes.next();
                 let char = bytes.next().unwrap();
                 Some(ByteCode::Push(Literal::Char(char as char)))
+            }
+            50 => {
+                bytes.next();
+                Some(ByteCode::Div)
+            }
+            51 => {
+                bytes.next();
+                Some(ByteCode::Mod)
             }
             _ => None,
         }

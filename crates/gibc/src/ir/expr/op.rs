@@ -2,7 +2,7 @@ use gvm::format::instr::ByteCode;
 
 use crate::{
     check::{build_state::BuildState, state::CheckState},
-    ir::{ContainsOffset, IrNode},
+    ir::{builder::ByteCodeNode, ContainsOffset, IrNode},
     parser::expr::op::{Op, OpKind},
     ty::Ty,
     util::{Span, Spanned},
@@ -66,14 +66,15 @@ impl<'db> IrNode<'db> for OpIR<'db> {
 }
 
 impl<'db> OpIR<'db> {
-    pub fn build(&self, state: &mut BuildState<'db>) -> Vec<ByteCode> {
-        let mut code = self.left.0.build(state);
-        code.extend(self.right.0.build(state));
+    pub fn build(&self, state: &mut BuildState<'db>) -> ByteCodeNode {
+        let mut code = vec![self.left.0.build(state)];
+        code.push(self.right.0.build(state));
         let op = match &self.kind {
             OpKind::Add => ByteCode::Add,
             OpKind::Sub => ByteCode::Sub,
             OpKind::Mul => ByteCode::Mul,
-            OpKind::Div => todo!(),
+            OpKind::Div => ByteCode::Div,
+            OpKind::Mod => ByteCode::Mod,
             OpKind::Eq => ByteCode::Eq,
             OpKind::Neq => ByteCode::Neq,
             OpKind::Lt => ByteCode::Lt,
@@ -83,7 +84,7 @@ impl<'db> OpIR<'db> {
             OpKind::And => ByteCode::And,
             OpKind::Or => ByteCode::Or,
         };
-        code.push(op);
-        code
+        code.push(ByteCodeNode::Code(vec![op]));
+        ByteCodeNode::Block(code)
     }
 }

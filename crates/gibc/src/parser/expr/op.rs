@@ -19,6 +19,7 @@ pub enum OpKind {
     Sub,
     Mul,
     Div,
+    Mod,
     Eq,
     Neq,
     Lt,
@@ -36,6 +37,7 @@ impl Display for OpKind {
             OpKind::Sub => write!(f, "-"),
             OpKind::Mul => write!(f, "*"),
             OpKind::Div => write!(f, "/"),
+            OpKind::Mod => write!(f, "%"),
             OpKind::Lt => write!(f, "<"),
             OpKind::Gt => write!(f, ">"),
             OpKind::Lte => write!(f, "<="),
@@ -52,6 +54,7 @@ pub fn op_parser<'tokens, 'src: 'tokens>(expr: AstParser!(Expr)) -> AstParser!(E
     let mul_op = select! {
         Token::Op(op) if op == "*" => OpKind::Mul,
         Token::Op(op) if op == "/" => OpKind::Div,
+        Token::Op(op) if op == "%" => OpKind::Mod,
     };
 
     let mul = expr

@@ -4,7 +4,7 @@ use salsa::plumbing::AsId;
 use crate::{
     check::{build_state::BuildState, state::CheckState, SemanticToken, TokenKind},
     db::decl::{func::Function, DeclKind},
-    ir::{ContainsOffset, IrNode, IrState},
+    ir::{builder::ByteCodeNode, ContainsOffset, IrNode, IrState},
     item::definitions::ident::IdentDef,
     parser::expr::member::MemberCall,
     ty::{FuncTy, Ty},
@@ -144,10 +144,10 @@ impl<'db> IrNode<'db> for MemberCallIR<'db> {
 }
 
 impl<'db> MemberCallIR<'db> {
-    pub fn build(&self, state: &mut BuildState<'db>) -> Vec<ByteCode> {
-        let mut code = self.receiver.0.build(state);
+    pub fn build(&self, state: &mut BuildState<'db>) -> ByteCodeNode {
+        let mut code = vec![self.receiver.0.build(state)];
         for arg in &self.args {
-            code.extend(arg.0.build(state));
+            code.push(arg.0.build(state));
         }
         match &self.def {
             IdentDef::Variable(_) => todo!(),
@@ -157,11 +157,15 @@ impl<'db> MemberCallIR<'db> {
                     panic!("Expected function")
                 };
                 if *virtual_ {
-                    code.push(ByteCode::DynCall(decl.as_id().as_u32()));
+                    code.push(ByteCodeNode::Code(vec![ByteCode::DynCall(
+                        decl.as_id().as_u32(),
+                    )]));
                 } else {
-                    code.push(ByteCode::Call(decl.as_id().as_u32()));
+                    code.push(ByteCodeNode::Code(vec![ByteCode::Call(
+                        decl.as_id().as_u32(),
+                    )]));
                 }
-                code
+                ByteCodeNode::Block(code)
             }
             IdentDef::Unresolved => todo!(),
         }

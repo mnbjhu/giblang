@@ -38,10 +38,6 @@ pub fn parse_instr<'src>(lex: &mut Lex<'src>) -> PResult<'src, ByteCode> {
                 let id = expect_num(lex, "'id' (u32)")?;
                 Ok(ByteCode::SetLocal(id))
             }
-            Token::Goto => {
-                let id = expect_num(lex, "'instr' (u32)")?;
-                Ok(ByteCode::Goto(id))
-            }
             Token::Param => {
                 let id = expect_num(lex, "'id' (u32)")?;
                 Ok(ByteCode::Param(id))
@@ -53,21 +49,23 @@ pub fn parse_instr<'src>(lex: &mut Lex<'src>) -> PResult<'src, ByteCode> {
             Token::Neq => Ok(ByteCode::Neq),
             Token::Not => Ok(ByteCode::Not),
             Token::And => Ok(ByteCode::And),
+            Token::Mod => Ok(ByteCode::Mod),
+            Token::Div => Ok(ByteCode::Div),
             Token::Or => Ok(ByteCode::Or),
             Token::Match => {
                 let id = expect_num(lex, "'id' (u32)")?;
                 Ok(ByteCode::Match(id))
             }
             Token::Jmp => {
-                let id = expect_num(lex, "'instr' (i32)")?;
+                let id = expect_num(lex, "'instr' (u32)")?;
                 Ok(ByteCode::Jmp(id))
             }
             Token::Je => {
-                let id = expect_num(lex, "'instr' (i32)")?;
+                let id = expect_num(lex, "'instr' (u32)")?;
                 Ok(ByteCode::Je(id))
             }
             Token::Jne => {
-                let id = expect_num(lex, "'instr' (i32)")?;
+                let id = expect_num(lex, "'instr' (u32)")?;
                 Ok(ByteCode::Jne(id))
             }
             Token::Index => {

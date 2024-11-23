@@ -9,7 +9,7 @@ impl Display for ByteCode {
             ByteCode::Pop => write!(f, "pop"),
             ByteCode::Print => write!(f, "print"),
             ByteCode::Panic => write!(f, "panic"),
-            ByteCode::Construct { id, len } => write!(f, "construct {id}, {len}"),
+            ByteCode::Construct { id, len } => write!(f, "construct {id} {len}"),
             ByteCode::Index(index) => write!(f, "index {index}"),
             ByteCode::SetIndex(index) => write!(f, "set_index {index}"),
             ByteCode::Call(id) => write!(f, "call {id}"),
@@ -18,7 +18,6 @@ impl Display for ByteCode {
             ByteCode::GetLocal(id) => write!(f, "get {id}"),
             ByteCode::SetLocal(id) => write!(f, "set {id}"),
             ByteCode::Param(id) => write!(f, "param {id}"),
-            ByteCode::Goto(line) => write!(f, "goto {line}"),
             ByteCode::Add => write!(f, "add"),
             ByteCode::Mul => write!(f, "mul"),
             ByteCode::Sub => write!(f, "sub"),
@@ -47,6 +46,8 @@ impl Display for ByteCode {
             ByteCode::VecLen => write!(f, "vec_len"),
             ByteCode::Dyn(id) => write!(f, "dyn {id}"),
             ByteCode::DynCall(id) => write!(f, "dyn_call {id}"),
+            ByteCode::Div => write!(f, "div"),
+            ByteCode::Mod => write!(f, "mod"),
         }
     }
 }

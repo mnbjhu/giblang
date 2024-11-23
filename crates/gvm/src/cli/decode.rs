@@ -14,7 +14,7 @@ pub struct Decode {
     /// The input binary file to decode (if not provided, reads from stdin)
     pub input: Option<PathBuf>,
 
-    /// The output text file to write to (if not provided, writes to stdout)
+    /// The output text file to write to (if not provided stdout will be used instead)
     pub output: Option<PathBuf>,
 }
 

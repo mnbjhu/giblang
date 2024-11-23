@@ -2,6 +2,7 @@ use crate::{
     check::{build_state::BuildState, state::CheckState, SemanticToken, TokenKind},
     db::decl::Decl,
     ir::{
+        builder::ByteCodeNode,
         common::generic_args::GenericArgsIR,
         expr::{
             block::{check_block, expect_block, CodeBlockIR},
@@ -183,11 +184,14 @@ impl<'db> FuncIR<'db> {
                 }
             }
         } else {
-            self.body
-                .stmts
-                .iter()
-                .flat_map(|(stmt, _)| stmt.build(state))
-                .collect()
+            ByteCodeNode::Block(
+                self.body
+                    .stmts
+                    .iter()
+                    .map(|(stmt, _)| stmt.build(state))
+                    .collect(),
+            )
+            .build(0, 0, 0, 0)
         };
         body.push(ByteCode::Return);
         (

@@ -4,6 +4,7 @@ use std::{
 };
 
 use async_lsp::lsp_types::Position;
+use chumsky::container::Container;
 use rustc_hash::FxHasher;
 use salsa::plumbing::AsId;
 
@@ -28,6 +29,7 @@ pub struct BuildState<'db> {
     pub hasher: FxHasher,
     pub file: SourceFile,
     pub marks: Vec<(usize, (u16, u16))>,
+    pub block_scopes: Vec<usize>,
 }
 
 pub type VTable = HashMap<u32, u32>;
@@ -45,6 +47,7 @@ impl<'db> BuildState<'db> {
             hasher: FxHasher::default(),
             file,
             marks: Vec::new(),
+            block_scopes: Vec::new(),
         }
     }
 
@@ -75,10 +78,12 @@ impl<'db> BuildState<'db> {
 
     pub fn enter_scope(&mut self) {
         self.vars.push(HashMap::new());
+        self.block_scopes.push(0);
     }
 
     pub fn exit_scope(&mut self) {
         self.vars.pop();
+        self.block_scopes.pop();
     }
 
     pub fn add_param(&mut self, name: String, id: u32) {
@@ -105,5 +110,9 @@ impl<'db> BuildState<'db> {
         let text = self.file.text(self.db);
         let Position { line, character } = offset_to_position_str(span.start, text);
         (line as u16, character as u16)
+    }
+
+    pub fn inc_index(&mut self, diff: usize) {
+        *self.block_scopes.last_mut().unwrap() += diff;
     }
 }

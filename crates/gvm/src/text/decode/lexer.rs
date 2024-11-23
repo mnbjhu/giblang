@@ -93,6 +93,10 @@ pub enum Token<'src> {
     DynCall,
     #[token("vec_peak")]
     VecPeak,
+    #[token("div")]
+    Div,
+    #[token("mod")]
+    Mod,
     #[token("mark")]
     Mark,
     #[token("true")]
@@ -105,7 +109,16 @@ pub enum Token<'src> {
     Int(&'src str),
     #[regex("\"[^\"]*\"", |lex| strip_quotes(lex))]
     String(&'src str),
-    #[regex("'.'", |lex| let mut iter = lex.slice().chars(); iter.next(); iter.next())]
+    #[regex("('\\\\n'|'.')", |lex| {
+        match lex.slice() {
+            "'\\n'" => '\n',
+            val => {
+               let mut iter = val.chars();
+               iter.next().unwrap();
+               iter.next().unwrap()
+            }
+        }
+    })]
     Char(char),
 }
 
@@ -145,6 +158,16 @@ mod tests {
         let mut lex = super::Token::lexer(text);
         assert_eq!(lex.next(), Some(Ok(String("Hello"))));
         assert_eq!(lex.next(), Some(Ok(String("World"))));
+        assert_eq!(lex.next(), None);
+    }
+
+    #[test]
+    fn test_lex_char() {
+        let text = r#" 'a' 'b' '\n' "#;
+        let mut lex = super::Token::lexer(text);
+        assert_eq!(lex.next(), Some(Ok(Char('a'))));
+        assert_eq!(lex.next(), Some(Ok(Char('b'))));
+        assert_eq!(lex.next(), Some(Ok(Char('\n'))));
         assert_eq!(lex.next(), None);
     }
 }

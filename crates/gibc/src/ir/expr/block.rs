@@ -8,7 +8,7 @@ use crate::{
         state::{CheckState, VarDecl},
         SemanticToken,
     },
-    ir::{stmt::StmtIR, ContainsOffset, IrNode, IrState},
+    ir::{builder::ByteCodeNode, stmt::StmtIR, ContainsOffset, IrNode, IrState},
     parser::expr::code_block::CodeBlock,
     ty::{Generic, Ty},
     util::{Span, Spanned},
@@ -99,14 +99,14 @@ impl<'db> IrNode<'db> for CodeBlockIR<'db> {
 }
 
 impl<'db> CodeBlockIR<'db> {
-    pub fn build(&self, state: &mut BuildState<'db>) -> Vec<ByteCode> {
+    pub fn build(&self, state: &mut BuildState<'db>) -> ByteCodeNode {
         state.enter_scope();
         let ir = self
             .stmts
             .iter()
-            .flat_map(|(stmt, _)| stmt.build(state))
+            .map(|(stmt, _)| stmt.build(state))
             .collect();
         state.exit_scope();
-        ir
+        ByteCodeNode::Block(ir)
     }
 }

@@ -4,7 +4,7 @@ use salsa::plumbing::AsId;
 use crate::{
     check::{build_state::BuildState, SemanticToken},
     db::decl::DeclKind,
-    ir::{ContainsOffset, IrNode},
+    ir::{builder::ByteCodeNode, ContainsOffset, IrNode},
     item::definitions::ident::IdentDef,
     util::Spanned,
 };
@@ -143,22 +143,25 @@ impl<'db> IrNode<'db> for CallIR<'db> {
 }
 
 impl<'db> CallIR<'db> {
-    pub fn build(&self, state: &mut BuildState<'db>) -> Vec<ByteCode> {
+    pub fn build(&self, state: &mut BuildState<'db>) -> ByteCodeNode {
         let mut code = vec![];
         for arg in &self.args {
-            code.extend(arg.0.build(state));
+            code.push(arg.0.build(state));
         }
+        state.inc_index(1);
         match &self.expr.0.data {
             ExprIRData::Ident(ident) => match ident.last().unwrap().0 {
                 IdentDef::Variable(_) => todo!(),
                 IdentDef::Generic(_) => todo!(),
                 IdentDef::Decl(decl) => match decl.kind(state.db) {
-                    DeclKind::Function(_) => code.push(ByteCode::Call(decl.as_id().as_u32())),
+                    DeclKind::Function(_) => code.push(ByteCodeNode::Code(vec![ByteCode::Call(
+                        decl.as_id().as_u32(),
+                    )])),
                     DeclKind::Struct { body, .. } | DeclKind::Member { body, .. } => {
-                        code.push(ByteCode::Construct {
+                        code.push(ByteCodeNode::Code(vec![ByteCode::Construct {
                             id: decl.as_id().as_u32(),
                             len: body.arg_count(),
-                        });
+                        }]));
                     }
                     _ => todo!(),
                 },
@@ -166,6 +169,6 @@ impl<'db> CallIR<'db> {
             },
             _ => todo!(),
         };
-        code
+        ByteCodeNode::Block(code)
     }
 }
