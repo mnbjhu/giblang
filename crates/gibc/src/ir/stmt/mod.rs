@@ -113,12 +113,24 @@ impl<'db> IrNode<'db> for StmtIR<'db> {
 
 impl<'db> StmtIR<'db> {
     pub fn build(&self, state: &mut BuildState<'db>) -> ByteCodeNode {
-        match self {
+        let res = match self {
             StmtIR::Expr(e) => e.0.build(state),
             StmtIR::Let(l) => l.0.build(state),
             StmtIR::Assign(a) => a.0.build(state),
             StmtIR::Continue(_) => ByteCodeNode::Continue,
             StmtIR::Break(_) => ByteCodeNode::Break,
+        };
+        ByteCodeNode::Spanned(Box::new(res), self.span())
+    }
+}
+
+impl StmtIR<'_> {
+    pub fn span(&self) -> Span {
+        match self {
+            StmtIR::Expr(e) => e.1,
+            StmtIR::Let(l) => l.1,
+            StmtIR::Assign(a) => a.1,
+            StmtIR::Break(s) | StmtIR::Continue(s) => *s,
         }
     }
 }

@@ -142,6 +142,7 @@ impl<'db> FuncIR<'db> {
     pub fn build(&self, state: &mut BuildState<'db>) -> (u32, FuncDef) {
         state.clear();
         let mut i = 0;
+        let text = state.file.text(state.db);
         if self.receiver.is_some() {
             state.add_param("self".to_string(), 0);
             i += 1;
@@ -156,6 +157,7 @@ impl<'db> FuncIR<'db> {
             self.decl.as_id().as_u32()
         };
         let path = self.decl.path(state.db).name(state.db);
+        let mut marks = vec![];
         let mut body = if path[0] == "std" {
             if let Some(name) = path.get(1) {
                 match name.as_str() {
@@ -203,15 +205,16 @@ impl<'db> FuncIR<'db> {
                     .map(|(stmt, _)| stmt.build(state))
                     .collect(),
             )
-            .build(0, 0, 0, 0)
+            .build(0, 0, 0, 0, &mut marks, text)
         };
+        marks.sort_by(|a, b| a.0.cmp(&b.0));
         body.push(ByteCode::Return);
         (
             id,
             FuncDef {
                 args: state.params.len() as u32,
                 body,
-                marks: state.marks.clone(),
+                marks,
                 name: self.name.0.to_string(),
                 pos: state.get_pos(self.name.1),
                 file: state.file.as_id().as_u32(),
