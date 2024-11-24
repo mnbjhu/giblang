@@ -60,7 +60,7 @@ impl<'db> For {
             state.simple_error(
                 &format!(
                     "The type {} doesn't implement 'IntoIter'",
-                    expr.ty.get_name(state, None)
+                    expr.ty.get_name(state)
                 ),
                 self.expr.1,
             );
@@ -79,10 +79,7 @@ impl<'db> For {
         } else {
             if !matches!(iter_ty, Ty::Unknown) {
                 state.simple_error(
-                    &format!(
-                        "Expected {} to be an 'Iterator'",
-                        iter_ty.get_name(state, None)
-                    ),
+                    &format!("Expected {} to be an 'Iterator'", iter_ty.get_name(state)),
                     self.expr.1,
                 );
             }
@@ -145,6 +142,10 @@ impl<'db> IrNode<'db> for ForIR<'db> {
         self.pattern.0.tokens(tokens, state);
         self.expr.0.tokens(tokens, state);
         self.block.0.tokens(tokens, state);
+    }
+
+    fn debug_name(&self) -> &'static str {
+        "ForIR"
     }
 }
 

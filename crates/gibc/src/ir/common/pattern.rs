@@ -224,10 +224,7 @@ impl<'db> Pattern {
                         }
                     } else {
                         state.simple_error(
-                            &format!(
-                                "Expected a struct but found type {}",
-                                ty.get_name(state, None)
-                            ),
+                            &format!("Expected a struct but found type {}", ty.get_name(state)),
                             name.last().unwrap().1,
                         );
                         PatternIR::Error
@@ -369,6 +366,10 @@ impl<'db> IrNode<'db> for PatternIR<'db> {
             PatternIR::Error => todo!(),
         }
     }
+
+    fn debug_name(&self) -> &'static str {
+        "PatternIR"
+    }
 }
 
 impl<'db> IrNode<'db> for StructFieldPatternIR<'db> {
@@ -404,6 +405,10 @@ impl<'db> IrNode<'db> for StructFieldPatternIR<'db> {
                 });
             }
         }
+    }
+
+    fn debug_name(&self) -> &'static str {
+        "StructFieldPatternIR"
     }
 }
 

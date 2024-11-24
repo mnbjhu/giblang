@@ -1,6 +1,9 @@
 use std::future::Future;
 
-use async_lsp::lsp_types::{Hover, HoverContents, MarkedString};
+use async_lsp::{
+    lsp_types::{Hover, HoverContents, MarkedString, MessageType, ShowMessageParams},
+    LanguageClient,
+};
 
 use crate::{
     check::{check_file, resolve_project},
@@ -16,7 +19,7 @@ pub fn hover(
     msg: async_lsp::lsp_types::HoverParams,
 ) -> impl Future<Output = Result<Option<async_lsp::lsp_types::Hover>, async_lsp::ResponseError>> {
     let mut db = st.db.clone();
-    // let mut client = st.client.clone();
+    let mut client = st.client.clone();
     async move {
         let file = db.input(
             &msg.text_document_position_params
@@ -30,6 +33,12 @@ pub fn hover(
         let ir = check_file(&db, file, project);
         let mut state = IrState::new(&db, project, ir.type_vars(&db), file);
         let node = ir.at_offset(offset, &mut state);
+        client
+            .show_message(ShowMessageParams {
+                typ: MessageType::ERROR,
+                message: format!("{:?}", node.debug_name()),
+            })
+            .unwrap();
         if let Some(msg) = node.hover(offset, &mut state) {
             Ok(Some(Hover {
                 contents: HoverContents::Scalar(MarkedString::String(msg)),

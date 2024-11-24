@@ -56,6 +56,7 @@ impl<'db> IrNode<'db> for TraitIR<'db> {
         }
         for (func, span) in &self.body {
             if span.contains_offset(offset) {
+                state.push_scope(func.scope.as_ref().unwrap().clone());
                 return func.at_offset(offset, state);
             }
         }
@@ -75,6 +76,10 @@ impl<'db> IrNode<'db> for TraitIR<'db> {
         for func in &self.body {
             func.0.tokens(tokens, state);
         }
+    }
+
+    fn debug_name(&self) -> &'static str {
+        "TraitIR"
     }
 }
 

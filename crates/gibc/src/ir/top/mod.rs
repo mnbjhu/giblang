@@ -89,7 +89,6 @@ impl<'db> IrNode<'db> for TopIR<'db> {
             TopIRData::Impl(i) => i.at_offset(offset, state),
             TopIRData::Use(u) => u.at_offset(offset, state),
         };
-        state.exit_scope();
         res
     }
 
@@ -102,6 +101,10 @@ impl<'db> IrNode<'db> for TopIR<'db> {
             TopIRData::Impl(i) => i.tokens(tokens, state),
             TopIRData::Use(u) => u.tokens(tokens, state),
         }
+    }
+
+    fn debug_name(&self) -> &'static str {
+        "TopIR"
     }
 }
 

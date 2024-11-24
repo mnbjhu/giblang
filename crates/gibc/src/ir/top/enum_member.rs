@@ -39,4 +39,8 @@ impl<'db> IrNode<'db> for EnumMemberIR<'db> {
         });
         self.body.0.tokens(tokens, state);
     }
+
+    fn debug_name(&self) -> &'static str {
+        "EnumMemberIR"
+    }
 }

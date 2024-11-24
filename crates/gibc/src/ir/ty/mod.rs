@@ -7,7 +7,7 @@ use crate::{
     util::{Span, Spanned},
 };
 
-use super::{ContainsOffset, IrNode, IrState};
+use super::{top::TopIRData, ContainsOffset, IrNode, IrState};
 
 pub mod named;
 
@@ -130,10 +130,10 @@ impl<'db> IrNode<'db> for TypeIR<'db> {
                 self
             }
             TypeIRData::Wildcard(_)
-            | TypeIRData::Named(_)
             | TypeIRData::Generic(_)
             | TypeIRData::Any(_)
             | TypeIRData::Nothing(_) => self,
+            TypeIRData::Named(named) => named.at_offset(offset, state),
         }
     }
 
@@ -179,5 +179,9 @@ impl<'db> IrNode<'db> for TypeIR<'db> {
                 });
             }
         }
+    }
+
+    fn debug_name(&self) -> &'static str {
+        "TypeIR"
     }
 }

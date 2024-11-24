@@ -73,6 +73,7 @@ impl<'db> IrNode<'db> for ImplIR<'db> {
         }
         for (func, span) in &self.body {
             if span.contains_offset(offset) {
+                state.push_scope(func.scope.clone().unwrap());
                 return func.at_offset(offset, state);
             }
         }
@@ -92,6 +93,10 @@ impl<'db> IrNode<'db> for ImplIR<'db> {
         for func in &self.body {
             func.0.tokens(tokens, state);
         }
+    }
+
+    fn debug_name(&self) -> &'static str {
+        "ImplIR"
     }
 }
 

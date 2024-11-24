@@ -58,6 +58,10 @@ impl<'db> IrNode<'db> for WhileIR<'db> {
         self.condition.0.tokens(tokens, state);
         self.block.0.tokens(tokens, state);
     }
+
+    fn debug_name(&self) -> &'static str {
+        "WhileIR"
+    }
 }
 
 impl<'db> WhileIR<'db> {

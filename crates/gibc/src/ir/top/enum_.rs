@@ -57,4 +57,8 @@ impl<'db> IrNode<'db> for EnumIR<'db> {
             .iter()
             .for_each(|(member, _)| member.tokens(tokens, state));
     }
+
+    fn debug_name(&self) -> &'static str {
+        "EnumIR"
+    }
 }

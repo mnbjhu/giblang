@@ -57,8 +57,8 @@ impl<'db> Stmt {
                     state.simple_error(
                         &format!(
                             "Expected value to be of type '{}' but found '{}'",
-                            expected.get_name(state, None),
-                            actual.get_name(state, None),
+                            expected.get_name(state),
+                            actual.get_name(state),
                         ),
                         span,
                     );
@@ -73,8 +73,8 @@ impl<'db> Stmt {
                     state.simple_error(
                         &format!(
                             "Expected value to be of type '{}' but found '{}'",
-                            expected.get_name(state, None),
-                            actual.get_name(state, None),
+                            expected.get_name(state),
+                            actual.get_name(state),
                         ),
                         span,
                     );
@@ -103,6 +103,10 @@ impl<'db> IrNode<'db> for StmtIR<'db> {
             StmtIR::Assign(a) => a.0.tokens(tokens, state),
             StmtIR::Break(_) | StmtIR::Continue(_) => {}
         }
+    }
+
+    fn debug_name(&self) -> &'static str {
+        "StmtIR"
     }
 }
 

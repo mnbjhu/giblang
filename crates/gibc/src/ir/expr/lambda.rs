@@ -199,6 +199,10 @@ impl<'db> IrNode<'db> for LambdaIR<'db> {
         }
         self.body.0.tokens(tokens, state);
     }
+
+    fn debug_name(&self) -> &'static str {
+        "LambdaIR"
+    }
 }
 
 impl<'db> IrNode<'db> for LambdaParamIR<'db> {
@@ -212,5 +216,9 @@ impl<'db> IrNode<'db> for LambdaParamIR<'db> {
     fn tokens(&self, tokens: &mut Vec<SemanticToken>, state: &mut IrState<'db>) {
         self.pattern.0.tokens(tokens, state);
         self.ty.0.tokens(tokens, state);
+    }
+
+    fn debug_name(&self) -> &'static str {
+        "LambdaParamIR"
     }
 }

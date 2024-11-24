@@ -18,6 +18,7 @@ use crate::{
 
 pub mod build_state;
 pub mod err;
+pub mod is_scoped;
 pub mod scoped_state;
 pub mod state;
 mod type_state;

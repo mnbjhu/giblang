@@ -40,7 +40,7 @@ impl StructBody {
                     let range = span_to_range_str((*span).into(), txt);
                     let selection_range = span_to_range_str((*span).into(), txt);
                     let field = field.check(state);
-                    let field = field.ty.get_name(state, None);
+                    let field = field.ty.get_name(state);
                     symbols.push(DocumentSymbol {
                         name: field,
                         detail: None,
@@ -59,7 +59,7 @@ impl StructBody {
                     let selection_range = span_to_range_str((*span).into(), txt);
 
                     let ty = field.ty.0.check(state).ty;
-                    let ty = ty.get_name(state, None);
+                    let ty = ty.get_name(state);
                     let name = format!("{}: {}", field.name.0, ty);
                     symbols.push(DocumentSymbol {
                         name,

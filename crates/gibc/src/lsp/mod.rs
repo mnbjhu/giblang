@@ -66,7 +66,8 @@ pub async fn main_loop() {
             .request::<request::HoverRequest, _>(hover)
             .request::<request::Completion, _>(|st, msg| {
                 let db = st.db.clone();
-                async move { Ok(get_completions(db, &msg)) }
+                let client = st.client.clone();
+                async move { Ok(get_completions(db, client, &msg)) }
             })
             .request::<request::GotoDefinition, _>(definition::goto_definition)
             .request::<request::DocumentSymbolRequest, _>(document_symbols::get_document_symbols)

@@ -4,6 +4,8 @@ use crate::{
     check::{
         build_state::BuildState,
         err::{is_not_instance::IsNotInstance, CheckError},
+        is_scoped::IsScoped,
+        scoped_state::Scoped,
         state::CheckState,
     },
     db::{
@@ -67,8 +69,8 @@ impl<'db> Ty<'db> {
         if !res {
             state.error(CheckError::IsNotInstance(IsNotInstance {
                 span,
-                found: self.get_name(state, None),
-                expected: other.get_name(state, None),
+                found: self.get_name(state),
+                expected: other.get_name(state),
                 file: state.file_data,
             }));
         }
@@ -241,11 +243,11 @@ impl<'db> Ty<'db> {
         }
     }
 
-    pub fn get_funcs(&self, state: &CheckState<'db>) -> Vec<(Decl<'db>, FuncTy<'db>)> {
+    pub fn get_funcs(&self, state: &impl IsScoped<'db>) -> Vec<(Decl<'db>, FuncTy<'db>)> {
         let mut funcs = Vec::new();
         if let Ty::Named(Named { name, .. }) = self {
             if let Some(DeclKind::Trait { body, .. }) =
-                state.try_get_decl_path(*name).map(|d| d.kind(state.db))
+                state.try_get_decl_path(*name).map(|d| d.kind(state.db()))
             {
                 funcs.extend(body.iter().map(|func_decl| {
                     let Ty::Function(func) = func_decl.get_ty(state) else {
@@ -255,24 +257,24 @@ impl<'db> Ty<'db> {
                 }));
             }
             let impls = state
-                .project
-                .get_impls(state.db, *name)
+                .project()
+                .get_impls(state.db(), *name)
                 .into_iter()
                 .filter(|i| {
-                    let Ty::Named(Named { name: n, .. }) = i.from_ty(state.db) else {
+                    let Ty::Named(Named { name: n, .. }) = i.from_ty(state.db()) else {
                         unreachable!()
                     };
-                    *name == n && i.to_ty(state.db).is_none()
+                    *name == n && i.to_ty(state.db()).is_none()
                 })
                 .flat_map(|i| {
                     let mut implied = HashMap::new();
-                    i.from_ty(state.db).imply_generic_args(self, &mut implied);
+                    i.from_ty(state.db()).imply_generic_args(self, &mut implied);
                     let self_ty = self.parameterize(&implied);
                     implied.insert("Self".to_string(), self_ty);
-                    i.functions(state.db)
+                    i.functions(state.db())
                         .iter()
                         .map(|f| {
-                            let DeclKind::Function(func) = f.kind(state.db) else {
+                            let DeclKind::Function(func) = f.kind(state.db()) else {
                                 panic!("Expected function");
                             };
                             (*f, func.get_ty().parameterize(&implied))

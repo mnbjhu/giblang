@@ -20,7 +20,6 @@ impl AstItem for For {
             .append("in")
             .append(allocator.space())
             .append(self.expr.pretty(allocator))
-            .append(allocator.space())
             .append(self.block.pretty(allocator))
     }
 }

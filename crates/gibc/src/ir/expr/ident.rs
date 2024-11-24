@@ -1,8 +1,9 @@
-use async_lsp::lsp_types::CompletionItem;
+use async_lsp::lsp_types::{CompletionItem, CompletionItemKind};
 
 use crate::{
     check::{
         err::{unresolved::Unresolved, CheckError},
+        is_scoped::IsScoped,
         scoped_state::Scoped as _,
         state::CheckState,
         SemanticToken, TokenKind,
@@ -196,11 +197,19 @@ impl<'db> IrNode<'db> for SpannedQualifiedNameIR<'db> {
         }
     }
 
-    fn completions(&self, offset: usize, _: &mut IrState<'db>) -> Vec<CompletionItem> {
-        let completions = vec![];
+    fn completions(&self, offset: usize, state: &mut IrState<'db>) -> Vec<CompletionItem> {
+        let mut completions = vec![];
         if self.len() < 2 {
+            get_ident_completions(state, &mut completions);
+
             // TODO: IDENT COMPLETIONS
             // 1. Add vars
+
+            // let vars = state.get_variables();
+            // for (_, var) in vars {
+            //     completions.extend(var.completions(state));
+            // }
+            //
             // 2. Add self fields and funcs
             // 3. Add imported types
             // 4. Add global
@@ -209,6 +218,55 @@ impl<'db> IrNode<'db> for SpannedQualifiedNameIR<'db> {
         let _seg = self.iter().find(|(_, span)| span.contains_offset(offset));
         completions
     }
+
+    fn debug_name(&self) -> &'static str {
+        "QualifiedNameIR"
+    }
+}
+
+#[allow(unused)]
+fn get_ident_completions<'db>(
+    state: &mut impl IsScoped<'db>,
+    completions: &mut Vec<CompletionItem>,
+) {
+    for (_, var) in state.get_variables() {
+        completions.extend(var.completions(state));
+    }
+    for (_, g) in state.get_generics() {
+        completions.extend(g.completions(state));
+    }
+    for (name, import) in state.get_imports() {
+        let found = import.completions(state);
+        for mut item in found {
+            item.label = name.to_string();
+            completions.push(item.clone());
+        }
+    }
+    if let Some(self_param) = state.get_variable("self") {
+        for (name, func_ty) in self_param.ty.member_funcs(state) {
+            completions.push(CompletionItem {
+                label: name.name(state.db()),
+                kind: Some(CompletionItemKind::METHOD),
+                detail: Some(func_ty.get_name(state)),
+                ..Default::default()
+            });
+        }
+
+        for (name, ty) in self_param.ty.fields(state).clone() {
+            completions.push(CompletionItem {
+                label: name.clone(),
+                kind: Some(CompletionItemKind::FIELD),
+                detail: Some(ty.get_name(state)),
+                ..Default::default()
+            });
+        }
+    }
+    completions.extend(
+        state
+            .project()
+            .decls(state.db())
+            .get_static_access_completions(state),
+    );
 }
 
 impl<'db> IdentDef<'db> {

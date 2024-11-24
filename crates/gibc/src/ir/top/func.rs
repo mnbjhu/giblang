@@ -111,7 +111,7 @@ impl<'db> IrNode<'db> for FuncIR<'db> {
         self
     }
 
-    fn tokens(&self, tokens: &mut Vec<crate::check::SemanticToken>, state: &mut IrState<'db>) {
+    fn tokens(&self, tokens: &mut Vec<SemanticToken>, state: &mut IrState<'db>) {
         if let Some(receiver) = &self.receiver {
             receiver.0.tokens(tokens, state);
         }
@@ -127,6 +127,10 @@ impl<'db> IrNode<'db> for FuncIR<'db> {
             ret.0.tokens(tokens, state);
         }
         self.body.tokens(tokens, state);
+    }
+
+    fn debug_name(&self) -> &'static str {
+        "FuncIR"
     }
 }
 

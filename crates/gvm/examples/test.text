@@ -1,8 +1,0 @@
-type 123
-  1 2
-  3 123
-file 1 "example/basic.bytecode"
-func 0 0 "main" 123 456 1
-mark 1 2 3
-panic
-return

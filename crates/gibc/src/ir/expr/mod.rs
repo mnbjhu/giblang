@@ -210,6 +210,10 @@ impl<'db> IrNode<'db> for ExprIR<'db> {
     fn hover(&self, _: usize, state: &mut IrState<'db>) -> Option<String> {
         Some(self.ty.get_ir_name(state))
     }
+
+    fn debug_name(&self) -> &'static str {
+        "ExprIR"
+    }
 }
 
 pub fn replace_chars(lit: Literal) -> Literal {

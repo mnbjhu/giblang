@@ -83,6 +83,10 @@ impl<'db> IrNode<'db> for CodeBlockIR<'db> {
             stmt.0.tokens(tokens, state);
         }
     }
+
+    fn debug_name(&self) -> &'static str {
+        "CodeBlockIR"
+    }
 }
 
 impl<'db> CodeBlockIR<'db> {

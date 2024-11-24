@@ -3,7 +3,10 @@ use std::collections::HashMap;
 use gvm::format::instr::ByteCode;
 
 use crate::{
-    check::{build_state::BuildState, state::CheckState, SemanticToken, TokenKind},
+    check::{
+        build_state::BuildState, scoped_state::Scoped as _, state::CheckState, SemanticToken,
+        TokenKind,
+    },
     db::decl::{struct_::StructDecl, Decl, DeclKind},
     ir::{builder::ByteCodeNode, ContainsOffset, IrNode, IrState},
     parser::expr::field::Field,
@@ -135,6 +138,10 @@ impl<'db> IrNode<'db> for FieldIR<'db> {
             kind: TokenKind::Property,
             span: self.name.1,
         });
+    }
+
+    fn debug_name(&self) -> &'static str {
+        "FieldIR"
     }
 }
 

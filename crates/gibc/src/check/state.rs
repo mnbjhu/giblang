@@ -6,7 +6,6 @@ use crate::{
     db::{
         decl::{Decl, Project},
         input::{Db, SourceFile},
-        path::ModulePath,
     },
     parser::{common::variance::Variance, expr::qualified_name::SpannedQualifiedName, parse_file},
     ty::{Generic, Ty},
@@ -15,7 +14,8 @@ use crate::{
 
 use super::{
     err::{unresolved::Unresolved, unresolved_type_var::UnboundTypeVar, Error, IntoWithDb},
-    scoped_state::{IsScoped, Scoped, ScopedState},
+    is_scoped::IsScoped,
+    scoped_state::{Scoped, ScopedState},
     type_state::TypeState,
     TokenKind,
 };
@@ -45,6 +45,14 @@ impl<'db> IsScoped<'db> for CheckState<'db> {
 
     fn get_scope_state_mut<'me>(&'me mut self) -> &'me mut ScopedState<'db> {
         &mut self.scope_state
+    }
+
+    fn get_type_var(&self, id: u32) -> Ty<'db> {
+        self.get_resolved_type_var(id)
+    }
+
+    fn expected_type_var_is(&mut self, id: u32, other: Ty<'db>, span: Span) {
+        self.expected_var_is_ty(id, other, span);
     }
 }
 
@@ -97,20 +105,16 @@ impl<'ty, 'db: 'ty> CheckState<'db> {
 
     pub fn get_type_vars(&mut self) -> HashMap<u32, Ty<'db>> {
         let mut res = HashMap::new();
-        let mut errors = vec![];
         for id in self.type_state.vars.keys().copied().collect::<Vec<_>>() {
             let ty = self.get_resolved_type_var(id);
             let data = self.type_state.get_type_var(id).clone();
             if let Ty::Unknown = ty {
-                errors.push(UnboundTypeVar {
+                self.error(CheckError::UnboundTypeVar(UnboundTypeVar {
                     span: data.span,
                     file: data.file,
-                });
+                }));
             }
             res.insert(id, ty);
-        }
-        for error in errors {
-            self.error(CheckError::UnboundTypeVar(error));
         }
         res
     }
@@ -210,19 +214,11 @@ impl<'ty, 'db: 'ty> CheckState<'db> {
             .unwrap_or(Ty::Unknown)
     }
 
-    pub fn try_get_resolved_type_var(&self, id: u32) -> Option<Ty> {
-        self.type_state.get_type_var(id).resolved.clone()
-    }
-
     pub fn enter_decl(&mut self, name: &str) {
         self.decl_stack.push(self.local_decl(name));
     }
 
     pub fn exit_decl(&mut self) {
         self.decl_stack.pop();
-    }
-
-    pub fn try_get_decl_path(&self, name: ModulePath<'db>) -> Option<Decl<'db>> {
-        self.project.get_decl(self.db, name)
     }
 }

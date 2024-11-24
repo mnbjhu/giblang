@@ -31,7 +31,7 @@ impl<'db> MemberCall {
                 &format!(
                     "No function {} found for type {}",
                     self.name.0,
-                    rec.0.ty.get_name(state, None)
+                    rec.0.ty.get_name(state)
                 ),
                 self.name.1,
             );
@@ -140,6 +140,10 @@ impl<'db> IrNode<'db> for MemberCallIR<'db> {
         state: &mut IrState<'db>,
     ) -> Option<(crate::db::input::SourceFile, Span)> {
         self.def.goto(state)
+    }
+
+    fn debug_name(&self) -> &'static str {
+        "MemberCallIR"
     }
 }
 

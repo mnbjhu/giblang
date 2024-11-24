@@ -10,7 +10,10 @@ pub mod impl_;
 pub mod struct_;
 
 use crate::{
-    check::{err::unresolved::Unresolved, scoped_state::Scoped, state::CheckState, TokenKind},
+    check::{
+        err::unresolved::Unresolved, is_scoped::IsScoped, scoped_state::Scoped, state::CheckState,
+        TokenKind,
+    },
     item::definitions::ident::IdentDef,
     ty::{sub_tys::get_sub_tys, FuncTy, Generic, Named, Ty},
     util::{Span, Spanned},
@@ -92,8 +95,8 @@ impl<'db> Decl<'db> {
         }
     }
 
-    pub fn get_ty(self, state: &CheckState<'db>) -> Ty<'db> {
-        match self.kind(state.db) {
+    pub fn get_ty(self, state: &impl IsScoped<'db>) -> Ty<'db> {
+        match self.kind(state.db()) {
             DeclKind::Struct {
                 body: StructDecl::None,
                 ..
@@ -117,11 +120,11 @@ impl<'db> Decl<'db> {
         }
     }
 
-    pub fn default_named_ty(self, state: &CheckState<'db>) -> Ty<'db> {
+    pub fn default_named_ty(self, state: &impl IsScoped<'db>) -> Ty<'db> {
         Ty::Named(Named {
-            name: self.path(state.db),
+            name: self.path(state.db()),
             args: self
-                .generics(state.db)
+                .generics(state.db())
                 .iter()
                 .cloned()
                 .map(Ty::Generic)
@@ -129,9 +132,9 @@ impl<'db> Decl<'db> {
         })
     }
 
-    pub fn get_named_ty(self, state: &CheckState<'db>) -> Ty<'db> {
-        if let DeclKind::Member { .. } = &self.kind(state.db) {
-            let parent = self.path(state.db).get_parent(state.db);
+    pub fn get_named_ty(self, state: &impl IsScoped<'db>) -> Ty<'db> {
+        if let DeclKind::Member { .. } = &self.kind(state.db()) {
+            let parent = self.path(state.db()).get_parent(state.db());
             let parent_decl = state.try_get_decl_path(parent);
             parent_decl
                 .expect("No parent found for decl")

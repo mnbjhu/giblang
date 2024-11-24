@@ -57,6 +57,10 @@ impl<'db> IrNode<'db> for AssignIR<'db> {
         self.refr.0.tokens(tokens, state);
         self.value.0.tokens(tokens, state);
     }
+
+    fn debug_name(&self) -> &'static str {
+        "AssignIR"
+    }
 }
 
 impl<'db> Decl<'db> {

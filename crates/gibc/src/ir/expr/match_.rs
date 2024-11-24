@@ -79,4 +79,8 @@ impl<'db> IrNode<'db> for MatchIR<'db> {
             match_arm.0.tokens(tokens, state);
         }
     }
+
+    fn debug_name(&self) -> &'static str {
+        "MatchIR"
+    }
 }

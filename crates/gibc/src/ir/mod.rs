@@ -8,7 +8,8 @@ use top::TopIR;
 use crate::{
     check::{
         build_state::BuildState,
-        scoped_state::{IsScoped, Scope, ScopedState},
+        is_scoped::IsScoped,
+        scoped_state::{Scope, Scoped, ScopedState},
         SemanticToken,
     },
     db::{
@@ -40,6 +41,7 @@ pub struct FileIR<'db> {
 }
 
 pub trait IrNode<'db> {
+    fn debug_name(&self) -> &'static str;
     fn at_offset(&self, offset: usize, state: &mut IrState<'db>) -> &dyn IrNode;
     fn tokens(&self, tokens: &mut Vec<SemanticToken>, state: &mut IrState<'db>);
     #[allow(unused)]
@@ -72,6 +74,12 @@ impl<'db> IsScoped<'db> for IrState<'db> {
     fn get_scope_state_mut<'me>(&'me mut self) -> &'me mut ScopedState<'db> {
         &mut self.scope_state
     }
+
+    fn get_type_var(&self, id: u32) -> Ty<'db> {
+        self.type_vars.get(&id).cloned().unwrap_or(Ty::Unknown)
+    }
+
+    fn expected_type_var_is(&mut self, _: u32, _: Ty<'db>, _: Span) {}
 }
 
 impl<'db> IrState<'db> {
@@ -129,6 +137,7 @@ impl<'db> FileIR<'db> {
 
 impl<'db> IrNode<'db> for FileIR<'db> {
     fn at_offset(&self, offset: usize, state: &mut IrState<'db>) -> &dyn IrNode {
+        state.push_scope(self.scope(state.db).clone());
         for (top, span) in self.tops(state.db) {
             if span.contains_offset(offset) {
                 return top.at_offset(offset, state);
@@ -141,6 +150,10 @@ impl<'db> IrNode<'db> for FileIR<'db> {
         for (top, _) in self.tops(state.db) {
             top.tokens(tokens, state);
         }
+    }
+
+    fn debug_name(&self) -> &'static str {
+        "FileIR"
     }
 }
 

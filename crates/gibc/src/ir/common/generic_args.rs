@@ -36,4 +36,8 @@ impl<'db> IrNode<'db> for GenericArgsIR<'db> {
         }
         self
     }
+
+    fn debug_name(&self) -> &'static str {
+        "GenericArgsIR"
+    }
 }

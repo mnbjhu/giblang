@@ -20,6 +20,7 @@ pub fn get_document_symbols(
         let file = db.input(&path);
         let project = resolve_project(&db, db.vfs.unwrap());
         let mut state = CheckState::from_file(&db, file, project);
+        state.should_error = false;
         let ast = parse_file(&db, file);
         let symbols = ast
             .tops(&db)

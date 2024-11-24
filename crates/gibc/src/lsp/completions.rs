@@ -1,5 +1,9 @@
-use async_lsp::lsp_types::{
-    CompletionItem, CompletionItemKind, CompletionParams, CompletionResponse,
+use async_lsp::{
+    lsp_types::{
+        CompletionItem, CompletionItemKind, CompletionParams, CompletionResponse, MessageType,
+        ShowMessageParams,
+    },
+    ClientSocket, LanguageClient,
 };
 use tracing::info;
 
@@ -14,6 +18,7 @@ use crate::{
 #[allow(clippy::unnecessary_wraps)]
 pub fn get_completions(
     mut db: SourceDatabase,
+    mut client: ClientSocket,
     msg: &CompletionParams,
 ) -> Option<CompletionResponse> {
     let file = db.input(
@@ -29,6 +34,12 @@ pub fn get_completions(
     let ir = check_file(&db, file, project);
     let mut state = IrState::new(&db, project, ir.type_vars(&db), file);
     let found = ir.at_offset(offset, &mut state);
+    client
+        .show_message(ShowMessageParams {
+            typ: MessageType::ERROR,
+            message: format!("Completing: {:?}", found.debug_name()),
+        })
+        .unwrap();
     let mut completions = found.completions(offset, &mut state);
     let kw_completions = ast
         .expected(state.db)

@@ -98,4 +98,8 @@ impl<'db> IrNode<'db> for NamedTypeIR<'db> {
             arg.tokens(tokens, state);
         }
     }
+
+    fn debug_name(&self) -> &'static str {
+        "NamedTypeIR"
+    }
 }

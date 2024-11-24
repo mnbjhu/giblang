@@ -41,4 +41,8 @@ impl<'db> IrNode<'db> for ConditionIR<'db> {
             ConditionIR::Expr(expr) => expr.tokens(tokens, state),
         }
     }
+
+    fn debug_name(&self) -> &'static str {
+        "ConditionIR"
+    }
 }

@@ -71,6 +71,10 @@ impl<'db> IrNode<'db> for LetIR<'db> {
         }
         self.expr.0.tokens(tokens, state);
     }
+
+    fn debug_name(&self) -> &'static str {
+        "LetIR"
+    }
 }
 
 impl<'db> LetIR<'db> {

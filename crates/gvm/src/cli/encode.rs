@@ -20,14 +20,6 @@ pub struct Encode {
     /// The output file to write to (if not provided stdout will be used instead)
     pub output: Option<PathBuf>,
 }
-#[test]
-fn test_parse() {
-    Encode {
-        input: Some(PathBuf::from("examples/test.text")),
-        output: Some(PathBuf::from("examples/test.bin")),
-    }
-    .run();
-}
 
 impl Encode {
     pub fn run(&self) {

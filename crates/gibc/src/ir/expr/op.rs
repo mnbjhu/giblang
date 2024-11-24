@@ -47,10 +47,10 @@ impl<'db> Op {
 impl<'db> IrNode<'db> for OpIR<'db> {
     fn at_offset(&self, offset: usize, state: &mut crate::ir::IrState<'db>) -> &dyn IrNode {
         if self.left.1.contains_offset(offset) {
-            self.left.0.at_offset(offset, state);
+            return self.left.0.at_offset(offset, state);
         }
         if self.right.1.contains_offset(offset) {
-            self.left.0.at_offset(offset, state);
+            return self.right.0.at_offset(offset, state);
         }
         self
     }
@@ -62,6 +62,10 @@ impl<'db> IrNode<'db> for OpIR<'db> {
     ) {
         self.left.0.tokens(tokens, state);
         self.right.0.tokens(tokens, state);
+    }
+
+    fn debug_name(&self) -> &'static str {
+        "OpIR"
     }
 }
 

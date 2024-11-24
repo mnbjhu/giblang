@@ -149,6 +149,10 @@ impl<'db> IrNode<'db> for IfElseIR<'db> {
             block.tokens(tokens, state);
         }
     }
+
+    fn debug_name(&self) -> &'static str {
+        "IfElseIR"
+    }
 }
 impl<'db> IrNode<'db> for IfBranchIR<'db> {
     fn at_offset(&self, offset: usize, state: &mut crate::ir::IrState<'db>) -> &dyn IrNode {
@@ -168,6 +172,10 @@ impl<'db> IrNode<'db> for IfBranchIR<'db> {
     ) {
         self.condition.0.tokens(tokens, state);
         self.body.0.tokens(tokens, state);
+    }
+
+    fn debug_name(&self) -> &'static str {
+        "IfBranchIR"
     }
 }
 

@@ -299,15 +299,4 @@ mod tests {
         let module = get_module_path(&db, path);
         assert_eq!(module, vec!["db".to_string(), "input".to_string()]);
     }
-
-    #[test]
-    fn example() {
-        let db = SourceDatabase {
-            root: "/home/james/projects/another-giblang-impl".to_string(),
-            ..Default::default()
-        };
-        let path = Path::new("/home/james/projects/another-giblang-impl/gib_mod/another.gib");
-        let module = get_module_path(&db, path);
-        assert_eq!(module, vec!["gib_mod".to_string(), "another".to_string()]);
-    }
 }

@@ -61,7 +61,7 @@ impl<'db> Call {
                     state.error(CheckError::MissingReceiver(MissingReceiver {
                         span: self.name.1,
                         file: state.file_data,
-                        expected: receiver.get_name(state, None),
+                        expected: receiver.get_name(state),
                     }));
                 }
             }
@@ -71,7 +71,7 @@ impl<'db> Call {
                     found: self.args.len(),
                     span: self.name.1,
                     file: state.file_data,
-                    func: func_ty.get_name(state, None),
+                    func: func_ty.get_name(state),
                 }));
             }
             let mut args = vec![];
@@ -91,7 +91,7 @@ impl<'db> Call {
             state.simple_error(
                 &format!(
                     "Expected a function but found '{}'",
-                    name_ir.ty.get_name(state, None)
+                    name_ir.ty.get_name(state)
                 ),
                 self.name.1,
             );
@@ -140,6 +140,10 @@ impl<'db> IrNode<'db> for CallIR<'db> {
         for arg in &self.args {
             arg.0.tokens(tokens, state);
         }
+    }
+
+    fn debug_name(&self) -> &'static str {
+        "CallIR"
     }
 }
 

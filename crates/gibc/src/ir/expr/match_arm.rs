@@ -69,6 +69,10 @@ impl<'db> IrNode<'db> for MatchArmIR<'db> {
         self.pattern.0.tokens(tokens, state);
         self.expr.0.tokens(tokens, state);
     }
+
+    fn debug_name(&self) -> &'static str {
+        "MatchArmIR"
+    }
 }
 
 impl<'db> MatchIR<'db> {

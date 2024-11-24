@@ -77,12 +77,12 @@ impl Impl {
         let name = if let Some(trait_) = self.trait_.as_ref() {
             let trait_ = trait_.0.check(state);
             let for_ = self.for_.0.check(state);
-            let trait_ = trait_.ty.get_name(state, None);
-            let for_ = for_.ty.get_name(state, None);
+            let trait_ = trait_.ty.get_name(state);
+            let for_ = for_.ty.get_name(state);
             format!("impl {trait_} for {for_}")
         } else {
             let for_ = self.for_.0.check(state);
-            let for_ = for_.ty.get_name(state, None);
+            let for_ = for_.ty.get_name(state);
             format!("impl for {for_}")
         };
         for (func, span) in &self.body {

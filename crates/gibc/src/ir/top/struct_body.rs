@@ -73,4 +73,8 @@ impl<'db> IrNode<'db> for StructBodyIR<'db> {
             }
         }
     }
+
+    fn debug_name(&self) -> &'static str {
+        "StructBodyIR"
+    }
 }

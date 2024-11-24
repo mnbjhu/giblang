@@ -1,22 +1,22 @@
 use crate::{
-    check::state::CheckState,
+    check::{is_scoped::IsScoped, scoped_state::Scoped, state::CheckState},
     db::{decl::impl_::ImplForDecl, path::ModulePath},
 };
 
 use super::{Named, Ty};
 
-pub fn get_sub_tys<'db>(name: &Ty<'db>, state: &CheckState<'db>) -> Vec<Ty<'db>> {
+pub fn get_sub_tys<'db>(name: &Ty<'db>, state: &impl IsScoped<'db>) -> Vec<Ty<'db>> {
     let Ok(name) = name.clone().expect_resolved(state) else {
         return vec![];
     };
     match name {
         Ty::Named(Named { name, .. }) => state
-            .project
-            .get_impls(state.db, name)
+            .project()
+            .get_impls(state.db(), name)
             .into_iter()
-            .filter(|i| i.to_ty(state.db).is_some())
+            .filter(|i| i.to_ty(state.db()).is_some())
             .flat_map(|i| {
-                let ty = i.to_ty(state.db);
+                let ty = i.to_ty(state.db());
                 let mut tys = get_sub_tys(ty.as_ref().unwrap(), state);
                 tys.push(ty.unwrap());
                 tys
@@ -27,10 +27,10 @@ pub fn get_sub_tys<'db>(name: &Ty<'db>, state: &CheckState<'db>) -> Vec<Ty<'db>>
 }
 
 impl<'db> Ty<'db> {
-    pub fn expect_resolved(self, state: &CheckState<'db>) -> Result<Ty<'db>, ()> {
+    pub fn expect_resolved(self, state: &impl IsScoped<'db>) -> Result<Ty<'db>, ()> {
         match self {
             Ty::TypeVar { id } => {
-                let resolved = state.get_resolved_type_var(id);
+                let resolved = state.get_type_var(id);
                 if let Ty::Unknown = resolved {
                     return Err(());
                 }
@@ -40,9 +40,9 @@ impl<'db> Ty<'db> {
         }
     }
 
-    pub fn try_resolve(self, state: &CheckState<'db>) -> Ty<'db> {
+    pub fn try_resolve(self, state: &impl IsScoped<'db>) -> Ty<'db> {
         match self {
-            Ty::TypeVar { id } => state.get_resolved_type_var(id),
+            Ty::TypeVar { id } => state.get_type_var(id),
             _ => self,
         }
     }

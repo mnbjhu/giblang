@@ -1,7 +1,7 @@
 use async_lsp::lsp_types::{CompletionItem, CompletionItemKind};
 
 use crate::{
-    check::state::CheckState,
+    check::{is_scoped::IsScoped, scoped_state::Scoped, state::CheckState},
     db::{
         decl::{func::Function, Decl, DeclKind},
         input::Db,
@@ -28,11 +28,11 @@ impl<'db> Decl<'db> {
     }
 
     #[must_use]
-    pub fn completions(self, state: &CheckState) -> Vec<CompletionItem> {
+    pub fn completions(self, state: &impl Scoped<'db>) -> Vec<CompletionItem> {
         // TODO: Import external completions
         vec![CompletionItem {
-            label: self.name(state.db),
-            kind: Some(match self.kind(state.db) {
+            label: self.name(state.db()),
+            kind: Some(match self.kind(state.db()) {
                 DeclKind::Struct { .. } => CompletionItemKind::STRUCT,
                 DeclKind::Enum { .. } => CompletionItemKind::ENUM,
                 DeclKind::Trait { .. } => CompletionItemKind::INTERFACE,
@@ -40,13 +40,16 @@ impl<'db> Decl<'db> {
                 DeclKind::Member { .. } => CompletionItemKind::ENUM_MEMBER,
                 DeclKind::Module(_) => CompletionItemKind::MODULE,
             }),
-            detail: Some(self.path(state.db).name(state.db).join("::")),
+            detail: Some(self.path(state.db()).name(state.db()).join("::")),
             ..Default::default()
         }]
     }
 
-    pub fn get_static_access_completions(self, state: &mut CheckState) -> Vec<CompletionItem> {
-        match self.kind(state.db) {
+    pub fn get_static_access_completions(
+        self,
+        state: &mut impl IsScoped<'db>,
+    ) -> Vec<CompletionItem> {
+        match self.kind(state.db()) {
             DeclKind::Enum { variants, .. } => variants
                 .iter()
                 .flat_map(|variant| variant.completions(state))

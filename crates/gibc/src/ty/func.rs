@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::{
-    check::state::CheckState,
+    check::{is_scoped::IsScoped, scoped_state::Scoped, state::CheckState},
     db::decl::{struct_::StructDecl, Decl, DeclKind},
     item::definitions::ident::IdentDef,
     util::{Span, Spanned},
@@ -17,7 +17,7 @@ impl<'db> Ty<'db> {
             if let Ty::Named(Named { name, .. }) = ty.as_ref() {
                 let decl = state.try_get_decl_path(*name);
                 if let Some(decl) = decl {
-                    if let DeclKind::Struct { body, .. } = decl.kind(state.db) {
+                    if let DeclKind::Struct { body, .. } = decl.kind(state.db()) {
                         return body
                             .get_constructor_ty(ty.as_ref().clone())
                             .map(|ty| ty.inst(&mut HashMap::new(), state, span));
@@ -41,7 +41,7 @@ impl<'db> Ty<'db> {
         }
     }
 
-    pub fn member_funcs(&self, state: &CheckState<'db>) -> Vec<(Decl<'db>, FuncTy<'db>)> {
+    pub fn member_funcs(&self, state: &impl IsScoped<'db>) -> Vec<(Decl<'db>, FuncTy<'db>)> {
         let mut funcs = get_sub_tys(self, state)
             .iter()
             .flat_map(|t| t.get_funcs(state))
@@ -50,14 +50,14 @@ impl<'db> Ty<'db> {
         funcs
     }
 
-    pub fn fields(&self, state: &CheckState<'db>) -> Vec<(String, Ty<'db>)> {
+    pub fn fields(&self, state: &impl IsScoped<'db>) -> Vec<(String, Ty<'db>)> {
         let Ty::Named(Named { name, args }) = &self.clone().try_resolve(state) else {
             return Vec::new();
         };
         let Some(decl) = state.try_get_decl_path(*name) else {
             return Vec::new();
         };
-        let DeclKind::Struct { body, generics } = decl.kind(state.db) else {
+        let DeclKind::Struct { body, generics } = decl.kind(state.db()) else {
             return Vec::new();
         };
         if generics.len() != args.len() {
