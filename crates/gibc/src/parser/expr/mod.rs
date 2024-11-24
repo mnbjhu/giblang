@@ -162,6 +162,8 @@ pub fn expr_parser<'tokens, 'src: 'tokens>(stmt: AstParser!(Stmt)) -> AstParser!
 
         let if_else = if_else_parser(basic_op, stmt).map(Expr::IfElse);
 
-        choice((if_else, match_, for_, while_, lambda, op)).boxed()
+        choice((if_else, match_, for_, while_, lambda, op))
+            .boxed()
+            .labelled("Expression")
     })
 }

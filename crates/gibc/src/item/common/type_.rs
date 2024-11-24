@@ -33,6 +33,7 @@ impl AstItem for Type {
                     .append(" -> ")
                     .append(ret.0.pretty(allocator))
             }
+            Type::Error(_) => panic!("Cannot format error"),
         }
     }
 }

@@ -117,6 +117,43 @@ pub fn top_recovery<'tokens, 'src: 'tokens>() -> AstParser!(Unit) {
         .ignored()
 }
 
+#[must_use]
+pub fn recover_until<'tokens, 'src: 'tokens>(tokens: &'static [Token]) -> AstParser!(Unit) {
+    let braces = nested_delimiters(
+        Token::Punct('{'),
+        Token::Punct('}'),
+        [
+            (Token::Punct('('), Token::Punct(')')),
+            (Token::Punct('['), Token::Punct(']')),
+        ],
+        |_| (),
+    );
+    let parens = nested_delimiters(
+        Token::Punct('('),
+        Token::Punct(')'),
+        [
+            (Token::Punct('{'), Token::Punct('}')),
+            (Token::Punct('['), Token::Punct(']')),
+        ],
+        |_| (),
+    );
+    let brackets = nested_delimiters(
+        Token::Punct('['),
+        Token::Punct(']'),
+        [
+            (Token::Punct('('), Token::Punct(')')),
+            (Token::Punct('{'), Token::Punct('}')),
+        ],
+        |_| (),
+    );
+    let toks = none_of(vec![Token::Newline, punct(']'), punct(')'), punct('}')]).ignored();
+    choice((braces, parens, brackets, toks))
+        .repeated()
+        .at_least(1)
+        .then(just(tokens).rewind())
+        .ignored()
+}
+
 #[salsa::tracked]
 pub fn parse_file<'db>(db: &'db dyn Db, file: SourceFile) -> Ast<'db> {
     info!("Parsing file: {}", file.path(db).to_str().unwrap());

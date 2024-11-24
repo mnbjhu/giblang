@@ -29,6 +29,7 @@ impl Type {
                 args: args.iter().map(|(ty, _)| ty.resolve(state)).collect(),
                 ret: Box::new(ret.0.resolve(state)),
             }),
+            Type::Error(_) => Ty::Unknown,
         }
     }
 }

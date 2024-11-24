@@ -78,4 +78,13 @@ impl<'db, T: IsScoped<'db>> Scoped<'db> for T {
     fn db(&self) -> &'db dyn Db {
         self.get_scope_state().db()
     }
+    fn order(&self) -> usize {
+        self.get_scope_state().order()
+    }
+    fn inc_order(&mut self) -> usize {
+        self.get_scope_state_mut().inc_order()
+    }
+    fn set_order(&mut self, order: usize) {
+        self.get_scope_state_mut().set_order(order);
+    }
 }

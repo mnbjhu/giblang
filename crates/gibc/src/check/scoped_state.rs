@@ -36,6 +36,10 @@ pub trait Scoped<'db>: Sized {
     fn enter_scope(&mut self);
     fn exit_scope(&mut self) -> Scope<'db>;
 
+    fn order(&self) -> usize;
+    fn inc_order(&mut self) -> usize;
+    fn set_order(&mut self, order: usize);
+
     fn get_decl_with_error(&self, path: &[Spanned<String>]) -> Result<Decl<'db>, Unresolved>
     where
         Self: Sized,
@@ -70,6 +74,9 @@ pub struct ScopedState<'db> {
 }
 
 impl<'db> ScopedState<'db> {
+    pub fn scope(&self) -> &Scope<'db> {
+        self.scopes.last().unwrap()
+    }
     pub fn scope_mut(&mut self) -> &mut Scope<'db> {
         self.scopes.last_mut().unwrap()
     }
@@ -81,14 +88,14 @@ impl<'db> ScopedState<'db> {
             db,
             file,
             project,
-            scopes: vec![Scope::default()],
+            scopes: vec![Scope::new()],
         }
     }
 }
 
 impl<'db> Scoped<'db> for ScopedState<'db> {
     fn enter_scope(&mut self) {
-        self.scopes.push(Scope::default());
+        self.scopes.push(Scope::new());
     }
     #[must_use]
     fn exit_scope(&mut self) -> Scope<'db> {
@@ -99,14 +106,14 @@ impl<'db> Scoped<'db> for ScopedState<'db> {
         self.scopes
             .iter()
             .rev()
-            .find_map(|scope| scope.vars.get(name))
+            .find_map(|scope| scope.vars.get(name, scope.order))
     }
 
     fn get_variables(&self) -> HashMap<&String, &VarDecl<'db>> {
         let mut found = HashMap::new();
         for scope in self.scopes.iter().rev() {
-            for (name, var) in &scope.vars {
-                found.insert(name, var);
+            for (name, item) in scope.vars.get_all(scope.order) {
+                found.insert(name, item);
             }
         }
         found
@@ -116,13 +123,13 @@ impl<'db> Scoped<'db> for ScopedState<'db> {
         self.scopes
             .iter()
             .rev()
-            .find_map(|scope| scope.generics.get(name))
+            .find_map(|scope| scope.generics.get(name, scope.order))
     }
 
     fn get_generics(&self) -> HashMap<&String, &Generic<'db>> {
         let mut found = HashMap::new();
         for scope in self.scopes.iter().rev() {
-            for (name, generic) in &scope.generics {
+            for (name, generic) in scope.generics.get_all(scope.order) {
                 found.insert(name, generic);
             }
         }
@@ -133,13 +140,13 @@ impl<'db> Scoped<'db> for ScopedState<'db> {
         self.scopes
             .iter()
             .rev()
-            .find_map(|scope| scope.imports.get(name).copied())
+            .find_map(|scope| scope.imports.get(name, scope.order).copied())
     }
 
     fn get_imports(&self) -> HashMap<&String, &Decl<'db>> {
         let mut found = HashMap::new();
         for scope in self.scopes.iter().rev() {
-            for (name, decl) in &scope.imports {
+            for (name, decl) in scope.imports.get_all(scope.order) {
                 found.insert(name, decl);
             }
         }
@@ -163,21 +170,102 @@ impl<'db> Scoped<'db> for ScopedState<'db> {
     }
 
     fn insert_variable(&mut self, name: &str, var: VarDecl<'db>) {
-        self.scope_mut().vars.insert(name.to_string(), var);
+        let order = self.order();
+        self.scope_mut().vars.insert(name.to_string(), var, order);
     }
 
     fn insert_generic(&mut self, name: &str, generic: Generic<'db>) {
-        self.scope_mut().generics.insert(name.to_string(), generic);
+        let order = self.order();
+        self.scope_mut()
+            .generics
+            .insert(name.to_string(), generic, order);
     }
 
     fn insert_import(&mut self, name: &str, import: Decl<'db>) {
-        self.scope_mut().imports.insert(name.to_string(), import);
+        let order = self.order();
+        self.scope_mut()
+            .imports
+            .insert(name.to_string(), import, order);
+    }
+
+    fn order(&self) -> usize {
+        self.scope().order
+    }
+
+    fn inc_order(&mut self) -> usize {
+        let order = &mut self.scope_mut().order;
+        *order += 1;
+        *order
+    }
+
+    fn set_order(&mut self, order: usize) {
+        self.scope_mut().order = order;
+    }
+}
+
+#[derive(PartialEq, Debug, Clone)]
+pub struct Scope<'db> {
+    pub imports: OrderedMap<Decl<'db>>,
+    pub vars: OrderedMap<VarDecl<'db>>,
+    pub generics: OrderedMap<Generic<'db>>,
+    pub order: usize,
+}
+
+impl<'db> Scope<'db> {
+    pub fn new() -> Self {
+        Self {
+            imports: OrderedMap::new(),
+            vars: OrderedMap::new(),
+            generics: OrderedMap::new(),
+            order: 0,
+        }
+    }
+}
+
+#[derive(PartialEq, Debug, Clone)]
+pub struct OrderedMap<T> {
+    items: Vec<OrderMapItem<T>>,
+}
+
+impl<T> OrderedMap<T> {
+    pub fn new() -> Self {
+        Self { items: Vec::new() }
     }
 }
 
 #[derive(Default, PartialEq, Debug, Clone)]
-pub struct Scope<'db> {
-    pub imports: HashMap<String, Decl<'db>>,
-    pub vars: HashMap<String, VarDecl<'db>>,
-    pub generics: HashMap<String, Generic<'db>>,
+struct OrderMapItem<T> {
+    order: usize,
+    name: String,
+    value: T,
+}
+
+impl<T> OrderedMap<T> {
+    pub fn insert(&mut self, name: String, value: T, order: usize) {
+        self.items.push(OrderMapItem { order, name, value });
+    }
+
+    pub fn get(&self, name: &str, order: usize) -> Option<&T> {
+        let mut found = None;
+        for item in &self.items {
+            if order < item.order {
+                break;
+            }
+            if name == item.name {
+                found = Some(&item.value);
+            }
+        }
+        found
+    }
+
+    pub fn get_all(&self, order: usize) -> Vec<(&String, &T)> {
+        let mut found = vec![];
+        for item in &self.items {
+            if order < item.order {
+                break;
+            }
+            found.push((&item.name, &item.value));
+        }
+        found
+    }
 }

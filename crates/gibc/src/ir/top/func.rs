@@ -1,6 +1,9 @@
 use crate::{
     check::{
-        build_state::BuildState, scoped_state::Scope, state::CheckState, SemanticToken, TokenKind,
+        build_state::BuildState,
+        scoped_state::{Scope, Scoped as _},
+        state::CheckState,
+        SemanticToken, TokenKind,
     },
     db::decl::Decl,
     ir::{
@@ -103,6 +106,7 @@ impl<'db> IrNode<'db> for FuncIR<'db> {
                 return ret.0.at_offset(offset, state);
             }
         }
+        state.push_scope(self.body.scope.clone());
         for (stmt, span) in &self.body.stmts {
             if span.contains_offset(offset) {
                 return stmt.at_offset(offset, state);

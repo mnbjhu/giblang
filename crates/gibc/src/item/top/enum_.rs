@@ -23,9 +23,7 @@ impl AstItem for Enum {
             .text("enum")
             .append(allocator.space())
             .append(self.name.0.clone())
-            .append(allocator.space())
             .append(self.generics.0.pretty(allocator))
-            .append(allocator.space())
             .append(comma_sep_braces(allocator, &self.members))
     }
 }

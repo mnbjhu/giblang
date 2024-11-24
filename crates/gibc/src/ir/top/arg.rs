@@ -51,4 +51,8 @@ impl<'db> IrNode<'db> for FunctionArgIR<'db> {
     fn debug_name(&self) -> &'static str {
         "FunctionArgIR"
     }
+
+    fn hover(&self, _: usize, state: &mut IrState<'db>) -> Option<String> {
+        Some(format!("{}: {}", self.name.0, self.ty.0.ty.get_name(state)))
+    }
 }

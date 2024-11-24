@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use async_lsp::lsp_types::CompletionItem;
 use gvm::format::{instr::ByteCode, literal::Literal};
 use salsa::plumbing::AsId as _;
 
@@ -12,7 +13,11 @@ use crate::{
         SemanticToken, TokenKind,
     },
     db::decl::{struct_::StructDecl, DeclKind},
-    ir::{builder::ByteCodeNode, expr::lit::Typed, ContainsOffset, IrNode, IrState},
+    ir::{
+        builder::ByteCodeNode,
+        expr::{ident::get_ident_completions, lit::Typed},
+        AstKind, ContainsOffset, IrNode, IrState,
+    },
     item::definitions::ident::IdentDef,
     parser::common::pattern::{Pattern, StructFieldPattern},
     ty::{Generic, Named, Ty},
@@ -296,6 +301,7 @@ impl<'db> StructFieldPattern {
 
 impl<'db> IrNode<'db> for PatternIR<'db> {
     fn at_offset(&self, offset: usize, state: &mut crate::ir::IrState<'db>) -> &dyn IrNode {
+        state.kind = AstKind::Pattern;
         match self {
             PatternIR::Struct { fields, .. } => {
                 for (field, span) in fields {
@@ -348,6 +354,14 @@ impl<'db> IrNode<'db> for PatternIR<'db> {
             }
             PatternIR::Error | PatternIR::Exact(_) | PatternIR::Wildcard(_) => {}
         }
+    }
+
+    fn completions(&self, _: usize, state: &mut IrState<'db>) -> Vec<CompletionItem> {
+        let mut completions = vec![];
+        if let PatternIR::Name(_) = self {
+            get_ident_completions(state, &mut completions);
+        }
+        completions
     }
 
     fn hover(&self, _: usize, state: &mut IrState<'db>) -> Option<String> {

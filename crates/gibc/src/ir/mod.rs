@@ -64,6 +64,16 @@ pub struct IrState<'db> {
     pub type_vars: HashMap<u32, Ty<'db>>,
     pub file: SourceFile,
     pub scope_state: ScopedState<'db>,
+    pub kind: AstKind,
+}
+
+#[derive(PartialEq)]
+pub enum AstKind {
+    Expr,
+    Pattern,
+    Type,
+    Stmt,
+    Decl,
 }
 
 impl<'db> IsScoped<'db> for IrState<'db> {
@@ -95,6 +105,7 @@ impl<'db> IrState<'db> {
             type_vars,
             file,
             scope_state: ScopedState::new(db, project, file),
+            kind: AstKind::Decl,
         }
     }
 

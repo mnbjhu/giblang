@@ -1,6 +1,7 @@
 use crate::{
     check::{
         err::{is_not_instance::IsNotInstance, CheckError},
+        scoped_state::Scoped,
         state::CheckState,
     },
     parser::expr::Expr,
@@ -21,6 +22,7 @@ pub fn check_tuple<'db>(tuple: &Vec<Spanned<Expr>>, state: &mut CheckState<'db>)
     ExprIR {
         data: ExprIRData::Tuple(exprs),
         ty: Ty::Tuple(tys),
+        order: state.inc_order(),
     }
 }
 
@@ -40,6 +42,7 @@ pub fn expect_tuple<'db>(
             ExprIR {
                 data: ExprIRData::Tuple(exprs),
                 ty: Ty::Tuple(tys),
+                order: state.inc_order(),
             }
         } else {
             let mut exprs = vec![];
@@ -57,6 +60,7 @@ pub fn expect_tuple<'db>(
             ExprIR {
                 data: ExprIRData::Tuple(exprs),
                 ty: Ty::Unknown,
+                order: state.inc_order(),
             }
         }
     } else {

@@ -34,6 +34,7 @@ impl<'db> Field {
                     decl: None,
                 }),
                 ty: Ty::Unknown,
+                order: state.inc_order(),
             };
         }
         if let Ty::Named(Named { name, args }) = &struct_ty.ty {
@@ -57,6 +58,7 @@ impl<'db> Field {
                                         decl: Some(decl),
                                     }),
                                     ty,
+                                    order: state.inc_order(),
                                 };
                             }
                             state.simple_error(
@@ -84,6 +86,7 @@ impl<'db> Field {
                                         decl: Some(decl),
                                     }),
                                     ty,
+                                    order: state.inc_order(),
                                 };
                             }
                             state.simple_error("Expected integer index", self.name.1);
@@ -110,6 +113,7 @@ impl<'db> Field {
                 decl: None,
             }),
             ty: Ty::Unknown,
+            order: state.inc_order(),
         }
     }
 

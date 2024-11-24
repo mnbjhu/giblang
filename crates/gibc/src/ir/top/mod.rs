@@ -48,7 +48,7 @@ impl<'db> Top {
             }
             return TopIR {
                 data: TopIRData::Use(name),
-                scope: Scope::default(),
+                scope: Scope::new(),
             };
         }
         state.enter_scope();

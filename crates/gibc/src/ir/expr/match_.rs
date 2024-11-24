@@ -1,5 +1,5 @@
 use crate::{
-    check::state::CheckState,
+    check::{scoped_state::Scoped as _, state::CheckState},
     ir::{ContainsOffset, IrNode},
     parser::expr::match_::Match,
     ty::Ty,
@@ -36,6 +36,7 @@ impl<'db> Match {
                 arms,
             }),
             ty: ret,
+            order: state.inc_order(),
         }
     }
 
@@ -52,6 +53,7 @@ impl<'db> Match {
                 arms,
             }),
             ty: expected.clone(),
+            order: state.inc_order(),
         }
     }
 }

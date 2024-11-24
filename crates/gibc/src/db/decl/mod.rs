@@ -213,6 +213,7 @@ impl<'db> Decl<'db> {
                 found.push((IdentDef::Decl(decl), name.1));
                 current = decl;
             } else {
+                found.push((IdentDef::Unresolved, name.1));
                 return found;
             }
         }

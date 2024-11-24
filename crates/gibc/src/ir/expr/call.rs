@@ -42,6 +42,7 @@ impl<'db> Call {
                     ty: None,
                 }),
                 ty: Ty::Unknown,
+                order: state.inc_order(),
             };
         }
         let func_ty = name_ir.ty.try_get_func_ty(state, self.name.1);
@@ -86,6 +87,7 @@ impl<'db> Call {
                     ty: Some(func_ty.clone()),
                 }),
                 ty,
+                order: state.inc_order(),
             };
         } else if !matches!(name_ir.ty, Ty::Unknown) {
             state.simple_error(
@@ -107,6 +109,7 @@ impl<'db> Call {
                 ty: None,
             }),
             ty: Ty::Unknown,
+            order: state.inc_order(),
         }
     }
 

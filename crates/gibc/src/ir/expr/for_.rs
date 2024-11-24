@@ -2,7 +2,7 @@ use gvm::format::instr::ByteCode;
 use salsa::plumbing::AsId;
 
 use crate::{
-    check::{build_state::BuildState, state::CheckState},
+    check::{build_state::BuildState, scoped_state::Scoped as _, state::CheckState},
     db::{
         decl::{Decl, DeclKind},
         path::ModulePath,
@@ -116,6 +116,7 @@ impl<'db> For {
                 next_decl,
             }),
             ty: Ty::unit(),
+            order: state.inc_order(),
         }
     }
 }

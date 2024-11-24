@@ -1,7 +1,7 @@
 use gvm::format::instr::ByteCode;
 
 use crate::{
-    check::{build_state::BuildState, state::CheckState},
+    check::{build_state::BuildState, scoped_state::Scoped, state::CheckState},
     ir::{builder::ByteCodeNode, common::condition::ConditionIR, ContainsOffset as _, IrNode},
     parser::expr::if_else::{IfBranch, IfElse},
     ty::Ty,
@@ -65,6 +65,7 @@ impl<'db> IfElse {
         ExprIR {
             data: ExprIRData::IfElse(IfElseIR { ifs, else_ }),
             ty,
+            order: state.inc_order(),
         }
     }
 
@@ -88,6 +89,7 @@ impl<'db> IfElse {
         ExprIR {
             data: ExprIRData::IfElse(IfElseIR { ifs, else_ }),
             ty: expected.clone(),
+            order: state.inc_order(),
         }
     }
 }

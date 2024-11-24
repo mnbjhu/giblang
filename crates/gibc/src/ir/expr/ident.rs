@@ -3,8 +3,7 @@ use async_lsp::lsp_types::{CompletionItem, CompletionItemKind};
 use crate::{
     check::{
         err::{unresolved::Unresolved, CheckError},
-        is_scoped::IsScoped,
-        scoped_state::Scoped as _,
+        scoped_state::Scoped,
         state::CheckState,
         SemanticToken, TokenKind,
     },
@@ -28,11 +27,13 @@ pub fn check_ident<'db>(ident: &[Spanned<String>], state: &mut CheckState<'db>) 
             return ExprIR {
                 data: ExprIRData::Ident(vec![(IdentDef::Variable(var.clone()), name.1)]),
                 ty: var.ty.clone(),
+                order: state.inc_order(),
             };
         } else if let Some(generic) = state.get_generic(&ident[0].0).cloned() {
             return ExprIR {
                 data: ExprIRData::Ident(vec![(IdentDef::Generic(generic.clone()), name.1)]),
                 ty: Ty::Meta(Box::new(Ty::Generic(generic))),
+                order: state.inc_order(),
             };
         }
         if let Some(self_param) = state.get_variable("self").cloned() {
@@ -48,8 +49,10 @@ pub fn check_ident<'db>(ident: &[Spanned<String>], state: &mut CheckState<'db>) 
                             self_param.span,
                         )]),
                         ty: self_param.ty.clone(),
+                        order: state.inc_order(),
                     })),
                     ty: self_param.ty.clone(),
+                    order: state.inc_order(),
                 };
                 if let Some(field) = self_param
                     .ty
@@ -64,6 +67,7 @@ pub fn check_ident<'db>(ident: &[Spanned<String>], state: &mut CheckState<'db>) 
                             decl: Some(decl),
                         }),
                         ty: field.1.clone(),
+                        order: state.inc_order(),
                     };
                 }
                 if let Some(func) = self_param
@@ -76,6 +80,7 @@ pub fn check_ident<'db>(ident: &[Spanned<String>], state: &mut CheckState<'db>) 
                     return ExprIR {
                         data: ExprIRData::Ident(vec![(IdentDef::Decl(func.0), name.1)]),
                         ty: ty.clone(),
+                        order: state.inc_order(),
                     };
                 }
             }
@@ -86,6 +91,7 @@ pub fn check_ident<'db>(ident: &[Spanned<String>], state: &mut CheckState<'db>) 
                 return ExprIR {
                     data: ExprIRData::Ident(vec![(IdentDef::Decl(found), name.1)]),
                     ty,
+                    order: state.inc_order(),
                 };
             }
             Err(e) => {
@@ -96,6 +102,7 @@ pub fn check_ident<'db>(ident: &[Spanned<String>], state: &mut CheckState<'db>) 
         return ExprIR {
             data: ExprIRData::Ident(vec![(IdentDef::Unresolved, name.1)]),
             ty: Ty::Unknown,
+            order: state.inc_order(),
         };
     }
 
@@ -103,12 +110,12 @@ pub fn check_ident<'db>(ident: &[Spanned<String>], state: &mut CheckState<'db>) 
     if let Ok(parent_decl) = state.get_decl_with_error(parent) {
         if let Some(export) = parent_decl.get(state.db, &name.0) {
             let ty = export.get_ty(state).inst(state, name.1);
+            let mut res = state.get_ident_ir(parent);
+            res.push((IdentDef::Decl(export), name.1));
             return ExprIR {
-                data: ExprIRData::Ident(vec![
-                    (IdentDef::Decl(parent_decl), parent.last().unwrap().1),
-                    (IdentDef::Decl(export), name.1),
-                ]),
+                data: ExprIRData::Ident(res),
                 ty,
+                order: state.inc_order(),
             };
         }
         if let DeclKind::Trait { .. } | DeclKind::Enum { .. } | DeclKind::Struct { .. } =
@@ -130,16 +137,22 @@ pub fn check_ident<'db>(ident: &[Spanned<String>], state: &mut CheckState<'db>) 
                 0 => {}
                 1 => {
                     let (decl, ty) = funcs[0].clone();
+                    let mut res = state.get_ident_ir(parent);
+                    res.push((IdentDef::Decl(*decl), name.1));
                     return ExprIR {
-                        data: ExprIRData::Ident(vec![(IdentDef::Decl(*decl), name.1)]),
+                        data: ExprIRData::Ident(res),
                         ty,
+                        order: state.inc_order(),
                     };
                 }
                 _ => {
                     state.simple_error("Ambiguous function", name.1);
+                    let mut res = state.get_ident_ir(parent);
+                    res.push((IdentDef::Unresolved, name.1));
                     return ExprIR {
-                        data: ExprIRData::Ident(vec![(IdentDef::Unresolved, name.1)]),
+                        data: ExprIRData::Ident(res),
                         ty: Ty::Unknown,
+                        order: state.inc_order(),
                     };
                 }
             }
@@ -150,8 +163,9 @@ pub fn check_ident<'db>(ident: &[Spanned<String>], state: &mut CheckState<'db>) 
         }));
     }
     ExprIR {
-        data: ExprIRData::Ident(vec![(IdentDef::Unresolved, name.1)]),
+        data: ExprIRData::Ident(state.get_ident_ir(ident)),
         ty: Ty::Unknown,
+        order: state.inc_order(),
     }
 }
 
@@ -199,23 +213,18 @@ impl<'db> IrNode<'db> for SpannedQualifiedNameIR<'db> {
 
     fn completions(&self, offset: usize, state: &mut IrState<'db>) -> Vec<CompletionItem> {
         let mut completions = vec![];
-        if self.len() < 2 {
-            get_ident_completions(state, &mut completions);
-
-            // TODO: IDENT COMPLETIONS
-            // 1. Add vars
-
-            // let vars = state.get_variables();
-            // for (_, var) in vars {
-            //     completions.extend(var.completions(state));
-            // }
-            //
-            // 2. Add self fields and funcs
-            // 3. Add imported types
-            // 4. Add global
-            // 5. Add generics
+        let position = self
+            .iter()
+            .position(|(_, span)| span.contains_offset(offset));
+        if let Some(position) = position {
+            if position > 0 {
+                let parent = &self[position - 1];
+                if let IdentDef::Decl(decl) = parent.0 {
+                    return decl.get_static_access_completions(state);
+                }
+            }
         }
-        let _seg = self.iter().find(|(_, span)| span.contains_offset(offset));
+        get_ident_completions(state, &mut completions);
         completions
     }
 
@@ -225,10 +234,7 @@ impl<'db> IrNode<'db> for SpannedQualifiedNameIR<'db> {
 }
 
 #[allow(unused)]
-fn get_ident_completions<'db>(
-    state: &mut impl IsScoped<'db>,
-    completions: &mut Vec<CompletionItem>,
-) {
+pub fn get_ident_completions(state: &IrState<'_>, completions: &mut Vec<CompletionItem>) {
     for (_, var) in state.get_variables() {
         completions.extend(var.completions(state));
     }

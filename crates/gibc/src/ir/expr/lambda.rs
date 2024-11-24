@@ -42,6 +42,7 @@ impl<'db> Lambda {
         let ExprIR {
             data: ExprIRData::CodeBlock(body),
             ty,
+            ..
         } = check_block(&self.body.0, state)
         else {
             panic!("Expected block");
@@ -60,6 +61,7 @@ impl<'db> Lambda {
         ExprIR {
             data: ExprIRData::Lambda(ir),
             ty,
+            order: state.inc_order(),
         }
     }
 
@@ -97,6 +99,7 @@ impl<'db> Lambda {
             let ExprIR {
                 data: ExprIRData::CodeBlock(body),
                 ty,
+                ..
             } = expect_block(&self.body.0, state, &expected.ret, self.body.1)
             else {
                 panic!("Expected block???");
@@ -109,6 +112,7 @@ impl<'db> Lambda {
                     scope,
                 }),
                 ty,
+                order: state.inc_order(),
             }
         } else {
             let ir = self.check(state);
@@ -118,6 +122,7 @@ impl<'db> Lambda {
             let ExprIR {
                 data: ExprIRData::CodeBlock(body),
                 ty,
+                ..
             } = check_block(&self.body.0, state)
             else {
                 panic!("Expected a code block???");
@@ -134,6 +139,7 @@ impl<'db> Lambda {
             ExprIR {
                 data: ExprIRData::Lambda(ir),
                 ty,
+                order: state.inc_order(),
             }
         }
     }

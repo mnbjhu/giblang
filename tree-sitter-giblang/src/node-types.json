@@ -114,8 +114,16 @@
     "named": false
   },
   {
+    "type": "break",
+    "named": false
+  },
+  {
     "type": "comment",
     "named": true
+  },
+  {
+    "type": "continue",
+    "named": false
   },
   {
     "type": "else",
@@ -147,6 +155,10 @@
   },
   {
     "type": "impl",
+    "named": false
+  },
+  {
+    "type": "in",
     "named": false
   },
   {
@@ -183,6 +195,10 @@
   },
   {
     "type": "use",
+    "named": false
+  },
+  {
+    "type": "while",
     "named": false
   },
   {

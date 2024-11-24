@@ -8,7 +8,7 @@ use crate::{
     util::{Span, Spanned},
 };
 
-use super::{builder::ByteCodeNode, expr::ExprIR, IrNode, IrState};
+use super::{builder::ByteCodeNode, expr::ExprIR, AstKind, IrNode, IrState};
 
 pub mod assign;
 pub mod let_;
@@ -88,6 +88,7 @@ impl<'db> Stmt {
 
 impl<'db> IrNode<'db> for StmtIR<'db> {
     fn at_offset(&self, offset: usize, state: &mut IrState<'db>) -> &dyn IrNode {
+        state.kind = AstKind::Stmt;
         match self {
             StmtIR::Expr(e) => e.0.at_offset(offset, state),
             StmtIR::Let(l) => l.0.at_offset(offset, state),

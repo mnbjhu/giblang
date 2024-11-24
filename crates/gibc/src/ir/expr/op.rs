@@ -1,7 +1,7 @@
 use gvm::format::instr::ByteCode;
 
 use crate::{
-    check::{build_state::BuildState, state::CheckState},
+    check::{build_state::BuildState, scoped_state::Scoped, state::CheckState},
     ir::{builder::ByteCodeNode, ContainsOffset, IrNode},
     parser::expr::op::{Op, OpKind},
     ty::Ty,
@@ -19,7 +19,7 @@ pub struct OpIR<'db> {
 
 impl<'db> Op {
     pub fn check(&self, state: &mut CheckState<'db>) -> ExprIR<'db> {
-        let left = Box::new((self.left.as_ref().0.check(state), self.right.1));
+        let left = Box::new((self.left.as_ref().0.check(state), self.left.1));
         let right = Box::new((self.right.as_ref().0.check(state), self.right.1));
         // TODO: Implement operator checking
         ExprIR {
@@ -29,6 +29,7 @@ impl<'db> Op {
                 kind: self.kind.clone(),
             }),
             ty: Ty::Unknown,
+            order: state.inc_order(),
         }
     }
 

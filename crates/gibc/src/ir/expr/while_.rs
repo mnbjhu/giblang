@@ -1,5 +1,5 @@
 use crate::{
-    check::{build_state::BuildState, state::CheckState},
+    check::{build_state::BuildState, scoped_state::Scoped as _, state::CheckState},
     ir::{builder::ByteCodeNode, common::condition::ConditionIR, ContainsOffset, IrNode},
     parser::expr::while_::While,
     ty::Ty,
@@ -35,6 +35,7 @@ impl<'db> While {
                 block,
             }),
             ty: Ty::unit(),
+            order: state.inc_order(),
         }
     }
 }

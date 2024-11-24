@@ -26,6 +26,7 @@ pub enum Type {
         args: Vec<Spanned<Type>>,
         ret: Box<Spanned<Type>>,
     },
+    Error(Span),
 }
 
 #[derive(Clone, Debug, PartialEq, Update, Eq)]

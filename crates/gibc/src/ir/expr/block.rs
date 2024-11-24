@@ -30,6 +30,7 @@ pub fn check_block<'db>(block: &CodeBlock, state: &mut CheckState<'db>) -> ExprI
     ExprIR {
         data: ExprIRData::CodeBlock(CodeBlockIR { stmts, scope }),
         ty,
+        order: state.inc_order(),
     }
 }
 pub fn expect_block<'db>(
@@ -51,6 +52,7 @@ pub fn expect_block<'db>(
                 scope,
             }),
             ty: Ty::unit(),
+            order: state.inc_order(),
         };
     }
     let mut stmts = vec![];
@@ -65,6 +67,7 @@ pub fn expect_block<'db>(
     ExprIR {
         data: ExprIRData::CodeBlock(CodeBlockIR { stmts, scope }),
         ty,
+        order: state.inc_order(),
     }
 }
 

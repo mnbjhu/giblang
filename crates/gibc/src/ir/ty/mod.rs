@@ -7,7 +7,7 @@ use crate::{
     util::{Span, Spanned},
 };
 
-use super::{top::TopIRData, ContainsOffset, IrNode, IrState};
+use super::{AstKind, ContainsOffset, IrNode, IrState};
 
 pub mod named;
 
@@ -31,6 +31,7 @@ pub enum TypeIRData<'db> {
     Generic(Spanned<String>),
     Any(Span),
     Nothing(Span),
+    Error(Span),
 }
 
 impl<'db> Type {
@@ -94,6 +95,10 @@ impl<'db> Type {
                     ty,
                 }
             }
+            Type::Error(span) => TypeIR {
+                data: TypeIRData::Error(*span),
+                ty: Ty::Unknown,
+            },
         }
     }
 }
@@ -101,6 +106,7 @@ impl<'db> Type {
 impl<'db> IrNode<'db> for TypeIR<'db> {
     #[allow(clippy::only_used_in_recursion)]
     fn at_offset(&self, offset: usize, state: &mut IrState<'db>) -> &dyn IrNode {
+        state.kind = AstKind::Type;
         match &self.data {
             TypeIRData::Tuple(tys) | TypeIRData::Sum(tys) => {
                 for (ty, span) in tys {
@@ -132,7 +138,8 @@ impl<'db> IrNode<'db> for TypeIR<'db> {
             TypeIRData::Wildcard(_)
             | TypeIRData::Generic(_)
             | TypeIRData::Any(_)
-            | TypeIRData::Nothing(_) => self,
+            | TypeIRData::Nothing(_)
+            | TypeIRData::Error(_) => self,
             TypeIRData::Named(named) => named.at_offset(offset, state),
         }
     }
@@ -165,7 +172,7 @@ impl<'db> IrNode<'db> for TypeIR<'db> {
                 }
                 ret.0.tokens(tokens, state);
             }
-            TypeIRData::Wildcard(_) => {}
+            TypeIRData::Error(_) | TypeIRData::Wildcard(_) => {}
             TypeIRData::Generic((_, span)) => {
                 tokens.push(SemanticToken {
                     span: *span,

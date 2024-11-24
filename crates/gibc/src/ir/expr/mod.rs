@@ -15,7 +15,7 @@ use tuple::{check_tuple, expect_tuple};
 use while_::WhileIR;
 
 use crate::{
-    check::{build_state::BuildState, state::CheckState, TokenKind},
+    check::{build_state::BuildState, scoped_state::Scoped, state::CheckState, TokenKind},
     db::{
         decl::{struct_::StructDecl, Decl, DeclKind, Project},
         input::Db,
@@ -27,7 +27,8 @@ use crate::{
 };
 
 use super::{
-    builder::ByteCodeNode, common::pattern::SpannedQualifiedNameIR, ContainsOffset, IrNode, IrState,
+    builder::ByteCodeNode, common::pattern::SpannedQualifiedNameIR, AstKind, ContainsOffset,
+    IrNode, IrState,
 };
 
 pub mod block;
@@ -49,6 +50,7 @@ pub mod while_;
 pub struct ExprIR<'db> {
     pub data: ExprIRData<'db>,
     pub ty: Ty<'db>,
+    pub order: usize,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -77,6 +79,7 @@ impl<'db> Expr {
             Expr::Literal(lit) => ExprIR {
                 data: ExprIRData::Literal(lit.clone()),
                 ty: lit.to_ty(state.db),
+                order: state.inc_order(),
             },
             Expr::Field(field) => field.check(state),
             Expr::Ident(ident) => check_ident(ident, state),
@@ -91,6 +94,7 @@ impl<'db> Expr {
             Expr::Error => ExprIR {
                 data: ExprIRData::Error,
                 ty: Ty::Unknown,
+                order: state.inc_order(),
             },
             Expr::IfElse(if_else) => if_else.check(state),
             Expr::For(for_) => for_.check(state),
@@ -110,6 +114,7 @@ impl<'db> Expr {
                 ExprIR {
                     data: ExprIRData::Literal(lit.clone()),
                     ty,
+                    order: state.inc_order(),
                 }
             }
             Expr::Field(field) => field.expect(state, expected, span),
@@ -124,6 +129,7 @@ impl<'db> Expr {
             Expr::Error => ExprIR {
                 data: ExprIRData::Error,
                 ty: Ty::Unknown,
+                order: state.inc_order(),
             },
             Expr::While(while_) => {
                 let ir = while_.check(state);
@@ -145,6 +151,7 @@ impl<'db> Expr {
                 return ExprIR {
                     data: ExprIRData::ImplicitDyn(Box::new(res), decl),
                     ty: Ty::Unknown,
+                    order: state.inc_order(),
                 };
             }
         }
@@ -154,6 +161,8 @@ impl<'db> Expr {
 
 impl<'db> IrNode<'db> for ExprIR<'db> {
     fn at_offset(&self, offset: usize, state: &mut super::IrState<'db>) -> &dyn IrNode {
+        state.kind = AstKind::Expr;
+        state.set_order(self.order);
         match &self.data {
             ExprIRData::Literal(_) | ExprIRData::Error => self,
             ExprIRData::Field(field) => field.at_offset(offset, state),

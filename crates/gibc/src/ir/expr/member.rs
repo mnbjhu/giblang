@@ -2,7 +2,9 @@ use gvm::format::instr::ByteCode;
 use salsa::plumbing::AsId;
 
 use crate::{
-    check::{build_state::BuildState, state::CheckState, SemanticToken, TokenKind},
+    check::{
+        build_state::BuildState, scoped_state::Scoped, state::CheckState, SemanticToken, TokenKind,
+    },
     db::decl::{func::Function, DeclKind},
     ir::{builder::ByteCodeNode, ContainsOffset, IrNode, IrState},
     item::definitions::ident::IdentDef,
@@ -48,6 +50,7 @@ impl<'db> MemberCall {
                     ty: None,
                 }),
                 ty: Ty::Unknown,
+                order: state.inc_order(),
             };
         };
         let FuncTy {
@@ -85,6 +88,7 @@ impl<'db> MemberCall {
                 ty: Some(func_ty),
             }),
             ty,
+            order: state.inc_order(),
         }
     }
 
