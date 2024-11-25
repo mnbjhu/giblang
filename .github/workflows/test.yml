@@ -4,7 +4,7 @@ permissions:
   checks: write
   pull-requests: write
 
-name: Test with Code Coverage
+name: Test
 on:
   pull_request:
   push:
