@@ -1,15 +1,13 @@
 use std::println
 
-impl TestTrait for TestStruct {
-    fn test() {
-        println("Hello")
-    }
+fn main() {
+    println("Hello, World!")
 }
 
-struct TestStruct {
-
+enum Test   {
+    Member(std::String)
 }
 
-trait TestTrait {
-    fn test()
+struct Thing {
+
 }

@@ -1,0 +1,23 @@
+use std::Float
+use std::Int
+
+fn op_test() {
+    let a = 1.add(2)
+    let b = 1.add(2.0)
+}
+
+trait Add[Other, Output] {
+    fn Self.add(other: Other): Output
+}
+
+impl Add[Int, Int] for Int {
+    fn Self.add(other: Int): Int {
+        self + other
+    }
+}
+
+impl Add[Float, Float] for Int {
+    fn Self.add(other: Float): Float {
+        self + other
+    }
+}

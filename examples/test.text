@@ -1,0 +1,3 @@
+func 0 0 "main" 123 456 1
+mark 0 123 123
+return
