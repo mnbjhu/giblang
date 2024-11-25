@@ -90,7 +90,7 @@ impl<'code> ProgramState<'code> {
             .map(|scope| {
                 let func = &self.funcs[&scope.id];
                 let file_name = &self.file_names[&func.file];
-                let prev = scope.index - 1;
+                let prev = scope.index.saturating_sub(1);
                 let marker = func
                     .marks
                     .iter()

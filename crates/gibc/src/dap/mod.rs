@@ -1,4 +1,5 @@
 use debugger::{ByteCodeExt as _, Debugger};
+use events::OutputEventBody;
 use gvm::binary::decode::decode_file;
 use gvm::vm::state::ProgramState;
 use responses::SetBreakpointsResponse;
@@ -57,6 +58,16 @@ pub fn start_dap(path: &Path) -> DynResult<()> {
                 }
                 Command::Launch(_) => {
                     dbg.paused = false;
+                    let text = format!("Launching {}\n", dbg.state.stack_trace());
+                    server
+                        .output
+                        .lock()
+                        .unwrap()
+                        .send_event(Event::Output(OutputEventBody {
+                            output: text,
+                            ..Default::default()
+                        }))
+                        .unwrap();
                     let rsp = req.success(ResponseBody::Launch);
                     server.respond(rsp)?;
                 }
@@ -93,6 +104,16 @@ pub fn start_dap(path: &Path) -> DynResult<()> {
                     let rsp = req.success(ResponseBody::SetBreakpoints(SetBreakpointsResponse {
                         breakpoints: res.clone(),
                     }));
+
+                    server
+                        .output
+                        .lock()
+                        .unwrap()
+                        .send_event(Event::Output(OutputEventBody {
+                            output: format!("Setting breakpoints: {:?}\n", dbg.breakpoints),
+                            ..Default::default()
+                        }))
+                        .unwrap();
                     server.respond(rsp).unwrap();
                 }
                 cmd => {

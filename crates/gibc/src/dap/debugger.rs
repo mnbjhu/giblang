@@ -42,15 +42,16 @@ impl<'code> Debugger<'code> {
     }
 
     pub fn poll(&mut self) {
+        let text = format!("Polling... Paused: {}\n", self.paused);
+        self.output
+            .lock()
+            .unwrap()
+            .send_event(Event::Output(OutputEventBody {
+                output: text,
+                ..Default::default()
+            }))
+            .unwrap();
         if self.paused {
-            self.output
-                .lock()
-                .unwrap()
-                .send_event(Event::Output(OutputEventBody {
-                    output: "Paused".to_string(),
-                    ..Default::default()
-                }))
-                .unwrap();
             return;
         }
         let instr = self.state.next_instr();
@@ -59,6 +60,15 @@ impl<'code> Debugger<'code> {
             instr: self.state.scope().index,
         };
         if let Some(bp) = self.breakpoints.get(&point) {
+            let text = format!("Hit break point at {}\n", self.state.stack_trace());
+            self.output
+                .lock()
+                .unwrap()
+                .send_event(Event::Output(OutputEventBody {
+                    output: text,
+                    ..Default::default()
+                }))
+                .unwrap();
             self.output
                 .lock()
                 .unwrap()
