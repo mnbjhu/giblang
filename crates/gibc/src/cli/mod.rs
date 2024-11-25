@@ -39,7 +39,7 @@ pub enum Command {
     /// Start the language server
     Lsp,
 
-    /// Start the debug adapter protocol
+    /// Start the debug adapter
     Dap {
         /// The path to the source file
         path: PathBuf,

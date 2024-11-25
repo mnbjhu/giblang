@@ -5,24 +5,4 @@
 
 ## About
 
-WIP transpiler for the Giblang language
-
-## CLI
-
-```man
-Usage: giblang <COMMAND>
-
-Commands:
-  lex          Lex the tokens for a file
-  parse        Parses a source file
-  build        Parses a source file
-  exports      Shows a tree of the exports
-  lsp          Start the language server
-  file-tree    Show the included files
-  module-tree  Show the module tree
-  fmt          Format a file
-  help         Print this message or the help of the given subcommand(s)
-
-Options:
-  -h, --help  Print help
-```
+A set of tools for writing, compiling and executing the Giblang language.
