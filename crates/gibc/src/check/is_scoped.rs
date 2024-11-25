@@ -6,7 +6,6 @@ use crate::{
         input::{Db, SourceFile},
     },
     ty::{Generic, Ty},
-    util::Span,
 };
 
 use super::{
@@ -18,7 +17,6 @@ pub trait IsScoped<'db> {
     fn get_scope_state<'me>(&'me self) -> &'me ScopedState<'db>;
     fn get_scope_state_mut<'me>(&'me mut self) -> &'me mut ScopedState<'db>;
     fn get_type_var(&self, id: u32) -> Ty<'db>;
-    fn expected_type_var_is(&mut self, id: u32, other: Ty<'db>, span: Span);
 }
 
 impl<'db, T: IsScoped<'db>> Scoped<'db> for T {

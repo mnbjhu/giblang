@@ -27,7 +27,6 @@ pub struct BuildState<'db> {
     pub project: Project<'db>,
     pub hasher: FxHasher,
     pub file: SourceFile,
-    pub marks: Vec<(usize, (u16, u16))>,
     pub block_scopes: Vec<usize>,
 }
 
@@ -45,7 +44,6 @@ impl<'db> BuildState<'db> {
             project,
             hasher: FxHasher::default(),
             file,
-            marks: Vec::new(),
             block_scopes: Vec::new(),
         }
     }

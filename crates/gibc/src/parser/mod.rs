@@ -117,6 +117,7 @@ pub fn top_recovery<'tokens, 'src: 'tokens>() -> AstParser!(Unit) {
         .ignored()
 }
 
+#[allow(dead_code)]
 #[must_use]
 pub fn recover_until<'tokens, 'src: 'tokens>(tokens: &'static [Token]) -> AstParser!(Unit) {
     let braces = nested_delimiters(

@@ -88,8 +88,6 @@ impl<'db> IsScoped<'db> for IrState<'db> {
     fn get_type_var(&self, id: u32) -> Ty<'db> {
         self.type_vars.get(&id).cloned().unwrap_or(Ty::Unknown)
     }
-
-    fn expected_type_var_is(&mut self, _: u32, _: Ty<'db>, _: Span) {}
 }
 
 impl<'db> IrState<'db> {

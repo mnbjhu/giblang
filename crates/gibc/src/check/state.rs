@@ -50,10 +50,6 @@ impl<'db> IsScoped<'db> for CheckState<'db> {
     fn get_type_var(&self, id: u32) -> Ty<'db> {
         self.get_resolved_type_var(id)
     }
-
-    fn expected_type_var_is(&mut self, id: u32, other: Ty<'db>, span: Span) {
-        self.expected_var_is_ty(id, other, span);
-    }
 }
 
 impl<'ty, 'db: 'ty> CheckState<'db> {
