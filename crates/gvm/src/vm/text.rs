@@ -1,4 +1,8 @@
-use super::{heap::HeapItem, stack::StackItem, state::ProgramState};
+use super::{
+    heap::HeapItem,
+    stack::{Slice, StackItem},
+    state::ProgramState,
+};
 
 pub trait DebugText {
     fn get_text(&self, state: &ProgramState) -> String;
@@ -14,6 +18,14 @@ impl DebugText for StackItem {
             StackItem::Heap(handle) => {
                 let item = state.heap.get(handle).unwrap();
                 item.get_text(state)
+            }
+            StackItem::Slice(Slice {
+                start,
+                end,
+                refr: data,
+            }) => {
+                let item = state.heap.get(data).unwrap();
+                format!("Slice({}, {}, {})", start, end, item.get_text(state))
             }
         }
     }

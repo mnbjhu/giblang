@@ -4,3 +4,4 @@ pub mod scope;
 pub mod stack;
 pub mod state;
 pub mod text;
+pub mod vec;

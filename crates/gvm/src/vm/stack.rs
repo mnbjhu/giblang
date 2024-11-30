@@ -3,11 +3,19 @@ use broom::{trace::Trace as _, Handle};
 use super::heap::HeapItem;
 
 #[derive(PartialEq, Debug, Clone, Copy)]
+pub struct Slice {
+    pub start: u32,
+    pub end: u32,
+    pub refr: Handle<HeapItem>,
+}
+
+#[derive(PartialEq, Debug, Clone, Copy)]
 pub enum StackItem {
     Int(i32),
     Float(f32),
     Char(char),
     Bool(bool),
+    Slice(Slice),
     Heap(Handle<HeapItem>),
 }
 

@@ -1,6 +1,5 @@
 use std::{
     cmp::Ordering,
-    collections::HashMap,
     io::Stdout,
     sync::{Arc, Mutex},
 };
@@ -10,16 +9,19 @@ use dap::{
     server::ServerOutput,
     types::StoppedEventReason,
 };
+use dashmap::DashMap;
 use gvm::{
     format::{func::FuncDef, ByteCodeFile},
     vm::{scope::Scope, state::ProgramState},
 };
 
+use super::DynResult;
+
 pub struct Debugger<'code> {
     pub state: ProgramState<'code>,
     pub output: Arc<Mutex<ServerOutput<Stdout>>>,
-    pub breakpoints: HashMap<ByteCodeBreakpoint, i64>,
-    pub paused: bool,
+    pub breakpoints: Arc<DashMap<ByteCodeBreakpoint, i64>>,
+    pub paused: Arc<Mutex<bool>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -29,29 +31,26 @@ pub struct ByteCodeBreakpoint {
 }
 
 impl<'code> Debugger<'code> {
-    pub fn new(state: ProgramState<'code>, output: Arc<Mutex<ServerOutput<Stdout>>>) -> Self {
+    pub fn new(
+        state: ProgramState<'code>,
+        output: Arc<Mutex<ServerOutput<Stdout>>>,
+        breakpoints: Arc<DashMap<ByteCodeBreakpoint, i64>>,
+        paused: Arc<Mutex<bool>>,
+    ) -> Self {
         let mut res = Self {
             state,
             output,
-            breakpoints: HashMap::new(),
-            paused: true,
+            breakpoints,
+            paused,
         };
         let main = res.state.funcs.get(&0).expect("No main function");
         res.state.scopes.push(Scope::from_code(&main.body, 0));
         res
     }
 
-    pub fn poll(&mut self) {
-        if self.paused {
-            self.output
-                .lock()
-                .unwrap()
-                .send_event(Event::Output(OutputEventBody {
-                    output: "Paused".to_string(),
-                    ..Default::default()
-                }))
-                .unwrap();
-            return;
+    pub fn poll(&mut self) -> DynResult<()> {
+        if *self.paused.lock().unwrap() {
+            return Ok(());
         }
         let instr = self.state.next_instr();
         let point = ByteCodeBreakpoint {
@@ -70,11 +69,18 @@ impl<'code> Debugger<'code> {
                     text: Some("Breakpoint hit".to_string()),
                     all_threads_stopped: Some(true),
                     hit_breakpoint_ids: Some(vec![*bp]),
-                }))
-                .unwrap();
-            self.paused = true;
+                }))?;
+            self.output
+                .lock()
+                .unwrap()
+                .send_event(Event::Output(OutputEventBody {
+                    output: format!("Hit breakpoint {:?}", bp.value()),
+                    ..Default::default()
+                }))?;
+            *self.paused.lock().unwrap() = true;
         }
         self.state.execute(instr);
+        Ok(())
     }
 }
 
@@ -100,12 +106,12 @@ impl ByteCodeExt for ByteCodeFile {
             .iter()
             .find_map(|(id, name)| if name == file_name { Some(id) } else { None })
             .unwrap_or_else(|| panic!("File not found: {file_name}, {:?}", self.file_names));
-        self.get_func(*file_id, line, col).and_then(|func| {
+        self.get_func(*file_id, line, col).map(|func| {
             let instr = func.1.get_index(line, col);
-            Some(ByteCodeBreakpoint {
+            ByteCodeBreakpoint {
                 func: func.0,
-                instr: instr?,
-            })
+                instr,
+            }
         })
     }
     fn get_func(&self, file: u32, line: usize, col: usize) -> Option<(u32, &FuncDef)> {
@@ -129,11 +135,11 @@ impl ByteCodeExt for ByteCodeFile {
 }
 
 pub trait FuncDefExt {
-    fn get_index(&self, line: usize, col: usize) -> Option<usize>;
+    fn get_index(&self, line: usize, col: usize) -> usize;
 }
 
 impl FuncDefExt for FuncDef {
-    fn get_index(&self, line: usize, col: usize) -> Option<usize> {
+    fn get_index(&self, line: usize, col: usize) -> usize {
         self.marks
             .iter()
             .rev()
@@ -145,6 +151,7 @@ impl FuncDefExt for FuncDef {
                 }
             })
             .copied()
+            .unwrap_or(0)
     }
 }
 

@@ -1,15 +1,19 @@
+use dashmap::DashMap;
 use debugger::{ByteCodeExt as _, Debugger};
+use events::{OutputEventBody, StoppedEventBody};
 use gvm::binary::decode::decode_file;
 use gvm::vm::state::ProgramState;
 use responses::SetBreakpointsResponse;
-use std::fs;
 use std::io::{stdin, BufReader, BufWriter};
 use std::path::{Path, PathBuf};
+use std::sync::{Arc, Mutex};
+use std::time::Duration;
+use std::{fs, thread};
 use thiserror::Error;
 
 use dap::prelude::*;
 use tracing::error;
-use types::Breakpoint;
+use types::{Breakpoint, StoppedEventReason};
 
 pub mod debugger;
 
@@ -27,21 +31,16 @@ type DynResult<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 pub fn start_dap(path: &Path) -> DynResult<()> {
     let bytes = fs::read(path).unwrap();
     let pwd = std::env::current_dir().unwrap();
+    let bytecode = decode_file(&mut bytes.clone().into_iter().peekable());
     let output = BufWriter::new(std::io::stdout());
-    let bytecode = decode_file(&mut bytes.into_iter().peekable());
     let buf = BufReader::new(stdin());
     let mut server = Server::new(buf, output);
     let mut breakpoint_count = 0;
 
     let output = server.output.clone();
-    let prog = ProgramState::new(
-        &bytecode.funcs,
-        bytecode.tables.clone(),
-        bytecode.file_names.clone(),
-    );
-    let mut dbg = Debugger::new(prog, output);
+    let breakpoints = Arc::new(DashMap::new());
+    let paused = Arc::new(Mutex::new(true));
     loop {
-        dbg.poll();
         if let Some(req) = server.poll_request().unwrap() {
             match &req.command {
                 Command::Initialize(_) => {
@@ -56,9 +55,39 @@ pub fn start_dap(path: &Path) -> DynResult<()> {
                     server.send_event(Event::Initialized)?;
                 }
                 Command::Launch(_) => {
-                    dbg.paused = false;
+                    let bytecode = decode_file(&mut bytes.clone().into_iter().peekable());
+                    let breakpoints = breakpoints.clone();
+                    let paused = paused.clone();
+                    let o = output.clone();
+                    *paused.lock().unwrap() = false;
+
                     let rsp = req.success(ResponseBody::Launch);
                     server.respond(rsp)?;
+
+                    output
+                        .lock()
+                        .unwrap()
+                        .send_event(Event::Stopped(StoppedEventBody {
+                            reason: StoppedEventReason::Breakpoint,
+                            description: Some("Breakpoint hit desc".to_string()),
+                            thread_id: None,
+                            preserve_focus_hint: Some(false),
+                            text: Some("Breakpoint hit".to_string()),
+                            all_threads_stopped: Some(true),
+                            hit_breakpoint_ids: Some(vec![0]),
+                        }))?;
+                    // tokio::spawn(async move {
+                    //     let prog = ProgramState::new(
+                    //         &bytecode.funcs,
+                    //         bytecode.tables.clone(),
+                    //         bytecode.file_names.clone(),
+                    //     );
+                    //     let mut dbg = Debugger::new(prog, o, breakpoints.clone(), paused.clone());
+                    //     loop {
+                    //         thread::sleep(Duration::from_millis(10));
+                    //         let _ = dbg.poll();
+                    //     }
+                    // });
                 }
                 Command::SetBreakpoints(args) => {
                     // Set breakpoints
@@ -87,13 +116,17 @@ pub fn start_dap(path: &Path) -> DynResult<()> {
                                 message: Some("Breakpoint set".to_string()),
                                 ..Default::default()
                             });
-                            dbg.breakpoints.insert(bp_internal, id);
+                            breakpoints.insert(bp_internal, id);
                         }
                     }
                     let rsp = req.success(ResponseBody::SetBreakpoints(SetBreakpointsResponse {
                         breakpoints: res.clone(),
                     }));
-                    server.respond(rsp).unwrap();
+                    server.respond(rsp)?;
+                }
+                Command::Disconnect(_) => {
+                    let rsp = req.success(ResponseBody::Disconnect);
+                    server.respond(rsp)?;
                 }
                 cmd => {
                     return Err(Box::new(MyAdapterError::UnhandledCommandError {

@@ -2,7 +2,12 @@ use std::{collections::HashMap, process::exit};
 
 use crate::{format::instr::ByteCode, vm::text::DebugText as _};
 
-use super::{heap::HeapItem, scope::Scope, stack::StackItem, state::ProgramState};
+use super::{
+    heap::HeapItem,
+    scope::Scope,
+    stack::{Slice, StackItem},
+    state::ProgramState,
+};
 
 #[allow(clippy::too_many_lines)]
 impl<'code> ProgramState<'code> {
@@ -412,14 +417,24 @@ impl<'code> ProgramState<'code> {
                 let StackItem::Int(index) = self.pop() else {
                     panic!("Expected index to be an int")
                 };
-                let StackItem::Heap(refr) = self.pop() else {
-                    panic!("Expected heap obj")
-                };
-                let HeapItem::Object(_, data) = self.heap.get(refr).unwrap() else {
-                    panic!("Expected vec")
-                };
-                let res = data[index as usize];
-                self.push(res);
+                match self.pop() {
+                    StackItem::Heap(refr) => {
+                        let HeapItem::Object(_, data) = self.heap.get(refr).unwrap() else {
+                            panic!("Expected vec")
+                        };
+                        let res = data[index as usize];
+                        self.push(res);
+                    }
+                    StackItem::Slice(Slice { start, refr, .. }) => {
+                        let HeapItem::Object(_, data) = self.heap.get(refr).unwrap() else {
+                            panic!("Expected vec")
+                        };
+                        todo!()
+                    }
+                    _ => {
+                        panic!("Expected heap obj or slice")
+                    }
+                }
             }
             ByteCode::VecSet => {
                 let StackItem::Int(index) = self.pop() else {
