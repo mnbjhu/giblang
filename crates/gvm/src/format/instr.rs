@@ -23,6 +23,10 @@ pub enum ByteCode {
     VecInsert,
     VecRemove,
     VecLen,
+    Slice,
+
+    ReadFile,
+    ReadLine,
 
     NewLocal(u32),
     GetLocal(u32),

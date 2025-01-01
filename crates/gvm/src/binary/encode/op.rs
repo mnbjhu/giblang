@@ -52,6 +52,9 @@ impl ByteCode {
             },
             ByteCode::Div => 50,
             ByteCode::Mod => 51,
+            ByteCode::Slice => 52,
+            ByteCode::ReadLine => 53,
+            ByteCode::ReadFile => 54,
         }
     }
 
@@ -90,7 +93,10 @@ impl ByteCode {
             | ByteCode::Gt
             | ByteCode::Lte
             | ByteCode::Gte
-            | ByteCode::VecLen => {
+            | ByteCode::VecLen
+            | ByteCode::ReadFile
+            | ByteCode::ReadLine
+            | ByteCode::Slice => {
                 vec![self.get_code()]
             }
             ByteCode::Push(lit) => {

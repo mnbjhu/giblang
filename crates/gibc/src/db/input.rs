@@ -125,10 +125,13 @@ impl Vfs {
                 struct Float
                 struct Bool
                 struct String
+                struct Char
                 struct Any
 
                 fn panic(message: String): Nothing
                 fn print(data: Any)
+                fn read_line(): String
+                fn read_to_string(path: String): String
                 fn println(data: Any) {
                     print(data)
                     print("\n")
@@ -145,6 +148,18 @@ impl Vfs {
 
                 struct Vec[T]
 
+                impl String {
+                    fn new(): Self
+                    fn Self.get(index: Int): Char
+                    fn Self.set(index: Int, value: Char)
+                    fn Self.remove(index: Int): Char
+                    fn Self.push(value: Char)
+                    fn Self.pop(): Char
+                    fn Self.peak(): Char
+                    fn Self.len(): Int
+                    fn Self.slice(start: Int, end: Int): Self
+                }
+
                 impl[T] Vec[T] {
                     fn new(): Self
                     fn Self.get(index: Int): T
@@ -154,6 +169,7 @@ impl Vfs {
                     fn Self.pop(): T
                     fn Self.peak(): T
                     fn Self.len(): Int
+                    fn Self.slice(start: Int, end: Int): Self
                 }
 
                 enum Option[T] {

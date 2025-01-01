@@ -9,6 +9,7 @@ pub mod ir_name;
 pub mod is_instance;
 pub mod name;
 pub mod parameterize;
+pub mod resolve_named;
 pub mod sub_tys;
 
 #[derive(Clone, Debug, PartialEq, Default, Update, Hash, Eq)]

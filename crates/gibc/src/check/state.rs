@@ -36,6 +36,7 @@ pub struct CheckState<'db> {
     pub should_error: bool,
     pub decl_stack: Vec<Decl<'db>>,
     pub scope_state: ScopedState<'db>,
+    pub func_return: Ty<'db>,
 }
 
 impl<'db> IsScoped<'db> for CheckState<'db> {
@@ -76,6 +77,7 @@ impl<'ty, 'db: 'ty> CheckState<'db> {
             should_error: true,
             decl_stack: vec![decl],
             scope_state: ScopedState::new(db, project, file_data),
+            func_return: Ty::Unknown,
         };
         let tops = parse_file(db, file_data).tops(db);
         for top in tops {

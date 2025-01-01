@@ -22,6 +22,13 @@ impl AstItem for Stmt {
             Stmt::Assign(a) => a.pretty(allocator),
             Stmt::Break(_) => allocator.text("break"),
             Stmt::Continue(_) => allocator.text("continue"),
+            Stmt::Return(_, expr) => {
+                let expr = match expr {
+                    Some(expr) => allocator.space().append(expr.pretty(allocator)),
+                    None => allocator.nil(),
+                };
+                allocator.text("return").append(expr)
+            }
         }
     }
 }

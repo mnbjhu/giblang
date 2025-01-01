@@ -48,6 +48,9 @@ impl Display for ByteCode {
             ByteCode::DynCall(id) => write!(f, "dyn_call {id}"),
             ByteCode::Div => write!(f, "div"),
             ByteCode::Mod => write!(f, "mod"),
+            ByteCode::Slice => write!(f, "slice"),
+            ByteCode::ReadLine => write!(f, "read_line"),
+            ByteCode::ReadFile => write!(f, "read_file"),
         }
     }
 }

@@ -17,6 +17,12 @@ struct VecIter[T] {
 
 impl[T] Iter[T] for VecIter[T] {
     fn Self.next(): Option[T] {
-        vec.get(count)
+        if count < vec.len() {
+            let result = vec.get(self.count)
+            count = count + 1
+            Option::Some(result)
+        } else {
+            Option::None
+        }
     }
 }

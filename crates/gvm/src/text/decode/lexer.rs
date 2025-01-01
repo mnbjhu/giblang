@@ -87,6 +87,8 @@ pub enum Token<'src> {
     VecInsert,
     #[token("vec_remove")]
     VecRemove,
+    #[token("slice")]
+    Slice,
     #[token("dyn")]
     Dyn,
     #[token("dyn_call")]
@@ -98,6 +100,10 @@ pub enum Token<'src> {
     #[token("mod")]
     Mod,
     #[token("mark")]
+    ReadFile,
+    #[token("read_file")]
+    ReadLine,
+    #[token("read_line")]
     Mark,
     #[token("true")]
     True,

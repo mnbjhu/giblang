@@ -32,9 +32,8 @@ impl<'db> For {
     pub fn check(&self, state: &mut CheckState<'db>) -> ExprIR<'db> {
         let expr = self.expr.0.check(state);
 
-        let iter_decl = if let Some((IdentDef::Decl(decl), _)) = expr
-            .ty
-            .get_member_func(&("iter".to_string(), self.expr.1), state)
+        let iter_decl = if let Some((IdentDef::Decl(decl), _)) =
+            expr.ty.get_func(&("iter".to_string(), self.expr.1), state)
         {
             Some(decl)
         } else {
@@ -87,7 +86,7 @@ impl<'db> For {
         };
 
         let next_decl = if let Some((IdentDef::Decl(decl), _)) =
-            iter_ty.get_member_func(&("next".to_string(), self.expr.1), state)
+            iter_ty.get_func(&("next".to_string(), self.expr.1), state)
         {
             Some(decl)
         } else {

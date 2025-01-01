@@ -19,14 +19,7 @@ impl DebugText for StackItem {
                 let item = state.heap.get(handle).unwrap();
                 item.get_text(state)
             }
-            StackItem::Slice(Slice {
-                start,
-                end,
-                refr: data,
-            }) => {
-                let item = state.heap.get(data).unwrap();
-                format!("Slice({}, {}, {})", start, end, item.get_text(state))
-            }
+            StackItem::Slice(slice) => slice.get_text(state),
         }
     }
 }
@@ -45,6 +38,22 @@ impl DebugText for HeapItem {
             HeapItem::String(text) => text.to_string(),
             HeapItem::Dyn(id, item) => {
                 format!("Dyn({}, {})", id, item.get_text(state))
+            }
+        }
+    }
+}
+
+impl DebugText for Slice {
+    fn get_text(&self, state: &ProgramState) -> String {
+        match state.heap.get(self.refr).unwrap() {
+            HeapItem::String(text) => text[self.start as usize..self.end as usize].to_string(),
+            item => {
+                format!(
+                    "Slice({}, {}, {})",
+                    self.start,
+                    self.end,
+                    item.get_text(state)
+                )
             }
         }
     }

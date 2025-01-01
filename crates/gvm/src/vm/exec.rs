@@ -1,13 +1,9 @@
-use std::{collections::HashMap, process::exit};
+use core::panic;
+use std::{collections::HashMap, fs::read_to_string, io::stdin, process::exit};
 
 use crate::{format::instr::ByteCode, vm::text::DebugText as _};
 
-use super::{
-    heap::HeapItem,
-    scope::Scope,
-    stack::{Slice, StackItem},
-    state::ProgramState,
-};
+use super::{heap::HeapItem, scope::Scope, stack::StackItem, state::ProgramState};
 
 #[allow(clippy::too_many_lines)]
 impl<'code> ProgramState<'code> {
@@ -70,17 +66,21 @@ impl<'code> ProgramState<'code> {
                 let mut args = Vec::with_capacity(trait_func.args as usize);
                 let mut type_id = 0;
                 for i in (0..trait_func.args).rev() {
-                    let StackItem::Heap(dyn_) = self.pop() else {
-                        panic!("Expected heap obj");
-                    };
+                    let next = self.pop();
                     if i == 0 {
+                        let StackItem::Heap(dyn_) = next else {
+                            panic!(
+                                "Expected heap obj but found {next:?} \n{}",
+                                self.stack_trace()
+                            );
+                        };
                         let HeapItem::Dyn(id, refr) = self.heap.get(dyn_).unwrap() else {
                             panic!("Expected dyn")
                         };
                         type_id = *id;
-                        args.push(*refr);
+                        args.insert(0, *refr);
                     } else {
-                        args.push(self.pop());
+                        args.push(next);
                     }
                 }
                 let impl_func = self.get_trait_impl(*func_id, type_id).unwrap();
@@ -215,40 +215,8 @@ impl<'code> ProgramState<'code> {
             ByteCode::Add => {
                 let b = self.pop();
                 let a = self.pop();
-                match (a, b) {
-                    (StackItem::Int(a), StackItem::Int(b)) => {
-                        let res = StackItem::Int(a + b);
-                        self.push(res);
-                        return;
-                    }
-                    (StackItem::Float(a), StackItem::Float(b)) => {
-                        let res = StackItem::Float(a + b);
-                        self.push(res);
-                        return;
-                    }
-                    (StackItem::Heap(a), StackItem::Heap(b)) => {
-                        let a = self.heap.get(a).unwrap();
-                        let b = self.heap.get(b).unwrap();
-                        match (a, b) {
-                            (HeapItem::Object(ai, ad), HeapItem::Object(bi, bd)) => {
-                                assert_eq!(
-                                    ai, bi,
-                                    "Object types must match but found: {} and {}",
-                                    ai, bi
-                                );
-                                let mut res = vec![];
-                                res.extend(ad);
-                                res.extend(bd);
-                                let refr = self.heap.insert(HeapItem::Object(*ai, res));
-                                self.push(StackItem::Heap(refr.into()));
-                            }
-                            (HeapItem::String(_), HeapItem::String(_)) => todo!(),
-                            _ => {}
-                        }
-                    }
-                    _ => {}
-                }
-                panic!("Can only add numbers, strings or vectors")
+                let res = a.add(&b, self);
+                self.push(res)
             }
             ByteCode::Sub => {
                 let b = self.pop();
@@ -296,7 +264,7 @@ impl<'code> ProgramState<'code> {
             ByteCode::Eq => {
                 let b = self.pop();
                 let a = self.pop();
-                let res = StackItem::Bool(a == b);
+                let res = StackItem::Bool(a.is_equal(&b, self));
                 self.push(res);
             }
             ByteCode::Neq => {
@@ -389,7 +357,14 @@ impl<'code> ProgramState<'code> {
                 let HeapItem::Object(_, data) = self.heap.get(refr).unwrap() else {
                     panic!("Expected vec")
                 };
-                let res = &data[*index as usize];
+                let res = data.get(*index as usize).unwrap_or_else(|| {
+                    panic!(
+                        "Index {} is out of range for obj of size {}\n{}",
+                        index,
+                        data.len(),
+                        self.stack_trace()
+                    )
+                });
                 self.push(*res);
             }
             ByteCode::SetIndex(index) => {
@@ -405,115 +380,79 @@ impl<'code> ProgramState<'code> {
             }
             ByteCode::Clone => {
                 let refr = self.pop();
-                if let StackItem::Heap(refr) = &refr {
-                    let data = self.heap.get(refr).unwrap();
-                    let refr = self.heap.insert(data.clone());
-                    self.push(StackItem::Heap(refr.into()));
-                } else {
-                    self.push(refr);
-                }
+                let res = refr.do_clone(self);
+                self.push(res)
             }
             ByteCode::VecGet => {
                 let StackItem::Int(index) = self.pop() else {
                     panic!("Expected index to be an int")
                 };
-                match self.pop() {
-                    StackItem::Heap(refr) => {
-                        let HeapItem::Object(_, data) = self.heap.get(refr).unwrap() else {
-                            panic!("Expected vec")
-                        };
-                        let res = data[index as usize];
-                        self.push(res);
-                    }
-                    StackItem::Slice(Slice { start, refr, .. }) => {
-                        let HeapItem::Object(_, data) = self.heap.get(refr).unwrap() else {
-                            panic!("Expected vec")
-                        };
-                        todo!()
-                    }
-                    _ => {
-                        panic!("Expected heap obj or slice")
-                    }
-                }
+                let index = index.try_into().unwrap();
+                let res = self.pop().get(index, self).unwrap();
+                self.push(res);
             }
             ByteCode::VecSet => {
                 let StackItem::Int(index) = self.pop() else {
                     panic!("Expected index to be an int")
                 };
                 let value = self.pop();
-                let StackItem::Heap(refr) = self.pop() else {
-                    panic!("Expected heap obj")
-                };
-                let HeapItem::Object(_, data) = self.heap.get_mut(refr).unwrap() else {
-                    panic!("Expected vec")
-                };
-                data[index as usize] = value;
+                self.pop().set(index as u32, value, self);
             }
             ByteCode::VecPush => {
                 let value = self.pop();
-                let StackItem::Heap(refr) = self.pop() else {
-                    panic!("Expected heap obj")
-                };
-                let HeapItem::Object(_, data) = self.heap.get_mut(refr).unwrap() else {
-                    panic!("Expected vec")
-                };
-                data.push(value);
+                self.pop().push(value, self);
             }
             ByteCode::VecPop => {
-                let StackItem::Heap(refr) = self.pop() else {
-                    panic!("Expected heap obj")
-                };
-                let HeapItem::Object(_, data) = self.heap.get_mut(refr).unwrap() else {
-                    panic!("Expected vec")
-                };
-                let res = data.pop().unwrap();
-                self.push(res);
+                let res = self.pop().pop(self).expect("Cannot pop from empty vec");
+                self.push(res)
             }
             ByteCode::VecPeak => {
-                let StackItem::Heap(refr) = self.pop() else {
-                    panic!("Expected heap obj")
-                };
-                let HeapItem::Object(_, data) = self.heap.get(refr).unwrap() else {
-                    panic!("Expected vec")
-                };
-                let res = data.last().unwrap();
-                self.push(*res);
+                let res = self.pop().peak(self).unwrap();
+                self.push(res);
             }
             ByteCode::VecInsert => {
                 let StackItem::Int(index) = self.pop() else {
                     panic!("Expected index to be an int")
                 };
                 let value = self.pop();
-                let StackItem::Heap(refr) = self.pop() else {
-                    panic!("Expected heap obj")
-                };
-                let HeapItem::Object(_, data) = self.heap.get_mut(refr).unwrap() else {
-                    panic!("Expected vec")
-                };
-                data.insert(index as usize, value);
+                self.pop().insert(index as u32, value, self);
             }
             ByteCode::VecRemove => {
                 let StackItem::Int(index) = self.pop() else {
                     panic!("Expected index to be an int")
                 };
-                let StackItem::Heap(refr) = self.pop() else {
-                    panic!("Expected heap obj")
-                };
-                let HeapItem::Object(_, data) = self.heap.get_mut(refr).unwrap() else {
-                    panic!("Expected vec")
-                };
-                let res = data.remove(index as usize);
+                let res = self.pop().remove(index as u32, self).unwrap();
                 self.push(res);
             }
             ByteCode::VecLen => {
-                let StackItem::Heap(refr) = self.pop() else {
-                    panic!("Expected heap obj")
+                let len = self.pop().len(self).try_into().unwrap();
+                self.push(StackItem::Int(len));
+            }
+            ByteCode::Slice => {
+                let StackItem::Int(end) = self.pop() else {
+                    panic!("Expected end to be an int")
                 };
-                let HeapItem::Object(_, data) = self.heap.get(refr).unwrap() else {
-                    panic!("Expected vec")
+                let StackItem::Int(start) = self.pop() else {
+                    panic!("Expected start to be an int")
                 };
-                let res = StackItem::Int(data.len() as i32);
-                self.push(res);
+                let res = self.pop().slice(start as u32, end as u32, self);
+                self.push(res)
+            }
+            ByteCode::ReadLine => {
+                let mut buf = String::new();
+                stdin().read_line(&mut buf).unwrap();
+                let data = HeapItem::String(buf);
+                let refr = self.heap.insert(data);
+                self.push(StackItem::Heap(refr.into()));
+            }
+            ByteCode::ReadFile => {
+                let Some(path) = self.pop().string_data(self) else {
+                    panic!("Expected a filename")
+                };
+                let text = read_to_string(path).unwrap();
+                let data = HeapItem::String(text);
+                let refr = self.heap.insert(data);
+                self.push(StackItem::Heap(refr.into()));
             }
         };
     }

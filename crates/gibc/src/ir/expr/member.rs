@@ -27,7 +27,7 @@ pub struct MemberCallIR<'db> {
 impl<'db> MemberCall {
     pub fn check(&self, state: &mut CheckState<'db>) -> ExprIR<'db> {
         let rec = Box::new((self.rec.0.check(state), self.rec.1));
-        let funcs = rec.0.ty.get_member_func(&self.name, state);
+        let funcs = rec.0.ty.get_func(&self.name, state);
         let Some((def, func_ty)) = funcs else {
             state.simple_error(
                 &format!(

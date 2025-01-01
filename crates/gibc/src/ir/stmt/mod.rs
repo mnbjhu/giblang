@@ -1,4 +1,6 @@
 use assign::AssignIR;
+use chumsky::container::Container;
+use gvm::format::instr::ByteCode;
 use let_::LetIR;
 
 use crate::{
@@ -8,7 +10,7 @@ use crate::{
     util::{Span, Spanned},
 };
 
-use super::{builder::ByteCodeNode, expr::ExprIR, AstKind, IrNode, IrState};
+use super::{builder::ByteCodeNode, expr::ExprIR, AstKind, ContainsOffset, IrNode, IrState};
 
 pub mod assign;
 pub mod let_;
@@ -20,6 +22,7 @@ pub enum StmtIR<'db> {
     Assign(Spanned<AssignIR<'db>>),
     Break(Span),
     Continue(Span),
+    Return(Span, Option<Spanned<ExprIR<'db>>>),
 }
 
 impl<'db> StmtIR<'db> {
@@ -27,7 +30,7 @@ impl<'db> StmtIR<'db> {
         match self {
             StmtIR::Expr(e) => e.0.ty.clone(),
             StmtIR::Let(_) | StmtIR::Assign(_) => Ty::unit(),
-            StmtIR::Break(_) | StmtIR::Continue(_) => Ty::Nothing,
+            StmtIR::Return(_, _) | StmtIR::Break(_) | StmtIR::Continue(_) => Ty::Nothing,
         }
     }
 }
@@ -40,6 +43,19 @@ impl<'db> Stmt {
             Stmt::Assign(e) => StmtIR::Assign((e.0.check(state), e.1)),
             Stmt::Break(s) => StmtIR::Break(*s),
             Stmt::Continue(s) => StmtIR::Continue(*s),
+            Stmt::Return(s, e) => {
+                if let Some(expr) = e {
+                    return StmtIR::Return(
+                        *s,
+                        Some((
+                            expr.0.expect(state, &state.func_return.clone(), expr.1),
+                            expr.1,
+                        )),
+                    );
+                }
+                Ty::unit().expect_is_instance_of(&state.func_return.clone(), state, *s);
+                StmtIR::Return(*s, None)
+            }
         }
     }
 
@@ -81,7 +97,7 @@ impl<'db> Stmt {
                 }
                 StmtIR::Assign((ir, a.1))
             }
-            Stmt::Break(_) | Stmt::Continue(_) => self.check(state),
+            Stmt::Break(_) | Stmt::Continue(_) | Stmt::Return(_, _) => self.check(state),
         }
     }
 }
@@ -94,15 +110,23 @@ impl<'db> IrNode<'db> for StmtIR<'db> {
             StmtIR::Let(l) => l.0.at_offset(offset, state),
             StmtIR::Assign(a) => a.0.at_offset(offset, state),
             StmtIR::Break(_) | StmtIR::Continue(_) => self,
+            StmtIR::Return(_, e) => {
+                if let Some((e, s)) = e {
+                    if s.contains_offset(offset) {
+                        return e.at_offset(offset, state);
+                    }
+                }
+                self
+            }
         }
     }
 
     fn tokens(&self, tokens: &mut Vec<SemanticToken>, state: &mut crate::ir::IrState<'db>) {
         match self {
-            StmtIR::Expr(e) => e.0.tokens(tokens, state),
+            StmtIR::Return(_, Some(e)) | StmtIR::Expr(e) => e.0.tokens(tokens, state),
             StmtIR::Let(l) => l.0.tokens(tokens, state),
             StmtIR::Assign(a) => a.0.tokens(tokens, state),
-            StmtIR::Break(_) | StmtIR::Continue(_) => {}
+            StmtIR::Return(_, None) | StmtIR::Break(_) | StmtIR::Continue(_) => {}
         }
     }
 
@@ -119,6 +143,14 @@ impl<'db> StmtIR<'db> {
             StmtIR::Assign(a) => a.0.build(state),
             StmtIR::Continue(_) => ByteCodeNode::Continue,
             StmtIR::Break(_) => ByteCodeNode::Break,
+            StmtIR::Return(_, e) => {
+                let mut block = vec![];
+                if let Some((expr, _)) = e {
+                    block.push(expr.build(state));
+                }
+                block.push(ByteCodeNode::Code(vec![ByteCode::Return]));
+                ByteCodeNode::Block(block)
+            }
         };
         ByteCodeNode::Spanned(Box::new(res), self.span())
     }
@@ -130,7 +162,7 @@ impl StmtIR<'_> {
             StmtIR::Expr(e) => e.1,
             StmtIR::Let(l) => l.1,
             StmtIR::Assign(a) => a.1,
-            StmtIR::Break(s) | StmtIR::Continue(s) => *s,
+            StmtIR::Return(s, _) | StmtIR::Break(s) | StmtIR::Continue(s) => *s,
         }
     }
 }

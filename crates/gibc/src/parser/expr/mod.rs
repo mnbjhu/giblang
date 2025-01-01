@@ -11,6 +11,7 @@ use for_::{for_parser, For};
 use gvm::format::literal::Literal;
 use lambda::{lambda_parser, Lambda};
 use op::{op_parser, Op};
+use unary::{unary_op_parser, UnaryOp};
 use while_::{while_parser, While};
 
 use crate::{
@@ -42,6 +43,7 @@ pub mod match_arm;
 pub mod member;
 pub mod op;
 pub mod qualified_name;
+pub mod unary;
 pub mod while_;
 
 #[derive(Clone, PartialEq, Debug)]
@@ -59,6 +61,7 @@ pub enum Expr {
     Lambda(Lambda),
     While(While),
     For(For),
+    Unary(UnaryOp),
     Error,
 }
 
@@ -148,8 +151,10 @@ pub fn expr_parser<'tokens, 'src: 'tokens>(stmt: AstParser!(Stmt)) -> AstParser!
             .map(|(ex, _)| ex)
             .boxed();
 
-        let op = op_parser(access);
-        let basic_op = op_parser(basic_access);
+        let unary = unary_op_parser(access.clone()).or(access);
+        let basic_unary = unary_op_parser(basic_access.clone()).or(basic_access);
+        let op = op_parser(unary);
+        let basic_op = op_parser(basic_unary);
 
         let match_ = match_parser(
             expr.clone(),

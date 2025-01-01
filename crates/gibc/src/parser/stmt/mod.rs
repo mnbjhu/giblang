@@ -25,6 +25,7 @@ pub enum Stmt {
     Expr(Spanned<Expr>),
     Break(Span),
     Continue(Span),
+    Return(Span, Option<Spanned<Expr>>),
 }
 
 #[must_use]
@@ -32,6 +33,13 @@ pub fn stmt_parser<'tokens, 'src: 'tokens>() -> AstParser!(Stmt) {
     recursive(|stmt| {
         let break_ = just(kw!(break)).map_with(|_, e| Stmt::Break(e.span()));
         let continue_ = just(kw!(continue)).map_with(|_, e| Stmt::Continue(e.span()));
+        let return_ = just(kw!(return))
+            .ignore_then(
+                expr_parser(stmt.clone())
+                    .map_with(|ex, e| (ex, e.span()))
+                    .or_not(),
+            )
+            .map_with(|expr, e| Stmt::Return(e.span(), expr));
         let let_ = let_parser(expr_parser(stmt.clone()))
             .map_with(|s, e| (s, e.span()))
             .map(Stmt::Let);
@@ -41,6 +49,6 @@ pub fn stmt_parser<'tokens, 'src: 'tokens>() -> AstParser!(Stmt) {
         let expr = expr_parser(stmt)
             .map_with(|s, e| (s, e.span()))
             .map(Stmt::Expr);
-        choice((break_, continue_, let_, assign, expr))
+        choice((break_, continue_, return_, let_, assign, expr))
     })
 }

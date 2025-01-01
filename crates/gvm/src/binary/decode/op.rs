@@ -225,6 +225,18 @@ pub fn decode_code<T: Iterator<Item = u8>>(bytes: &mut Peekable<T>) -> Option<By
                 bytes.next();
                 Some(ByteCode::Mod)
             }
+            52 => {
+                bytes.next();
+                Some(ByteCode::Slice)
+            }
+            53 => {
+                bytes.next();
+                Some(ByteCode::ReadLine)
+            }
+            54 => {
+                bytes.next();
+                Some(ByteCode::ReadFile)
+            }
             _ => None,
         }
     } else {

@@ -164,9 +164,6 @@ impl<'db> IrNode<'db> for TypeIR<'db> {
                 ret.0.tokens(tokens, state);
             }
             TypeIRData::Function { args, ret, .. } => {
-                if let Some(receiver) = args.first() {
-                    receiver.0.tokens(tokens, state);
-                }
                 for (arg, _) in args {
                     arg.tokens(tokens, state);
                 }

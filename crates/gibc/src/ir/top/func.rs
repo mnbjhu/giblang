@@ -56,6 +56,7 @@ impl<'db> Func {
             (ir, *span)
         });
         let expected = ret.as_ref().map_or(Ty::unit(), |ret| ret.0.ty.clone());
+        state.func_return = expected.clone();
         let block = if !allow_empty || self.body.is_some() {
             expect_block(
                 self.body.as_ref().unwrap_or(&vec![]),
@@ -169,6 +170,8 @@ impl<'db> FuncIR<'db> {
                         ByteCode::Print,
                     ],
                     "panic" => vec![ByteCode::Param(0), ByteCode::Panic],
+                    "read_line" => vec![ByteCode::ReadLine],
+                    "read_to_string" => vec![ByteCode::Param(0), ByteCode::ReadFile],
                     _ => vec![],
                 }
             } else {
@@ -194,6 +197,12 @@ impl<'db> FuncIR<'db> {
                     "remove" => vec![ByteCode::Param(0), ByteCode::Param(1), ByteCode::VecRemove],
                     "len" => vec![ByteCode::Param(0), ByteCode::VecLen],
                     "new" => vec![ByteCode::Construct { id: 0, len: 0 }],
+                    "slice" => vec![
+                        ByteCode::Param(0),
+                        ByteCode::Param(1),
+                        ByteCode::Param(2),
+                        ByteCode::Slice,
+                    ],
                     _ => panic!("Unknown std function: {}", self.name.0),
                 }
             }

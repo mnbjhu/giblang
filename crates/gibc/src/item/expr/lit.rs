@@ -17,6 +17,10 @@ impl AstItem for Literal {
             Literal::Int(i) => allocator.text(i.to_string()),
             Literal::Float(f) => allocator.text(f.to_string()),
             Literal::String(s) => allocator.text(format!("\"{s}\"")),
+            Literal::Char('\n') => allocator.text("'\\n'".to_string()),
+            Literal::Char('\t') => allocator.text("'\\t'".to_string()),
+            Literal::Char('\'') => allocator.text("'\\''".to_string()),
+            Literal::Char('\\') => allocator.text("'\\\\'".to_string()),
             Literal::Char(c) => allocator.text(format!("'{c}'")),
             Literal::Bool(b) => {
                 if *b {

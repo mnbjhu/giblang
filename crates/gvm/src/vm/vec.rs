@@ -132,6 +132,7 @@ impl HeapItem {
         }
     }
 
+    #[allow(clippy::len_without_is_empty)]
     pub fn len(&self) -> u32 {
         match self {
             HeapItem::Object(_, items) => items.len() as u32,
@@ -152,7 +153,8 @@ impl Slice {
         self.get(len - 1, state)
     }
 
-    pub fn len(&self, state: &ProgramState) -> u32 {
+    #[allow(clippy::len_without_is_empty)]
+    pub fn len(&self) -> u32 {
         self.end - self.start
     }
 }
@@ -233,8 +235,31 @@ impl StackItem {
                 let heap = state.heap.get(*handle).unwrap();
                 heap.len()
             }
-            StackItem::Slice(slice) => slice.len(state),
+            StackItem::Slice(slice) => slice.len(),
             _ => panic!("Cannot get length of non-heap item {:?}", self),
+        }
+    }
+
+    pub fn slice(&self, start: u32, end: u32, state: &ProgramState) -> StackItem {
+        match self {
+            StackItem::Heap(handle) => {
+                let heap = state.heap.get(*handle).unwrap();
+                if matches!(heap, HeapItem::Dyn(_, _)) {
+                    panic!("Cannot slice dynamic type {:?}", heap);
+                } else {
+                    StackItem::Slice(Slice {
+                        start,
+                        end,
+                        refr: *handle,
+                    })
+                }
+            }
+            StackItem::Slice(slice) => StackItem::Slice(Slice {
+                start: slice.start + start,
+                end: slice.start + end,
+                refr: slice.refr,
+            }),
+            _ => panic!("Cannot slice non-heap item {:?}", self),
         }
     }
 }

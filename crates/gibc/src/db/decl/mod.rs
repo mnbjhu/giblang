@@ -115,7 +115,7 @@ impl<'db> Decl<'db> {
                     Ty::Unknown
                 }
             }
-            DeclKind::Function(f) => Ty::Function(f.get_ty()),
+            DeclKind::Function(f) => Ty::Function(f.get_ty(state)),
             DeclKind::Module(_) => Ty::unit(),
         }
     }
@@ -166,17 +166,25 @@ impl<'db> Decl<'db> {
 }
 
 impl<'db> Function<'db> {
-    pub fn get_ty(&self) -> FuncTy<'db> {
+    pub fn get_ty(&self, state: &impl IsScoped<'db>) -> FuncTy<'db> {
         let args = self
             .args
             .iter()
-            .map(|(_, ty)| ty.clone())
+            .map(|(_, ty)| {
+                if let Ty::Named(Named { name, .. }) = ty {
+                    if state.try_get_decl_path(*name).is_none() {
+                        return Ty::Unknown;
+                    }
+                }
+                ty.clone()
+            })
             .collect::<Vec<_>>();
         FuncTy {
             receiver: self.receiver.clone().map(Box::new),
             args,
             ret: Box::new(self.ret.clone()),
         }
+        .resolve_named(state)
     }
 }
 #[salsa::tracked]

@@ -12,6 +12,7 @@ use member::MemberCallIR;
 use op::OpIR;
 use salsa::plumbing::AsId;
 use tuple::{check_tuple, expect_tuple};
+use unary::UnaryOpIR;
 use while_::WhileIR;
 
 use crate::{
@@ -20,8 +21,8 @@ use crate::{
         decl::{struct_::StructDecl, Decl, DeclKind, Project},
         input::Db,
     },
-    item::definitions::ident::IdentDef,
-    parser::expr::Expr,
+    item::{definitions::ident::IdentDef, AstItem},
+    parser::expr::{unary::UnaryOp, Expr},
     ty::{Generic, Named, Ty},
     util::{Span, Spanned},
 };
@@ -44,6 +45,7 @@ pub mod match_arm;
 pub mod member;
 pub mod op;
 pub mod tuple;
+pub mod unary;
 pub mod while_;
 
 #[derive(Debug, PartialEq, Clone)]
@@ -70,6 +72,7 @@ pub enum ExprIRData<'db> {
     ImplicitDyn(Box<ExprIR<'db>>, Decl<'db>),
     Phantom(Box<ExprIR<'db>>),
     For(ForIR<'db>),
+    Unary(UnaryOpIR<'db>),
     Error,
 }
 
@@ -89,6 +92,7 @@ impl<'db> Expr {
             Expr::Match(match_) => match_.check(state),
             Expr::Tuple(tuple) => check_tuple(tuple, state),
             Expr::Op(op) => op.check(state),
+            Expr::Unary(op) => op.check(state),
             Expr::Lambda(lambda) => lambda.check(state),
             Expr::While(while_) => while_.check(state),
             Expr::Error => ExprIR {
@@ -125,6 +129,7 @@ impl<'db> Expr {
             Expr::Match(match_) => match_.expect(state, expected, span),
             Expr::Tuple(tuple) => expect_tuple(tuple, state, expected, span),
             Expr::Op(op) => op.expect(state, expected, span),
+            Expr::Unary(op) => op.expect(state, expected, span),
             Expr::Lambda(lambda) => lambda.expect(state, expected, span),
             Expr::Error => ExprIR {
                 data: ExprIRData::Error,
@@ -144,7 +149,9 @@ impl<'db> Expr {
             Expr::IfElse(if_else) => if_else.expect(state, expected),
         };
         if let Ty::Named(Named { name, .. }) = &expected {
-            let decl = state.project.get_decl(state.db, *name).unwrap();
+            let decl = state.project.get_decl(state.db, *name).unwrap_or_else(|| {
+                panic!("Expected decl but found {name:?} when checking {self:?}",)
+            });
             if matches!(decl.kind(state.db), DeclKind::Trait { .. })
                 && !res.data.is_dyn(state.db, state.project)
             {
@@ -180,6 +187,7 @@ impl<'db> IrNode<'db> for ExprIR<'db> {
                 self
             }
             ExprIRData::Op(op) => op.at_offset(offset, state),
+            ExprIRData::Unary(op) => op.at_offset(offset, state),
             ExprIRData::Lambda(lambda) => lambda.at_offset(offset, state),
             ExprIRData::While(while_) => while_.at_offset(offset, state),
             ExprIRData::For(for_) => for_.at_offset(offset, state),
@@ -207,6 +215,7 @@ impl<'db> IrNode<'db> for ExprIR<'db> {
                 }
             }
             ExprIRData::Op(op) => op.tokens(tokens, state),
+            ExprIRData::Unary(op) => op.tokens(tokens, state),
             ExprIRData::Lambda(lambda) => lambda.tokens(tokens, state),
             ExprIRData::While(while_) => while_.tokens(tokens, state),
             ExprIRData::For(for_) => for_.tokens(tokens, state),
@@ -286,6 +295,7 @@ impl<'db> ExprIR<'db> {
                 ByteCodeNode::Block(code)
             }
             ExprIRData::Op(op) => op.build(state),
+            ExprIRData::Unary(op) => op.build(state),
             ExprIRData::Lambda(_) => todo!(),
             ExprIRData::While(while_) => while_.build(state),
             ExprIRData::For(for_) => for_.build(state),
@@ -374,6 +384,7 @@ impl<'db> ExprIRData<'db> {
             | ExprIRData::Literal(_)
             // TODO: Will change with op overloading
             | ExprIRData::Op(_)
+            | ExprIRData::Unary(_)
             | ExprIRData::Lambda(_) => false,
             ExprIRData::Phantom(expr) => expr.data.is_dyn(db, project),
         }

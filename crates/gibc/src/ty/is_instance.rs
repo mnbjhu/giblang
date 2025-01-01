@@ -232,11 +232,15 @@ impl<'db> Ty<'db> {
         &self,
         name: &Spanned<String>,
         state: &mut CheckState<'db>,
-        self_ty: &Ty<'db>,
     ) -> Option<(IdentDef<'db>, FuncTy<'db>)> {
-        if matches!(self, Ty::Named(_)) {
-            let mut funcs = self.get_trait_funcs(name, state, self_ty);
-            funcs.extend(self.get_all_impl_funcs(name, state));
+        let ty = if let Ty::Generic(Generic { super_, .. }) = state.resolved_ty(self) {
+            state.resolved_ty(super_.as_ref())
+        } else {
+            state.resolved_ty(self)
+        };
+        if matches!(ty, Ty::Named(_)) {
+            let mut funcs = ty.get_trait_funcs(name, state, &ty);
+            funcs.extend(ty.get_all_impl_funcs(name, state));
             funcs.pop()
         } else {
             None
@@ -277,7 +281,7 @@ impl<'db> Ty<'db> {
                             let DeclKind::Function(func) = f.kind(state.db()) else {
                                 panic!("Expected function");
                             };
-                            (*f, func.get_ty().parameterize(&implied))
+                            (*f, func.get_ty(state).parameterize(&implied))
                         })
                         .collect::<Vec<_>>()
                 });

@@ -56,7 +56,11 @@ pub fn lexer<'src>(
 
     let char = none_of('\'')
         .delimited_by(just('\''), just('\''))
-        .map(|c: char| Token::Literal(Literal::Char(c)));
+        .map(|c: char| Token::Literal(Literal::Char(c)))
+        .or(just("'\\n'").map(|_| Token::Literal(Literal::Char('\n'))))
+        .or(just("'\\t'").map(|_| Token::Literal(Literal::Char('\t'))))
+        .or(just("'\\''").map(|_| Token::Literal(Literal::Char('\''))))
+        .or(just("'\\\\'").map(|_| Token::Literal(Literal::Char('\\'))));
 
     let op = one_of("+-*/=<>_!&|%")
         .repeated()

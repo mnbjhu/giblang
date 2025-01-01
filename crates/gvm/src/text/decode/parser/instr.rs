@@ -89,6 +89,9 @@ pub fn parse_instr<'src>(lex: &mut Lex<'src>) -> PResult<'src, ByteCode> {
             Token::VecInsert => Ok(ByteCode::VecInsert),
             Token::VecRemove => Ok(ByteCode::VecRemove),
             Token::VecPeak => Ok(ByteCode::VecPeak),
+            Token::Slice => Ok(ByteCode::Slice),
+            Token::ReadLine => Ok(ByteCode::ReadLine),
+            Token::ReadFile => Ok(ByteCode::ReadFile),
             Token::Dyn => {
                 let id = expect_num(lex, "'id' (u64)")?;
                 Ok(ByteCode::Dyn(id))

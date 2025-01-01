@@ -10,6 +10,9 @@ impl Display for Literal {
             Literal::Float(val) => val.fmt(f),
             Literal::Char(val) => match val {
                 '\n' => write!(f, "'\\n'"),
+                '\t' => write!(f, "'\\t'"),
+                '\\' => write!(f, "'\\\\'"),
+                '\'' => write!(f, "'\\''"),
                 _ => write!(f, "'{}'", val),
             },
             Literal::Bool(val) => val.fmt(f),
